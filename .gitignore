@@ -50,3 +50,9 @@ myenv311/
 __pycache__/
 .env
 *.pyc
+
+# AI generated artifacts
+*.npy
+structure.txt
+.ipynb_checkpoints/
+question_bank.json
