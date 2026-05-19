@@ -1,0 +1,65 @@
+name: nova
+description: "A new Flutter project."
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.11.5
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # State Management
+  riverpod: ^2.4.0
+  flutter_riverpod: ^2.4.0
+  
+  # Routing
+  go_router: ^13.0.0
+  
+  # Networking
+  dio: ^5.3.0
+  
+  # Serialization
+  freezed_annotation: ^2.4.0
+  json_annotation: ^4.8.0
+  
+  # Dependency Injection
+  get_it: ^7.6.0
+  
+  # Local Storage
+  shared_preferences: ^2.2.0
+  hive: ^2.2.0
+  hive_flutter: ^1.1.0
+  
+  # Logging & Monitoring
+  logger: ^2.0.0
+  
+  # Utilities
+  uuid: ^4.0.0
+  intl: ^0.19.0
+  dartz: ^0.10.0
+  
+  # HTTP
+  http: ^1.1.0
+  
+  # Environment
+  flutter_dotenv: ^5.1.0
+  fl_chart: ^1.2.0
+  google_fonts: ^8.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  
+  # Code Generation
+  build_runner: ^2.4.0
+  freezed: ^2.4.0
+  json_serializable: ^6.7.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
+    - assets/data/

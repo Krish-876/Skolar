@@ -1,0 +1,61 @@
+{
+  "total_tasks_completed": 364,
+  "todo_percent": 0.48,
+  "in_progress_percent": 0.24,
+  "completed_percent": 0.28,
+
+  "weekly_progress": [
+    { "label": "Mon", "value": 62 },
+    { "label": "Tue", "value": 78 },
+    { "label": "Wed", "value": 55 },
+    { "label": "Thu", "value": 85 },
+    { "label": "Fri", "value": 70 },
+    { "label": "Sat", "value": 90 },
+    { "label": "Sun", "value": 74 }
+  ],
+
+  "tasks": [
+    {
+      "title": "Finalize Wireframes",
+      "due_date": "Tomorrow",
+      "assignee_avatars": ["Alice", "Bob", "Carol", "Dave"]
+    },
+    {
+      "title": "Submit Design Draft",
+      "due_date": "Fri 29 Sep",
+      "assignee_avatars": ["Alice", "Bob", "Carol"]
+    },
+    {
+      "title": "Review with Stakeholders",
+      "due_date": "Mon 02 Oct",
+      "assignee_avatars": ["Alice", "Bob", "Carol", "Dave"]
+    }
+  ],
+
+  "recent_activities": [
+    {
+      "time": "17:15",
+      "title": "Prototype Review",
+      "subtitle": "Meet with stakeholders",
+      "due_date": "Fri 29 Sep",
+      "participant_avatars": []
+    },
+    {
+      "time": "10:00",
+      "title": "Design System Update",
+      "subtitle": "Update components",
+      "due_date": "Mon 02 Oct",
+      "participant_avatars": []
+    },
+    {
+      "time": "09:30",
+      "title": "Sprint Planning",
+      "subtitle": "Q4 kickoff session",
+      "due_date": "Tue 03 Oct",
+      "participant_avatars": []
+    }
+  ],
+
+  "syllabus_progress": 0.75,
+  "accuracy": 0.82
+}

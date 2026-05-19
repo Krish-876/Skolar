@@ -1,0 +1,474 @@
+[
+  {
+    "question_text": "Group the given data (185, 72), (170, 56), (168, 60), (179,68), (182,72), (188,77) into two groups using an unsupervised algorithm up to two iterations using euclidean distance . Initially choose the first two objects as initial centroids.",
+    "marks": 15,
+    "question_type": "long_answer",
+    "subject": "AI",
+    "year": 2025,
+    "exam_type": "compre"
+  },
+  {
+    "question_text": "For the given data from a retail company predict the monthly sales revenue for size 2800 sq ft and 12 employees using KNN based on three nearest neighbors using Euclidean distance.",
+    "marks": 10,
+    "question_type": "long_answer",
+    "subject": "AI",
+    "year": 2025,
+    "exam_type": "compre"
+  },
+  {
+    "question_text": "Build a decision tree using the ID3 algorithm for the given training data in the table (Buy Computer data), and predict the class of the following new example: age<=30, income=medium, student=yes, credit-rating=fair.",
+    "marks": 20,
+    "question_type": "long_answer",
+    "subject": "AI",
+    "year": 2025,
+    "exam_type": "compre"
+  },
+  {
+    "question_text": "For the given confusion matrix compute accuracy, precision and recall",
+    "marks": 5,
+    "question_type": "long_answer",
+    "subject": "AI",
+    "year": 2025,
+    "exam_type": "compre"
+  },
+  {
+    "question_text": "A company wants to classify customer feedback as either 'Positive' or 'Negative' based on two features: 'Sentiment Score' (continuous, from -1 to 1) and 'Contains Keyword' (categorical, Yes/No) with given training data. For the given new data point of a new customer feedback has a 'Sentiment Score' of 0.7 and 'Contains Keyword' as 'No'. Classify this feedback using Naive Bayes.",
+    "marks": 10,
+    "question_type": "long_answer",
+    "subject": "AI",
+    "year": 2025,
+    "exam_type": "compre"
+  },
+  {
+    "question_text": "You are given the following small dataset of x and y: using a linear regression (a) least square error fit and (b) gradient descent 1 iteration with LR 0.05 to predicted value of y when x=6.",
+    "marks": 20,
+    "question_type": "long_answer",
+    "subject": "AI",
+    "year": 2025,
+    "exam_type": "compre"
+  },
+  {
+    "question_text": "Given a binary classifier uses a logistic regression model: perform one step of gradient ascent, using learning rate 0.1, starting from:",
+    "marks": 10,
+    "question_type": "long_answer",
+    "subject": "AI",
+    "year": 2025,
+    "exam_type": "compre"
+  },
+  {
+    "question_text": "With least square error fit use the given data to predict the value for x1=1, x2=2.",
+    "marks": 10,
+    "question_type": "long_answer",
+    "subject": "AI",
+    "year": 2025,
+    "exam_type": "compre"
+  },
+  {
+    "question_text": "Many patients visit clinics with symptoms like fever, cough, headache, and fatigue. Doctors often rely on experience to diagnose the disease, but inexperienced practitioners or situations with limited resources may lead to misdiagnosis. There is a need for an expert system that can assist healthcare providers in diagnosing common diseases by analyzing patient symptoms and providing possible diagnoses along with recommendations for further tests or treatments. For the given set of data build an expert system rule base.",
+    "marks": 10,
+    "question_type": "long_answer",
+    "subject": "AI",
+    "year": 2025,
+    "exam_type": "compre"
+  },
+  {
+    "question_text": "A small bookstore recorded weekly sales (in units) of a new book over 15 weeks: 20, 22, 25, 30, 2, 3, 5, 14, 15, 18, 6, 8, 9, 12 You are asked to: group the data into 4 unequal-width and overlapping bins and smooth by boundary and mean.",
+    "marks": 10,
+    "question_type": "long_answer",
+    "subject": "AI",
+    "year": 2025,
+    "exam_type": "compre"
+  },
+  {
+    "question_text": "Given the initial state of 4 queens, show the steps for the hill climbing algorithm until it terminates. Provide if multiple neighbours have the same cost, choose the neighbour where the pair of queens swapped has the smallest subscript/column number.",
+    "marks": 15,
+    "question_type": "long_answer",
+    "subject": "AI",
+    "year": 2025,
+    "exam_type": "compre"
+  },
+  {
+    "question_text": "Group the given data (185, 72), (170, 56), (168, 60), (179,68), (182,72), (188,77) into two groups using an unsupervised algorithm up to two iterations using euclidean distance . Initially choose the first two objects as initial centroids.",
+    "marks": 15,
+    "question_type": "long_answer",
+    "subject": "AI",
+    "year": 2025,
+    "exam_type": "compre"
+  },
+  {
+    "question_text": "For the given data from a retail company predict the monthly sales revenue for size 2800 sq ft and 12 employees using KNN based on three nearest neighbors using Euclidean distance.",
+    "marks": 10,
+    "question_type": "long_answer",
+    "subject": "AI",
+    "year": 2025,
+    "exam_type": "compre"
+  },
+  {
+    "question_text": "Build a decision tree using the ID3 algorithm for the given training data in the table (Buy Computer data), and predict the class of the following new example: age<=30, income=medium, student=yes, credit-rating=fair.",
+    "marks": 20,
+    "question_type": "long_answer",
+    "subject": "AI",
+    "year": 2025,
+    "exam_type": "compre"
+  },
+  {
+    "question_text": "For the given confusion matrix compute accuracy, precision and recall",
+    "marks": 5,
+    "question_type": "long_answer",
+    "subject": "AI",
+    "year": 2025,
+    "exam_type": "compre"
+  },
+  {
+    "question_text": "A company wants to classify customer feedback as either \"Positive\" or \"Negative\" based on two features: \"Sentiment Score\" (continuous, from -1 to 1) and \"Contains Keyword\" (categorical, Yes/No) with given training data. For the given new data point of a new customer feedback has a \"Sentiment Score\" of 0.7 and \"Contains Keyword\" as \"No\". Classify this feedback using Naive Bayes.",
+    "marks": 10,
+    "question_type": "long_answer",
+    "subject": "AI",
+    "year": 2025,
+    "exam_type": "compre"
+  },
+  {
+    "question_text": "You are given the following small dataset of x and y: using a linear regression (a) least square error fit and (b) gradient descent 1 iteration with LR 0.05 to predicted value of y when x=6.",
+    "marks": 20,
+    "question_type": "long_answer",
+    "subject": "AI",
+    "year": 2025,
+    "exam_type": "compre"
+  },
+  {
+    "question_text": "Given a binary classifier uses a logistic regression model: perform one step of gradient ascent, using learning rate 0.1, starting from:",
+    "marks": 10,
+    "question_type": "long_answer",
+    "subject": "AI",
+    "year": 2025,
+    "exam_type": "compre"
+  },
+  {
+    "question_text": "With least square error fit use the given data to predict the value for x1=1, x2=2.",
+    "marks": 10,
+    "question_type": "long_answer",
+    "subject": "AI",
+    "year": 2025,
+    "exam_type": "compre"
+  },
+  {
+    "question_text": "Many patients visit clinics with symptoms like fever, cough, headache, and fatigue. Doctors often rely on experience to diagnose the disease, but inexperienced practitioners or situations with limited resources may lead to misdiagnosis. There is a need for an expert system that can assist healthcare providers in diagnosing common diseases by analyzing patient symptoms and providing possible diagnoses along with recommendations for further tests or treatments. For the given set of data build an expert system rule base.",
+    "marks": 10,
+    "question_type": "long_answer",
+    "subject": "AI",
+    "year": 2025,
+    "exam_type": "compre"
+  },
+  {
+    "question_text": "A small bookstore recorded weekly sales (in units) of a new book over 15 weeks: 20, 22, 25, 30, 2, 3, 5, 14, 15, 18, 6, 8, 9, 12 You are asked to: group the data into 4 unequal-width and overlapping bins and smooth by boundary and mean.",
+    "marks": 10,
+    "question_type": "long_answer",
+    "subject": "AI",
+    "year": 2025,
+    "exam_type": "compre"
+  },
+  {
+    "question_text": "Given the initial state of 4 queens, show the steps for the hill climbing algorithm until it terminates. Provide if multiple neighbours have the same cost, choose the neighbour where the pair of queens swapped has the smallest subscript/column number.",
+    "marks": 15,
+    "question_type": "long_answer",
+    "subject": "AI",
+    "year": 2025,
+    "exam_type": "compre"
+  },
+  {
+    "question_text": "Q1. Suppose a genetic algorithm uses chromosomes of the form x = abcdefgh with a fixed length of eight genes. Each gene can be any digit between 0 and 9. Let the fitness of individual x be calculated as: f(x) = (a+b)\u2212(c+d)+(e+f)\u2212(g+h), and let the initial population consist of four individuals with the following chromosomes: x1 = 65413532 x2 = 87126601 x3 = 23921285 x4 = 41852094",
+    "marks": 20,
+    "question_type": "long_answer",
+    "subject": "AI",
+    "year": 2026,
+    "exam_type": "midsem"
+  },
+  {
+    "question_text": "Q2: (a) Use the Minimax algorithm to compute the minimax value at each node for the game tree below. (b) Use the Alpha-Beta pruning algorithm to prune the game tree in Problem 1 (a) assuming child nodes are visited from left to right. Show all final alpha and beta values computed at root, each internal node explored, and at the top of pruned branches.",
+    "marks": 20,
+    "question_type": "long_answer",
+    "subject": "AI",
+    "year": 2026,
+    "exam_type": "midsem"
+  },
+  {
+    "question_text": "Q3. Tick mark on the correct option.",
+    "marks": 10,
+    "question_type": "mcq",
+    "subject": "AI",
+    "year": 2026,
+    "exam_type": "midsem"
+  },
+  {
+    "question_text": "Q4. Tick mark the correct order for the algorithm implemented on the given graph consider 0 as root node.",
+    "marks": 10,
+    "question_type": "mcq",
+    "subject": "AI",
+    "year": 2026,
+    "exam_type": "midsem"
+  },
+  {
+    "question_text": "Q5: Imagine that a student wants to hand out fliers about an upcoming programming contest. The student wants to visit the Memorial Union (M), Wisconsin Institute of Discovery (W), Computer Sciences Building (S), and Engineering Hall (E) to deliver the fliers. The goal is to find a tour as short as possible. The distance matrix between these locations is given",
+    "marks": 15,
+    "question_type": "long_answer",
+    "subject": "AI",
+    "year": 2026,
+    "exam_type": "midsem"
+  },
+  {
+    "question_text": "The student starts applying a hill-climbing algorithm from the initial state: <W-M-E-S>. Compute total distance of current state.",
+    "marks": 2,
+    "question_type": "long_answer",
+    "subject": "AI",
+    "year": 2026,
+    "exam_type": "midsem"
+  },
+  {
+    "question_text": "What are the possible neighboring states of <W-M-E-S> and the total distances?",
+    "marks": 3,
+    "question_type": "long_answer",
+    "subject": "AI",
+    "year": 2026,
+    "exam_type": "midsem"
+  },
+  {
+    "question_text": "What is the next state reached by hill-climbing? Or explain why there is no next state, if there isn\u2019t one?",
+    "marks": 3,
+    "question_type": "long_answer",
+    "subject": "AI",
+    "year": 2026,
+    "exam_type": "midsem"
+  },
+  {
+    "question_text": "If c) had a next state iterate further until the algorithm terminates and list out the set of states from initial state to final state.",
+    "marks": 4,
+    "question_type": "long_answer",
+    "subject": "AI",
+    "year": 2026,
+    "exam_type": "midsem"
+  },
+  {
+    "question_text": "What is the total distance of the final state?",
+    "marks": 3,
+    "question_type": "long_answer",
+    "subject": "AI",
+    "year": 2026,
+    "exam_type": "midsem"
+  },
+  {
+    "question_text": "\u2200x (P(x) \u2192 Q(x))",
+    "marks": 1,
+    "question_type": "mcq",
+    "subject": "AI",
+    "year": 2024,
+    "exam_type": "compre"
+  },
+  {
+    "question_text": "\u2203x P(x) \u2227 \u2203y Q(y)",
+    "marks": 1,
+    "question_type": "mcq",
+    "subject": "AI",
+    "year": 2024,
+    "exam_type": "compre"
+  },
+  {
+    "question_text": "\u00ac\u2200x \u00acP(x)",
+    "marks": 1,
+    "question_type": "mcq",
+    "subject": "AI",
+    "year": 2024,
+    "exam_type": "compre"
+  },
+  {
+    "question_text": "(\u2200x P(x)) \u2192 Q(a)",
+    "marks": 1,
+    "question_type": "mcq",
+    "subject": "AI",
+    "year": 2024,
+    "exam_type": "compre"
+  },
+  {
+    "question_text": "\u2203x (P(x ) \u2227 Q(x))",
+    "marks": 1,
+    "question_type": "mcq",
+    "subject": "AI",
+    "year": 2024,
+    "exam_type": "compre"
+  },
+  {
+    "question_text": "\u2200x (P(x) \u2192 Q(x))",
+    "marks": 1,
+    "question_type": "mcq",
+    "subject": "AI",
+    "year": 2024,
+    "exam_type": "compre"
+  },
+  {
+    "question_text": "\u2203x P(x) \u2227 \u2203y Q(y)",
+    "marks": 1,
+    "question_type": "mcq",
+    "subject": "AI",
+    "year": 2024,
+    "exam_type": "compre"
+  },
+  {
+    "question_text": "\u00ac\u2200x \u00acP(x)",
+    "marks": 1,
+    "question_type": "mcq",
+    "subject": "AI",
+    "year": 2024,
+    "exam_type": "compre"
+  },
+  {
+    "question_text": "(\u2200x P(x)) \u2192 Q(j)",
+    "marks": 1,
+    "question_type": "mcq",
+    "subject": "AI",
+    "year": 2024,
+    "exam_type": "compre"
+  },
+  {
+    "question_text": "\u2203x (P(x) \u2227 Q(x))",
+    "marks": 1,
+    "question_type": "mcq",
+    "subject": "AI",
+    "year": 2024,
+    "exam_type": "compre"
+  },
+  {
+    "question_text": "P \u02c4 (Q \u02c5 R)",
+    "marks": 1,
+    "question_type": "mcq",
+    "subject": "AI",
+    "year": 2024,
+    "exam_type": "compre"
+  },
+  {
+    "question_text": "\u00ac(P \u02c4 Q) \u2261 \u00ac P \u02c5 \u00ac Q",
+    "marks": 1,
+    "question_type": "mcq",
+    "subject": "AI",
+    "year": 2024,
+    "exam_type": "compre"
+  },
+  {
+    "question_text": "(P\u2192Q) \u02c4 (\u00ac Q \u2192 \u00ac P)",
+    "marks": 1,
+    "question_type": "mcq",
+    "subject": "AI",
+    "year": 2024,
+    "exam_type": "compre"
+  },
+  {
+    "question_text": "(P \u02c5 Q) \u02c4 (\u00ac P \u02c5 R)",
+    "marks": 1,
+    "question_type": "mcq",
+    "subject": "AI",
+    "year": 2024,
+    "exam_type": "compre"
+  },
+  {
+    "question_text": "(P \u02c4 Q) \u2192 R",
+    "marks": 1,
+    "question_type": "mcq",
+    "subject": "AI",
+    "year": 2024,
+    "exam_type": "compre"
+  },
+  {
+    "question_text": "Write the pseudocode of EM algorithm; clearly define the symbols and notations used.",
+    "marks": 5,
+    "question_type": "long_answer",
+    "subject": "AI",
+    "year": 2024,
+    "exam_type": "compre"
+  },
+  {
+    "question_text": "Derive the upper bound of Entropy and Gini Index, for multi-class classification with each class having same probability",
+    "marks": 5,
+    "question_type": "long_answer",
+    "subject": "AI",
+    "year": 2024,
+    "exam_type": "compre"
+  },
+  {
+    "question_text": "1 BLIND AND INFORMED SEARCH",
+    "marks": 5,
+    "question_type": "long_answer",
+    "subject": "AI",
+    "year": 2024,
+    "exam_type": "compre"
+  },
+  {
+    "question_text": "2 UNSUPERVISED LEARNING Construct Dendrograms using single and complete link approaches and comment on the differences in the outcomes.",
+    "marks": 4,
+    "question_type": "long_answer",
+    "subject": "AI",
+    "year": 2024,
+    "exam_type": "compre"
+  },
+  {
+    "question_text": "3 SUPERVISED LEARNING Train a Bayesian Classifier using the given training instances t -t .",
+    "marks": 15,
+    "question_type": "long_answer",
+    "subject": "AI",
+    "year": 2024,
+    "exam_type": "compre"
+  },
+  {
+    "question_text": "4 KNOWLEDGE REPRESENTAION & REASONING Consider a FIS used for clinical Diagnosis.",
+    "marks": 4,
+    "question_type": "long_answer",
+    "subject": "AI",
+    "year": 2024,
+    "exam_type": "compre"
+  },
+  {
+    "question_text": "4i FUZZIFICATION: Fuzzify the input variables for the following values: temperature = 4; headache = 7;",
+    "marks": 4,
+    "question_type": "long_answer",
+    "subject": "AI",
+    "year": 2024,
+    "exam_type": "compre"
+  },
+  {
+    "question_text": "4ii IMPLICATION: RULE 1: IF temperature = high AND headache = moderate THEN severity = mild; RULE 2: IF temperature = high AND headache = extreme THEN severity = severe; RULE 3: IF temperature = moderate THEN severity = mild; RULE 4: IF temperature = moderate OR headache = severe THEN severity = moderate;",
+    "marks": 6,
+    "question_type": "long_answer",
+    "subject": "AI",
+    "year": 2024,
+    "exam_type": "compre"
+  },
+  {
+    "question_text": "5i What is a CBR System? List it\u2019s phases",
+    "marks": 3,
+    "question_type": "long_answer",
+    "subject": "AI",
+    "year": 2024,
+    "exam_type": "compre"
+  },
+  {
+    "question_text": "5ii How you will use a CBR system to handle problems in customer service; State and explain the methods and metrics that you will use (if any) at different phases.",
+    "marks": 7,
+    "question_type": "long_answer",
+    "subject": "AI",
+    "year": 2024,
+    "exam_type": "compre"
+  },
+  {
+    "question_text": "5iii Model a problem/case in the customer servise scenario; Identify the root cause, factors, and therby schematically represent it as a AOR graph.",
+    "marks": 5,
+    "question_type": "long_answer",
+    "subject": "AI",
+    "year": 2024,
+    "exam_type": "compre"
+  },
+  {
+    "question_text": "6 Design a single machine learning pipeline",
+    "marks": 5,
+    "question_type": "long_answer",
+    "subject": "AI",
+    "year": 2024,
+    "exam_type": "compre"
+  }
+]
