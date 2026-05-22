@@ -14,6 +14,7 @@ class FeedPostEntity {
   final List<String> tags;
   final bool isPublished;
   final DateTime createdAt;
+  final List<int> bankIndices;
 
   const FeedPostEntity({
     required this.id,
@@ -31,5 +32,6 @@ class FeedPostEntity {
     required this.tags,
     required this.isPublished,
     required this.createdAt,
+    this.bankIndices = const [],
   });
 }

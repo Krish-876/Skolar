@@ -269,20 +269,10 @@ class _SpacePainter extends CustomPainter {
   }
 
   void _drawBg(Canvas canvas, Size size) {
+    // Paints the entire background rectangle with absolute transparency
     canvas.drawRect(
       Offset.zero & size,
-      Paint()
-        ..shader = const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF04050E),
-            Color(0xFF080920),
-            Color(0xFF0E0B28),
-            Color(0xFF060418),
-          ],
-          stops: [0.0, 0.35, 0.70, 1.0],
-        ).createShader(Offset.zero & size),
+      Paint()..color = Colors.transparent,
     );
   }
 

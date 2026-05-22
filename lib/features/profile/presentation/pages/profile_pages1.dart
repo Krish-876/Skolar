@@ -117,69 +117,67 @@ class _ProfilePageState extends State<ProfilePage>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.deepSpace,
-        body: SpaceBackground(
-          child: Stack(
-            children: [
-              SafeArea(
-                child: FadeTransition(
-                  opacity: _fadeAnim,
-                  child: SlideTransition(
-                    position: Tween<Offset>(
-                      begin: const Offset(0, 0.04),
-                      end: Offset.zero,
-                    ).animate(_slideAnim),
-                    child: CustomScrollView(
-                      physics: const BouncingScrollPhysics(),
-                      slivers: [
-                        SliverToBoxAdapter(
-                          child: Padding(
-                            padding: const EdgeInsets.fromLTRB(30, 60, 30, 0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _ProfileHeader(pulseController: _pulseController),
-                                const SizedBox(height: 24),
-          
-                                StreakCard(
-                                  streakDays: _MockUser.streakDays,
-                                  targetDays: _MockUser.targetDays,
-                                  weekProgress: _MockUser.weekProgress,
-                                  weekLabels: _MockUser.weekLabels,
-                                ),
-                                const SizedBox(height: 20),
-          
-                                QuickStatsRow(
-                                  totalWatchTime: _MockUser.totalWatch,
-                                  totalUploads: _MockUser.totalUploads,
-                                  friendCount: _MockUser.friendCount,
-                                ),
-                                const SizedBox(height: 20),
-          
-                                const BookShelfBanner(),
-                                const SizedBox(height: 12),
-          
-                                _CommitmentLink(onTap: () {
-                                  // TODO: navigate to commitment page
-                                }),
-                                const SizedBox(height: 100),
-                              ],
-                            ),
+        body: Stack(
+          children: [
+            SafeArea(
+              child: FadeTransition(
+                opacity: _fadeAnim,
+                child: SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(0, 0.04),
+                    end: Offset.zero,
+                  ).animate(_slideAnim),
+                  child: CustomScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    slivers: [
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(30, 60, 30, 0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _ProfileHeader(pulseController: _pulseController),
+                              const SizedBox(height: 24),
+        
+                              StreakCard(
+                                streakDays: _MockUser.streakDays,
+                                targetDays: _MockUser.targetDays,
+                                weekProgress: _MockUser.weekProgress,
+                                weekLabels: _MockUser.weekLabels,
+                              ),
+                              const SizedBox(height: 20),
+        
+                              QuickStatsRow(
+                                totalWatchTime: _MockUser.totalWatch,
+                                totalUploads: _MockUser.totalUploads,
+                                friendCount: _MockUser.friendCount,
+                              ),
+                              const SizedBox(height: 20),
+        
+                              const BookShelfBanner(),
+                              const SizedBox(height: 12),
+        
+                              _CommitmentLink(onTap: () {
+                                // TODO: navigate to commitment page
+                              }),
+                              const SizedBox(height: 100),
+                            ],
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-              Positioned(
-              left: 0, right: 0, bottom: 0,
-              child: SkolarBottomNavBar(
-                currentIndex: _currentNav,
-                onTap: (i) => setState(() => _currentNav = i),
-              ),
-              ),
-            ],
-          ),
+            ),
+            Positioned(
+            left: 0, right: 0, bottom: 0,
+            child: SkolarBottomNavBar(
+              currentIndex: _currentNav,
+              onTap: (i) => setState(() => _currentNav = i),
+            ),
+            ),
+          ],
         ),
       );
   }

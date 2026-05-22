@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:nova/core/theme/app_static_mesh_theme.dart';
 
 /// A reusable background widget that creates a moody, mesh-gradient effect
 /// with purple and teal glows as seen in the reference image.
@@ -11,7 +12,7 @@ class GlassBackground extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF030306), // Base dark background
+      backgroundColor: AppStaticMeshTheme.background, // Base dark background
       body: Stack(
         children: [
           // 1. Top-Left Purple Glow
@@ -20,7 +21,7 @@ class GlassBackground extends StatelessWidget {
             left: -120,
             child: _GlowBlob(
               size: 450,
-              color: const Color(0xFF5E1B89).withOpacity(0.55),
+              color: AppStaticMeshTheme.purple.withOpacity(0.55),
             ),
           ),
 
@@ -30,7 +31,7 @@ class GlassBackground extends StatelessWidget {
             right: -300,
             child: _GlowBlob(
               size: 500,
-              color: const Color(0xFF3416E2).withOpacity(0.4),
+              color: AppStaticMeshTheme.deepBlue.withOpacity(0.4),
             ),
           ),
 
@@ -40,7 +41,7 @@ class GlassBackground extends StatelessWidget {
             left: -50,
             child: _GlowBlob(
               size: 400,
-              color: const Color(0xFF00D4FF).withOpacity(0.3),
+              color: AppStaticMeshTheme.lightblue.withOpacity(0.3),
             ),
           ),
 

@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:nova/core/routing/app_routes.dart';
 import 'package:nova/core/theme/app_theme.dart';
+import 'package:nova/core/widgets/glass_background.dart';
 import 'package:nova/features/auth/presentation/widgets/mascot_state.dart';
 import 'package:nova/features/auth/presentation/widgets/nova_mascot.dart';
 import 'package:nova/features/auth/presentation/widgets/reg_widget.dart';
@@ -71,7 +74,7 @@ class _AuthScreenState extends State<AuthScreen>
     }
   }
 
-  @override
+  
   Widget build(BuildContext context) {
     // ── KEY FIX: Render SpaceBackground outside the Scaffold entirely,
     // using a top-level Stack anchored to the full screen via MediaQuery size.
@@ -84,9 +87,9 @@ class _AuthScreenState extends State<AuthScreen>
         SizedBox(
           width: screenSize.width,
           height: screenSize.height,
-          child: const SpaceBackground(child: SizedBox.expand()),
+          child: SpaceBackground(child: SizedBox.expand()),
         ),
-  
+      
         // ── Layer 1: The actual Scaffold (transparent) ──
         Scaffold(
       resizeToAvoidBottomInset: false,
@@ -96,30 +99,19 @@ class _AuthScreenState extends State<AuthScreen>
           bottom: false,
           child: SingleChildScrollView(
             physics: const BouncingScrollPhysics(),
-            // ── KEY FIX 2: Dynamically pad the bottom so content scrolls above
-            // the keyboard. MediaQuery.viewInsets.bottom is 0 when keyboard is
-            // hidden and equals keyboard height when visible.
             padding: EdgeInsets.fromLTRB(
               24,
               16,
               24,
-              // viewInsets is still valid here — it comes from the inner
-              // MediaQuery which the Scaffold provides, but since
-              // resizeToAvoidBottomInset: false the Scaffold itself won't
-              // shrink — only this padding value changes.
               MediaQuery.of(context).viewInsets.bottom + 32,
             ),
             child: Column(
               children: [
-                // ── KEY FIX 3: Mascot lives INSIDE the scroll view, directly
-                // above the card. They scroll together as one unit, so they
-                // never separate. The mascot overlaps the card via a Stack.
+                
                 Stack(
                   clipBehavior: Clip.none,
                   alignment: Alignment.topCenter,
                   children: [
-                    // ── Auth Card ──────────────────────────────────────────
-                    // Top padding creates the "hole" for the mascot to sit in
                     Padding(
                       padding: const EdgeInsets.only(top: _mascotAboveCard),
                       child: Container(
@@ -197,7 +189,7 @@ class _AuthScreenState extends State<AuthScreen>
                         ),
                       ),
                     ),
-
+    
                     // ── Mascot — sits on top of the card, centred ──────────
                     // Positioned at the very top of the Stack, which aligns it
                     // to straddle the card's top edge via the Padding above.
@@ -213,7 +205,26 @@ class _AuthScreenState extends State<AuthScreen>
             ),
           ),
         ),
+        
       ),
+      Positioned(
+          top: MediaQuery.of(context).padding.top + 8,
+          right: 16,
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.black38,
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white24),
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.dashboard_rounded, color: Colors.white),
+              tooltip: 'Dev Shortcut: Dashboard',
+              onPressed: () {
+                Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
+              },
+            ),
+          ),
+        )
       ],
     );
   }

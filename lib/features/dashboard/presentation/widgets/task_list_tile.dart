@@ -2,55 +2,60 @@ import 'package:flutter/material.dart';
 import 'package:nova/core/theme/app_theme.dart';
 import 'package:nova/features/analytics/domain/entities/analytics_entity.dart';
 
-
-/// Renders a single task row: title, stacked avatar circles, due date.
+/// Renders a single task as a clean, independent sub-box.
+/// Designed to live seamlessly inside a unified parent card structure.
 class TaskListTile extends StatelessWidget {
   final TaskItem task;
-  final bool showDivider;
+  final bool showDivider; // Maintained for signature compatibility, unused here
 
   const TaskListTile({
     super.key,
     required this.task,
-    this.showDivider = true,
+    this.showDivider = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      task.title,
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            color: AppTheme.textPrimary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                    ),
-                    const SizedBox(height: 8),
-                    _AvatarStack(avatars: task.assigneeAvatars),
-                  ],
-                ),
-              ),
-              Text(
-                task.dueDate,
-                style: Theme.of(context)
-                    .textTheme
-                    .bodySmall
-                    ?.copyWith(color: AppTheme.textSecondary),
-              ),
-            ],
-          ),
+    return Container(
+      // Soft bottom margin to cleanly separate the sub-boxes
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        // High-end subtle transparent tint to contrast against the parent card background
+        color: Colors.white.withOpacity(0.03),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.05),
+          width: 1,
         ),
-        if (showDivider)
-          Divider(color: AppTheme.divider, height: 1, thickness: 1),
-      ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  task.title,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        color: AppTheme.textPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+                const SizedBox(height: 10),
+                _AvatarStack(avatars: task.assigneeAvatars),
+              ],
+            ),
+          ),
+          Text(
+            task.dueDate,
+            style: Theme.of(context)
+                .textTheme
+                .bodySmall
+                ?.copyWith(color: AppTheme.textSecondary),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -58,15 +63,15 @@ class TaskListTile extends StatelessWidget {
 /// Stacked avatar circles (overlapping, like the mockup).
 class _AvatarStack extends StatelessWidget {
   final List<String> avatars;
-  static const double _size = 28;
-  static const double _overlap = 10;
+  static const double _size = 26;
+  static const double _overlap = 16;
 
   const _AvatarStack({required this.avatars});
 
   @override
   Widget build(BuildContext context) {
     if (avatars.isEmpty) return const SizedBox.shrink();
-    final count = avatars.length.clamp(0, 4); // max 4 shown
+    final count = avatars.length.clamp(0, 4);
     final totalWidth = _size + (_overlap * (count - 1));
 
     return SizedBox(
@@ -87,23 +92,20 @@ class _AvatarStack extends StatelessWidget {
 class _Avatar extends StatelessWidget {
   final String label;
   final int index;
-  static const _size = 28.0;
+  static const _size = 26.0;
 
-  // Cycling colors for variety, matching the dark mockup aesthetic
   static const _colors = [
-    Color(0xFF4A90D9),
-    Color(0xFF7B68EE),
-    Color(0xFF50C878),
-    Color(0xFFFF8C69),
+    Color(0xFF9333EA), // Orchid Purple
+    Color(0xFF06B6D4), // Electric Cyan
+    Color(0xFF3B82F6), // Digital Blue
+    Color(0xFFFBBF24), // Amber Gold
   ];
 
   const _Avatar({required this.label, required this.index});
 
   @override
   Widget build(BuildContext context) {
-    // label can be an initial like "A" or a full name — show first char
-    final initial =
-        label.isNotEmpty ? label[0].toUpperCase() : '?';
+    final initial = label.isNotEmpty ? label[0].toUpperCase() : '?';
     final color = _colors[index % _colors.length];
 
     return Container(
@@ -119,7 +121,7 @@ class _Avatar extends StatelessWidget {
         initial,
         style: const TextStyle(
           color: Colors.white,
-          fontSize: 11,
+          fontSize: 10,
           fontWeight: FontWeight.bold,
         ),
       ),

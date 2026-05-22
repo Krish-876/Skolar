@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:nova/core/theme/app_theme.dart';
 // import 'package:nova/core/theme/app_theme.dart';
-import 'package:nova/core/widgets/feed_gradient.dart';
+import 'package:nova/core/widgets/glass_background.dart';
 import '../providers/feed_provider.dart';
 import '../providers/feed_sort_option.dart';
 import '../widgets/feed_colors.dart';
 import '../widgets/feed_post_card.dart';
 import '../widgets/feed_sort_sheet.dart';
-import '../widgets/generate_sheet.dart';
+// import '../widgets/generate_sheet.dart';
 
 class FeedPage extends ConsumerWidget {
   const FeedPage({super.key});
@@ -18,7 +20,7 @@ class FeedPage extends ConsumerWidget {
     final sortOption = ref.watch(feedSortProvider);
     final sorted = ref.watch(sortedFeedProvider); // ← cached, no re-sort on rebuild
 
-    return GlassBackgroundFeed(
+    return GlassBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
          extendBody: true, 
@@ -52,7 +54,6 @@ class FeedPage extends ConsumerWidget {
             ],
           ),
         ),
-        // bottomNavigationBar: const _BottomNav(),
       ),
     );
   }
@@ -67,26 +68,24 @@ class _TopBar extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
       child: Row(
         children: [
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'Skolar',
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.deepOrange,
-                    fontFamily: 'DM Sans',
+                  style: GoogleFonts.googleSans(
+                    fontSize: 35,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.onBackground,
                   ),
                 ),
-                SizedBox(height: 1),
+                const SizedBox(height: 1),
                 Text(
                   'BITS Pilani · Hyderabad',
-                  style: TextStyle(
+                  style: GoogleFonts.googleSans(
                     fontSize: 11,
-                    color: FeedColors.textHint,
-                    fontFamily: 'DM Sans',
+                    color: AppTheme.textGradBegin.withOpacity(0.4),
                   ),
                 ),
               ],
@@ -213,146 +212,6 @@ class _AnimatedCardState extends State<_AnimatedCard>
     return FadeTransition(
       opacity: _opacity,
       child: SlideTransition(position: _slide, child: widget.child),
-    );
-  }
-}
-
-// ── Bottom nav ────────────────────────────────────────────────────────────────
-
-class _BottomNav extends StatefulWidget {
-  const _BottomNav();
-
-  @override
-  State<_BottomNav> createState() => _BottomNavState();
-}
-
-class _BottomNavState extends State<_BottomNav> {
-  int _current = 1;
-
-  final _items = const [
-    _NavItem(icon: Icons.home_outlined, label: 'Home'),
-    _NavItem(icon: Icons.view_list_rounded, label: 'Feed'),
-    _NavItem(icon: null, label: 'Generate'),
-    _NavItem(icon: Icons.emoji_events_outlined, label: 'Ranks'),
-    _NavItem(icon: Icons.person_outline_rounded, label: 'Profile'),
-  ];
-
-  void _onTap(int index) {
-    if (index == 2) {
-      GenerateSheet.show(context);
-      return;
-    }
-    setState(() => _current = index);
-    // TODO: context.go(AppRoutes.xxx) for each index
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: FeedColors.navBg,
-      child: SafeArea(
-        top: false,
-        child: SizedBox(
-          height: 60,
-          child: Row(
-            children: List.generate(_items.length, (i) {
-              if (i == 2) return _GenerateNavItem(onTap: () => _onTap(2));
-              return _NavItemWidget(
-                item: _items[i],
-                active: _current == i,
-                onTap: () => _onTap(i),
-              );
-            }),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _NavItem {
-  final IconData? icon;
-  final String label;
-  const _NavItem({required this.icon, required this.label});
-}
-
-class _NavItemWidget extends StatelessWidget {
-  final _NavItem item;
-  final bool active;
-  final VoidCallback onTap;
-  const _NavItemWidget(
-      {required this.item, required this.active, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        behavior: HitTestBehavior.opaque,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              item.icon,
-              size: 22,
-              color: active ? FeedColors.navActive : FeedColors.navInactive,
-            ),
-            const SizedBox(height: 3),
-            Text(
-              item.label,
-              style: TextStyle(
-                fontSize: 10,
-                color: active ? FeedColors.navActive : FeedColors.navInactive,
-                fontFamily: 'DM Sans',
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _GenerateNavItem extends StatelessWidget {
-  final VoidCallback onTap;
-  const _GenerateNavItem({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        behavior: HitTestBehavior.opaque,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: FeedColors.genRingBg,
-                shape: BoxShape.circle,
-                border:
-                    Border.all(color: FeedColors.genRingBorder, width: 0.5),
-              ),
-              child: const Icon(
-                Icons.auto_awesome_rounded,
-                size: 20,
-                color: FeedColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 3),
-            const Text(
-              'Generate',
-              style: TextStyle(
-                fontSize: 10,
-                color: FeedColors.navInactive,
-                fontFamily: 'DM Sans',
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

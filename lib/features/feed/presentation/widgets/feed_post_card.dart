@@ -83,9 +83,9 @@ class _FeedPostCardState extends ConsumerState<FeedPostCard>
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        gradient: AppTheme.surfaceGradient,
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.orange, width: 0.25),
+        border: Border.all(color: AppTheme.dividerColor, width: 0.25),
       ),
       padding: const EdgeInsets.fromLTRB(13, 13, 13, 28),
       child: Column(

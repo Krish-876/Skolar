@@ -1,6 +1,9 @@
 import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
 import 'package:nova/features/auth/presentation/pages/auth_pages.dart';
+import 'package:nova/features/colleges/presentation/pages/colleges_pages.dart';
+import 'package:nova/features/dashboard/presentation/pages/dashboard_page.dart';
+import 'package:nova/features/profile/presentation/pages/profile_page2.dart';
 
 /// Application routes
 class AppRoutes {
@@ -60,6 +63,25 @@ final goRouterProvider = GoRouter(
     GoRoute(
       path: AppRoutes.profile,
       builder: (context, state) => const SizedBox(),
+    ),
+    // Main routes
+    GoRoute(
+      path: AppRoutes.dashboard,
+      builder: (context, state) => const DashboardPage(),
+    ),
+    GoRoute(
+      path: AppRoutes.colleges,
+      builder: (context, state) => const CollegesPage(),
+      routes: [
+        GoRoute(
+          path: AppRoutes.collegeDetail,
+          builder: (context, state) => const SizedBox(),
+        ),
+      ],
+    ),
+    GoRoute(
+      path: AppRoutes.profile,
+      builder: (context, state) => const SkolarDashboardApp(),
     ),
   ],
 );

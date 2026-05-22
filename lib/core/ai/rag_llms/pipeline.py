@@ -1,10 +1,3 @@
-"""
-pipeline.py — Skolar AI Pipeline
-Place this in: nova/lib/core/ai/rag_llms/
-
-All 5 steps of the DICL question generation pipeline as clean callable functions.
-"""
-
 import os
 os.environ["OPENBLAS_NUM_THREADS"] = "1"
 os.environ["OMP_NUM_THREADS"] = "1"
@@ -16,6 +9,7 @@ import pdfplumber
 from sentence_transformers import SentenceTransformer
 from groq import Groq
 from dotenv import load_dotenv
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 load_dotenv()
 
@@ -70,11 +64,22 @@ def extract_questions_from_text(raw_text: str, subject: str, year: int, exam_typ
     all_questions = []
 
     for chunk in chunks:
-        prompt = f"""Extract all exam questions from the following text.
+        prompt = f"""You are extracting exam questions from a scanned question paper.
+
+Rules:
+- Extract ONLY complete, standalone questions a student must answer
+- NEVER extract MCQ options (like "A) ...", "B) ...", answer choices)
+- NEVER extract answers, solutions, or marking schemes
+- For MCQ questions, include the full question stem AND all its options together in question_text
+- If you see "Q1.", "Q.1", "1.", treat it as a question start
+- Ignore headers, instructions, college names, dates, and page numbers
+- marks: extract the number if shown (e.g. "[5]", "(5 marks)"), else estimate based on question type
+- question_type: mcq if it has options A/B/C/D, numerical if it asks to calculate a number, long_answer if it requires explanation (>5 marks), else short_answer
+
 Return ONLY a JSON array. No markdown, no backticks, no explanation.
-Each item must have these fields:
-- question_text (string)
-- marks (integer, estimate if not stated)
+Each item must have:
+- question_text (string) — complete question including options if MCQ
+- marks (integer)
 - question_type (one of: mcq, short_answer, long_answer, numerical)
 
 Text:
@@ -97,6 +102,7 @@ Text:
                 q["subject"]   = subject
                 q["year"]      = year
                 q["exam_type"] = exam_type
+                q["marks"]     = int(round(q.get("marks", 0)))
             all_questions.extend(parsed)
         except (json.JSONDecodeError, Exception):
             # Skip bad chunks silently — LLM sometimes returns nothing for non-question pages
@@ -149,7 +155,7 @@ def mmr(
 
     return selected
 
-# ── Step 5 — Question Generation ─────────────────────────────────────────────
+# ── Step 5 — Open-ended Question Generation ───────────────────────────────────
 
 def generate_question(subject: str, examples: list[dict]) -> str:
     """Generate one new original question using diverse PYQ examples as context."""
@@ -176,6 +182,71 @@ Return ONLY the question text. No explanation, no preamble, no label."""
     )
     return response.choices[0].message.content.strip()
 
+# ── Step 5b — MCQ Generation ──────────────────────────────────────────────────
+
+def generate_mcq(subject: str, examples: list[dict]) -> dict:
+    """
+    Generate one new MCQ question with 4 options, correct index, and marks.
+    Returns a dict matching the QuizQuestion shape expected by Flutter.
+    Raises ValueError if the LLM response cannot be parsed after retries.
+    """
+    client = get_groq_client()
+
+    examples_text = "\n\n".join(
+        f"Example {i+1} ({q.get('marks', '?')} marks, {q.get('question_type', 'unknown')}):\n{q['question_text']}"
+        for i, q in enumerate(examples)
+    )
+
+    prompt = f"""You are an exam MCQ generator for {subject}.
+Below are example questions from previous exams at this college.
+Use them to calibrate the difficulty and topic coverage.
+
+{examples_text}
+
+Generate ONE new original MCQ question at a similar difficulty level.
+
+Return ONLY a valid JSON object with exactly these fields — no markdown, no backticks, no extra text:
+{{
+  "question": "<full question text>",
+  "option_a": "<option text>",
+  "option_b": "<option text>",
+  "option_c": "<option text>",
+  "option_d": "<option text>",
+  "correct_index": <0, 1, 2, or 3 — 0=A, 1=B, 2=C, 3=D>,
+  "marks": <integer, typically 1 or 2>,
+  "subject": "{subject}"
+}}"""
+
+    response = client.chat.completions.create(
+        model=GROQ_MODEL,
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.8,
+    )
+    raw = response.choices[0].message.content.strip()
+
+    # Strip accidental markdown fences
+    if raw.startswith("```"):
+        raw = raw.split("```")[1]
+        if raw.startswith("json"):
+            raw = raw[4:]
+    raw = raw.strip()
+
+    parsed = json.loads(raw)
+
+    # Normalise into the shape Flutter's QuizQuestion expects
+    return {
+        "question":      parsed["question"],
+        "options": [
+            parsed["option_a"],
+            parsed["option_b"],
+            parsed["option_c"],
+            parsed["option_d"],
+        ],
+        "correct_index": int(parsed["correct_index"]),
+        "subject":       parsed.get("subject", subject),
+        "marks":         int(parsed.get("marks", 1)),
+    }
+
 # ── Main pipeline entry points ────────────────────────────────────────────────
 
 def load_bank_and_embeddings() -> tuple[list[dict], np.ndarray]:
@@ -194,12 +265,11 @@ def save_bank_and_embeddings(questions: list[dict], embeddings: np.ndarray):
 
 def run_generate(subject: str, year_range: tuple[int, int] | None = None, k: int = 5) -> str:
     """
-    Full pipeline: load bank → filter → embed query → MMR → generate.
+    Full pipeline: load bank → filter → embed query → MMR → generate open-ended question.
     Returns the generated question string.
     """
     all_questions, embeddings = load_bank_and_embeddings()
 
-    # Filter by year range if provided
     if year_range:
         indices = [
             i for i, q in enumerate(all_questions)
@@ -214,7 +284,6 @@ def run_generate(subject: str, year_range: tuple[int, int] | None = None, k: int
     if not filtered_questions:
         raise ValueError("No questions found for the given filters.")
 
-    # Use subject as query for MMR
     model = get_embed_model()
     query_embedding = model.encode([subject])[0]
 
@@ -222,12 +291,72 @@ def run_generate(subject: str, year_range: tuple[int, int] | None = None, k: int
     return generate_question(subject, examples)
 
 
+def run_generate_mcq_batch(
+    subject: str,
+    count: int = 5,
+    year_range: tuple[int, int] | None = None,
+    k: int = 5,
+) -> list[dict]:
+    """
+    Generate `count` MCQ questions in parallel.
+
+    Each question gets its own independent MMR call so questions are topically
+    diverse from each other (different random seeds via temperature=0.8 on the
+    LLM side).  Uses a ThreadPoolExecutor because the Groq SDK is synchronous.
+
+    Returns a list of dicts, each matching Flutter's QuizQuestion shape:
+        { question, options: [a,b,c,d], correct_index, subject, marks }
+
+    Raises ValueError if no questions are found for the given filters.
+    Silently drops any individual questions that fail to parse (LLM hiccup),
+    so the returned list may be shorter than `count` — the caller handles this.
+    """
+    all_questions, embeddings = load_bank_and_embeddings()
+
+    if year_range:
+        indices = [
+            i for i, q in enumerate(all_questions)
+            if year_range[0] <= q.get("year", 0) <= year_range[1]
+        ]
+        filtered_questions  = [all_questions[i] for i in indices]
+        filtered_embeddings = embeddings[indices]
+    else:
+        filtered_questions  = all_questions
+        filtered_embeddings = embeddings
+
+    if not filtered_questions:
+        raise ValueError("No questions found for the given filters.")
+
+    model = get_embed_model()
+    query_embedding = model.encode([subject])[0]
+
+    def _generate_one(_: int) -> dict | None:
+        """Single MCQ generation task — runs inside a thread."""
+        try:
+            examples = mmr(query_embedding, filtered_embeddings, filtered_questions, k=k)
+            return generate_mcq(subject, examples)
+        except Exception:
+            return None
+
+    results: list[dict] = []
+    # Cap parallelism to avoid hammering the Groq rate limit
+    max_workers = min(count, 5)
+    with ThreadPoolExecutor(max_workers=max_workers) as pool:
+        futures = [pool.submit(_generate_one, i) for i in range(count)]
+        for future in as_completed(futures):
+            result = future.result()
+            if result is not None:
+                results.append(result)
+
+    return results
+
+
 def run_upload_pyq(pdf_bytes: bytes, subject: str, year: int, exam_type: str) -> dict:
     """
     Full pipeline: parse PDF → extract questions → embed → append to bank.
     Returns a summary of what was added.
     """
-    raw_text     = extract_raw_text(pdf_bytes)
+    raw_text      = extract_raw_text(pdf_bytes)
     new_questions = extract_questions_from_text(raw_text, subject, year, exam_type)
 
     if not new_questions:
@@ -242,7 +371,7 @@ def run_upload_pyq(pdf_bytes: bytes, subject: str, year: int, exam_type: str) ->
     save_bank_and_embeddings(all_questions, all_embeddings)
 
     return {
-        "added":       len(new_questions),
-        "total":       len(all_questions),
+        "added":         len(new_questions),
+        "total":         len(all_questions),
         "new_questions": [q["question_text"][:80] + "..." for q in new_questions],
     }

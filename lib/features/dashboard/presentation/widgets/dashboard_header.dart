@@ -26,7 +26,7 @@ class DashboardHeader extends ConsumerWidget {
             child: Center(
               child: Text(
                 user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
-                style: GoogleFonts.manrope(
+                style: GoogleFonts.googleSans(
                   color: AppTheme.onPrimary,
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -44,7 +44,7 @@ class DashboardHeader extends ConsumerWidget {
               children: [
                 Text(
                   'Welcome back',
-                  style: GoogleFonts.manrope(
+                  style: GoogleFonts.googleSans(
                     color: AppTheme.textSecondary,
                     fontSize: 13,
                     fontWeight: FontWeight.w400,

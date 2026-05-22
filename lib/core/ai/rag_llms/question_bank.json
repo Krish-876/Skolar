@@ -470,5 +470,229 @@
     "subject": "AI",
     "year": 2024,
     "exam_type": "compre"
+  },
+  {
+    "question_text": "Group the given data into two groups using an unsupervised algorithm up to two iterations using euclidean distance.",
+    "marks": 15,
+    "question_type": "long_answer",
+    "subject": "artificial intelligence",
+    "year": 2025,
+    "exam_type": "compre"
+  },
+  {
+    "question_text": "For the given data from a retail company predict the monthly sales revenue for size 2800 sq ft and 12 employees using KNN based on three nearest neighbors using Euclidean distance.",
+    "marks": 10,
+    "question_type": "numerical",
+    "subject": "artificial intelligence",
+    "year": 2025,
+    "exam_type": "compre"
+  },
+  {
+    "question_text": "Build a decision tree using the ID3 algorithm for the given training data in the table and predict the class of the following new example: age<=30, income=medium, student=yes, credit-rating=fair.",
+    "marks": 20,
+    "question_type": "long_answer",
+    "subject": "artificial intelligence",
+    "year": 2025,
+    "exam_type": "compre"
+  },
+  {
+    "question_text": "For the given confusion matrix compute accuracy, precision and recall",
+    "marks": 5,
+    "question_type": "numerical",
+    "subject": "artificial intelligence",
+    "year": 2025,
+    "exam_type": "compre"
+  },
+  {
+    "question_text": "Classify the customer feedback using Naive Bayes for the given new data point of a new customer feedback has a Sentiment Score of 0.7 and Contains Keyword as No.",
+    "marks": 10,
+    "question_type": "long_answer",
+    "subject": "artificial intelligence",
+    "year": 2025,
+    "exam_type": "compre"
+  },
+  {
+    "question_text": "Using a linear regression, perform (a) least square error fit and (b) gradient descent 1 iteration with LR 0.05 to predicted value of y when x=6.",
+    "marks": 20,
+    "question_type": "long_answer",
+    "subject": "artificial intelligence",
+    "year": 2025,
+    "exam_type": "compre"
+  },
+  {
+    "question_text": "Given a binary classifier uses a logistic regression model, perform one step of gradient ascent, using learning rate 0.1, starting from the given parameters.",
+    "marks": 10,
+    "question_type": "numerical",
+    "subject": "artificial intelligence",
+    "year": 2025,
+    "exam_type": "compre"
+  },
+  {
+    "question_text": "With least square error fit use the given data to predict the value for x1=1, x2=2.",
+    "marks": 10,
+    "question_type": "numerical",
+    "subject": "artificial intelligence",
+    "year": 2025,
+    "exam_type": "compre"
+  },
+  {
+    "question_text": "For the given set of data build an expert system rule base to assist healthcare providers in diagnosing common diseases by analyzing patient symptoms and providing possible diagnoses along with recommendations for further tests or treatments.",
+    "marks": 10,
+    "question_type": "long_answer",
+    "subject": "artificial intelligence",
+    "year": 2025,
+    "exam_type": "compre"
+  },
+  {
+    "question_text": "Group the data into 4 unequal-width and overlapping bins and smooth by boundary and mean for the given weekly sales data.",
+    "marks": 10,
+    "question_type": "long_answer",
+    "subject": "artificial intelligence",
+    "year": 2025,
+    "exam_type": "compre"
+  },
+  {
+    "question_text": "Given the initial state of 4 queens, show the steps for the hill climbing algorithm until it terminates.",
+    "marks": 15,
+    "question_type": "long_answer",
+    "subject": "artificial intelligence",
+    "year": 2025,
+    "exam_type": "compre"
+  },
+  {
+    "question_text": "Suppose a genetic algorithm uses chromosomes of the form x = abcdefgh with a fixed length of eight genes. Each gene can be any digit between 0 and 9. Let the fitness of individual x be calculated as: f(x) = (a+b)\u2212(c+d)+(e+f)\u2212(g+h), and let the initial population consist of four individuals with the following chromosomes: x1 = 65413532 x2 = 87126601 x3 = 23921285 x4 = 41852094",
+    "marks": 20,
+    "question_type": "long_answer",
+    "subject": "artificial intelligence",
+    "year": 2025,
+    "exam_type": "midsem"
+  },
+  {
+    "question_text": "Use the Minimax algorithm to compute the minimax value at each node for the game tree below.",
+    "marks": 10,
+    "question_type": "long_answer",
+    "subject": "artificial intelligence",
+    "year": 2025,
+    "exam_type": "midsem"
+  },
+  {
+    "question_text": "Use the Alpha-Beta pruning algorithm to prune the game tree in Problem 1 (a) assuming child nodes are visited from left to right.",
+    "marks": 10,
+    "question_type": "long_answer",
+    "subject": "artificial intelligence",
+    "year": 2025,
+    "exam_type": "midsem"
+  },
+  {
+    "question_text": "What is the correct translation of the following statement into mathematical logic? \u201cSome real numbers are rational\u201d",
+    "marks": 2.5,
+    "question_type": "mcq",
+    "subject": "artificial intelligence",
+    "year": 2025,
+    "exam_type": "midsem"
+  },
+  {
+    "question_text": "Which one of the following options is CORRECT given three positive integers x, y and z, and a predicate? P(x) = \u00ac(x=1)\u2227\u2200y(\u2203z(x=y*z)\u21d2(y=x)\u2228(y=1))",
+    "marks": 2.5,
+    "question_type": "mcq",
+    "subject": "artificial intelligence",
+    "year": 2025,
+    "exam_type": "midsem"
+  },
+  {
+    "question_text": "Suppose the predicate F(x, y, t) is used to represent the statement that person x can fool person y at time t. which one of the statements below expresses best the meaning of the formula \u2200x\u2203y\u2203t(\u00acF(x, y, t))?",
+    "marks": 2.5,
+    "question_type": "mcq",
+    "subject": "artificial intelligence",
+    "year": 2025,
+    "exam_type": "midsem"
+  },
+  {
+    "question_text": "Which one of the following is the most appropriate logical formula to represent the statement? 'Gold and silver ornaments are precious'.",
+    "marks": 2.5,
+    "question_type": "mcq",
+    "subject": "artificial intelligence",
+    "year": 2025,
+    "exam_type": "midsem"
+  },
+  {
+    "question_text": "Tick mark the correct order for the algorithm implemented on the given graph consider 0 as root node. (a) DFS",
+    "marks": 2.5,
+    "question_type": "mcq",
+    "subject": "artificial intelligence",
+    "year": 2025,
+    "exam_type": "midsem"
+  },
+  {
+    "question_text": "Tick mark the correct order for the algorithm implemented on the given graph consider 0 as root node. (b) BFS",
+    "marks": 2.5,
+    "question_type": "mcq",
+    "subject": "artificial intelligence",
+    "year": 2025,
+    "exam_type": "midsem"
+  },
+  {
+    "question_text": "Tick mark the correct order for the algorithm implemented on the given graph consider 0 as root node. (c) Iterative Deepening Depth First Search at level 2",
+    "marks": 2.5,
+    "question_type": "mcq",
+    "subject": "artificial intelligence",
+    "year": 2025,
+    "exam_type": "midsem"
+  },
+  {
+    "question_text": "Tick mark the correct order for the algorithm implemented on the given graph consider 0 as root node. (d) Depth limited search D=1",
+    "marks": 2.5,
+    "question_type": "mcq",
+    "subject": "artificial intelligence",
+    "year": 2025,
+    "exam_type": "midsem"
+  },
+  {
+    "question_text": "Imagine that a student wants to hand out fliers about an upcoming programming contest. The student wants to visit the Memorial Union (M), Wisconsin Institute of Discovery (W), Computer Sciences Building (S), and Engineering Hall (E) to deliver the fliers. The goal is to find a tour as short as possible.",
+    "marks": 10,
+    "question_type": "long_answer",
+    "subject": "artificial intelligence",
+    "year": 2025,
+    "exam_type": "midsem"
+  },
+  {
+    "question_text": "Compute total distance of current state.",
+    "marks": 2,
+    "question_type": "numerical",
+    "subject": "artificial intelligence",
+    "year": 2025,
+    "exam_type": "midsem"
+  },
+  {
+    "question_text": "What are the possible neighboring states of <W-M-E-S> and the total distances?",
+    "marks": 3,
+    "question_type": "long_answer",
+    "subject": "artificial intelligence",
+    "year": 2025,
+    "exam_type": "midsem"
+  },
+  {
+    "question_text": "What is the next state reached by hill-climbing? Or explain why there is no next state, if there isn\u2019t one?",
+    "marks": 3,
+    "question_type": "short_answer",
+    "subject": "artificial intelligence",
+    "year": 2025,
+    "exam_type": "midsem"
+  },
+  {
+    "question_text": "If c) had a next state iterate further until the algorithm terminates and list out the set of states from initial state to final state.",
+    "marks": 4,
+    "question_type": "long_answer",
+    "subject": "artificial intelligence",
+    "year": 2025,
+    "exam_type": "midsem"
+  },
+  {
+    "question_text": "What is the total distance of the final state?",
+    "marks": 3,
+    "question_type": "numerical",
+    "subject": "artificial intelligence",
+    "year": 2025,
+    "exam_type": "midsem"
   }
 ]

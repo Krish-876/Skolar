@@ -41,221 +41,293 @@ login_page.dart
 class ClassName {
   // 1. Constants
   static const String _constant = 'value';
-  
+
   // 2. Static variables
   static late SomeClass _instance;
-  
+
   // 3. Instance variables
   final String name;
   late String data;
   String? optional;
-  
+
   // 4. Constructors
   const ClassName(this.name);
-  
+
   factory ClassName.empty() => ClassName('');
-  
+
   // 5. Getters
   String get fullData => '$name: $data';
-  
+
   // 6. Methods (public first, then private)
   void publicMethod() {}
   void _privateMethod() {}
 }
 ```
 
+---
+
 ### Architecture Guidelines
 
 #### Domain Layer (Pure Dart)
+
 - No Flutter imports
-- No external dependencies except Freezed
+- No external dependencies except `freezed_annotation`
 - Contains only business logic and entity definitions
-- Always use Either for error handling
+- Always use `Either` for error handling in repositories
 
 ```dart
 // ✓ Good
-class GetUserUseCase extends UseCase<User, String> {
-  final UserRepository repository;
-  
-  GetUserUseCase(this.repository);
-  
-  @override
-  Future<User> call(String userId) async {
-    final result = await repository.getUser(userId);
-    return result.fold(
-      (failure) => throw failure,
-      (user) => user,
-    );
-  }
+class GetFeedUseCase {
+  final FeedRepository repository;
+  GetFeedUseCase(this.repository);
+
+  Future<Either<Failure, List<FeedPostEntity>>> call() =>
+      repository.getFeed();
 }
 
-// ✗ Bad - using Either without folding
-@override
-Future<User> call(String userId) async {
-  return await repository.getUser(userId);
+// ✗ Bad - skipping Either, throwing raw exceptions
+Future<List<FeedPostEntity>> call() async {
+  return await repository.getFeed(); // Either ignored
 }
 ```
 
 #### Data Layer
-- Implement repositories defined in domain
-- Handle exceptions and convert to failures
-- Use DTOs for data transfer
-- Abstract external dependencies
+
+- Implement repository interfaces defined in domain
+- Catch all exceptions, convert to `Failure` types, return `Either`
+- Use DTOs (`@JsonSerializable`) for JSON parsing - never parse directly into domain entities
+- Convert DTOs to domain entities via `.toDomain()`
 
 ```dart
 // ✓ Good
-class UserRepositoryImpl implements UserRepository {
-  final UserRemoteDataSource remote;
-  final UserLocalDataSource local;
-  
-  UserRepositoryImpl({
-    required this.remote,
-    required this.local,
-  });
-  
+class FeedRepositoryImpl implements FeedRepository {
+  final FeedLocalDataSource _dataSource;
+  FeedRepositoryImpl(this._dataSource);
+
   @override
-  Future<Either<Failure, User>> getUser(String id) async {
+  Future<Either<Failure, List<FeedPostEntity>>> getFeed() async {
     try {
-      final dto = await remote.getUser(id);
-      final user = dto.toEntity();
-      await local.saveUser(user);
-      return Right(user);
+      final dtos = await _dataSource.getFeed();
+      return Right(dtos.map((d) => d.toDomain()).toList());
     } catch (e) {
-      return Left(ServerError(message: e.toString()));
+      return Left(ServerFailure(message: e.toString()));
     }
   }
 }
 
-// ✗ Bad - throwing exceptions instead of returning Either
+// ✗ Bad - throwing instead of returning Either
 @override
-Future<User> getUser(String id) async {
-  final dto = await remote.getUser(id);
-  return dto.toEntity();
+Future<List<FeedPostEntity>> getFeed() async {
+  return (await _dataSource.getFeed()).map((d) => d.toDomain()).toList();
 }
 ```
 
 #### Presentation Layer
-- Only Riverpod for state management
-- No business logic in widgets
-- Use providers for all state
-- Keep widgets pure and simple
+
+- Riverpod only for state management - no `setState` outside of animation controllers
+- No business logic in widgets - all logic lives in `AsyncNotifier` / `Notifier`
+- Use `AsyncNotifier` for async state (API calls, file reads); use `Notifier` for sync state
+- Keep widgets pure: they watch providers and render, nothing else
 
 ```dart
-// ✓ Good
-class UserPage extends ConsumerWidget {
-  const UserPage({Key? key}) : super(key: key);
-  
+// ✓ Good - ConsumerWidget watching an AsyncNotifier
+class FeedPage extends ConsumerWidget {
+  const FeedPage({super.key});
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final userAsync = ref.watch(userProvider);
-    
-    return userAsync.when(
-      data: (user) => UserView(user: user),
-      loading: () => const LoadingWidget(),
-      error: (err, st) => ErrorWidget(error: err.toString()),
+    final feedAsync = ref.watch(feedProvider);
+    return feedAsync.when(
+      data: (posts) => PostList(posts: posts),
+      loading: () => const CircularProgressIndicator(),
+      error: (e, _) => ErrorView(message: e.toString()),
     );
   }
 }
 
-// ✗ Bad - business logic in widget
+// ✗ Bad - FutureBuilder with logic in widget
 @override
 Widget build(BuildContext context) {
   return FutureBuilder(
-    future: getUserData(),
+    future: fetchPosts(),
     builder: (context, snapshot) {
-      // Complex business logic here
+      // business logic here - wrong layer
       return Container();
     },
   );
 }
 ```
 
+#### State Management Pattern
+
+Use `AsyncNotifier` (not the older `StateNotifier`) for all async state. This is the Riverpod 2.x standard used throughout this codebase.
+
+```dart
+// ✓ Correct - AsyncNotifier (Riverpod 2.x)
+class FeedNotifier extends AsyncNotifier<List<FeedPostEntity>> {
+  @override
+  Future<List<FeedPostEntity>> build() async {
+    final useCase = ref.watch(getFeedUseCaseProvider);
+    final result = await useCase();
+    return result.fold(
+      (failure) => throw Exception(failure.message),
+      (posts) => posts,
+    );
+  }
+
+  Future<void> refresh() async {
+    ref.invalidateSelf();
+    await future;
+  }
+}
+
+final feedProvider =
+    AsyncNotifierProvider<FeedNotifier, List<FeedPostEntity>>(
+  FeedNotifier.new,
+);
+
+// ✗ Outdated - StateNotifier (Riverpod 1.x, not used in this codebase)
+class FeedNotifier extends StateNotifier<FeedState> {
+  FeedNotifier() : super(const FeedState.initial());
+  // ...
+}
+```
+
+Use `Notifier` (sync) when state doesn't involve async operations:
+
+```dart
+// ✓ Correct - Notifier for sync state
+class MockTestNotifier extends Notifier<MockTestState> {
+  @override
+  MockTestState build() => const MockTestState();
+
+  void reset() => state = const MockTestState();
+}
+```
+
+---
+
+### Code Generation
+
+This project uses `build_runner` to generate `.freezed.dart` and `.g.dart` files.
+
+```bash
+# Standard build (use this normally)
+dart run build_runner build --delete-conflicting-outputs
+
+# Watch mode (use during active model work)
+dart run build_runner watch --delete-conflicting-outputs
+
+# Full clean + rebuild (use when things are broken)
+dart run build_runner clean
+dart run build_runner build --delete-conflicting-outputs
+```
+
+**When to run it:** after adding/modifying any `@freezed` class or `@JsonSerializable` DTO, and after any `git pull` that touched model files.
+
+**Rule:** domain entities use `@freezed`. DTOs use `@JsonSerializable` only. Never put `@freezed` on a DTO.
+
+---
+
 ### Code Quality
 
 #### Formatting
+
 ```bash
 dart format lib/
 ```
 
 #### Linting
+
 ```bash
 dart analyze lib/
 ```
 
 #### Testing
-- Minimum 80% coverage for domain/data layers
-- Unit test all usecases
+
+- Minimum 80% coverage for domain and data layers
+- Unit test all use cases
 - Mock all external dependencies
 
 ```dart
-// ✓ Good test
-test('LoginUseCase returns user on successful login', () async {
+// ✓ Good test structure
+test('GetFeedUseCase returns posts on success', () async {
   // Arrange
-  final mockRepo = MockAuthRepository();
-  final usecase = LoginUseCase(mockRepo);
-  
+  final mockRepo = MockFeedRepository();
+  final usecase = GetFeedUseCase(mockRepo);
+  when(mockRepo.getFeed()).thenAnswer((_) async => Right(fakePosts));
+
   // Act
-  final result = await usecase(LoginParams(
-    email: 'test@test.com',
-    password: 'password',
-  ));
-  
+  final result = await usecase();
+
   // Assert
-  expect(result, isA<AuthCredentials>());
+  expect(result.isRight(), true);
+  expect(result.getOrElse(() => []).length, fakePosts.length);
 });
 ```
+
+---
 
 ### Best Practices
 
-1. **Always use const** constructors when possible
-2. **Prefer immutability** - use Freezed for data classes
-3. **Keep functions small** - max 50 lines
-4. **Document complex logic** with comments
-5. **Use meaningful names** - avoid abbreviations
-6. **Handle errors explicitly** - no silent failures
-7. **Avoid nested futures** - use async/await
-8. **Test edge cases** - not just happy path
-9. **Keep dependencies explicit** - no global state
-10. **Use sealed classes** - for well-defined types
+1. **Always use `const`** constructors where possible
+2. **Prefer immutability** - use `@freezed` for domain entities
+3. **Keep functions small** - max ~50 lines
+4. **Document complex logic** with inline comments
+5. **Use meaningful names** - no abbreviations
+6. **Handle errors explicitly** - no silent failures, no empty `catch` blocks
+7. **Avoid nested futures** - use `async`/`await`
+8. **Test edge cases** - not just the happy path
+9. **Keep dependencies explicit** - inject via constructor, not global access
+10. **Dependency rule** - never import from a layer that's further out
+
+---
 
 ### Common Patterns
 
-#### Provider Pattern
-```dart
-final userProvider = FutureProvider<User>((ref) async {
-  final repository = ref.watch(userRepositoryProvider);
-  final result = await repository.getUser('123');
-  return result.fold(
-    (failure) => throw failure,
-    (user) => user,
-  );
-});
-```
+#### AsyncNotifier with use case
 
-#### StateNotifier Pattern
 ```dart
-final authProvider = StateNotifierProvider<AuthNotifier, AuthState>(
-  (ref) => AuthNotifier(
-    repository: ref.watch(authRepositoryProvider),
-  ),
+final exampleProvider =
+    AsyncNotifierProvider<ExampleNotifier, SomeEntity>(
+  ExampleNotifier.new,
 );
 
-class AuthNotifier extends StateNotifier<AuthState> {
-  final AuthRepository repository;
-  
-  AuthNotifier({required this.repository})
-    : super(const AuthState.initial());
-  
-  Future<void> login(String email, String password) async {
-    state = const AuthState.loading();
-    final result = await repository.login(email, password);
-    state = result.fold(
-      (failure) => AuthState.error(failure),
-      (credentials) => AuthState.authenticated(credentials),
+class ExampleNotifier extends AsyncNotifier<SomeEntity> {
+  @override
+  Future<SomeEntity> build() async {
+    final result = await ref.watch(someUseCaseProvider)();
+    return result.fold(
+      (failure) => throw Exception(failure.message),
+      (data) => data,
     );
   }
 }
 ```
+
+#### Derived provider (cached, no recompute on rebuild)
+
+```dart
+final sortedFeedProvider = Provider<List<FeedPostEntity>>((ref) {
+  final feedAsync = ref.watch(feedProvider);
+  final sort = ref.watch(feedSortProvider);
+  return feedAsync.maybeWhen(
+    data: (posts) => _sort(posts, sort),
+    orElse: () => [],
+  );
+});
+```
+
+#### Selective rebuild (only affected widget rebuilds)
+
+```dart
+// Only rebuilds when THIS post's vote state changes, not the whole list
+final upvoted = ref.watch(
+  upvotedPostsProvider.select((s) => s.contains(post.id)),
+);
+```
+
+---
 
 ### Commit Message Format
 
@@ -270,16 +342,17 @@ class AuthNotifier extends StateNotifier<AuthState> {
 Types: `feat`, `fix`, `refactor`, `test`, `docs`, `style`
 
 Example:
+
 ```
-feat: add exam prediction feature
+feat: add mock test generation via DICL pipeline
 
-- Implemented AI-powered exam prediction
-- Added prediction confidence scoring
-- Integrated with syllabus analysis
+- POST /generate-batch endpoint with parallel MCQ generation
+- MockTestNotifier with loading/error/publishing states
+- Auto-publish to community feed for college subjects
 
-Closes #123
+Closes #42
 ```
 
 ---
 
-**Key Rule**: Dependency rule always points inward. Never violate this.
+**Key Rule:** The dependency rule always points inward. Data depends on domain. Presentation depends on domain. Nothing depends on presentation or data directly. Never violate this.

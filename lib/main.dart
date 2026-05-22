@@ -4,8 +4,9 @@ import 'package:nova/features/analytics/presentation/pages/analytics_pages.dart'
 import 'package:nova/features/auth/presentation/pages/auth_pages.dart';
 import 'package:nova/features/colleges/presentation/pages/colleges_pages.dart';
 import 'package:nova/features/dashboard/presentation/pages/dashboard_pages.dart';
-import 'package:nova/features/exam_prediction/presentation/pages/exam_prediction_pages.dart';
+import 'package:nova/features/exam_prediction_with_bank/questions_feature/exam_prediction_pages.dart';
 import 'package:nova/features/feed/presentation/pages/feed_page.dart';
+import 'package:nova/features/mock_tests/presentation/pages/mock_tests_pages.dart';
 import 'package:nova/features/mock_tests/presentation/widgets/mock_tests_widgets.dart';
 import 'package:nova/features/onboarding/presentation/pages/onboarding_pages.dart';
 import 'package:nova/features/profile/presentation/pages/profile_pages1.dart';
@@ -13,6 +14,7 @@ import 'package:nova/features/profile/presentation/pages/profile_pages1.dart';
 // Entry point
 // ---------------------------------------------------------------------------
 import 'package:flutter/services.dart';
+import 'package:nova/space_record.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -82,9 +84,9 @@ abstract class AppRoutes {
   feed: (_) => const FeedPage(),         // ← add this
   colleges: (_) => const CollegesPage(),
   examPrediction: (_) => const ExamPredictionPage(),
-  mockTests: (_) => const MockTestsCard(title: 'Mock Tests'),
+  mockTests: (_) => const MockTestPage(),
   profile: (_) => const SkolarDashboardApp(),
-  pyqUpload: (_) => const _PlaceholderPage(title: 'PYQ Upload'),
+  pyqUpload: (_) => const SpaceRecordPage(),
   subjects: (_) => const _PlaceholderPage(title: 'Subjects'),
   syllabus: (_) => const _PlaceholderPage(title: 'Syllabus'),
 };

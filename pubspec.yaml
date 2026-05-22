@@ -47,11 +47,14 @@ dependencies:
   flutter_dotenv: ^5.1.0
   fl_chart: ^1.2.0
   google_fonts: ^8.1.0
+  file_picker: ^11.0.2
+  confetti: ^0.8.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
   
   # Code Generation
   build_runner: ^2.4.0
@@ -63,3 +66,9 @@ flutter:
   assets:
     - assets/images/
     - assets/data/
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: false
+  image_path: "assets/images/mascot.jpeg"
+  min_sdk_android: 21
