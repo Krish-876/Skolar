@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:nova/core/routing/app_routes.dart';
-import 'package:nova/core/theme/app_theme.dart';
-import 'package:nova/core/widgets/glass_background.dart';
-import 'package:nova/features/auth/presentation/widgets/space_background.dart'; // Using your GlassBackground file
+import 'package:Skolar/core/routing/app_routes.dart';
+import 'package:Skolar/core/theme/app_theme.dart';
+import 'package:Skolar/core/widgets/glass_background.dart';
+import 'package:Skolar/features/auth/presentation/widgets/space_background.dart'; // Using your GlassBackground file
 
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key});

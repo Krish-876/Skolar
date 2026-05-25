@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:nova/core/theme/app_theme.dart';
-import 'package:nova/features/dashboard/presentation/providers/dashboard_provider.dart';
-import 'package:nova/features/dashboard/presentation/widgets/animated_mesh_bg.dart';
-import 'package:nova/features/dashboard/presentation/widgets/dashboard_header.dart';
-import 'package:nova/features/dashboard/presentation/widgets/dashboard_section_header.dart';
-import 'package:nova/features/dashboard/presentation/widgets/donut_progress_chart.dart';
-import 'package:nova/features/dashboard/presentation/widgets/recent_activity_tile.dart';
-import 'package:nova/features/dashboard/presentation/widgets/task_list_tile.dart';
-import 'package:nova/features/dashboard/presentation/widgets/weekly_line_chart.dart';
+import 'package:Skolar/core/theme/app_theme.dart';
+import 'package:Skolar/features/dashboard/presentation/providers/dashboard_provider.dart';
+import 'package:Skolar/features/dashboard/presentation/widgets/animated_mesh_bg.dart';
+import 'package:Skolar/features/dashboard/presentation/widgets/dashboard_header.dart';
+import 'package:Skolar/features/dashboard/presentation/widgets/dashboard_section_header.dart';
+import 'package:Skolar/features/dashboard/presentation/widgets/donut_progress_chart.dart';
+import 'package:Skolar/features/dashboard/presentation/widgets/recent_activity_tile.dart';
+import 'package:Skolar/features/dashboard/presentation/widgets/task_list_tile.dart';
+import 'package:Skolar/features/dashboard/presentation/widgets/weekly_line_chart.dart';
 // ignore: unused_import
-import 'package:nova/shared/providers/global_providers.dart';
+import 'package:Skolar/shared/providers/global_providers.dart';
 
 class DashboardPage extends ConsumerWidget {
   const DashboardPage({super.key});

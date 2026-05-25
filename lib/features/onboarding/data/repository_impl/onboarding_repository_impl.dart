@@ -1,4 +1,4 @@
-import 'package:nova/features/onboarding/domain/entities/onboarding_entity.dart';
+import 'package:Skolar/features/onboarding/domain/entities/onboarding_entity.dart';
 
 import '../../../../core/errors/either.dart';
 import '../../../../core/errors/failures.dart';

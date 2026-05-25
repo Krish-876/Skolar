@@ -1,8 +1,8 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:nova/core/theme/app_theme.dart';
-import 'package:nova/features/analytics/domain/entities/analytics_entity.dart';
+import 'package:Skolar/core/theme/app_theme.dart';
+import 'package:Skolar/features/analytics/domain/entities/analytics_entity.dart';
 
 class DonutProgressChart extends StatefulWidget {
   final AnalyticsData data;

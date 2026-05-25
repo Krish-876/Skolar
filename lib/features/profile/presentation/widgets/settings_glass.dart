@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:nova/core/widgets/glass_background.dart';
-import 'package:nova/features/profile/presentation/widgets/left_painter.dart';
+import 'package:Skolar/core/widgets/glass_background.dart';
+import 'package:Skolar/features/profile/presentation/widgets/left_painter.dart';
 
 class SettingsGlassMenu extends StatelessWidget {
   const SettingsGlassMenu({super.key});

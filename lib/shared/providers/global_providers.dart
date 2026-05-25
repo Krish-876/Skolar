@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:nova/shared/models/user_model.dart';
+import 'package:Skolar/shared/models/user_model.dart';
 
 /// Global loading state provider
 final isLoadingProvider = StateProvider<bool>((ref) => false);

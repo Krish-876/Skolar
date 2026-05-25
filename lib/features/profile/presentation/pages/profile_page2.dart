@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:nova/core/widgets/glass_background.dart';
-import 'package:nova/features/profile/presentation/widgets/book_shelf_banner.dart';
-import 'package:nova/features/profile/presentation/widgets/left_painter.dart';
-import 'package:nova/features/profile/presentation/widgets/mascot.dart';
-import 'package:nova/features/profile/presentation/widgets/quick_stats.dart';
-import 'package:nova/features/profile/presentation/widgets/settings_glass.dart';
-import 'package:nova/features/profile/presentation/widgets/streak_card.dart';
+import 'package:Skolar/core/widgets/glass_background.dart';
+import 'package:Skolar/features/profile/presentation/widgets/book_shelf_banner.dart';
+import 'package:Skolar/features/profile/presentation/widgets/left_painter.dart';
+import 'package:Skolar/features/profile/presentation/widgets/mascot.dart';
+import 'package:Skolar/features/profile/presentation/widgets/quick_stats.dart';
+import 'package:Skolar/features/profile/presentation/widgets/settings_glass.dart';
+import 'package:Skolar/features/profile/presentation/widgets/streak_card.dart';
 
 // ─────────────────────────────────────────────
 //  ENTRY POINT – run directly to test

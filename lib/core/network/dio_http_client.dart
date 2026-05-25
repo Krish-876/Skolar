@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:nova/core/config/environment.dart';
+import 'package:Skolar/core/config/environment.dart';
 
 /// Dio HTTP client configuration and setup
 /// Handles base URL, headers, interceptors, and timeout configuration

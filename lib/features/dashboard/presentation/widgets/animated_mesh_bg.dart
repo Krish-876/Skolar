@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:nova/core/theme/app_animated_mesh_theme.dart';
-import 'package:nova/core/theme/app_theme.dart';
+import 'package:Skolar/core/theme/app_animated_mesh_theme.dart';
+import 'package:Skolar/core/theme/app_theme.dart';
 
 class AnimatedMeshBackground extends StatefulWidget {
   const AnimatedMeshBackground({super.key});

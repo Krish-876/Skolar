@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:nova/core/theme/app_theme.dart';
-import 'package:nova/features/analytics/domain/entities/analytics_entity.dart';
+import 'package:Skolar/core/theme/app_theme.dart';
+import 'package:Skolar/features/analytics/domain/entities/analytics_entity.dart';
 
 /// Renders a single task as a clean, independent sub-box.
 /// Designed to live seamlessly inside a unified parent card structure.

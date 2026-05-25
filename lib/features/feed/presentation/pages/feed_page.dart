@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:nova/core/theme/app_theme.dart';
-// import 'package:nova/core/theme/app_theme.dart';
-import 'package:nova/core/widgets/glass_background.dart';
+import 'package:Skolar/core/theme/app_theme.dart';
+// import 'package:Skolar/core/theme/app_theme.dart';
+import 'package:Skolar/core/widgets/glass_background.dart';
 import '../providers/feed_provider.dart';
 import '../providers/feed_sort_option.dart';
 import '../widgets/feed_colors.dart';

@@ -1,9 +1,11 @@
 import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
-import 'package:nova/features/auth/presentation/pages/auth_pages.dart';
-import 'package:nova/features/colleges/presentation/pages/colleges_pages.dart';
-import 'package:nova/features/dashboard/presentation/pages/dashboard_page.dart';
-import 'package:nova/features/profile/presentation/pages/profile_page2.dart';
+import 'package:Skolar/features/auth/presentation/pages/auth_pages.dart';
+import 'package:Skolar/features/colleges/presentation/pages/colleges_pages.dart';
+import 'package:Skolar/features/dashboard/presentation/pages/dashboard_page.dart';
+import 'package:Skolar/features/focus_session/presentation/focus_timer_page.dart';
+import 'package:Skolar/features/profile/presentation/pages/profile_page2.dart';
+
 
 /// Application routes
 class AppRoutes {
@@ -29,6 +31,8 @@ class AppRoutes {
   // Nested routes
   static const String collegeDetail = 'detail';
   static const String subjectDetail = 'detail';
+
+  static const focusSession = '/focus-session';
 }
 
 /// GoRouter configuration
@@ -82,6 +86,10 @@ final goRouterProvider = GoRouter(
     GoRoute(
       path: AppRoutes.profile,
       builder: (context, state) => const SkolarDashboardApp(),
+    ),
+    GoRoute(
+      path: AppRoutes.focusSession,
+      builder: (context, state) => FocusTimerPage(),
     ),
   ],
 );

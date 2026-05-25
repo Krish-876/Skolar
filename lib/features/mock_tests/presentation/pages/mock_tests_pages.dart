@@ -5,8 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:confetti/confetti.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:nova/core/theme/app_theme.dart';
-import 'package:nova/features/mock_tests/presentation/providers/mock_tests_provider.dart';
+import 'package:Skolar/core/theme/app_theme.dart';
+import 'package:Skolar/features/mock_tests/presentation/providers/mock_tests_provider.dart';
 
 // ── Mock data ─────────────────────────────────────────────────────────────────
 

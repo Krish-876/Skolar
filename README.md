@@ -11,6 +11,7 @@ An AI-powered exam preparation platform built with Flutter. Helps students track
 - [AI Pipeline](#ai-pipeline)
 - [Mock Test Platform](#mock-test-platform)
 - [Exam Prediction Feature](#exam-prediction-feature)
+- [Focus Session](#focus-session)
 - [Community Feed](#community-feed)
 - [Folder Structure](#folder-structure)
 - [Tech Stack](#tech-stack)
@@ -34,6 +35,7 @@ Skolar is built for students preparing for college exams. The app combines:
 - PYQ (Previous Year Question) upload and analysis
 - College and subject management
 - Personal learning goal tracking with AI-generated daily question plans
+- A focus session timer to help students manage distraction-free study blocks
 
 Students authenticate with their college email. This automatically scopes them to their college's PYQ data, ensures data isolation across colleges, and provides implicit authorization to access those resources.
 
@@ -286,6 +288,115 @@ Questions can be filtered by `subject`, `year`, `exam_type`, `question_type`, `s
 
 ---
 
+## Focus Session
+
+The focus session feature gives students a distraction-free countdown timer for managing structured study blocks. It is self-contained with no backend dependency — all state lives in `FocusTimerController`.
+
+### User Flow
+
+1. Student opens the Focus Timer page, which starts in idle state with preset chips visible
+2. Selects a duration via a preset chip (Pomodoro, 45 min, 1 hr) or taps **Custom** to open the setup page
+3. Slides the **Slide to lock in** track to start — the wave background animates off screen
+4. The countdown runs. The slide track changes to **Slide to give up**
+5. Sliding while running triggers the **Give Up** sheet. The student can resume or end the session
+6. When the timer reaches zero, the display shows **Done!** and status moves to `complete`
+7. Resetting from the Give Up sheet restores the wave background and returns to idle
+
+### Duration Picker
+
+`FocusSetupPage` provides a full-screen custom duration picker, navigated to from the Custom chip.
+
+- A hero time display (large gradient text) updates in real time as the slider moves
+- A `Slider` ranges from 5 minutes to 3 hours with 1-minute steps and a custom `GlowThumbShape` thumb
+- Three preset chips (Pomodoro, 45 min, 1 hr) sync bidirectionally with the slider
+- A **Session breakdown** card shows the chosen duration in hours/minutes and the equivalent pomodoro count
+- Tapping **Start session** calls `onConfirm(seconds)` and pops back to the timer page
+
+### Architecture
+
+The focus session is presentation-layer only. There is no domain layer or backend call. State is managed by `FocusTimerController`, a `ChangeNotifier` consumed directly by `FocusTimerPage` via `addListener`.
+
+This is intentional — the timer has no persistence requirement and no server interaction. If session history or streak tracking is added in Phase 5, a domain layer and `StorageService` write should be introduced at that point.
+
+### `FocusTimerController`
+
+Central state machine for the feature. Owned and disposed by `FocusTimerPageState`.
+
+| Member | Type | Description |
+|---|---|---|
+| `status` | `FocusTimerStatus` | `idle / running / paused / complete` |
+| `totalSeconds` | `int` | Chosen duration in seconds (default 3600) |
+| `secondsLeft` | `int` | Live countdown value |
+| `waveAnimationController` | `AnimationController` | Drives the wave background slide (0.0 = visible, 1.0 = off screen) |
+| `slideProgress` | `double` | Alias for `waveAnimationController.value` |
+| `formattedTime` | `String` | `H:MM:SS` or `MM:SS` depending on duration |
+| `setDuration(int)` | method | Sets duration. Only callable in `idle` state |
+| `start()` | method | Transitions to `running`, starts ticker, slides wave off screen |
+| `reset()` | method | Cancels ticker, restores duration, slides wave back in |
+
+### Wave Background
+
+`FocusBackground` is a `CustomPaint` widget driven by `slideProgress`. It renders three layers:
+
+- A solid base fill using `AppTheme.background`
+- An ambient radial glow in the upper-left quadrant using `AppTheme.primary` at reduced opacity
+- A surface panel with a concave arc cut into the top edge, painted with a vertical gradient
+
+The arc geometry is computed from the Figma spec: the top corners sit at 45% of screen height in idle state and slide to 100% (off screen) as `slideProgress` reaches 1.0. The arc dip is 12.9% of screen width, and the large-circle radius is derived analytically from the three defining points.
+
+A sheen stroke is painted along the arc edge using a centre-bright horizontal gradient to give the panel a subtle lit rim.
+
+### Slide-to-Start Track
+
+The slide track in `FocusTimerPage` is a custom `GestureDetector`-wrapped container, not a Flutter `Slider`. Key properties:
+
+- Knob position is tracked as `_knobOffset` and clamped to `[0, maxOffset]`
+- While dragging in idle state, `waveAnimationController.value` follows the knob 1:1 (physical drag feel)
+- Releasing before 82% of track width springs the wave back with an underdamped spring (ratio 0.6, overshoot)
+- Releasing at or past 82% triggers `_controller.start()` after a 200ms delay while the wave snaps fully forward (ratio 0.8, quick settle)
+- In running state the same track becomes **Slide to give up**. Completing the gesture opens the Give Up sheet
+
+### Flutter Files
+
+| File | Role |
+|---|---|
+| `controllers/focus_timer_controller.dart` | State machine, countdown ticker, wave animation |
+| `presentation/focus_timer_page.dart` | Main timer screen: bonsai hero, readout, slide track, give-up sheet |
+| `presentation/focus_setup_page.dart` | Custom duration picker: hero time, preset chips, slider, session card |
+| `widgets/focus_background.dart` | Custom painter: base, ambient glow, sliding surface panel |
+| `widgets/glow_thumb_shape.dart` | Custom `SliderComponentShape` with glow halo for the setup page slider |
+| `widgets/present_chip.dart` | Animated chip widget used for preset selection on both pages |
+| `data/models/focus_present.dart` | `FocusPreset` value type with three default presets |
+
+Note: `widgets/focus_timer_controller.dart` is a duplicate of `controllers/focus_timer_controller.dart` and also contains a second copy of `FocusPreset`. The widgets copy can be removed — `FocusTimerPage` and `FocusSetupPage` should import from `controllers/` and `data/models/` respectively.
+
+### Preset Model
+
+```dart
+class FocusPreset {
+  final String label;
+  final int seconds;
+
+  static const List<FocusPreset> defaults = [
+    FocusPreset(label: 'Pomodoro', seconds: 25 * 60),
+    FocusPreset(label: '45 min',   seconds: 45 * 60),
+    FocusPreset(label: '1 hr',     seconds: 60 * 60),
+  ];
+}
+```
+
+### Known Issues and Next Steps
+
+**Duplicate controller file** — `widgets/focus_timer_controller.dart` duplicates `controllers/focus_timer_controller.dart`. Delete the widgets copy and update imports.
+
+**`resume()` is a no-op** — `FocusTimerController.resume()` only calls `notifyListeners()`. The Give Up sheet's Keep Focusing button closes the overlay via `setState` in the page, which is correct, but `resume()` serves no purpose. Either remove it or have it re-start the ticker if a pause state is introduced later.
+
+**`paused` state is unused** — `FocusTimerStatus.paused` is defined but never set. If pause/resume is added (e.g. triggered by an incoming notification), the ticker cancel/restart logic should live in `FocusTimerController`, not in the page.
+
+**No session persistence** — completed sessions are not written anywhere. When streak and history tracking land in Phase 5, add a `StorageService.saveSession(duration, completedAt)` call inside `_onTick` when `_secondsLeft` reaches zero.
+
+---
+
 ## Community Feed
 
 The community feed is the social layer of Skolar. It surfaces AI-generated tests created by students on college subjects.
@@ -474,6 +585,14 @@ lib/
 │   │       ├── pages/               # feed_page.dart
 │   │       └── widgets/             # feed_post_card.dart
 │   │
+│   ├── focus_session/               # Distraction-free countdown timer
+│   │   ├── controllers/             # focus_timer_controller.dart
+│   │   ├── data/
+│   │   │   └── models/              # focus_preset.dart
+│   │   ├── presentation/
+│   │   │   ├── pages/               # focus_timer_page.dart, focus_setup_page.dart
+│   │   └── widgets/                 # focus_background.dart, present_chip.dart, glow_thumb_shape.dart
+│   │
 │   ├── mock_tests/                  # AI-generated MCQ quiz platform
 │   │   └── presentation/
 │   │       ├── pages/               # mock_tests_pages.dart
@@ -548,18 +667,25 @@ lib/
   - Auto-publish to community feed on completion for college subjects
 - Exam prediction / question bank browser (rebuilt)
   - Filter by subject, year, exam type, source, published status
+- Focus session timer
+  - Preset chips: Pomodoro (25 min), 45 min, 1 hr
+  - Custom duration picker (5 min to 3 hr) with live hero time display and session breakdown card
+  - Slide-to-start track with 1:1 physical drag and spring physics
+  - Animated wave background driven by slide progress
+  - Give Up confirmation sheet with resume and end options
+  - Back-navigation guard while session is running
 - Community feed
   - Feed cards with student name, subject, difficulty badge, upvotes, attempt count
   - Attempt button to take any published test
 
 ### Planned
 
-- Community feed (`feed_page.dart`, `feed_post_card.dart`) — cards showing published tests with upvotes, attempt counts, difficulty badges, and Attempt button
 - Authentication flow with college email
 - Firebase integration (Firestore for question bank, Auth for users)
 - Syllabus progress tracking
 - PYQ upload through the app UI
 - Personal learning goal mode (daily AI question plan with lives/streaks)
+- Focus session history and streak tracking
 
 ---
 
@@ -811,6 +937,8 @@ Order to stay consistent with the architecture:
 
 Use the `analytics` feature as the reference implementation — it is the most complete example.
 
+Note: features that have no persistence or backend requirement (like focus session) can skip steps 2-7 and use a `ChangeNotifier` directly in the presentation layer. Introduce Clean Architecture layers only when a data or domain concern actually exists.
+
 ---
 
 ## Roadmap
@@ -837,6 +965,7 @@ Phase 3 — Core Features (complete)
     Exam prediction / question bank browser (rebuilt)
     Community feed (feed_page, feed_post_card, upvotes, attempt counts)
     Community feed backend (publish endpoint, published_only filter)
+    Focus session timer (countdown, wave background, slide-to-start, give-up sheet, custom duration picker)
 
 Phase 4 — Auth and Backend
     College email authentication (Firebase Auth)
@@ -848,6 +977,7 @@ Phase 5 — Personalisation
     AI daily question plan
     Lives and streak system
     Dashboard integration with mock test scores
+    Focus session history and streak tracking
 
 Phase 6 — ML Extension
     Fine-tune FLAN-T5 on generated question-answer pairs

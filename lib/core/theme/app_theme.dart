@@ -49,6 +49,12 @@ class AppTheme {
   static const double radiusXl = 16;
   static const double radiusXxl = 24;
 
+    // ── Surface gradient (focus panel) ────────────────────────────────────────
+  static const Color surfaceGrad2Begin = Color.fromARGB(255, 33, 45, 79); 
+  static const Color surfaceGrad2End   = Color(0x9920223C); 
+
+
+
   // ── Reusable Gradients ─────────────────────────────────────────────────────
   static const LinearGradient backgroundGradient = LinearGradient(
     begin: Alignment.topCenter,
@@ -72,6 +78,13 @@ class AppTheme {
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
     colors: [textGradEnd, textGradBegin],
+  );
+
+  static const LinearGradient surfaceGradient2 = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [surfaceGrad2Begin, surfaceGrad2End],
+    stops: [0.0, 1.0],
   );
 
   // ── Theme Data ─────────────────────────────────────────────────────────────

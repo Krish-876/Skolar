@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:nova/core/theme/app_theme.dart';
+import 'package:Skolar/core/theme/app_theme.dart';
 import '../../domain/entities/feed_post_entity.dart';
 import '../providers/feed_provider.dart';
 import 'feed_colors.dart';

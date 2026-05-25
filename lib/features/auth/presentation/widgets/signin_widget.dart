@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:nova/core/theme/app_theme.dart';
-import 'package:nova/shared/extensions/extensions.dart';
+import 'package:Skolar/core/theme/app_theme.dart';
+import 'package:Skolar/shared/extensions/extensions.dart';
 import 'mascot_state.dart';
 
 class SignInForm extends ConsumerStatefulWidget {

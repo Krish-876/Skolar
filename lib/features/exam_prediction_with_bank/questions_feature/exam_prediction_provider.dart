@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:nova/features/exam_prediction_with_bank/questions_feature/exam_prediction_datasource.dart';
-import 'package:nova/features/exam_prediction_with_bank/questions_feature/exam_prediction_entity.dart';
-import 'package:nova/features/exam_prediction_with_bank/questions_feature/exam_prediction_repository_impl.dart';
-import 'package:nova/features/exam_prediction_with_bank/questions_feature/exam_prediction_usecases.dart';
+import 'package:Skolar/features/exam_prediction_with_bank/questions_feature/exam_prediction_datasource.dart';
+import 'package:Skolar/features/exam_prediction_with_bank/questions_feature/exam_prediction_entity.dart';
+import 'package:Skolar/features/exam_prediction_with_bank/questions_feature/exam_prediction_repository_impl.dart';
+import 'package:Skolar/features/exam_prediction_with_bank/questions_feature/exam_prediction_usecases.dart';
 
 // ---------------------------------------------------------------------------
 // Infrastructure providers

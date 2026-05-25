@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:nova/core/routing/app_routes.dart';
-import 'package:nova/core/theme/app_theme.dart';
-import 'package:nova/core/widgets/glass_background.dart';
-import 'package:nova/features/auth/presentation/widgets/mascot_state.dart';
-import 'package:nova/features/auth/presentation/widgets/nova_mascot.dart';
-import 'package:nova/features/auth/presentation/widgets/reg_widget.dart';
-import 'package:nova/features/auth/presentation/widgets/signin_widget.dart';
-import 'package:nova/features/auth/presentation/widgets/space_background.dart';
+import 'package:Skolar/core/routing/app_routes.dart';
+import 'package:Skolar/core/theme/app_theme.dart';
+import 'package:Skolar/core/widgets/glass_background.dart';
+import 'package:Skolar/features/auth/presentation/widgets/mascot_state.dart';
+import 'package:Skolar/features/auth/presentation/widgets/nova_mascot.dart';
+import 'package:Skolar/features/auth/presentation/widgets/reg_widget.dart';
+import 'package:Skolar/features/auth/presentation/widgets/signin_widget.dart';
+import 'package:Skolar/features/auth/presentation/widgets/space_background.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});

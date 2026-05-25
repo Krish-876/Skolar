@@ -1,6 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:nova/core/theme/app_static_mesh_theme.dart';
+import 'package:Skolar/core/theme/app_static_mesh_theme.dart';
 
 /// A reusable background widget that creates a moody, mesh-gradient effect
 /// with purple and teal glows as seen in the reference image.

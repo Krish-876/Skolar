@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:nova/core/theme/app_theme.dart';
-import 'package:nova/core/widgets/animated_profile_gradient.dart';
-import 'package:nova/features/auth/presentation/pages/auth_pages.dart';
+import 'package:Skolar/core/theme/app_theme.dart';
+import 'package:Skolar/core/widgets/animated_profile_gradient.dart';
+import 'package:Skolar/features/auth/presentation/pages/auth_pages.dart';
 
 /// Destination of the Hero flight from [OnboardingPage].
 ///

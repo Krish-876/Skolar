@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:nova/features/auth/presentation/widgets/space_background.dart';
-import 'package:nova/features/profile/presentation/pages/profile_page2.dart';
-import 'package:nova/features/profile/presentation/widgets/book_shelf_banner.dart';
-import 'package:nova/features/profile/presentation/widgets/bottom_nav.dart';
-import 'package:nova/features/profile/presentation/widgets/mascot.dart';
-import 'package:nova/features/profile/presentation/widgets/quick_stats.dart';
-import 'package:nova/features/profile/presentation/widgets/streak_card.dart';
+import 'package:Skolar/features/auth/presentation/widgets/space_background.dart';
+import 'package:Skolar/features/profile/presentation/pages/profile_page2.dart';
+import 'package:Skolar/features/profile/presentation/widgets/book_shelf_banner.dart';
+import 'package:Skolar/features/profile/presentation/widgets/bottom_nav.dart';
+import 'package:Skolar/features/profile/presentation/widgets/mascot.dart';
+import 'package:Skolar/features/profile/presentation/widgets/quick_stats.dart';
+import 'package:Skolar/features/profile/presentation/widgets/streak_card.dart';
 
 // ─────────────────────────────────────────────
 //  ENTRY POINT – run directly to test

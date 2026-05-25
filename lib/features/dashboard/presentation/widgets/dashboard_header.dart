@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:nova/core/theme/app_theme.dart';
-import 'package:nova/shared/providers/global_providers.dart';
+import 'package:Skolar/core/theme/app_theme.dart';
+import 'package:Skolar/shared/providers/global_providers.dart';
 
 class DashboardHeader extends ConsumerWidget {
   const DashboardHeader({super.key});

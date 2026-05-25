@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:nova/features/mock_tests/presentation/pages/mock_tests_pages.dart';
+import 'package:Skolar/features/mock_tests/presentation/pages/mock_tests_pages.dart';
 
 
 // ── Config ────────────────────────────────────────────────────────────────────

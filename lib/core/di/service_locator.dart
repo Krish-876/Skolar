@@ -1,8 +1,8 @@
 // import 'package:get_it/get_it.dart';
 // import 'package:dio/dio.dart';
 // import 'package:shared_preferences/shared_preferences.dart';
-// import 'package:nova/core/config/environment.dart';
-// import 'package:nova/core/network/dio_http_client.dart';
+// import 'package:Skolar/core/config/environment.dart';
+// import 'package:Skolar/core/network/dio_http_client.dart';
 
 // /// Service locator for dependency injection
 // /// Manages all singleton and factory dependencies

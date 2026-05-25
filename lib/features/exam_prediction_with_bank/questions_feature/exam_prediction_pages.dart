@@ -1,8 +1,8 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:nova/features/exam_prediction_with_bank/questions_feature/exam_prediction_provider.dart';
-import 'package:nova/features/exam_prediction_with_bank/questions_feature/exam_prediction_widgets.dart';
+import 'package:Skolar/features/exam_prediction_with_bank/questions_feature/exam_prediction_provider.dart';
+import 'package:Skolar/features/exam_prediction_with_bank/questions_feature/exam_prediction_widgets.dart';
 
 class ExamPredictionPage extends ConsumerStatefulWidget {
   const ExamPredictionPage({super.key});

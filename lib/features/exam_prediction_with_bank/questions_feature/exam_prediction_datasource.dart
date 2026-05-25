@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
-import 'package:nova/features/exam_prediction_with_bank/questions_feature/exam_prediction_dto.dart';
+import 'package:Skolar/features/exam_prediction_with_bank/questions_feature/exam_prediction_dto.dart';
 
 abstract class ExamPredictionRemoteDataSource {
   Future<GeneratedQuestionDto> generateQuestion({

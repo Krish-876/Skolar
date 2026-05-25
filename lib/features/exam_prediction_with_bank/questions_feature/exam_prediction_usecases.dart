@@ -1,6 +1,6 @@
 import 'package:dartz/dartz.dart';
-import 'package:nova/features/exam_prediction_with_bank/questions_feature/exam_prediction_entity.dart';
-import 'package:nova/features/exam_prediction_with_bank/questions_feature/exam_prediction_repository.dart';
+import 'package:Skolar/features/exam_prediction_with_bank/questions_feature/exam_prediction_entity.dart';
+import 'package:Skolar/features/exam_prediction_with_bank/questions_feature/exam_prediction_repository.dart';
 import '../../../../core/errors/failures.dart';
 
 class GenerateQuestionUseCase {

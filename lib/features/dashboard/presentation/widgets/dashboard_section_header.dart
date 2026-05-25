@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:nova/core/theme/app_theme.dart';
-import 'package:nova/features/dashboard/presentation/providers/dashboard_provider.dart';
+import 'package:Skolar/core/theme/app_theme.dart';
+import 'package:Skolar/features/dashboard/presentation/providers/dashboard_provider.dart';
 
 class DashboardSectionHeader extends ConsumerWidget {
   final String title;

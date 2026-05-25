@@ -1,20 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:nova/features/analytics/presentation/pages/analytics_pages.dart';
-import 'package:nova/features/auth/presentation/pages/auth_pages.dart';
-import 'package:nova/features/colleges/presentation/pages/colleges_pages.dart';
-import 'package:nova/features/dashboard/presentation/pages/dashboard_pages.dart';
-import 'package:nova/features/exam_prediction_with_bank/questions_feature/exam_prediction_pages.dart';
-import 'package:nova/features/feed/presentation/pages/feed_page.dart';
-import 'package:nova/features/mock_tests/presentation/pages/mock_tests_pages.dart';
-import 'package:nova/features/mock_tests/presentation/widgets/mock_tests_widgets.dart';
-import 'package:nova/features/onboarding/presentation/pages/onboarding_pages.dart';
-import 'package:nova/features/profile/presentation/pages/profile_pages1.dart';
+import 'package:Skolar/features/analytics/presentation/pages/analytics_pages.dart';
+import 'package:Skolar/features/auth/presentation/pages/auth_pages.dart';
+import 'package:Skolar/features/colleges/presentation/pages/colleges_pages.dart';
+import 'package:Skolar/features/dashboard/presentation/pages/dashboard_pages.dart';
+import 'package:Skolar/features/exam_prediction_with_bank/questions_feature/exam_prediction_pages.dart';
+import 'package:Skolar/features/feed/presentation/pages/feed_page.dart';
+import 'package:Skolar/features/focus_session/presentation/focus_timer_page.dart';
+import 'package:Skolar/features/focus_session/widgets/focus_timer_controller.dart';
+import 'package:Skolar/features/mock_tests/presentation/pages/mock_tests_pages.dart';
+import 'package:Skolar/features/mock_tests/presentation/widgets/mock_tests_widgets.dart';
+import 'package:Skolar/features/onboarding/presentation/pages/onboarding_pages.dart';
+import 'package:Skolar/features/profile/presentation/pages/profile_pages1.dart';
 // ---------------------------------------------------------------------------
 // Entry point
 // ---------------------------------------------------------------------------
 import 'package:flutter/services.dart';
-import 'package:nova/space_record.dart';
+import 'package:Skolar/space_record.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -74,6 +76,7 @@ abstract class AppRoutes {
   static const subjects = '/subjects';
   static const syllabus = '/syllabus';
   static const feed = '/feed';
+  static const focusSession = '/focus-session';
 
   static final Map<String, WidgetBuilder> routes = {
   home: (_) => const _DevMenu(),
@@ -89,6 +92,7 @@ abstract class AppRoutes {
   pyqUpload: (_) => const SpaceRecordPage(),
   subjects: (_) => const _PlaceholderPage(title: 'Subjects'),
   syllabus: (_) => const _PlaceholderPage(title: 'Syllabus'),
+  focusSession: (_) => const FocusTimerPage(),
 };
 }
 
@@ -111,6 +115,7 @@ class _DevMenu extends StatelessWidget {
     ('Subjects', AppRoutes.subjects),
     ('Syllabus', AppRoutes.syllabus),
     ('Feed', AppRoutes.feed),
+    ('Focus Session', AppRoutes.focusSession),
   ];
 
   @override

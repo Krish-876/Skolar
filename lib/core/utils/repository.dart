@@ -1,5 +1,5 @@
 // import 'package:dartz/dartz.dart';
-// import 'package:nova/core/errors/failures.dart';
+// import 'package:Skolar/core/errors/failures.dart';
 
 // /// Base repository abstract class
 // /// All repositories must follow this pattern for consistent error handling

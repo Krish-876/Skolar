@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:nova/core/widgets/glass_background.dart';
-import 'package:nova/features/auth/presentation/widgets/space_background.dart';
+import 'package:Skolar/core/widgets/glass_background.dart';
+import 'package:Skolar/features/auth/presentation/widgets/space_background.dart';
 
 class SpaceRecordPage extends StatelessWidget {
   const SpaceRecordPage({super.key});

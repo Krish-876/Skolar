@@ -1,4 +1,4 @@
-import 'package:nova/shared/models/base_models.dart';
+import 'package:Skolar/shared/models/base_models.dart';
 
 class MockTestsEntity extends BaseEntity {
   final String testName;

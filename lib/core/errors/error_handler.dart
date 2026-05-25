@@ -1,6 +1,6 @@
 // import 'package:dio/dio.dart';
-// import 'package:nova/core/errors/exceptions.dart';
-// import 'package:nova/core/errors/failures.dart';
+// import 'package:Skolar/core/errors/exceptions.dart';
+// import 'package:Skolar/core/errors/failures.dart';
 // import 'package:dartz/dartz.dart';
 
 // /// Centralized error handling and exception to failure conversion
