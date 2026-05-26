@@ -1,11 +1,12 @@
-import '../dtos/onboarding_dto.dart';
+import 'package:Skolar/features/onboarding/data/dtos/onboarding_dto.dart';
 
+/// Phase 5: replace with OnboardingRemoteDataSource (Firestore write).
 abstract class OnboardingDataSource {
-  Future<List<OnboardingDto>> getAll();
-  Future<OnboardingDto> getById(String id);
+  Future<void> save(OnboardingDto dto);
 }
 
-class OnboardingRemoteDataSource implements OnboardingDataSource {
-  @override Future<List<OnboardingDto>> getAll() async => [];
-  @override Future<OnboardingDto> getById(String id) => throw UnimplementedError();
+/// Stub — no-op until Firebase lands.
+class OnboardingLocalDataSource implements OnboardingDataSource {
+  @override
+  Future<void> save(OnboardingDto dto) async {}
 }

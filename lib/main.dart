@@ -7,7 +7,6 @@ import 'package:Skolar/features/dashboard/presentation/pages/dashboard_pages.dar
 import 'package:Skolar/features/exam_prediction_with_bank/questions_feature/exam_prediction_pages.dart';
 import 'package:Skolar/features/feed/presentation/pages/feed_page.dart';
 import 'package:Skolar/features/focus_session/presentation/focus_timer_page.dart';
-import 'package:Skolar/features/focus_session/widgets/focus_timer_controller.dart';
 import 'package:Skolar/features/mock_tests/presentation/pages/mock_tests_pages.dart';
 import 'package:Skolar/features/mock_tests/presentation/widgets/mock_tests_widgets.dart';
 import 'package:Skolar/features/onboarding/presentation/pages/onboarding_pages.dart';

@@ -1,8 +1,10 @@
-import 'package:flutter/material.dart';
-import 'package:flutter/physics.dart';
 import 'package:Skolar/core/theme/app_theme.dart';
 import 'package:Skolar/features/focus_session/data/models/focus_present.dart';
 import 'package:Skolar/features/focus_session/widgets/present_chip.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/physics.dart';
+import 'package:flutter_ringtone_player/flutter_ringtone_player.dart';
+import 'package:vibration/vibration.dart';
 
 import '../controllers/focus_timer_controller.dart';
 import '../widgets/focus_background.dart';
@@ -16,7 +18,7 @@ class FocusTimerPage extends StatefulWidget {
 }
 
 class FocusTimerPageState extends State<FocusTimerPage>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   late final FocusTimerController _controller;
   bool _showGiveUpSheet = false;
 
@@ -32,12 +34,38 @@ class FocusTimerPageState extends State<FocusTimerPage>
     super.initState();
     _controller = FocusTimerController(vsync: this);
     _controller.addListener(() => setState(() {}));
+    _controller.onComplete = _onTimerComplete;
+    WidgetsBinding.instance.addObserver(this);
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);  // ← add this
     _controller.dispose();
     super.dispose();
+  }
+
+  @override
+void didChangeAppLifecycleState(AppLifecycleState state) {
+  if (state == AppLifecycleState.paused || 
+      state == AppLifecycleState.detached) {
+    if (_controller.status == FocusTimerStatus.running) {
+      _controller.reset();
+    }
+  }
+}
+  void _onTimerComplete() {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      FlutterRingtonePlayer().playAlarm(
+        looping: true,
+        asAlarm: true,
+      );
+      // Explicit vibration pattern alongside — works on all Android versions
+      Vibration.vibrate(
+        pattern: [0, 800, 400, 800, 400, 800],
+        repeat: 0, // repeat indefinitely until Vibration.cancel() is called
+      );
+    });
   }
 
   void showGiveUpSheet() {
@@ -50,34 +78,32 @@ class FocusTimerPageState extends State<FocusTimerPage>
     return constraints.maxWidth - _knobSize - (_trackHorizontalPadding * 2);
   }
 
-  // Spring the wave back to 0 with elastic overshoot feel
   void _springWaveBack() {
     final spring = SpringDescription.withDampingRatio(
       mass: 1.0,
       stiffness: 180.0,
-      ratio: 0.6, // underdamped → overshoot
+      ratio: 0.6,
     );
     final sim = SpringSimulation(
       spring,
-      _controller.waveAnimationController.value, // from current position
-      0.0,                                        // target: fully up
-      -0.5,                                       // initial velocity (snapping back)
+      _controller.waveAnimationController.value,
+      0.0,
+      -0.5,
     );
     _controller.waveAnimationController.animateWith(sim);
   }
 
-  // Spring the wave forward to 1.0 on trigger
   void _springWaveForward() {
     final spring = SpringDescription.withDampingRatio(
       mass: 1.0,
       stiffness: 300.0,
-      ratio: 0.8, // slightly underdamped — quick snap with tiny settle
+      ratio: 0.8,
     );
     final sim = SpringSimulation(
       spring,
       _controller.waveAnimationController.value,
       1.0,
-      2.0, // forward velocity
+      2.0,
     );
     _controller.waveAnimationController.animateWith(sim);
   }
@@ -85,9 +111,11 @@ class FocusTimerPageState extends State<FocusTimerPage>
   @override
   Widget build(BuildContext context) {
     final isRunning = _controller.status == FocusTimerStatus.running;
+    final canPop = _controller.status == FocusTimerStatus.idle ||
+        _controller.status == FocusTimerStatus.complete;
 
     return PopScope(
-      canPop: _controller.status == FocusTimerStatus.idle,
+      canPop: canPop,
       onPopInvoked: (didPop) {
         if (!didPop && isRunning) showGiveUpSheet();
       },
@@ -95,7 +123,6 @@ class FocusTimerPageState extends State<FocusTimerPage>
         backgroundColor: AppTheme.background,
         body: Stack(
           children: [
-            // Layer 0+1: Background glow + wave painter
             AnimatedBuilder(
               animation: _controller.waveAnimationController,
               builder: (context, _) {
@@ -103,7 +130,6 @@ class FocusTimerPageState extends State<FocusTimerPage>
               },
             ),
 
-            // Layer 2: Main content
             SafeArea(
               child: Column(
                 children: [
@@ -121,7 +147,10 @@ class FocusTimerPageState extends State<FocusTimerPage>
                         children: [
                           _buildTimerReadout(),
                           const SizedBox(height: 40),
-                          _buildInteractionZone(isIdle: !isRunning),
+                          if (_controller.status == FocusTimerStatus.complete)
+                            _buildRestartButton()
+                          else
+                            _buildInteractionZone(isIdle: !isRunning),
                         ],
                       ),
                     ),
@@ -130,7 +159,6 @@ class FocusTimerPageState extends State<FocusTimerPage>
               ),
             ),
 
-            // Layer 3: Give up sheet
             if (_showGiveUpSheet) _buildGiveUpOverlay(),
           ],
         ),
@@ -148,10 +176,7 @@ class FocusTimerPageState extends State<FocusTimerPage>
           mainAxisSize: MainAxisSize.min,
           children: [
             Padding(
-              padding: const EdgeInsets.only(
-    top: 10,    // ← push down
-    left: 10,   // ← push right
-  ),
+              padding: const EdgeInsets.only(top: 10, left: 10),
               child: Image.asset(
                 'assets/images/bonsai.png',
                 width: 260,
@@ -183,13 +208,57 @@ class FocusTimerPageState extends State<FocusTimerPage>
   Widget _buildTimerReadout() {
     final isComplete = _controller.status == FocusTimerStatus.complete;
     return Text(
-      isComplete ? 'Done!' : _controller.formattedTime,
+      isComplete ? 'Done! 🎉' : _controller.formattedTime,
       style: const TextStyle(
         color: Colors.white,
         fontSize: 76,
         fontWeight: FontWeight.w700,
         letterSpacing: -1.5,
       ),
+    );
+  }
+
+  Widget _buildRestartButton() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Text(
+          'Great session! Ready for another?',
+          style: TextStyle(color: Colors.white60, fontSize: 15),
+        ),
+        const SizedBox(height: 20),
+        GestureDetector(
+          onTap: () {
+            FlutterRingtonePlayer().stop();
+            Vibration.cancel();
+            _controller.reset();
+          },
+          child: Container(
+            height: _trackHeight,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+                colors: [Color(0xCCFFFFFF), AppTheme.surfaceGrad2End],
+                stops: [0.0, 0.81],
+              ),
+              borderRadius: BorderRadius.circular(_trackHeight / 2),
+              border: Border.all(color: AppTheme.background, width: 1.0),
+            ),
+            child: const Center(
+              child: Text(
+                'Start new session',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -254,7 +323,6 @@ class FocusTimerPageState extends State<FocusTimerPage>
       ),
     );
   }
-
   Widget _buildSliderTrackBar(BoxConstraints constraints) {
     final isRunning = _controller.status == FocusTimerStatus.running;
     final maxOffset = _maxKnobOffset(constraints);
@@ -263,21 +331,18 @@ class FocusTimerPageState extends State<FocusTimerPage>
       onHorizontalDragStart: (_) => setState(() => _dragging = true),
       onHorizontalDragUpdate: (details) {
         setState(() {
-          _knobOffset =
-              (_knobOffset + details.delta.dx).clamp(0.0, maxOffset);
+          _knobOffset = (_knobOffset + details.delta.dx).clamp(0.0, maxOffset);
         });
-        // 1:1 physical drag — surface follows knob exactly
         if (!isRunning) {
           _controller.waveAnimationController.value = _knobOffset / maxOffset;
         }
       },
       onHorizontalDragEnd: (_) {
-        setState(() => _dragging = false);
         final progressFraction = _knobOffset / maxOffset;
 
         if (progressFraction >= _triggerFraction) {
+          setState(() => _dragging = false); // Done dragging
           if (!isRunning) {
-            // Spring wave fully down, then lock session
             setState(() => _knobOffset = maxOffset);
             _springWaveForward();
             Future.delayed(const Duration(milliseconds: 200), () {
@@ -290,7 +355,7 @@ class FocusTimerPageState extends State<FocusTimerPage>
             showGiveUpSheet();
           }
         } else {
-          // Released before threshold — elastic spring back
+          setState(() => _dragging = false); // Done dragging
           setState(() => _knobOffset = 0);
           if (!isRunning) {
             _springWaveBack();
@@ -299,24 +364,23 @@ class FocusTimerPageState extends State<FocusTimerPage>
       },
       child: ClipRRect(
         borderRadius: BorderRadius.circular(_trackHeight / 2),
+        clipBehavior: Clip.antiAlias, // Forces the static capsule layout to be perfectly smooth
         child: SizedBox(
           height: _trackHeight,
           width: double.infinity,
           child: Stack(
             alignment: Alignment.centerLeft,
             children: [
-              // Layer 0 (base): always the SOURCE / resting gradient
+              // Layer 0 (base): resting background gradient
               Positioned.fill(
                 child: Container(
                   decoration: BoxDecoration(
                     gradient: isRunning
-                        // running state resting look: primaryGradEnd → bgGradEnd
                         ? const LinearGradient(
                             begin: Alignment.centerLeft,
                             end: Alignment.centerRight,
                             colors: [AppTheme.primaryGradEnd, AppTheme.bgGradEnd],
                           )
-                        // idle state resting look: white → surfaceGrad2End
                         : const LinearGradient(
                             begin: Alignment.centerLeft,
                             end: Alignment.centerRight,
@@ -327,39 +391,48 @@ class FocusTimerPageState extends State<FocusTimerPage>
                 ),
               ),
 
-              // Layer 1: the DESTINATION gradient, masked so that:
-              //   - Everything LEFT of the knob centre is fully opaque (wipe fills in)
-              //   - A short soft fade extends just ahead of the knob (~1× knob width)
-              //   - Everything beyond that is transparent (base shows through)
-              // Layer 1: The DESTINATION gradient, masked with a convex radial bulge centered on the knob
-// Layer 1: The DESTINATION gradient, which now only appears when dragging
-Positioned.fill(
-  child: ClipPath(
-    clipper: _KnobWipeClipper(
-      knobOffset: _knobOffset,
-      knobSize: _knobSize,
-      padding: _trackHorizontalPadding,
-      isDragging: _dragging, // ← Pass the dragging state here
-    ),
-    child: Container(
-      decoration: BoxDecoration(
-        gradient: isRunning
-            ? const LinearGradient(
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-                colors: [Color(0xCCFFFFFF), AppTheme.surfaceGrad2End],
-                stops: [0.0, 0.81],
-              )
-            : const LinearGradient(
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-                colors: [AppTheme.primaryGradEnd, AppTheme.bgGradEnd],
+              // Layer 1: Convex sliding wipe animation layer
+              Positioned.fill(
+                child: ClipPath(
+                  clipper: _KnobWipeClipper(
+                    knobOffset: _knobOffset,
+                    knobSize: _knobSize,
+                    padding: _trackHorizontalPadding,
+                    isDragging: _dragging,
+                  ),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: isRunning
+                          ? const LinearGradient(
+                              begin: Alignment.centerLeft,
+                              end: Alignment.centerRight,
+                              colors: [Color(0xCCFFFFFF), AppTheme.surfaceGrad2End],
+                              stops: [0.0, 0.81],
+                            )
+                          : const LinearGradient(
+                              begin: Alignment.centerLeft,
+                              end: Alignment.centerRight,
+                              colors: [AppTheme.primaryGradEnd, AppTheme.bgGradEnd],
+                            ),
+                    ),
+                  ),
+                ),
               ),
-      ),
-    ),
-  ),
-),
-              // Layer 2: label
+
+              // Layer 1.5 (FIX): Floating border stroke overlay.
+              // Placing this above the background gradients keeps the border anti-aliased and pristine.
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(_trackHeight / 2),
+                      border: Border.all(color: AppTheme.background, width: 1.0),
+                    ),
+                  ),
+                ),
+              ),
+
+              // Layer 2: Label text string
               Center(
                 child: Text(
                   isRunning ? 'Slide to give up' : 'Slide to lock in',
@@ -371,7 +444,7 @@ Positioned.fill(
                 ),
               ),
 
-              // Layer 3: knob
+              // Layer 3: The physical slider button thumb
               AnimatedPositioned(
                 duration: _dragging ? Duration.zero : const Duration(milliseconds: 200),
                 curve: Curves.easeOutCubic,
@@ -403,7 +476,6 @@ Positioned.fill(
       ),
     );
   }
-
   Widget _buildGiveUpOverlay() {
     return Stack(
       children: [
@@ -427,30 +499,29 @@ Positioned.fill(
   }
 }
 
-
+// ─────────────────────────────────────────────────────────────────────────────
+// Custom Convex Wipe Path Geometry Clipper
+// ─────────────────────────────────────────────────────────────────────────────
 class _KnobWipeClipper extends CustomClipper<Path> {
   final double knobOffset;
   final double knobSize;
   final double padding;
-  final bool isDragging; // ← Added field
+  final bool isDragging;
 
   _KnobWipeClipper({
     required this.knobOffset,
     required this.knobSize,
     required this.padding,
-    required this.isDragging, // ← Added constructor parameter
+    required this.isDragging,
   });
 
   @override
   Path getClip(Size size) {
     final path = Path();
-    
-    // If the user isn't dragging, don't show any wipe gradient at all
     if (!isDragging) {
-      return path; // Returns an empty path (fully clipped/hidden)
+      return path;
     }
 
-    // Otherwise, calculate the convex bulge following the knob
     final double knobCentreX = padding + knobOffset + (knobSize / 2);
     final double radius = knobSize / 2;
 
@@ -474,10 +545,13 @@ class _KnobWipeClipper extends CustomClipper<Path> {
     return oldClipper.knobOffset != knobOffset ||
         oldClipper.knobSize != knobSize ||
         oldClipper.padding != padding ||
-        oldClipper.isDragging != isDragging; // ← Reclip when dragging state updates
+        oldClipper.isDragging != isDragging;
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Give Up Bottom Overlay Sheet
+// ─────────────────────────────────────────────────────────────────────────────
 class _GiveUpSheetView extends StatelessWidget {
   final String timeRemaining;
   final VoidCallback onResume;

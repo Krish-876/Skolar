@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:Skolar/core/theme/app_theme.dart';
+import 'package:Skolar/features/focus_session/data/models/focus_present.dart';
 import 'package:Skolar/features/focus_session/widgets/focus_background.dart';
-import 'package:Skolar/features/focus_session/widgets/focus_timer_controller.dart';
-import 'package:Skolar/features/focus_session/widgets/present_chip.dart';
 import 'package:Skolar/features/focus_session/widgets/glow_thumb_shape.dart';
+import 'package:Skolar/features/focus_session/widgets/present_chip.dart';
+import 'package:flutter/material.dart';
 
 class FocusSetupPage extends StatefulWidget {
   final void Function(int seconds) onConfirm;
@@ -23,7 +23,7 @@ class _FocusSetupPageState extends State<FocusSetupPage> {
   late int _selectedSeconds;
   int? _activePresetIndex;
 
-  static const int _minMinutes = 5;
+  static const int _minMinutes = 1;
   static const int _maxMinutes = 180;
 
   int get _selectedMinutes => _selectedSeconds ~/ 60;

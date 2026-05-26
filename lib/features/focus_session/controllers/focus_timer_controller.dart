@@ -19,7 +19,7 @@ class FocusTimerController extends ChangeNotifier {
   FocusTimerStatus _status = FocusTimerStatus.idle;
   FocusTimerStatus get status => _status;
 
-  int _totalSeconds = 3600; 
+  int _totalSeconds = 3600;
   int get totalSeconds => _totalSeconds;
 
   int _secondsLeft = 3600;
@@ -30,6 +30,10 @@ class FocusTimerController extends ChangeNotifier {
 
   AnimationController get waveAnimationController => _waveAnimation;
   double get slideProgress => _waveAnimation.value;
+
+  /// Called when the timer reaches zero. The UI should listen to this
+  /// to trigger an alarm sound / haptic.
+  VoidCallback? onComplete;
 
   void setDuration(int seconds) {
     assert(_status == FocusTimerStatus.idle, 'Cannot change duration while running');
@@ -46,6 +50,7 @@ class FocusTimerController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Resets the timer back to idle so it can be started again.
   void reset() {
     _ticker?.cancel();
     _ticker = null;
@@ -72,8 +77,11 @@ class FocusTimerController extends ChangeNotifier {
   void _onTick(Timer t) {
     if (_secondsLeft <= 0) {
       t.cancel();
+      _ticker = null;
       _status = FocusTimerStatus.complete;
       notifyListeners();
+      // FIX 1: Fire the alarm callback so the UI can play sound / haptic.
+      onComplete?.call();
       return;
     }
     _secondsLeft--;

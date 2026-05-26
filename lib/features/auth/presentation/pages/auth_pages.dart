@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:Skolar/core/routing/app_routes.dart';
 import 'package:Skolar/core/theme/app_theme.dart';
-import 'package:Skolar/core/widgets/glass_background.dart';
 import 'package:Skolar/features/auth/presentation/widgets/mascot_state.dart';
 import 'package:Skolar/features/auth/presentation/widgets/nova_mascot.dart';
 import 'package:Skolar/features/auth/presentation/widgets/reg_widget.dart';
@@ -76,14 +74,10 @@ class _AuthScreenState extends State<AuthScreen>
 
   
   Widget build(BuildContext context) {
-    // ── KEY FIX: Render SpaceBackground outside the Scaffold entirely,
-    // using a top-level Stack anchored to the full screen via MediaQuery size.
-    // This way the Scaffold (and keyboard inset resizing) never affects it.
     final screenSize = MediaQuery.of(context).size;
 
     return Stack(
       children: [
-        // ── Layer 0: Space background — truly full-screen, never moves ──
         SizedBox(
           width: screenSize.width,
           height: screenSize.height,

@@ -1,9 +1,13 @@
+import 'package:Skolar/features/onboarding/data/datasources/onboarding_datasource.dart';
+import 'package:Skolar/features/onboarding/data/dtos/onboarding_dto.dart';
 import 'package:Skolar/features/onboarding/domain/entities/onboarding_entity.dart';
+import 'package:Skolar/features/onboarding/domain/repositories/onboarding_repository.dart';
 
-import '../../../../core/errors/either.dart';
-import '../../../../core/errors/failures.dart';
+class OnboardingRepositoryImpl implements OnboardingRepository {
+  final OnboardingDataSource _dataSource;
+  const OnboardingRepositoryImpl(this._dataSource);
 
-abstract class OnboardingRepository {
-  Future<Either<Failure, List<OnboardingEntity>>> getAll();
-  Future<Either<Failure, OnboardingEntity>> getById(String id);
+  @override
+  Future<void> save(OnboardingEntity data) =>
+      _dataSource.save(OnboardingDto.fromEntity(data));
 }

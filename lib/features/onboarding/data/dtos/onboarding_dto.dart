@@ -1,23 +1,27 @@
-import '../../domain/entities/onboarding_entity.dart';
+import 'package:Skolar/features/onboarding/domain/entities/onboarding_entity.dart';
 
+/// Phase 5: add @JsonSerializable + fromJson/toJson for Firestore.
+/// Currently unused — onboarding data lives in memory only.
 class OnboardingDto {
-  final String id;
-  final String stepTitle;
-  final String description;
+  final String nickname;
+  final String branch;
+  final String studyGoal;
 
-  const OnboardingDto({required this.id, required this.stepTitle, required this.description});
+  const OnboardingDto({
+    required this.nickname,
+    required this.branch,
+    required this.studyGoal,
+  });
 
-  factory OnboardingDto.fromJson(Map<String, dynamic> json) => OnboardingDto(
-      id: json['id'] as String,
-      stepTitle: json['stepTitle'] as String,
-      description: json['description'] as String,
-  );
+  OnboardingEntity toEntity() => OnboardingEntity(
+        nickname: nickname,
+        branch: branch,
+        studyGoal: studyGoal,
+      );
 
-  Map<String, dynamic> toJson() => {
-      'id': id,
-      'stepTitle': stepTitle,
-      'description': description,
-  };
-
-  OnboardingEntity toEntity() => OnboardingEntity(id: id, stepTitle: stepTitle, description: description);
+  factory OnboardingDto.fromEntity(OnboardingEntity e) => OnboardingDto(
+        nickname: e.nickname ?? '',
+        branch: e.branch ?? '',
+        studyGoal: e.studyGoal ?? '',
+      );
 }

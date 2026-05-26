@@ -301,6 +301,7 @@ The focus session feature gives students a distraction-free countdown timer for 
 5. Sliding while running triggers the **Give Up** sheet. The student can resume or end the session
 6. When the timer reaches zero, the display shows **Done!** and status moves to `complete`
 7. Resetting from the Give Up sheet restores the wave background and returns to idle
+8. If the user leaves the app mid-session → timer resets automatically
 
 ### Duration Picker
 
@@ -316,7 +317,9 @@ The focus session feature gives students a distraction-free countdown timer for 
 
 The focus session is presentation-layer only. There is no domain layer or backend call. State is managed by `FocusTimerController`, a `ChangeNotifier` consumed directly by `FocusTimerPage` via `addListener`.
 
-This is intentional — the timer has no persistence requirement and no server interaction. If session history or streak tracking is added in Phase 5, a domain layer and `StorageService` write should be introduced at that point.
+This is intentional - the timer resets if the user leaves the app (AppLifecycleState observer), 
+enforcing distraction free focus. If session history or streak tracking is added in Phase 5, 
+a StorageService.saveSession() call should be added inside _onTick when _secondsLeft reaches zero.
 
 ### `FocusTimerController`
 
@@ -673,7 +676,8 @@ lib/
   - Slide-to-start track with 1:1 physical drag and spring physics
   - Animated wave background driven by slide progress
   - Give Up confirmation sheet with resume and end options
-  - Back-navigation guard while session is running
+  - Alarm on session completion (sound + vibration, respects ringer mode)
+  - Auto-reset if user leaves app mid-session
 - Community feed
   - Feed cards with student name, subject, difficulty badge, upvotes, attempt count
   - Attempt button to take any published test

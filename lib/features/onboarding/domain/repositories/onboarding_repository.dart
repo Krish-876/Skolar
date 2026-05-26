@@ -1,8 +1,6 @@
-import '../../../../core/errors/either.dart';
-import '../../../../core/errors/failures.dart';
-import '../entities/onboarding_entity.dart';
+import 'package:Skolar/features/onboarding/domain/entities/onboarding_entity.dart';
 
+/// Phase 5: OnboardingRepositoryImpl writes to Firestore.
 abstract class OnboardingRepository {
-  Future<Either<Failure, List<OnboardingEntity>>> getAll();
-  Future<Either<Failure, OnboardingEntity>> getById(String id);
+  Future<void> save(OnboardingEntity data);
 }

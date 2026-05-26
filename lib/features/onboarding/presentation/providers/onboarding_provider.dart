@@ -1,22 +1,28 @@
-import 'package:flutter/foundation.dart';
-import '../../domain/entities/onboarding_entity.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:Skolar/features/onboarding/domain/entities/onboarding_entity.dart';
 
-class OnboardingProvider extends ChangeNotifier {
-  List<OnboardingEntity> _items = [];
-  bool _loading = false;
-  String? _error;
+/// Holds onboarding answers in memory until Firebase auth is complete.
+/// Phase 5: inject SaveOnboardingUseCase and call it inside [complete].
+class OnboardingNotifier extends Notifier<OnboardingEntity> {
+  @override
+  OnboardingEntity build() => const OnboardingEntity();
 
-  List<OnboardingEntity> get items => _items;
-  bool get isLoading => _loading;
-  String? get error => _error;
+  void setNickname(String value) =>
+      state = state.copyWith(nickname: value.trim());
 
-  Future<void> load() async {
-    _loading = true;
-    _error = null;
-    notifyListeners();
-    
-    await Future.delayed(const Duration(milliseconds: 500));
-    _loading = false;
-    notifyListeners();
+  void setBranch(String value) =>
+      state = state.copyWith(branch: value);
+
+  void setStudyGoal(String value) =>
+      state = state.copyWith(studyGoal: value);
+
+  /// Phase 5: await saveOnboardingUseCase(state) here.
+  void complete() {
+    // TODO(phase5): persist via SaveOnboardingUseCase
   }
 }
+
+final onboardingProvider =
+    NotifierProvider<OnboardingNotifier, OnboardingEntity>(
+  OnboardingNotifier.new,
+);

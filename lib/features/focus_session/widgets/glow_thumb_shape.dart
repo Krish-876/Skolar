@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:Skolar/core/theme/app_theme.dart';
+import 'package:flutter/material.dart';
 
 class GlowThumbShape extends SliderComponentShape {
   const GlowThumbShape();

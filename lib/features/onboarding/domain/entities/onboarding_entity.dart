@@ -1,7 +1,27 @@
-import 'package:Skolar/shared/models/base_models.dart';
+/// Onboarding data collected before auth.
+/// Plain Dart — no @freezed until Firebase lands (Phase 5).
+class OnboardingEntity {
+  final String? nickname;
+  final String? branch;
+  final String? studyGoal;
 
-class OnboardingEntity extends BaseEntity {
-  final String stepTitle;
-  final String description;
-  const OnboardingEntity({required super.id, required this.stepTitle, required this.description});
+  const OnboardingEntity({this.nickname, this.branch, this.studyGoal});
+
+  OnboardingEntity copyWith({
+    String? nickname,
+    String? branch,
+    String? studyGoal,
+  }) =>
+      OnboardingEntity(
+        nickname:  nickname  ?? this.nickname,
+        branch:    branch    ?? this.branch,
+        studyGoal: studyGoal ?? this.studyGoal,
+      );
+
+  /// Gates the final CTA — all three fields must be filled.
+  bool get isComplete =>
+      nickname != null &&
+      nickname!.trim().isNotEmpty &&
+      branch != null &&
+      studyGoal != null;
 }
