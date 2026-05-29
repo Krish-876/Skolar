@@ -24,6 +24,7 @@ class MockTestRequest {
   final String subject;
   final String college;
   final ExamMode mode;
+  final String examType;
   final int count;
   final int? yearFrom;
   final int? yearTo;
@@ -33,6 +34,7 @@ class MockTestRequest {
     required this.subject,
     required this.college,
     required this.mode,
+    required this.examType,
     this.count = 5,
     this.yearFrom,
     this.yearTo,
@@ -43,6 +45,7 @@ class MockTestRequest {
         'subject': subject,
         'college': college,
         'count': count,
+        'exam_type': examType,
         if (yearFrom != null) 'year_from': yearFrom,
         if (yearTo != null) 'year_to': yearTo,
         'k': k,

@@ -152,6 +152,35 @@ def mmr(
 
     return selected
 
+# ── Exam type filter ──────────────────────────────────────────────────────────
+
+_EXAM_TYPE_ALLOWED: dict[str, set[str]] = {
+    'quiz':   {'quiz'},
+    'midsem': {'midsem', 'quiz'},
+    'compre': {'compre', 'midsem', 'quiz'},
+}
+
+def _filter_by_exam_type(
+    questions: list[dict],
+    embeddings: np.ndarray,
+    exam_type: str | None,
+) -> tuple[list[dict], np.ndarray]:
+    if not exam_type:
+        return questions, embeddings
+    allowed = _EXAM_TYPE_ALLOWED.get(exam_type.lower())
+    if not allowed:
+        return questions, embeddings
+    indices = [
+        i for i, q in enumerate(questions)
+        if q.get('exam_type', '').lower() in allowed
+    ]
+    if not indices:
+        return questions, embeddings  # graceful fallback
+    return (
+        [questions[i] for i in indices],
+        embeddings[indices],
+    )
+
 # ── Step 5 — Open-ended Question Generation ───────────────────────────────────
 
 def generate_question(subject: str, examples: list[dict]) -> str:
@@ -408,6 +437,7 @@ def run_generate_mcq_batch(
     subject: str,
     college: str,
     count: int = 5,
+    exam_type: str | None = None,
     year_range: tuple[int, int] | None = None,
     k: int = 5,
 ) -> list[dict]:
@@ -420,6 +450,8 @@ def run_generate_mcq_batch(
         ]
         all_questions = [all_questions[i] for i in indices]
         embeddings    = embeddings[indices]
+
+    all_questions, embeddings = _filter_by_exam_type(all_questions, embeddings, exam_type)
 
     if not all_questions:
         raise ValueError(f"No questions found for subject='{subject}', college='{college}'.")
@@ -450,6 +482,7 @@ def run_generate_open_batch(
     subject: str,
     college: str,
     count: int = 5,
+    exam_type: str | None = None,
     year_range: tuple[int, int] | None = None,
     k: int = 5,
     with_answers: bool = True,
@@ -470,6 +503,8 @@ def run_generate_open_batch(
         ]
         all_questions = [all_questions[i] for i in indices]
         embeddings    = embeddings[indices]
+
+    all_questions, embeddings = _filter_by_exam_type(all_questions, embeddings, exam_type)
 
     if not all_questions:
         raise ValueError(f"No questions found for subject='{subject}', college='{college}'.")

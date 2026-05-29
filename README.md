@@ -8,7 +8,6 @@ An AI-powered exam preparation platform built with Flutter. Helps students track
 
 - [Project Overview](#project-overview)
 - [Architecture](#architecture)
-- [AI Pipeline](#ai-pipeline)
 - [Mock Test Platform](#mock-test-platform)
 - [Exam Prediction Feature](#exam-prediction-feature)
 - [Focus Session](#focus-session)
@@ -27,23 +26,13 @@ An AI-powered exam preparation platform built with Flutter. Helps students track
 
 ## Project Overview
 
-Skolar is built for students preparing for college exams. The app combines:
-
-- A scrollable analytics dashboard showing task progress, weekly performance, and recent activity
-- AI-generated MCQ mock tests calibrated to the student's college difficulty standard using Diversity-based In-Context Learning (DICL)
-- A community feed where AI-generated tests on college subjects are auto-published and can be attempted by other students
-- PYQ (Previous Year Question) upload and analysis
-- College and subject management
-- Personal learning goal tracking with AI-generated daily question plans
-- A focus session timer to help students manage distraction-free study blocks
-
-Students authenticate with their college email. This automatically scopes them to their college's PYQ data, ensures data isolation across colleges, and provides implicit authorization to access those resources.
+This is an AI-powered study platform designed for college exam preparation. It offers personalized mock tests calibrated to a student’s college difficulty level using Diverse In-Context Learning (DICL), along with PYQ analysis, performance analytics, goal tracking, and distraction-free focus sessions. Students can also access a community feed of AI-generated tests shared across subjects within their college ecosystem. Authentication through college email ensures secure, college-specific access to resources and data isolation.
 
 ---
 
 ## Architecture
 
-Skolar follows **Clean Architecture** with a **feature-first** folder structure. Every feature is fully isolated across three layers.
+Follows **Clean Architecture** with a **feature-first** folder structure. Every feature is fully isolated across three layers.
 
 ```
 Presentation  ->  Domain  ->  Data
@@ -51,7 +40,7 @@ Presentation  ->  Domain  ->  Data
 
 - **Presentation**: Riverpod providers, pages, widgets. Knows nothing about data sources.
 - **Domain**: Pure Dart. Entities, repository interfaces, use cases. No Flutter imports.
-- **Data**: DTOs, data sources, repository implementations. Talks to JSON files, APIs, or storage.
+- **Data**: DTOs, data sources, repository implementations. Talks to Supabase, APIs, or local storage.
 
 Dependencies always point **inward** — data depends on domain, presentation depends on domain, nothing depends on presentation or data directly.
 
@@ -68,7 +57,7 @@ Repository (abstract interface)
    ↓  implemented by
 RepositoryImpl
    ↓  calls
-DataSource (local file / FastAPI / Firebase)
+DataSource (Supabase / FastAPI / local storage)
 ```
 
 ### Error Handling
@@ -79,32 +68,36 @@ DataSource (local file / FastAPI / Firebase)
 
 ---
 
-## AI Pipeline
-
-The AI pipeline powers all question generation. It is a Python FastAPI service that the Flutter app calls over HTTP.
-
 ### Core Idea
 
 Instead of generating generic questions, Skolar uses the college's own Previous Year Questions (PYQs) as a reference. The generated questions match that specific college's difficulty level, question style, and topic distribution. No manual labeling or tagging is required — the system infers difficulty from context.
 
-### DICL — Diversity-based In-Context Learning
+### DICL (Diverse In-Context Learning)
 
 The pipeline is based on the paper *"Exploring the Role of Diversity in Example Selection for In-Context Learning"* published at SIGIR 2025. The key finding is that selecting diverse examples for the LLM prompt produces better outputs than selecting the most similar examples.
 
-Naive example selection picks the most similar PYQs to the query. This causes topical bias — the LLM sees only one subtopic and generates repetitive questions. DICL uses MMR (Maximal Marginal Relevance) to pick examples that are both relevant and diverse, spreading coverage across different topics.
+Naive example selection picks the most similar PYQs to the query. This causes topical bias, the LLM sees only one subtopic and generates repetitive questions. DICL uses MMR (Maximal Marginal Relevance) to pick examples that are both relevant and diverse, spreading coverage across different topics.
 
-Token efficiency: instead of sending all PYQs to the LLM (~50,000 tokens), MMR selects 5 diverse examples (~2,000 tokens). This is a 95% reduction in token usage with better output quality.
+Token efficiency: instead of sending all PYQs to the LLM, MMR selects 5 diverse examples (~2,000 tokens). This is a 95% reduction in token usage with better output quality.
 
-### Self-Expanding RAG
+### Exam Type Filtering
 
-Every AI-generated MCQ batch is automatically saved back to `question_bank.json` after generation. This means:
+Before MMR runs, the question bank is filtered to only include PYQs relevant to the chosen exam type. This ensures the LLM sees examples calibrated to the correct difficulty and syllabus scope:
 
-- The bank starts with 59 PYQ-extracted questions
-- Every mock test run adds 5–10 new community-validated questions
-- Future generation calls draw from a richer, larger pool
-- The system improves with usage without any manual intervention
+| Exam Type | PYQs used as examples |
+|---|---|
+| Quiz | `quiz` only |
+| Midsem | `midsem` + `quiz` |
+| Compre Part A | `compre` + `midsem` + `quiz` |
+| Compre Part B | `compre` + `midsem` + `quiz` |
 
-Only questions from college subjects are published to the community feed (see [Community Feed](#community-feed)), providing an additional quality filter on what re-enters the pool.
+This reflects the real syllabus structure — compre includes midsem portion, midsem includes quiz portion. If no questions match the filter (e.g. no quiz PYQs uploaded yet), the pipeline falls back to the full bank so generation never hard-fails.
+
+### Generation Modes
+
+**MCQ Blitz** (`/generate-batch`) — used for Compre Part A. Generates N MCQs in parallel, each with 4 options and a correct index. Timed quiz UI with score tracking.
+
+**Written Practice** (`/generate-open-batch`) — used for Quiz, Midsem, and Compre Part B. Generates N open-ended questions, each with a pre-generated structured model answer. Two practice views: flashcard (one at a time, reveal answer) and paper (all questions scrollable).
 
 ### Pipeline Steps
 
@@ -113,15 +106,23 @@ PDF Files (PYQs)
       ↓
 pdfplumber — extract raw text
       ↓
-Groq LLM (LLaMA 3.3 70B) — extract clean questions → question_bank.json
+Groq LLM (LLaMA 3.3 70B) — extract clean questions with marks, type, subject, year
       ↓
-sentence-transformers (all-MiniLM-L6-v2) — convert questions to vectors → embeddings.npy
+sentence-transformers (all-MiniLM-L6-v2) — embed each question → vector(384)
+      ↓
+Supabase (questions table, scoped by college + subject + exam_type)
+      ↓
+Exam type filter — keep only allowed exam_types for this mode
+      ↓
+sentence-transformers (all-MiniLM-L6-v2) — query embedding
       ↓
 MMR Algorithm — select k diverse examples from question bank
       ↓
-Groq LLM (LLaMA 3.3 70B) — generate MCQ with 4 options + correct_index
+Groq LLM (LLaMA 3.3 70B) — generate MCQ or open question
+      ↓  (written practice only)
+Groq LLM (LLaMA 3.3 70B) — generate structured model answer
       ↓
-MCQ returned to Flutter app
+Questions returned to Flutter app
 ```
 
 ### MMR Algorithm
@@ -134,28 +135,33 @@ score = alpha * relevance_to_query - (1 - alpha) * max_similarity_to_already_sel
 
 Alpha = 0.7 means 70% relevance, 30% diversity. Greedy algorithm that builds selection one item at a time.
 
-### Question Bank Schema
+### Supabase Schema
 
-Every entry in `question_bank.json` uses a unified schema whether it came from a PYQ PDF or was AI-generated:
+Every row in the `questions` table uses a unified schema whether it came from a PYQ PDF or was AI-generated:
 
-```json
-{
-  "question_text": "...",
-  "marks": 2,
-  "question_type": "mcq | short_answer | long_answer | numerical",
-  "subject": "Artificial Intelligence",
-  "year": 2025,
-  "exam_type": "compre | midsem | generated",
-  "source": "pyq | generated",
-  "options": ["A", "B", "C", "D"],
-  "correct_index": 1,
-  "generated_by": "user_firebase_uid",
-  "published": false,
-  "upvotes": 0
-}
+```
+id              uuid, primary key
+question_text   text
+marks           integer
+question_type   text  — mcq | short_answer | long_answer | numerical
+subject         text
+year            integer
+exam_type       text  — quiz | midsem | compre | generated
+college         text  — used to scope all queries
+embedding       vector(384)  — all-MiniLM-L6-v2 embedding of question_text
 ```
 
-PYQ entries have `options: null` and `correct_index: null`. Generated MCQs have all fields populated. MMR uses only `question_text` for embeddings — the extra fields are metadata and do not affect selection.
+PYQ entries are uploaded via `/upload-pyq`. The `college` field on every row ensures complete data isolation between colleges.
+
+### Model Answer Structure
+
+Model answers are structured markdown, calibrated to marks:
+
+- **1–3 marks**: 2–3 sentences, bold key terms, no headings
+- **4–6 marks**: direct answer + `### Steps` (computational) or `### Key points` (conceptual)
+- **7+ marks**: full worked answer with `### Working`, `### Result`, or `### Approach / Explanation / Conclusion`
+
+The LLM is instructed to use the specific data from the question (numbers, tables, probabilities) rather than generic theory.
 
 ### FastAPI Endpoints
 
@@ -168,41 +174,43 @@ uvicorn main:app --reload --port 8000
 | Method | Endpoint | Description |
 |---|---|---|
 | `GET` | `/health` | Sanity check |
-| `GET` | `/stats` | Bank stats: total questions, subjects, years, source breakdown |
+| `GET` | `/stats` | Bank stats scoped by college |
 | `GET` | `/questions` | Browse/filter the question bank |
-| `POST` | `/generate` | One open-ended question (original endpoint, unchanged) |
-| `POST` | `/generate-batch` | N MCQs in parallel for a mock test session |
-| `POST` | `/publish` | Mark a batch as published to the community feed |
-| `POST` | `/upload-pyq` | PDF → extract questions → add to bank |
+| `POST` | `/generate` | One open-ended question |
+| `POST` | `/generate-batch` | N MCQs in parallel (Compre Part A) |
+| `POST` | `/generate-open-batch` | N open questions + model answers (Quiz / Midsem / Compre Part B) |
+| `POST` | `/upload-pyq` | PDF → extract questions → insert into Supabase |
 
 #### `POST /generate-batch` — Request body
 
 ```json
 {
   "subject": "Artificial Intelligence",
-  "count": 5,
-  "year_from": 2024,
-  "year_to": 2026,
-  "k": 5,
-  "user_id": "firebase_uid",
-  "save_to_bank": true
+  "college": "BPHC",
+  "count": 8,
+  "exam_type": "compre",
+  "year_from": 2022,
+  "year_to": 2025,
+  "k": 5
 }
 ```
 
-Response includes `bank_indices` — the positions in the bank where the generated questions were saved. Pass these to `/publish`.
-
-#### `POST /publish` — Request body
+#### `POST /generate-open-batch` — Request body
 
 ```json
 {
-  "bank_indices": [59, 60, 61, 62, 63],
-  "user_id": "firebase_uid"
+  "subject": "Artificial Intelligence",
+  "college": "BPHC",
+  "count": 5,
+  "exam_type": "midsem",
+  "with_answers": true,
+  "k": 5
 }
 ```
 
 ### Thread Safety
 
-Multiple concurrent generation requests are safe. A `threading.Lock` (`_bank_lock`) guards all bank read-write operations. The `ThreadPoolExecutor` for parallel MCQ generation is capped at 5 workers to stay within Groq free-tier rate limits.
+Multiple concurrent generation requests are safe. The `ThreadPoolExecutor` for parallel generation is capped at 3 workers to stay within Groq free-tier rate limits. Supabase handles concurrent reads natively.
 
 ### Pipeline Location
 
@@ -210,60 +218,49 @@ Multiple concurrent generation requests are safe. A `threading.Lock` (`_bank_loc
 lib/core/ai/rag_llms/
   main.py              — FastAPI app and all endpoints
   pipeline.py          — DICL pipeline: parsing, embedding, MMR, generation, bank I/O
-  question_bank.json   — Unified question store (PYQ + generated)
-  embeddings.npy       — (59+N, 384) embedding matrix
-  .env                 — GROQ_API_KEY (not committed)
+  .env                 — GROQ_API_KEY, SUPABASE_URL, SUPABASE_KEY (not committed)
 ```
 
 ---
 
 ## Mock Test Platform
 
-The mock test feature lets students take AI-generated MCQ tests calibrated to their subject and college difficulty.
+The mock test feature lets students take AI-generated tests calibrated to their subject, college, and exam type.
 
-### User Flow
+### Exam Types
 
-1. Student opens Mock Test → sees a **Setup Screen** (subject dropdown + question count slider 3–10)
-2. Taps **Start Test** → Flutter calls `POST /generate-batch`
-3. **Loading screen** shown while the DICL pipeline runs (~4s per question in parallel)
-4. Quiz UI launches with the generated questions
-5. On completion → **Result screen** with score, grade, confetti if ≥ 70%
-6. If the subject is a college subject → `/publish` is called automatically in the background
-7. **New Test** button resets to the setup screen
+| Type | Mode | Default Questions | Max Questions | Description |
+|---|---|---|---|---|
+| Quiz | Written Practice | 5 | 10 | Short open-ended questions, model answers included |
+| Midsem | Written Practice | 6 | 10 | Medium difficulty, draws from midsem + quiz PYQs |
+| Compre Part A | MCQ Blitz | 8 | 15 | Timed MCQ quiz, draws from full syllabus PYQs |
+| Compre Part B | Written Practice | 4 | 10 | Long-answer practice, draws from full syllabus PYQs |
 
 ### Flutter Files
 
 | File | Role |
 |---|---|
-| `mock_tests_pages.dart` | Full UI: setup screen, loading, error, quiz flow, result screen |
-| `mock_test_provider.dart` | `MockTestNotifier` — state management, API calls, publish logic |
+| `mock_tests_pages.dart` | Full UI: setup screen, loading, error, MCQ flow, written practice flow, result screen |
+| `mock_tests_provider.dart` | `MockTestNotifier` — state management, API calls, exam mode routing |
 
-### College Subject Detection
-
-`mock_test_provider.dart` exports `kCollegeSubjects` — a `Set<String>` of subject names that trigger auto-publish. `isCollegeSubject(subject)` checks membership. Extend this set as subjects are added to the bank.
-
-### State Machine
-
-```
-idle → loading → ready (quiz running) → idle (after New Test)
-                       ↓ on last answer
-                 publishing (background, non-blocking)
-                       ↓
-                 ready (published=true)
-```
-
-Publish failure is **silent and non-fatal** — the quiz result is never affected by a failed publish call.
-
-### `MockTestState` Fields
+### `MockTestRequest` Fields
 
 | Field | Type | Description |
 |---|---|---|
-| `questions` | `List<QuizQuestion>` | The active quiz questions |
-| `bankIndices` | `List<int>` | Positions in the backend bank for this batch |
-| `subject` | `String` | Subject used to generate this test |
-| `status` | `MockTestStatus` | `idle / loading / ready / publishing / error` |
-| `published` | `bool` | Whether this batch has been published to the feed |
-| `error` | `String?` | Error message if generation failed |
+| `subject` | `String` | Subject to generate questions for |
+| `college` | `String` | College identifier, scopes Supabase query |
+| `mode` | `ExamMode` | `mcqBlitz` or `writtenPractice` |
+| `examType` | `String` | `'quiz'`, `'midsem'`, or `'compre'` — controls PYQ filter |
+| `count` | `int` | Number of questions to generate |
+
+### `ExamMode` Mapping
+
+```dart
+_ExamType.compreA  →  ExamMode.mcqBlitz      →  POST /generate-batch
+_ExamType.quiz     →  ExamMode.writtenPractice  →  POST /generate-open-batch
+_ExamType.midsem   →  ExamMode.writtenPractice  →  POST /generate-open-batch
+_ExamType.compreB  →  ExamMode.writtenPractice  →  POST /generate-open-batch
+```
 
 ---
 
@@ -284,24 +281,13 @@ The exam prediction feature lets students browse and filter the college question
 
 ### Available Filters
 
-Questions can be filtered by `subject`, `year`, `exam_type`, `question_type`, `source` (`pyq` or `generated`), and `published_only`.
+Questions can be filtered by `subject`, `year`, `exam_type`, `question_type`, and `source`.
 
 ---
 
 ## Focus Session
 
 The focus session feature gives students a distraction-free countdown timer for managing structured study blocks. It is self-contained with no backend dependency — all state lives in `FocusTimerController`.
-
-### User Flow
-
-1. Student opens the Focus Timer page, which starts in idle state with preset chips visible
-2. Selects a duration via a preset chip (Pomodoro, 45 min, 1 hr) or taps **Custom** to open the setup page
-3. Slides the **Slide to lock in** track to start — the wave background animates off screen
-4. The countdown runs. The slide track changes to **Slide to give up**
-5. Sliding while running triggers the **Give Up** sheet. The student can resume or end the session
-6. When the timer reaches zero, the display shows **Done!** and status moves to `complete`
-7. Resetting from the Give Up sheet restores the wave background and returns to idle
-8. If the user leaves the app mid-session → timer resets automatically
 
 ### Duration Picker
 
@@ -317,47 +303,7 @@ The focus session feature gives students a distraction-free countdown timer for 
 
 The focus session is presentation-layer only. There is no domain layer or backend call. State is managed by `FocusTimerController`, a `ChangeNotifier` consumed directly by `FocusTimerPage` via `addListener`.
 
-This is intentional - the timer resets if the user leaves the app (AppLifecycleState observer), 
-enforcing distraction free focus. If session history or streak tracking is added in Phase 5, 
-a StorageService.saveSession() call should be added inside _onTick when _secondsLeft reaches zero.
-
-### `FocusTimerController`
-
-Central state machine for the feature. Owned and disposed by `FocusTimerPageState`.
-
-| Member | Type | Description |
-|---|---|---|
-| `status` | `FocusTimerStatus` | `idle / running / paused / complete` |
-| `totalSeconds` | `int` | Chosen duration in seconds (default 3600) |
-| `secondsLeft` | `int` | Live countdown value |
-| `waveAnimationController` | `AnimationController` | Drives the wave background slide (0.0 = visible, 1.0 = off screen) |
-| `slideProgress` | `double` | Alias for `waveAnimationController.value` |
-| `formattedTime` | `String` | `H:MM:SS` or `MM:SS` depending on duration |
-| `setDuration(int)` | method | Sets duration. Only callable in `idle` state |
-| `start()` | method | Transitions to `running`, starts ticker, slides wave off screen |
-| `reset()` | method | Cancels ticker, restores duration, slides wave back in |
-
-### Wave Background
-
-`FocusBackground` is a `CustomPaint` widget driven by `slideProgress`. It renders three layers:
-
-- A solid base fill using `AppTheme.background`
-- An ambient radial glow in the upper-left quadrant using `AppTheme.primary` at reduced opacity
-- A surface panel with a concave arc cut into the top edge, painted with a vertical gradient
-
-The arc geometry is computed from the Figma spec: the top corners sit at 45% of screen height in idle state and slide to 100% (off screen) as `slideProgress` reaches 1.0. The arc dip is 12.9% of screen width, and the large-circle radius is derived analytically from the three defining points.
-
-A sheen stroke is painted along the arc edge using a centre-bright horizontal gradient to give the panel a subtle lit rim.
-
-### Slide-to-Start Track
-
-The slide track in `FocusTimerPage` is a custom `GestureDetector`-wrapped container, not a Flutter `Slider`. Key properties:
-
-- Knob position is tracked as `_knobOffset` and clamped to `[0, maxOffset]`
-- While dragging in idle state, `waveAnimationController.value` follows the knob 1:1 (physical drag feel)
-- Releasing before 82% of track width springs the wave back with an underdamped spring (ratio 0.6, overshoot)
-- Releasing at or past 82% triggers `_controller.start()` after a 200ms delay while the wave snaps fully forward (ratio 0.8, quick settle)
-- In running state the same track becomes **Slide to give up**. Completing the gesture opens the Give Up sheet
+This is intentional - the timer resets if the user leaves the app (AppLifecycleState observer), enforcing distraction free focus. If session history or streak tracking is added in Phase 5, a `StorageService.saveSession()` call should be added inside `_onTick` when `_secondsLeft` reaches zero.
 
 ### Flutter Files
 
@@ -371,30 +317,13 @@ The slide track in `FocusTimerPage` is a custom `GestureDetector`-wrapped contai
 | `widgets/present_chip.dart` | Animated chip widget used for preset selection on both pages |
 | `data/models/focus_present.dart` | `FocusPreset` value type with three default presets |
 
-Note: `widgets/focus_timer_controller.dart` is a duplicate of `controllers/focus_timer_controller.dart` and also contains a second copy of `FocusPreset`. The widgets copy can be removed — `FocusTimerPage` and `FocusSetupPage` should import from `controllers/` and `data/models/` respectively.
-
-### Preset Model
-
-```dart
-class FocusPreset {
-  final String label;
-  final int seconds;
-
-  static const List<FocusPreset> defaults = [
-    FocusPreset(label: 'Pomodoro', seconds: 25 * 60),
-    FocusPreset(label: '45 min',   seconds: 45 * 60),
-    FocusPreset(label: '1 hr',     seconds: 60 * 60),
-  ];
-}
-```
-
 ### Known Issues and Next Steps
 
 **Duplicate controller file** — `widgets/focus_timer_controller.dart` duplicates `controllers/focus_timer_controller.dart`. Delete the widgets copy and update imports.
 
-**`resume()` is a no-op** — `FocusTimerController.resume()` only calls `notifyListeners()`. The Give Up sheet's Keep Focusing button closes the overlay via `setState` in the page, which is correct, but `resume()` serves no purpose. Either remove it or have it re-start the ticker if a pause state is introduced later.
+**`resume()` is a no-op** — `FocusTimerController.resume()` only calls `notifyListeners()`. Either remove it or have it re-start the ticker if a pause state is introduced later.
 
-**`paused` state is unused** — `FocusTimerStatus.paused` is defined but never set. If pause/resume is added (e.g. triggered by an incoming notification), the ticker cancel/restart logic should live in `FocusTimerController`, not in the page.
+**`paused` state is unused** — `FocusTimerStatus.paused` is defined but never set.
 
 **No session persistence** — completed sessions are not written anywhere. When streak and history tracking land in Phase 5, add a `StorageService.saveSession(duration, completedAt)` call inside `_onTick` when `_secondsLeft` reaches zero.
 
@@ -413,20 +342,12 @@ isCollegeSubject("Artificial Intelligence") == true
         ↓
 After quiz completion, Flutter calls POST /publish with bank_indices
         ↓
-Backend sets published=true on those questions in question_bank.json
+Backend sets published=true on those questions in Supabase
         ↓
 Questions appear in GET /questions?published_only=true
         ↓
 Community feed shows the test with student name, subject, question count
 ```
-
-### What Appears in the Feed
-
-Each card represents one student's completed AI-generated test. It shows student name + year + branch, subject, year range, question count, difficulty badge, upvote/downvote counts, attempt count, and an Attempt button.
-
-### Key Design Property
-
-The feed **is** the AI output made public — no separate upload flow. Generation → completion → auto-publish is the entire pipeline.
 
 ### Feed Architecture
 
@@ -437,97 +358,15 @@ FeedLocalDataSourceImpl  →  FeedRemoteDataSourceImpl
         (mock JSON)               (GET /questions?published_only=true)
 ```
 
-Everything above — `FeedRepositoryImpl`, `GetFeedUseCase`, `FeedNotifier`, `FeedPage`, `FeedPostCard` — stays identical. The provider chain is:
-
-```
-feedDataSourceProvider   (FeedLocalDataSource)
-        ↓
-feedRepositoryProvider   (FeedRepositoryImpl)
-        ↓
-getFeedUseCaseProvider   (GetFeedUseCase)
-        ↓
-feedProvider             (AsyncNotifier<List<FeedPostEntity>>)
-        ↓
-sortedFeedProvider       (derived, cached — sort logic fully decoupled)
-        ↓
-FeedPage                 feedAsync.when(loading, error, data)
-        ↓
-FeedPostCard             .select() on vote state — only affected card rebuilds
-```
-
-`refresh()` uses `ref.invalidateSelf()` which works correctly for both local and remote sources — no change needed when the datasource swaps.
+Everything above — `FeedRepositoryImpl`, `GetFeedUseCase`, `FeedNotifier`, `FeedPage`, `FeedPostCard` — stays identical.
 
 ### Feed Open Ends (pre-API checklist)
 
-These are the specific things that need to be wired up before or during the API connection. The UI and architecture do not need to change.
+**1. Attempt button** — `_CardFooter` renders the Attempt button as a static `Container` with no gesture handler. Wire it to `MockTestNotifier.fetchQuestions()` with the post's subject.
 
-**1. Attempt button — add `onTap`**
+**2. Vote state persistence** — `upvotedPostsProvider` and `downvotedPostsProvider` are in-memory only. When Firebase/Supabase auth lands, add a write alongside the local state update.
 
-`_CardFooter` renders the Attempt button as a static `Container` with no gesture handler. When connecting, wrap it in a `GestureDetector` that calls `MockTestNotifier.fetchQuestions()` with the post's subject and navigates to the mock test flow. `FeedPostEntity` already has `subject`, `questionCount`, and `yearRange` — everything needed to build a `MockTestRequest`.
-
-```dart
-// What needs to be added to _CardFooter
-GestureDetector(
-  onTap: () {
-    ref.read(mockTestProvider.notifier).fetchQuestions(
-      MockTestRequest(subject: post.subject, count: post.questionCount),
-    );
-    context.push('/mock-test');
-  },
-  child: /* existing Attempt container */,
-)
-```
-
-**2. Add `bankIndices` to `FeedPostEntity` now**
-
-The entity needs a `bankIndices: List<int>` field so the Attempt button can re-serve the exact same questions that were originally generated. Add it now with `@Default([])` so existing mock data still compiles:
-
-```dart
-// Add to FeedPostEntity
-final List<int> bankIndices; // positions in question_bank for this batch
-```
-
-This is the only entity change needed before the API connection.
-
-**3. Vote state — add persistence**
-
-`upvotedPostsProvider` and `downvotedPostsProvider` are `StateProvider<Set<String>>` — in-memory only, reset on restart. The optimistic update logic in `toggleUpvote` / `toggleDownvote` is already correct. When Firebase lands, add a Firestore write alongside the local state update:
-
-```dart
-void toggleUpvote(String postId) {
-  // existing local toggle logic — keep as-is
-  ...
-  // add:
-  FirestoreService.setUpvote(postId, userId, isUpvoted);
-}
-```
-
-**4. College name — read from `userProvider`**
-
-`'BITS Pilani · Hyderabad'` is a hardcoded string literal in `_TopBar`. When auth lands, replace with:
-
-```dart
-// _TopBar becomes a ConsumerWidget
-final user = ref.watch(userProvider);
-Text(user.college)
-```
-
-`userProvider` in `shared/providers/` already returns a `UserModel` with a `college` field — the plumbing exists, just needs to be read.
-
-**5. `generate_sheet.dart` — commented out import**
-
-`// import '../widgets/generate_sheet.dart'` suggests a "generate test from feed" flow was started. This is intentionally deferred — wire it up when the Attempt flow is working.
-
-### Firestore Migration
-
-Currently `question_bank.json` is the data store. When Firebase is integrated:
-
-- Each question becomes a Firestore document in a `questions` collection
-- `embeddings.npy` moves to Firestore vector fields or Pinecone
-- The feed reads from Firestore in real time
-- Upvotes and attempt counts become live Firestore counters
-
-`pipeline.py` does not change — only `load_bank_and_embeddings` / `save_bank_and_embeddings` get swapped for Firestore reads/writes.
+**3. College name** — `'BITS Pilani · Hyderabad'` is hardcoded in `_TopBar`. Replace with `ref.watch(userProvider).college` when auth lands.
 
 ---
 
@@ -541,9 +380,7 @@ lib/
 │   │   └── rag_llms/                # Python backend
 │   │       ├── main.py              # FastAPI app (all endpoints)
 │   │       ├── pipeline.py          # DICL pipeline
-│   │       ├── question_bank.json   # Unified question store
-│   │       ├── embeddings.npy       # Embedding matrix (59+N, 384)
-│   │       └── .env                 # GROQ_API_KEY
+│   │       └── .env                 # GROQ_API_KEY, SUPABASE_URL, SUPABASE_KEY
 │   ├── config/
 │   ├── di/
 │   ├── errors/
@@ -570,36 +407,36 @@ lib/
 │   ├── syllabus/
 │   ├── pyq_upload/
 │   │
-│   ├── exam_prediction/             # Question bank browser + stats (rebuilt)
+│   ├── exam_prediction/
 │   │   ├── data/
-│   │   │   ├── datasources/         # exam_prediction_datasource.dart
+│   │   │   ├── datasources/
 │   │   │   ├── dtos/
-│   │   │   └── repository_impl/     # exam_prediction_repository_impl.dart
+│   │   │   └── repository_impl/
 │   │   ├── domain/
-│   │   │   ├── entities/            # exam_prediction_entity.dart
+│   │   │   ├── entities/
 │   │   │   ├── repositories/
-│   │   │   └── usecases/            # exam_prediction_usecases.dart
+│   │   │   └── usecases/
 │   │   └── presentation/
-│   │       ├── pages/               # exam_prediction_pages.dart
-│   │       └── providers/           # exam_prediction_provider.dart
+│   │       ├── pages/
+│   │       └── providers/
 │   │
-│   ├── feed/                        # Community feed
+│   ├── feed/
 │   │   └── presentation/
-│   │       ├── pages/               # feed_page.dart
-│   │       └── widgets/             # feed_post_card.dart
+│   │       ├── pages/
+│   │       └── widgets/
 │   │
-│   ├── focus_session/               # Distraction-free countdown timer
-│   │   ├── controllers/             # focus_timer_controller.dart
+│   ├── focus_session/
+│   │   ├── controllers/
 │   │   ├── data/
-│   │   │   └── models/              # focus_preset.dart
+│   │   │   └── models/
 │   │   ├── presentation/
-│   │   │   ├── pages/               # focus_timer_page.dart, focus_setup_page.dart
-│   │   └── widgets/                 # focus_background.dart, present_chip.dart, glow_thumb_shape.dart
+│   │   │   └── pages/
+│   │   └── widgets/
 │   │
-│   ├── mock_tests/                  # AI-generated MCQ quiz platform
+│   ├── mock_tests/
 │   │   └── presentation/
 │   │       ├── pages/               # mock_tests_pages.dart
-│   │       └── providers/           # mock_test_provider.dart
+│   │       └── providers/           # mock_tests_provider.dart
 │   │
 │   └── profile/
 │
@@ -624,6 +461,7 @@ lib/
 | Local storage | `hive` + `shared_preferences` |
 | Charts | `fl_chart` |
 | Quiz confetti | `confetti ^0.8.0` |
+| Markdown rendering | `flutter_markdown_plus` |
 | Code generation | `build_runner` |
 
 ### AI Backend
@@ -634,10 +472,11 @@ lib/
 | Question extraction | Groq API — LLaMA 3.3 70B |
 | Semantic embeddings | `sentence-transformers` — all-MiniLM-L6-v2 |
 | Diversity selection | MMR algorithm (numpy) |
-| MCQ generation | Groq API — LLaMA 3.3 70B |
-| Parallel generation | `concurrent.futures.ThreadPoolExecutor` |
-| Thread-safe bank writes | `threading.Lock` |
+| MCQ + open question generation | Groq API — LLaMA 3.3 70B |
+| Model answer generation | Groq API — LLaMA 3.3 70B |
+| Parallel generation | `concurrent.futures.ThreadPoolExecutor` (3 workers) |
 | Backend API | FastAPI + uvicorn |
+| Data store | Supabase (PostgreSQL + pgvector) |
 
 ---
 
@@ -653,43 +492,43 @@ lib/
 - Dark theme with custom color palette
 - Clean Architecture scaffold for all features
 - Dev menu for navigating between pages during development
-- Full AI pipeline (DICL + MMR)
+- Full AI pipeline (DICL + MMR + Supabase)
   - PDF parsing and question extraction
-  - Semantic embedding of question bank
+  - Semantic embedding stored in Supabase pgvector
   - MMR-based diverse example selection
+  - Exam type filtering (quiz / midsem / compre scope)
   - LLM MCQ generation with 4 options + correct answer
-  - Year range filtering
-  - Self-expanding RAG (generated questions saved back to bank)
-  - Thread-safe parallel generation (up to 5 concurrent Groq calls)
-- FastAPI backend with 6 endpoints
+  - LLM open question generation with structured model answers
+  - Thread-safe parallel generation (3 concurrent Groq calls)
+- FastAPI backend with 7 endpoints, fully Supabase-backed
 - Mock test platform
-  - Setup screen (subject picker + question count slider)
-  - Loading screen with generation status
-  - Full quiz UI (timer, progress bar, animated option tiles)
-  - Result screen with grade, score, confetti
-  - Auto-publish to community feed on completion for college subjects
-- Exam prediction / question bank browser (rebuilt)
-  - Filter by subject, year, exam type, source, published status
+  - 4 exam types: Quiz, Midsem, Compre Part A, Compre Part B
+  - MCQ Blitz mode (Compre Part A): timed quiz, score tracking, confetti
+  - Written Practice mode (Quiz / Midsem / Compre Part B): flashcard + paper views
+  - Model answers with structured markdown rendering
+  - Setup screen with exam type grid, subject picker, question count slider
+- Exam prediction / question bank browser
+  - Filter by subject, year, exam type, question type
 - Focus session timer
   - Preset chips: Pomodoro (25 min), 45 min, 1 hr
-  - Custom duration picker (5 min to 3 hr) with live hero time display and session breakdown card
-  - Slide-to-start track with 1:1 physical drag and spring physics
-  - Animated wave background driven by slide progress
-  - Give Up confirmation sheet with resume and end options
-  - Alarm on session completion (sound + vibration, respects ringer mode)
+  - Custom duration picker (5 min to 3 hr)
+  - Slide-to-start track with spring physics
+  - Animated wave background
+  - Give Up confirmation sheet
   - Auto-reset if user leaves app mid-session
 - Community feed
   - Feed cards with student name, subject, difficulty badge, upvotes, attempt count
-  - Attempt button to take any published test
+  - Attempt button (UI complete, gesture handler pending auth)
 
 ### Planned
 
-- Authentication flow with college email
-- Firebase integration (Firestore for question bank, Auth for users)
+- Authentication flow with college email (Firebase Auth)
+- Firestore / Supabase Auth integration
 - Syllabus progress tracking
 - PYQ upload through the app UI
 - Personal learning goal mode (daily AI question plan with lives/streaks)
 - Focus session history and streak tracking
+- Community feed backend connection (replace mock data with Supabase)
 
 ---
 
@@ -706,18 +545,6 @@ assets/data/analytics.json
 ```
 
 To change what appears on screen, edit this file and hot-restart the app.
-
-### What Each Field Controls
-
-| Field in JSON | What changes on screen |
-|---|---|
-| `total_tasks_completed` | Big number in the center of the ring chart |
-| `todo_percent` | Blue segment of ring + "To Do" percentage label |
-| `in_progress_percent` | Teal segment + "In Progress" label |
-| `completed_percent` | Grey segment + "Completed" label |
-| `weekly_progress` | Points on the line chart (label = day, value = 0–100) |
-| `tasks` | Rows in the Tasks list (title, due date, avatar initials) |
-| `recent_activities` | Rows in Recent Activity (time, title, subtitle, date) |
 
 ### Data Flow
 
@@ -740,22 +567,8 @@ dashboardProvider                widgets that watch this rebuild when data chang
         ↓
 DashboardPage                    state.when(loading, error, data)
         ↓
-DonutProgressChart               reads todoPercent, inProgressPercent, completedPercent
-WeeklyLineChart                  reads weeklyProgress list
-TaskListTile                     reads tasks list
-RecentActivityTile               reads recentActivities list
+DonutProgressChart / WeeklyLineChart / TaskListTile / RecentActivityTile
 ```
-
-### How It Will Connect to Mock Tests
-
-When mock test results are complete:
-
-1. The result screen writes scores to `StorageService`
-2. The datasource is swapped to read from `StorageService` instead of the JSON file
-3. After writing, mock test calls `ref.invalidate(dashboardProvider)`
-4. The dashboard automatically rebuilds with the new data
-
-No dashboard code changes needed — only the datasource implementation changes.
 
 ---
 
@@ -778,18 +591,16 @@ The app opens to a Dev Menu listing all features. Tap any feature to navigate to
 
 ## Code Generation
 
-Skolar uses two code generation tools. Understanding when and how to run them saves a lot of confusion.
+Skolar uses two code generation tools.
 
 ### What gets generated
-
-`build_runner` produces two types of files:
 
 | File suffix | Generated by | Purpose |
 |---|---|---|
 | `.freezed.dart` | `freezed` | Immutable value classes: `copyWith`, `==`, `hashCode`, pattern matching |
 | `.g.dart` | `json_serializable` | `fromJson` / `toJson` methods |
 
-These files are committed to git. Never edit them manually — they get overwritten on the next build.
+These files are committed to git. Never edit them manually.
 
 ### When to run it
 
@@ -797,99 +608,23 @@ Run `build_runner` after any of these:
 - Adding a new `@freezed` class
 - Adding or removing a field on a `@freezed` class
 - Adding a new `@JsonSerializable` DTO
-- Adding or removing a `@JsonKey` annotation
-- After a `git pull` that touched any model files (if the `.freezed.dart` or `.g.dart` is out of sync you'll get immediate compile errors)
+- After a `git pull` that touched any model files
 
 ### Commands
 
 ```bash
-# One-time build (use this normally)
+# One-time build
 dart run build_runner build --delete-conflicting-outputs
 
-# Watch mode — auto-rebuilds on file save (use during active model work)
+# Watch mode — auto-rebuilds on file save
 dart run build_runner watch --delete-conflicting-outputs
 
-# Clean all generated files and rebuild from scratch (use when things are broken)
+# Clean and rebuild from scratch
 dart run build_runner clean
 dart run build_runner build --delete-conflicting-outputs
 ```
 
-Always use `--delete-conflicting-outputs`. Without it, build_runner refuses to overwrite existing generated files and fails with a conflict error.
-
-### How `@freezed` is used in this codebase
-
-Domain entities use `@freezed`. DTOs use `@JsonSerializable` only (no freezed). This is intentional — DTOs are data-layer objects that get converted to domain entities via `.toDomain()`, so they don't need immutability guarantees.
-
-```dart
-// Domain entity — uses @freezed (lib/features/*/domain/entities/)
-@freezed
-class QuestionItem with _$QuestionItem {
-  const factory QuestionItem({
-    required String questionText,
-    required int marks,
-    required String questionType,
-    required String subject,
-    required int year,
-    required String examType,
-  }) = _QuestionItem;
-}
-
-// DTO — uses @JsonSerializable only (lib/features/*/data/dtos/)
-@JsonSerializable()
-class QuestionItemDto {
-  @JsonKey(name: 'question_text')
-  final String questionText;
-  // ...
-  factory QuestionItemDto.fromJson(Map<String, dynamic> json) =>
-      _$QuestionItemDtoFromJson(json);
-  QuestionItem toDomain() => QuestionItem(...);
-}
-```
-
-### Adding a new field to a freezed class
-
-1. Add the field to the `const factory` constructor
-2. If it has a default value, use `@Default(value)` not `= value`
-3. Run `dart run build_runner build --delete-conflicting-outputs`
-4. The generated `.freezed.dart` updates automatically — `copyWith`, `==`, and `hashCode` all include the new field
-
-```dart
-// Before
-@freezed
-class FeedPostEntity with _$FeedPostEntity {
-  const factory FeedPostEntity({
-    required String id,
-    required int upvotes,
-  }) = _FeedPostEntity;
-}
-
-// After adding a field
-@freezed
-class FeedPostEntity with _$FeedPostEntity {
-  const factory FeedPostEntity({
-    required String id,
-    required int upvotes,
-    @Default([]) List<int> bankIndices,  // ← new field, default keeps old call sites compiling
-  }) = _FeedPostEntity;
-}
-```
-
-### Common errors and fixes
-
-**`part 'some_file.freezed.dart'` — file not found**
-The generated file doesn't exist yet. Run `build_runner build`.
-
-**`The name '_$SomeClass' isn't defined`**
-Same cause — generated file missing or stale. Run `build_runner build --delete-conflicting-outputs`.
-
-**`Couldn't read file` or `existing file differs`**
-A generated file exists but conflicts with what build_runner wants to write. The `--delete-conflicting-outputs` flag handles this automatically. If it still fails, run `build_runner clean` first.
-
-**Build succeeds but app still has errors after a git pull**
-Someone on another branch changed a model. Run `build_runner build --delete-conflicting-outputs` — the generated files in your working tree are stale.
-
-**`withOpacity` or other method missing on a freezed class**
-You're trying to call a method that only exists on the concrete class, not the interface. Add a private constructor: `const FeedPostEntity._();` between the `@freezed` line and the `const factory`.
+Always use `--delete-conflicting-outputs`.
 
 ---
 
@@ -904,10 +639,12 @@ myenv311\Scripts\activate          # Windows
 source myenv311/bin/activate       # macOS / Linux
 
 # Install dependencies
-pip install fastapi uvicorn pdfplumber sentence-transformers numpy groq python-dotenv
+pip install fastapi uvicorn pdfplumber sentence-transformers numpy groq python-dotenv supabase
 
-# Create .env file
+# Create .env file with all three keys
 echo GROQ_API_KEY=your_key_here > .env
+echo SUPABASE_URL=your_url_here >> .env
+echo SUPABASE_KEY=your_key_here >> .env
 
 # Start the server
 uvicorn main:app --reload --port 8000
@@ -915,11 +652,7 @@ uvicorn main:app --reload --port 8000
 
 The server starts at `http://0.0.0.0:8000`. Interactive API docs at `http://localhost:8000/docs`.
 
-**Testing from Flutter on a physical device:** replace `localhost` with your machine's LAN IP (e.g. `192.168.29.196`). The base URL is defined in `mock_test_provider.dart` as `_kBaseUrl`.
-
-### Generating Questions (Notebook)
-
-The original Jupyter notebook (`data_extraction_llms.ipynb`) is still available for exploratory work and initial question extraction from new PDFs. For everything else, use the FastAPI server.
+**Testing from Flutter on a physical device:** replace `localhost` with your machine's LAN IP (e.g. `192.168.29.196`). The base URL is defined in `mock_tests_provider.dart` as `_kBaseUrl`.
 
 ---
 
@@ -939,9 +672,7 @@ Order to stay consistent with the architecture:
 10. Add a route in `main.dart`
 11. Run `dart run build_runner build --delete-conflicting-outputs`
 
-Use the `analytics` feature as the reference implementation — it is the most complete example.
-
-Note: features that have no persistence or backend requirement (like focus session) can skip steps 2-7 and use a `ChangeNotifier` directly in the presentation layer. Introduce Clean Architecture layers only when a data or domain concern actually exists.
+Use the `analytics` feature as the reference implementation. Features with no persistence or backend requirement (like focus session) can skip steps 2–7 and use a `ChangeNotifier` directly in the presentation layer.
 
 ---
 
@@ -959,22 +690,27 @@ Phase 2 — AI Pipeline (complete)
     Semantic embeddings with sentence-transformers
     MMR-based diverse example selection (DICL)
     LLM MCQ generation with 4 options + correct index
-    Year range filtering
-    Self-expanding RAG (generated questions saved to bank)
+    LLM open question generation with structured model answers
+    Exam type filtering (quiz / midsem / compre scope)
     Thread-safe parallel generation
-    FastAPI backend with 6 endpoints
+    FastAPI backend with 7 endpoints
+    Supabase integration (replaces question_bank.json + embeddings.npy)
 
 Phase 3 — Core Features (complete)
-    Mock test platform (setup, quiz, result, auto-publish)
-    Exam prediction / question bank browser (rebuilt)
+    Mock test platform
+        4 exam types: Quiz, Midsem, Compre Part A, Compre Part B
+        MCQ Blitz mode with timed quiz UI
+        Written Practice mode with flashcard + paper views
+        Model answers with structured markdown rendering
+    Exam prediction / question bank browser
     Community feed (feed_page, feed_post_card, upvotes, attempt counts)
-    Community feed backend (publish endpoint, published_only filter)
-    Focus session timer (countdown, wave background, slide-to-start, give-up sheet, custom duration picker)
+    Focus session timer (countdown, wave background, slide-to-start, custom duration picker)
 
 Phase 4 — Auth and Backend
-    College email authentication (Firebase Auth)
-    Firebase Firestore integration (replace question_bank.json + embeddings.npy)
+    College email authentication (Firebase Auth / Supabase Auth)
     PYQ upload through the app UI
+    Community feed backend connection (replace mock data with Supabase live query)
+    College name read from userProvider (remove hardcoded fallback)
 
 Phase 5 — Personalisation
     Personal learning goal mode

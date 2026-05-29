@@ -142,6 +142,13 @@ extension _ExamTypeExt on _ExamType {
     _ExamType.compreA => Icons.flash_on_rounded,
     _ExamType.compreB => Icons.edit_note_rounded,
   };
+  
+  String get examType => switch (this) {
+    _ExamType.quiz    => 'quiz',
+    _ExamType.midsem  => 'midsem',
+    _ExamType.compreA => 'compre',
+    _ExamType.compreB => 'compre',
+  };
 }
 
 const _kSubjects = [
@@ -198,6 +205,7 @@ class _MockTestPageState extends ConsumerState<MockTestPage> {
       subject: _selectedSubject,
       college: college,
       mode: _selectedExam.mode,
+      examType: _selectedExam.examType,
       count: _questionCount,
     ));
   }

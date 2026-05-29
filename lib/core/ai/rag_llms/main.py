@@ -68,6 +68,7 @@ class GenerateBatchRequest(BaseModel):
     subject: str
     college: str
     count: Optional[int] = 5
+    exam_type: Optional[str] = None
     year_from: Optional[int] = None
     year_to: Optional[int] = None
     k: Optional[int] = 5
@@ -90,6 +91,7 @@ class GenerateOpenBatchRequest(BaseModel):
     subject: str
     college: str
     count: Optional[int] = 5
+    exam_type: Optional[str] = None
     year_from: Optional[int] = None
     year_to: Optional[int] = None
     k: Optional[int] = 5
@@ -247,6 +249,7 @@ def generate_batch(req: GenerateBatchRequest):
             subject=req.subject,
             college=req.college,
             count=count,
+            exam_type=req.exam_type,
             year_range=year_range,
             k=k,
         )
@@ -310,6 +313,7 @@ def generate_open_batch(req: GenerateOpenBatchRequest):
             subject=req.subject,
             college=req.college,
             count=count,
+            exam_type=req.exam_type,
             year_range=year_range,
             k=k,
             with_answers=req.with_answers if req.with_answers is not None else True,
