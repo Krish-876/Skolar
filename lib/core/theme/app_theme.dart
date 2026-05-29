@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 /// Application theme configuration
 class AppTheme {
   // ── Core Brand Colors ──────────────────────────────────────────────────────
-  static const Color background       = Color(0xFF05061A); // Background
+  static const Color background       = Colors.black; // Background
   static const Color primary          = Color(0xFF1E2A8A); // Primary (deep blue)
   static const Color secondary        = Color(0xFF050610); // Secondary (near-black)
   static const Color star             = Color(0xFFF5C518); // Star / highlight yellow
@@ -147,7 +147,7 @@ class AppTheme {
 static const Color cardBackground   = Color(0xFF0D1440); // use surfaceGradBegin
 static const Color textPrimary      = onBackground;      // already have this
 static const Color textSecondary    = onBackground2;     // already have this
-static const Color accent           = Color(0xFF63C8D4); // teal for charts
+static const Color accent           = Colors.grey; // teal for charts
 static const Color dividerColor     = surface;           // already have this
 
 // ── Chart segments ────────────────────────────────────────────────────────

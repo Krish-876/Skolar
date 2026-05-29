@@ -38,7 +38,7 @@ class ExamPredictionRemoteDataSourceImpl
 
   // Use 10.0.2.2 for Android emulator.
   // Change to your machine's LAN IP for physical device testing.
-  static const String _baseUrl = 'http://10.63.32.220:8000';
+  static const String _baseUrl = 'http://172.16.18.138:8000';
 
   ExamPredictionRemoteDataSourceImpl({Dio? dio})
       : _dio = dio ??
