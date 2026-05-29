@@ -1,3 +1,4 @@
+import 'package:Skolar/features/pyq_upload/presentation/pages/pyq_upload_pages.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:Skolar/features/analytics/presentation/pages/analytics_pages.dart';
@@ -8,14 +9,12 @@ import 'package:Skolar/features/exam_prediction_with_bank/questions_feature/exam
 import 'package:Skolar/features/feed/presentation/pages/feed_page.dart';
 import 'package:Skolar/features/focus_session/presentation/focus_timer_page.dart';
 import 'package:Skolar/features/mock_tests/presentation/pages/mock_tests_pages.dart';
-import 'package:Skolar/features/mock_tests/presentation/widgets/mock_tests_widgets.dart';
 import 'package:Skolar/features/onboarding/presentation/pages/onboarding_pages.dart';
 import 'package:Skolar/features/profile/presentation/pages/profile_pages1.dart';
 // ---------------------------------------------------------------------------
 // Entry point
 // ---------------------------------------------------------------------------
 import 'package:flutter/services.dart';
-import 'package:Skolar/space_record.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -88,7 +87,7 @@ abstract class AppRoutes {
   examPrediction: (_) => const ExamPredictionPage(),
   mockTests: (_) => const MockTestPage(),
   profile: (_) => const SkolarDashboardApp(),
-  pyqUpload: (_) => const SpaceRecordPage(),
+  pyqUpload: (_) => const PyqUploadPage(),
   subjects: (_) => const _PlaceholderPage(title: 'Subjects'),
   syllabus: (_) => const _PlaceholderPage(title: 'Syllabus'),
   focusSession: (_) => const FocusTimerPage(),

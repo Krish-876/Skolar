@@ -11,6 +11,7 @@ class ExamPredictionRepositoryImpl implements ExamPredictionRepository {
   @override
   Future<Either<Failure, GeneratedQuestion>> generateQuestion({
     required String subject,
+    required String college,
     required int k,
     int? yearFrom,
     int? yearTo,
@@ -18,6 +19,7 @@ class ExamPredictionRepositoryImpl implements ExamPredictionRepository {
     try {
       final dto = await _dataSource.generateQuestion(
         subject: subject,
+        college: college,
         k: k,
         yearFrom: yearFrom,
         yearTo: yearTo,
@@ -35,6 +37,7 @@ class ExamPredictionRepositoryImpl implements ExamPredictionRepository {
     required String subject,
     required int year,
     required String examType,
+    required String college,
   }) async {
     try {
       final dto = await _dataSource.uploadPyq(
@@ -42,6 +45,7 @@ class ExamPredictionRepositoryImpl implements ExamPredictionRepository {
         subject: subject,
         year: year,
         examType: examType,
+        college: college,
       );
       return Right(dto.toDomain());
     } catch (e) {
@@ -51,9 +55,11 @@ class ExamPredictionRepositoryImpl implements ExamPredictionRepository {
   }
 
   @override
-  Future<Either<Failure, QuestionBankStats>> getStats() async {
+  Future<Either<Failure, QuestionBankStats>> getStats({
+    required String college,
+  }) async {
     try {
-      final dto = await _dataSource.getStats();
+      final dto = await _dataSource.getStats(college: college);
       return Right(dto.toDomain());
     } catch (e) {
       print('REPO ERROR getStats: $e');
@@ -63,6 +69,7 @@ class ExamPredictionRepositoryImpl implements ExamPredictionRepository {
 
   @override
   Future<Either<Failure, QuestionsResponse>> getQuestions({
+    required String college,
     String? subject,
     int? year,
     String? examType,
@@ -70,6 +77,7 @@ class ExamPredictionRepositoryImpl implements ExamPredictionRepository {
   }) async {
     try {
       final dto = await _dataSource.getQuestions(
+        college: college,
         subject: subject,
         year: year,
         examType: examType,

@@ -51,6 +51,9 @@ dependencies:
   confetti: ^0.8.0
   flutter_ringtone_player: ^4.0.0+4
   vibration: ^3.1.8
+  supabase: ^2.10.6
+  flutter_markdown_plus: ^1.0.7
+  markdown: ^7.3.1
 dev_dependencies:
   flutter_test:
     sdk: flutter

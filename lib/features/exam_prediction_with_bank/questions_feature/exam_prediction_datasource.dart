@@ -5,6 +5,7 @@ import 'package:Skolar/features/exam_prediction_with_bank/questions_feature/exam
 abstract class ExamPredictionRemoteDataSource {
   Future<GeneratedQuestionDto> generateQuestion({
     required String subject,
+    required String college,
     required int k,
     int? yearFrom,
     int? yearTo,
@@ -15,11 +16,15 @@ abstract class ExamPredictionRemoteDataSource {
     required String subject,
     required int year,
     required String examType,
+    required String college,
   });
 
-  Future<QuestionBankStatsDto> getStats();
+  Future<QuestionBankStatsDto> getStats({
+    required String college,
+  });
 
   Future<QuestionsResponseDto> getQuestions({
+    required String college,
     String? subject,
     int? year,
     String? examType,
@@ -33,7 +38,7 @@ class ExamPredictionRemoteDataSourceImpl
 
   // Use 10.0.2.2 for Android emulator.
   // Change to your machine's LAN IP for physical device testing.
-  static const String _baseUrl = 'http://192.168.29.196:8000';
+  static const String _baseUrl = 'http://10.63.32.220:8000';
 
   ExamPredictionRemoteDataSourceImpl({Dio? dio})
       : _dio = dio ??
@@ -47,6 +52,7 @@ class ExamPredictionRemoteDataSourceImpl
   @override
   Future<GeneratedQuestionDto> generateQuestion({
     required String subject,
+    required String college,
     required int k,
     int? yearFrom,
     int? yearTo,
@@ -54,6 +60,7 @@ class ExamPredictionRemoteDataSourceImpl
     try {
       final body = <String, dynamic>{
         'subject': subject,
+        'college': college,
         'k': k,
         if (yearFrom != null) 'year_from': yearFrom,
         if (yearTo != null) 'year_to': yearTo,
@@ -72,6 +79,7 @@ class ExamPredictionRemoteDataSourceImpl
     required String subject,
     required int year,
     required String examType,
+    required String college,
   }) async {
     try {
       final formData = FormData.fromMap({
@@ -82,6 +90,7 @@ class ExamPredictionRemoteDataSourceImpl
         'subject': subject,
         'year': year,
         'exam_type': examType,
+        'college': college,
       });
       final response = await _dio.post<Map<String, dynamic>>(
         '/upload-pyq',
@@ -94,9 +103,14 @@ class ExamPredictionRemoteDataSourceImpl
   }
 
   @override
-  Future<QuestionBankStatsDto> getStats() async {
+  Future<QuestionBankStatsDto> getStats({
+    required String college,
+  }) async {
     try {
-      final response = await _dio.get<Map<String, dynamic>>('/stats');
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/stats',
+        queryParameters: {'college': college},
+      );
       return QuestionBankStatsDto.fromJson(response.data!);
     } on DioException catch (e) {
       throw Exception('Failed to fetch stats: ${e.message}');
@@ -105,6 +119,7 @@ class ExamPredictionRemoteDataSourceImpl
 
   @override
   Future<QuestionsResponseDto> getQuestions({
+    required String college,
     String? subject,
     int? year,
     String? examType,
@@ -112,6 +127,7 @@ class ExamPredictionRemoteDataSourceImpl
   }) async {
     try {
       final queryParams = <String, dynamic>{
+        'college': college,
         if (subject != null) 'subject': subject,
         if (year != null) 'year': year,
         if (examType != null) 'exam_type': examType,

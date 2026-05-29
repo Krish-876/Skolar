@@ -1,14 +1,17 @@
 import 'dart:async';
 import 'dart:math';
 import 'dart:ui';
+import 'package:Skolar/core/widgets/animated_profile_gradient.dart';
+import 'package:Skolar/features/focus_session/widgets/focus_background.dart';
+import 'package:Skolar/shared/providers/global_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:confetti/confetti.dart';
+import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
+import 'package:markdown/markdown.dart' as md;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:Skolar/core/theme/app_theme.dart';
 import 'package:Skolar/features/mock_tests/presentation/providers/mock_tests_provider.dart';
-
-// ── Mock data ─────────────────────────────────────────────────────────────────
 
 class QuizQuestion {
   final String question;
@@ -26,28 +29,121 @@ class QuizQuestion {
   });
 }
 
-// _mockQuestions removed — questions are now fetched dynamically from
-// POST /generate-batch via MockTestNotifier (see mock_test_provider.dart).
+class OpenQuestion {
+  final String question;
+  final String subject;
+  final int marks;
+  final String modelAnswer;
 
-// ── Theme constants ───────────────────────────────────────────────────────────
+  const OpenQuestion({
+    required this.question,
+    required this.subject,
+    required this.marks,
+    required this.modelAnswer,
+  });
+}
 
-const _bg         = Color(0xFF05061A);
-const _primary    = Color(0xFF1E2A8A);
-const _surface    = Color(0xFF2E2B3E);
-const _surfaceLight = Color(0xFF3A3750);
-const _accent     = Color(0xFF63C8D4);
-const _textPrim   = Color(0xFFFFFFFF);
-const _textSec    = Color(0xFFA8C4FF);
-const _correct    = Color(0xFF4CAF50);
-const _wrong      = Color(0xFFD0021B);
-const _gradBegin  = Color(0xFF1E2A8A);
-const _gradEnd    = Color(0xFF2E3DA0);
-const _cardBg     = Color(0xFF0D1440);
+const _bg       = Color(0xFF05061A);
+const _primary  = Color(0xFF1E2A8A);
+const _surface  = Color(0xFF2E2B3E);
+const _accent   = Color(0xFF63C8D4);
+const _textPrim = Color(0xFFFFFFFF);
+const _textSec  = Color(0xFFA8C4FF);
+const _correct  = Color(0xFF4CAF50);
+const _wrong    = Color(0xFFD0021B);
 
-// ── Entry point ───────────────────────────────────────────────────────────────
+Color _marksColor(int marks) {
+  if (marks <= 3) return const Color(0xFF4CAF50);
+  if (marks <= 6) return const Color(0xFFF5C518);
+  return const Color(0xFFFF6B6B);
+}
 
-/// Subjects available in the mock test selector.
-/// Extend this list as you add more subjects to the question bank.
+final _gfm = md.ExtensionSet(
+  md.ExtensionSet.gitHubFlavored.blockSyntaxes,
+  md.ExtensionSet.gitHubFlavored.inlineSyntaxes,
+);
+
+MarkdownStyleSheet _answerMarkdownStyle() {
+  return MarkdownStyleSheet(
+    p: const TextStyle(color: _textPrim, fontSize: 14, height: 1.7, fontWeight: FontWeight.w400),
+    h3: const TextStyle(color: _accent, fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 0.7),
+    strong: const TextStyle(color: _textPrim, fontWeight: FontWeight.w600, fontSize: 14),
+    em: const TextStyle(color: _textSec, fontStyle: FontStyle.italic, fontSize: 14),
+    code: TextStyle(color: _accent, backgroundColor: _primary.withOpacity(0.3), fontSize: 13, fontFamily: 'monospace'),
+    codeblockDecoration: BoxDecoration(
+      color: _primary.withOpacity(0.2),
+      borderRadius: BorderRadius.circular(8),
+      border: Border.all(color: _primary.withOpacity(0.4)),
+    ),
+    codeblockPadding: const EdgeInsets.all(12),
+    listBullet: const TextStyle(color: _accent, fontSize: 14),
+    listIndent: 18,
+    blockSpacing: 10,
+    tableHead: const TextStyle(color: _accent, fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 0.3),
+    tableBody: const TextStyle(color: _textPrim, fontSize: 13, height: 1.5),
+    tableBorder: TableBorder.all(color: _surface, width: 1, borderRadius: BorderRadius.circular(6)),
+    tableHeadAlign: TextAlign.center,
+    tableColumnWidth: const FlexColumnWidth(),
+    tableCellsPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+    tableCellsDecoration: BoxDecoration(color: _primary.withOpacity(0.4)),
+    horizontalRuleDecoration: BoxDecoration(border: Border(top: BorderSide(color: _surface, width: 1))),
+  );
+}
+
+MarkdownStyleSheet _questionMarkdownStyle() {
+  return MarkdownStyleSheet(
+    p: const TextStyle(color: _textPrim, fontSize: 13, height: 1.65, fontWeight: FontWeight.w500),
+    strong: const TextStyle(color: _textPrim, fontWeight: FontWeight.w700, fontSize: 13),
+    em: const TextStyle(color: _textSec, fontStyle: FontStyle.italic, fontSize: 13),
+    code: TextStyle(color: _accent, backgroundColor: _primary.withOpacity(0.3), fontSize: 12, fontFamily: 'monospace'),
+    listBullet: const TextStyle(color: _textSec, fontSize: 13),
+    listIndent: 16,
+    blockSpacing: 8,
+    tableHead: const TextStyle(color: _textSec, fontSize: 12, fontWeight: FontWeight.w600, letterSpacing: 0.2),
+    tableBody: const TextStyle(color: _textPrim, fontSize: 12, height: 1.5),
+    tableBorder: TableBorder.all(color: _surface, width: 1, borderRadius: BorderRadius.circular(6)),
+    tableHeadAlign: TextAlign.center,
+    tableColumnWidth: const FlexColumnWidth(),
+    tableCellsPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+    tableCellsDecoration: BoxDecoration(color: _primary.withOpacity(0.35)),
+  );
+}
+
+enum _ExamType { quiz, midsem, compreA, compreB }
+
+extension _ExamTypeExt on _ExamType {
+  String get label => switch (this) {
+    _ExamType.quiz    => 'Quiz',
+    _ExamType.midsem  => 'Midsem',
+    _ExamType.compreA => 'Compre Part A',
+    _ExamType.compreB => 'Compre Part B',
+  };
+
+  ExamMode get mode => switch (this) {
+    _ExamType.compreA => ExamMode.mcqBlitz,
+    _               => ExamMode.writtenPractice,
+  };
+
+  int get defaultCount => switch (this) {
+    _ExamType.quiz    => 5,
+    _ExamType.midsem  => 6,
+    _ExamType.compreA => 8,
+    _ExamType.compreB => 4,
+  };
+
+  int get maxCount => switch (this) {
+    _ExamType.compreA => 15,
+    _               => 10,
+  };
+
+  IconData get icon => switch (this) {
+    _ExamType.quiz    => Icons.quiz_outlined,
+    _ExamType.midsem  => Icons.description_outlined,
+    _ExamType.compreA => Icons.flash_on_rounded,
+    _ExamType.compreB => Icons.edit_note_rounded,
+  };
+}
+
 const _kSubjects = [
   'Artificial Intelligence',
   'Computer Science',
@@ -56,315 +152,475 @@ const _kSubjects = [
   'Chemistry',
 ];
 
+// ── Entry point ───────────────────────────────────────────────────────────────
+
 class MockTestPage extends ConsumerStatefulWidget {
   const MockTestPage({super.key});
-
   @override
   ConsumerState<MockTestPage> createState() => _MockTestPageState();
 }
 
 class _MockTestPageState extends ConsumerState<MockTestPage> {
   String _selectedSubject = _kSubjects.first;
+  _ExamType _selectedExam = _ExamType.quiz;
   int _questionCount = 5;
 
   @override
   Widget build(BuildContext context) {
     final mockState = ref.watch(mockTestProvider);
-
-    // ── Quiz in progress ──
-    if (mockState.hasQuestions) {
-      return _QuizFlow(questions: mockState.questions);
-    }
-
-    // ── Loading ──
-    if (mockState.isLoading) {
-      return Scaffold(
-        backgroundColor: _bg,
-        body: Stack(
-          children: [
-            const _GlowBlob(top: -180, left: -100, size: 400, color: Color(0x885E1B89)),
-            const _GlowBlob(top: 100, right: -280, size: 480, color: Color(0x663416E2)),
-            Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const SizedBox(
-                    width: 56,
-                    height: 56,
-                    child: CircularProgressIndicator(
-                      color: _accent,
-                      strokeWidth: 3,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    'Generating your $_selectedSubject\nmock test…',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: _textSec,
-                      fontSize: 15,
-                      height: 1.6,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Analysing PYQs with DICL pipeline',
-                    style: TextStyle(color: _textSec, fontSize: 12),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+    if (mockState.isLoading) return _LoadingScreen(subject: _selectedSubject, examType: _selectedExam);
+    if (mockState.error != null) {
+      return _ErrorScreen(
+        error: mockState.error!,
+        onRetry: _start,
+        onBack: () => ref.read(mockTestProvider.notifier).reset(),
       );
     }
+    if (mockState.hasQuestions) {
+      return mockState.mode == ExamMode.mcqBlitz
+          ? _McqQuizFlow(questions: mockState.mcqQuestions)
+          : _WrittenPracticeFlow(questions: mockState.openQuestions);
+    }
+    return _SetupScreen(
+      selectedSubject: _selectedSubject,
+      selectedExam: _selectedExam,
+      questionCount: _questionCount,
+      onSubjectChanged: (s) => setState(() => _selectedSubject = s),
+      onExamChanged: (e) => setState(() { _selectedExam = e; _questionCount = e.defaultCount; }),
+      onCountChanged: (c) => setState(() => _questionCount = c),
+      onStart: _start,
+    );
+  }
 
-    // ── Error ──
-    if (mockState.error != null) {
-      return Scaffold(
-        backgroundColor: _bg,
-        body: Center(
+  void _start() {
+    final college = ref.read(userProvider).college;
+    ref.read(mockTestProvider.notifier).fetchQuestions(MockTestRequest(
+      subject: _selectedSubject,
+      college: college,
+      mode: _selectedExam.mode,
+      count: _questionCount,
+    ));
+  }
+}
+
+// ── Setup screen ──────────────────────────────────────────────────────────────
+
+class _SetupScreen extends StatelessWidget {
+  final String selectedSubject;
+  final _ExamType selectedExam;
+  final int questionCount;
+  final ValueChanged<String> onSubjectChanged;
+  final ValueChanged<_ExamType> onExamChanged;
+  final ValueChanged<int> onCountChanged;
+  final VoidCallback onStart;
+
+  const _SetupScreen({
+    required this.selectedSubject, required this.selectedExam,
+    required this.questionCount, required this.onSubjectChanged,
+    required this.onExamChanged, required this.onCountChanged, required this.onStart,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: _bg,
+      body: GlassBackground(
+        child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.all(32),
+            padding: const EdgeInsets.all(24),
             child: Column(
-              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.wifi_off_rounded, color: _wrong, size: 48),
+                IconButton(
+                  onPressed: () => Navigator.maybePop(context),
+                  icon: const Icon(Icons.arrow_back_ios_new_rounded, color: _textSec, size: 18),
+                  padding: EdgeInsets.zero,
+                ),
                 const SizedBox(height: 16),
-                const Text(
-                  'Could not generate test',
-                  style: TextStyle(
-                    color: _textPrim,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
+                Text('Mock Test', style: GoogleFonts.googleSansFlex(fontSize: 32, fontWeight: FontWeight.w600, color: Colors.white)),
+                const SizedBox(height: 4),
+                Text('AI-generated from your college PYQs', style: GoogleFonts.googleSans(color: _textSec, fontSize: 14)),
+                const SizedBox(height: 28),
+                _SectionLabel('Exam Type'),
+                const SizedBox(height: 10),
+                _ExamTypeGrid(selected: selectedExam, onChanged: onExamChanged),
+                const SizedBox(height: 24),
+                _SectionLabel('Subject'),
+                const SizedBox(height: 10),
+                _GlassContainer(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: selectedSubject, isExpanded: true,
+                      dropdownColor: const Color(0xFF1A1B2E),
+                      style: const TextStyle(color: _textPrim, fontSize: 15),
+                      iconEnabledColor: _textSec,
+                      items: _kSubjects.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                      onChanged: (v) => onSubjectChanged(v!),
+                    ),
                   ),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  mockState.error!,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: _textSec, fontSize: 13),
-                ),
                 const SizedBox(height: 24),
-                _StartButton(
-                  label: 'Retry',
-                  onTap: () => _start(ref),
+                Row(children: [
+                  _SectionLabel('Questions'),
+                  const Spacer(),
+                  _GlassChip(child: Text('$questionCount', style: const TextStyle(color: _textPrim, fontSize: 14, fontWeight: FontWeight.w700))),
+                ]),
+                const SizedBox(height: 8),
+                SliderTheme(
+                  data: SliderThemeData(
+                    trackHeight: 3, activeTrackColor: _accent, inactiveTrackColor: _surface,
+                    thumbColor: _accent, overlayColor: _accent.withOpacity(0.15),
+                  ),
+                  child: Slider(
+                    min: 3, max: selectedExam.maxCount.toDouble(),
+                    divisions: selectedExam.maxCount - 3,
+                    value: questionCount.clamp(3, selectedExam.maxCount).toDouble(),
+                    onChanged: (v) => onCountChanged(v.round()),
+                  ),
                 ),
-                const SizedBox(height: 12),
-                TextButton(
-                  onPressed: () => ref.read(mockTestProvider.notifier).reset(),
-                  child: const Text('Change subject',
-                      style: TextStyle(color: _textSec)),
+                Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                  Text('3', style: const TextStyle(color: _textSec, fontSize: 11)),
+                  Text('${selectedExam.maxCount}', style: const TextStyle(color: _textSec, fontSize: 11)),
+                ]),
+                const Spacer(),
+                _StartButton(label: 'Start Test', onTap: onStart),
+                const SizedBox(height: 8),
+                Center(
+                  child: Text(
+                    selectedExam.mode == ExamMode.mcqBlitz
+                        ? 'Generation takes ~${questionCount * 4}s'
+                        : 'Generation takes ~${questionCount * 8}s (questions + answers)',
+                    style: const TextStyle(color: _textSec, fontSize: 12),
+                  ),
                 ),
               ],
             ),
           ),
         ),
-      );
-    }
+      ),
+    );
+  }
+}
 
-    // ── Setup screen (default) ──
+// ── Exam type grid ────────────────────────────────────────────────────────────
+
+class _ExamTypeGrid extends StatelessWidget {
+  final _ExamType selected;
+  final ValueChanged<_ExamType> onChanged;
+  const _ExamTypeGrid({required this.selected, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return GridView.count(
+      crossAxisCount: 2, shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisSpacing: 10, mainAxisSpacing: 10, childAspectRatio: 2.4,
+      children: _ExamType.values.map((type) {
+        final isSel = type == selected;
+        return GestureDetector(
+          onTap: () => onChanged(type),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: isSel ? _primary.withOpacity(0.5) : Colors.white.withOpacity(0.04),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: isSel ? _accent : Colors.white.withOpacity(0.08), width: isSel ? 1.5 : 1),
+            ),
+            child: Row(children: [
+              Icon(type.icon, color: isSel ? _accent : _textSec, size: 16),
+              const SizedBox(width: 8),
+              Expanded(child: Text(type.label, style: TextStyle(color: isSel ? _textPrim : _textSec, fontSize: 12, fontWeight: FontWeight.w600))),
+            ]),
+          ),
+        );
+      }).toList(),
+    );
+  }
+}
+
+// ── Loading screen ────────────────────────────────────────────────────────────
+
+class _LoadingScreen extends StatelessWidget {
+  final String subject;
+  final _ExamType examType;
+  const _LoadingScreen({required this.subject, required this.examType});
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: _bg,
-      body: Stack(
-        children: [
-          const _GlowBlob(top: -180, left: -100, size: 400, color: Color(0x885E1B89)),
-          const _GlowBlob(top: 100, right: -280, size: 480, color: Color(0x663416E2)),
-          const _GlowBlob(bottom: -80, left: -60, size: 360, color: Color(0x4400D4FF)),
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  IconButton(
-                    onPressed: () => Navigator.maybePop(context),
-                    icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                        color: _textSec, size: 18),
-                    padding: EdgeInsets.zero,
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    'Mock Test',
-                    style: GoogleFonts.googleSansFlex(
-                      fontSize: 35,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'AI-generated from your college PYQs',
-                    style: GoogleFonts.googleSans(color: _textSec, fontSize: 14),
-                  ),
-                  const SizedBox(height: 36),
-
-                  // Subject picker
-                  Text('Subject',
-                      style: GoogleFonts.googleSans(
-                          color: _textSec,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.5)),
-                  const SizedBox(height: 10),
-                  _GlassContainer(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        value: _selectedSubject,
-                        isExpanded: true,
-                        dropdownColor: const Color(0xFF1A1B2E),
-                        style: const TextStyle(color: _textPrim, fontSize: 15),
-                        iconEnabledColor: _textSec,
-                        items: _kSubjects
-                            .map((s) => DropdownMenuItem(
-                                  value: s,
-                                  child: Text(s),
-                                ))
-                            .toList(),
-                        onChanged: (v) =>
-                            setState(() => _selectedSubject = v!),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 28),
-
-                  // Question count
-                  Row(
-                    children: [
-                      Text('Questions',
-                          style: GoogleFonts.googleSans(
-                              color: _textSec,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: 0.5)),
-                      const Spacer(),
-                      _GlassChip(
-                        child: Text(
-                          '$_questionCount',
-                          style: const TextStyle(
-                              color: _textPrim,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  SliderTheme(
-                    data: SliderThemeData(
-                      trackHeight: 3,
-                      activeTrackColor: _accent,
-                      inactiveTrackColor: _surface,
-                      thumbColor: _accent,
-                      overlayColor: _accent.withOpacity(0.15),
-                    ),
-                    child: Slider(
-                      min: 3,
-                      max: 10,
-                      divisions: 7,
-                      value: _questionCount.toDouble(),
-                      onChanged: (v) =>
-                          setState(() => _questionCount = v.round()),
-                    ),
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: const [
-                      Text('3', style: TextStyle(color: _textSec, fontSize: 11)),
-                      Text('10', style: TextStyle(color: _textSec, fontSize: 11)),
-                    ],
-                  ),
-
-                  const Spacer(),
-
-                  _StartButton(
-                    label: 'Start Test',
-                    onTap: () => _start(ref),
-                  ),
-                  const SizedBox(height: 8),
-                  Center(
-                    child: Text(
-                      'Generation takes ~${_questionCount * 4}s',
-                      style: const TextStyle(color: _textSec, fontSize: 12),
-                    ),
-                  ),
-                ],
-              ),
+      body: GlassBackground(
+        child: Center(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            const SizedBox(width: 56, height: 56, child: CircularProgressIndicator(color: _accent, strokeWidth: 3)),
+            const SizedBox(height: 24),
+            Text('Generating ${examType.label}\n$subject practice…',
+                textAlign: TextAlign.center, style: const TextStyle(color: _textSec, fontSize: 15, height: 1.6)),
+            const SizedBox(height: 8),
+            Text(
+              examType.mode == ExamMode.writtenPractice
+                  ? 'Generating questions + model answers'
+                  : 'Analysing PYQs with DICL pipeline',
+              style: const TextStyle(color: _textSec, fontSize: 12),
             ),
+          ]),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Error screen ──────────────────────────────────────────────────────────────
+
+class _ErrorScreen extends StatelessWidget {
+  final String error;
+  final VoidCallback onRetry;
+  final VoidCallback onBack;
+  const _ErrorScreen({required this.error, required this.onRetry, required this.onBack});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: _bg,
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            const Icon(Icons.wifi_off_rounded, color: _wrong, size: 48),
+            const SizedBox(height: 16),
+            const Text('Could not generate test', style: TextStyle(color: _textPrim, fontSize: 18, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 8),
+            Text(error, textAlign: TextAlign.center, style: const TextStyle(color: _textSec, fontSize: 13)),
+            const SizedBox(height: 24),
+            _StartButton(label: 'Retry', onTap: onRetry),
+            const SizedBox(height: 12),
+            TextButton(onPressed: onBack, child: const Text('Change subject', style: TextStyle(color: _textSec))),
+          ]),
+        ),
+      ),
+    );
+  }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// QUESTION CARD — shared between MCQ + written views
+// ═════════════════════════════════════════════════════════════════════════════
+
+class _QuestionCard extends StatelessWidget {
+  final String question;
+  final String subject;
+  final int marks;
+  final int? questionNumber;
+
+  const _QuestionCard({
+    required this.question,
+    required this.subject,
+    required this.marks,
+    this.questionNumber,
+  });
+
+  // Splits question into context (data/table/preamble) + the actual ask.
+  ({String context, String ask}) _split() {
+    final trimmed = question.trim();
+    final doubleNewline = trimmed.lastIndexOf('\n\n');
+    if (doubleNewline > 0 && doubleNewline > trimmed.length * 0.3) {
+      return (context: trimmed.substring(0, doubleNewline).trim(), ask: trimmed.substring(doubleNewline + 2).trim());
+    }
+    final lastNewline = trimmed.lastIndexOf('\n');
+    if (lastNewline > 0 && lastNewline > trimmed.length * 0.3) {
+      return (context: trimmed.substring(0, lastNewline).trim(), ask: trimmed.substring(lastNewline + 1).trim());
+    }
+    return (context: '', ask: trimmed);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final parts = _split();
+    final mc = _marksColor(marks);
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(18),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.04),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: Colors.white.withOpacity(0.08), width: 1.2),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ── Header: number + subject + coloured marks chip ─────────────
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+                child: Row(children: [
+                  if (questionNumber != null) ...[
+                    Container(
+                      width: 28, height: 28,
+                      decoration: BoxDecoration(color: _primary.withOpacity(0.6), borderRadius: BorderRadius.circular(8)),
+                      child: Center(child: Text('$questionNumber', style: const TextStyle(color: _textPrim, fontSize: 12, fontWeight: FontWeight.w700))),
+                    ),
+                    const SizedBox(width: 10),
+                  ],
+                  Expanded(child: Text(subject, style: const TextStyle(color: _textSec, fontSize: 12, fontWeight: FontWeight.w500))),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: mc.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: mc.withOpacity(0.5), width: 1),
+                    ),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      Icon(Icons.star_rounded, color: mc, size: 11),
+                      const SizedBox(width: 3),
+                      Text('$marks M', style: TextStyle(color: mc, fontSize: 11, fontWeight: FontWeight.w700)),
+                    ]),
+                  ),
+                ]),
+              ),
+              // ── Context zone: dimmed background for data/preamble ──────────
+              if (parts.context.isNotEmpty)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.02),
+                    border: Border(
+                      top: BorderSide(color: Colors.white.withOpacity(0.06)),
+                      bottom: BorderSide(color: Colors.white.withOpacity(0.06)),
+                    ),
+                  ),
+                  child: MarkdownBody(data: parts.context, styleSheet: _questionMarkdownStyle(), softLineBreak: true, extensionSet: _gfm),
+                ),
+              // ── Actual question: accent left-border when context present ───
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                decoration: parts.context.isNotEmpty
+                    ? const BoxDecoration(border: Border(left: BorderSide(color: _accent, width: 3)))
+                    : null,
+                child: MarkdownBody(
+                  data: parts.ask,
+                  styleSheet: parts.context.isNotEmpty
+                      ? _questionMarkdownStyle().copyWith(
+                          p: const TextStyle(color: _textPrim, fontSize: 13, height: 1.65, fontWeight: FontWeight.w600))
+                      : _questionMarkdownStyle(),
+                  softLineBreak: true,
+                  extensionSet: _gfm,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// MODEL ANSWER CARD
+// ═════════════════════════════════════════════════════════════════════════════
+
+class _ModelAnswerCard extends StatelessWidget {
+  final String modelAnswer;
+  const _ModelAnswerCard({required this.modelAnswer});
+
+  @override
+  Widget build(BuildContext context) {
+    return _GlassContainer(
+      padding: EdgeInsets.zero,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header with tinted background
+          Container(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+            decoration: BoxDecoration(
+              color: _accent.withOpacity(0.08),
+              border: Border(bottom: BorderSide(color: _accent.withOpacity(0.2), width: 1)),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            ),
+            child: Row(children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(color: _accent.withOpacity(0.15), borderRadius: BorderRadius.circular(8)),
+                child: const Icon(Icons.lightbulb_rounded, color: _accent, size: 14),
+              ),
+              const SizedBox(width: 10),
+              const Text('Model Answer', style: TextStyle(color: _accent, fontSize: 13, fontWeight: FontWeight.w700, letterSpacing: 0.3)),
+            ]),
+          ),
+          // Body with accent-bar headings
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: _MarkdownWithAccentHeadings(data: modelAnswer, styleSheet: _answerMarkdownStyle()),
           ),
         ],
       ),
     );
   }
-
-  void _start(WidgetRef ref) {
-    ref.read(mockTestProvider.notifier).fetchQuestions(
-          MockTestRequest(
-            subject: _selectedSubject,
-            count: _questionCount,
-          ),
-        );
-  }
 }
 
-class _StartButton extends StatelessWidget {
-  final String label;
-  final VoidCallback onTap;
+// ── Renders ### headings as accent left-bar labels instead of plain text ──────
 
-  const _StartButton({required this.label, required this.onTap});
+class _MarkdownWithAccentHeadings extends StatelessWidget {
+  final String data;
+  final MarkdownStyleSheet styleSheet;
+  const _MarkdownWithAccentHeadings({required this.data, required this.styleSheet});
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(colors: [AppTheme.primaryGradBegin,AppTheme.primaryGradEnd]),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: _primary.withOpacity(0.4),
-              blurRadius: 20,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.auto_awesome_rounded, color: _textPrim, size: 18),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: const TextStyle(
-                color: _textPrim,
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
-        ),
-      ),
+    final segments = <({String text, bool isHeading})>[];
+    final buffer = StringBuffer();
+
+    for (final line in data.split('\n')) {
+      if (line.startsWith('### ')) {
+        if (buffer.isNotEmpty) {
+          segments.add((text: buffer.toString().trim(), isHeading: false));
+          buffer.clear();
+        }
+        segments.add((text: line.substring(4).trim(), isHeading: true));
+      } else {
+        buffer.writeln(line);
+      }
+    }
+    if (buffer.isNotEmpty) segments.add((text: buffer.toString().trim(), isHeading: false));
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: segments.map((seg) {
+        if (seg.isHeading) {
+          return Padding(
+            padding: const EdgeInsets.only(top: 14, bottom: 8),
+            child: Row(children: [
+              Container(width: 3, height: 16, decoration: BoxDecoration(color: _accent, borderRadius: BorderRadius.circular(2))),
+              const SizedBox(width: 8),
+              Text(seg.text.toUpperCase(), style: const TextStyle(color: _accent, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.8)),
+            ]),
+          );
+        }
+        if (seg.text.isEmpty) return const SizedBox.shrink();
+        return MarkdownBody(data: seg.text, styleSheet: styleSheet, softLineBreak: true, extensionSet: _gfm);
+      }).toList(),
     );
   }
 }
 
-// ── Quiz flow state ───────────────────────────────────────────────────────────
+// ═════════════════════════════════════════════════════════════════════════════
+// MCQ BLITZ FLOW
+// ═════════════════════════════════════════════════════════════════════════════
 
-class _QuizFlow extends ConsumerStatefulWidget {
+class _McqQuizFlow extends ConsumerStatefulWidget {
   final List<QuizQuestion> questions;
-
-  const _QuizFlow({required this.questions});
-
+  const _McqQuizFlow({required this.questions});
   @override
-  ConsumerState<_QuizFlow> createState() => _QuizFlowState();
+  ConsumerState<_McqQuizFlow> createState() => _McqQuizFlowState();
 }
 
-class _QuizFlowState extends ConsumerState<_QuizFlow> {
+class _McqQuizFlowState extends ConsumerState<_McqQuizFlow> {
   int _current = 0;
   int _score   = 0;
   bool _done   = false;
@@ -383,100 +639,65 @@ class _QuizFlowState extends ConsumerState<_QuizFlow> {
       _answers[_current] = picked;
       if (correct) _score += widget.questions[_current].marks;
     });
-
     Future.delayed(const Duration(milliseconds: 900), () {
       if (!mounted) return;
-      if (_current < widget.questions.length - 1) {
-        setState(() => _current++);
-      } else {
-        setState(() => _done = true);
-      }
+      if (_current < widget.questions.length - 1) setState(() => _current++);
+      else setState(() => _done = true);
     });
-  }
-
-  void _restart() {
-    // Return to the setup screen so the user can generate a fresh test.
-    ref.read(mockTestProvider.notifier).reset();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: _bg,
-      body: Stack(
-        children: [
-          // Glow blobs
-          const _GlowBlob(top: -180, left: -100, size: 400,
-              color: Color(0x885E1B89)),
-          const _GlowBlob(top: 100, right: -280, size: 480,
-              color: Color(0x663416E2)),
-          const _GlowBlob(bottom: -80, left: -60, size: 360,
-              color: Color(0x4400D4FF)),
-          SafeArea(
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 400),
-              transitionBuilder: (child, anim) => FadeTransition(
-                opacity: anim,
-                child: SlideTransition(
-                  position: Tween(
-                    begin: const Offset(0.06, 0),
-                    end: Offset.zero,
-                  ).animate(CurvedAnimation(parent: anim, curve: Curves.easeOut)),
-                  child: child,
-                ),
+      body: GlassBackground(
+        child: SafeArea(
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 400),
+            transitionBuilder: (child, anim) => FadeTransition(
+              opacity: anim,
+              child: SlideTransition(
+                position: Tween(begin: const Offset(0.06, 0), end: Offset.zero)
+                    .animate(CurvedAnimation(parent: anim, curve: Curves.easeOut)),
+                child: child,
               ),
-              child: _done
-                  ? _ResultScreen(
-                      key: const ValueKey('result'),
-                      score: _score,
-                      total: widget.questions.fold(0, (s, q) => s + q.marks),
-                      answers: _answers,
-                      questions: widget.questions,
-                      onRestart: _restart,
-                    )
-                  : _QuestionScreen(
-                      key: ValueKey(_current),
-                      question: widget.questions[_current],
-                      index: _current,
-                      total: widget.questions.length,
-                      score: _score,
-                      picked: _answers[_current],
-                      onAnswer: _onAnswer,
-                    ),
             ),
+            child: _done
+                ? _McqResultScreen(
+                    key: const ValueKey('result'),
+                    score: _score,
+                    total: widget.questions.fold(0, (s, q) => s + q.marks),
+                    answers: _answers, questions: widget.questions,
+                    onRestart: () => ref.read(mockTestProvider.notifier).reset(),
+                  )
+                : _McqQuestionScreen(
+                    key: ValueKey(_current),
+                    question: widget.questions[_current],
+                    index: _current, total: widget.questions.length,
+                    score: _score, picked: _answers[_current], onAnswer: _onAnswer,
+                  ),
           ),
-        ],
+        ),
       ),
     );
   }
 }
 
-// ── Question screen ───────────────────────────────────────────────────────────
-
-class _QuestionScreen extends StatefulWidget {
+class _McqQuestionScreen extends StatefulWidget {
   final QuizQuestion question;
-  final int index;
-  final int total;
-  final int score;
+  final int index, total, score;
   final int? picked;
   final ValueChanged<int> onAnswer;
 
-  const _QuestionScreen({
-    super.key,
-    required this.question,
-    required this.index,
-    required this.total,
-    required this.score,
-    required this.picked,
-    required this.onAnswer,
+  const _McqQuestionScreen({
+    super.key, required this.question, required this.index,
+    required this.total, required this.score, required this.picked, required this.onAnswer,
   });
-
   @override
-  State<_QuestionScreen> createState() => _QuestionScreenState();
+  State<_McqQuestionScreen> createState() => _McqQuestionScreenState();
 }
 
-class _QuestionScreenState extends State<_QuestionScreen>
-    with SingleTickerProviderStateMixin {
+class _McqQuestionScreenState extends State<_McqQuestionScreen> with SingleTickerProviderStateMixin {
   late final Timer _timer;
   int _seconds = 30;
   late final AnimationController _pulseCtrl;
@@ -484,187 +705,432 @@ class _QuestionScreenState extends State<_QuestionScreen>
   @override
   void initState() {
     super.initState();
-    _pulseCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 1),
-    )..repeat(reverse: true);
-
+    _pulseCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 1))..repeat(reverse: true);
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted) return;
-      setState(() {
-        if (_seconds > 0) {
-          _seconds--;
-        } else {
-          _timer.cancel();
-        }
-      });
+      setState(() { if (_seconds > 0) _seconds--; else _timer.cancel(); });
     });
   }
 
   @override
-  void dispose() {
-    _timer.cancel();
-    _pulseCtrl.dispose();
-    super.dispose();
-  }
+  void dispose() { _timer.cancel(); _pulseCtrl.dispose(); super.dispose(); }
 
   Color get _timerColor {
     if (_seconds > 15) return _accent;
-    if (_seconds > 7) return const Color(0xFFF5C518);
+    if (_seconds > 7)  return const Color(0xFFF5C518);
     return _wrong;
   }
 
   @override
   Widget build(BuildContext context) {
     final q = widget.question;
-    final progress = (widget.index + 1) / widget.total;
-
-    return Column(
-      children: [
-        // ── Header ──
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-          child: Row(
-            children: [
-              IconButton(
-                onPressed: () => Navigator.maybePop(context),
-                icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                    color: _textSec, size: 18),
+    return Column(children: [
+      Padding(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+        child: Row(children: [
+          IconButton(onPressed: () => Navigator.maybePop(context),
+              icon: const Icon(Icons.arrow_back_ios_new_rounded, color: _textSec, size: 18)),
+          Expanded(child: Column(children: [
+            Text('Question ${widget.index + 1} of ${widget.total}', style: const TextStyle(color: _textSec, fontSize: 12)),
+            const SizedBox(height: 6),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: LinearProgressIndicator(
+                value: (widget.index + 1) / widget.total, minHeight: 5,
+                backgroundColor: _surface,
+                valueColor: const AlwaysStoppedAnimation(Color(0xFF5B6EF5)),
               ),
-              Expanded(
-                child: Column(
-                  children: [
-                    Text(
-                      'Question ${widget.index + 1} of ${widget.total}',
-                      style: const TextStyle(color: _textSec, fontSize: 12),
-                    ),
-                    const SizedBox(height: 6),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: LinearProgressIndicator(
-                        value: progress,
-                        minHeight: 5,
-                        backgroundColor: _surface,
-                        valueColor: const AlwaysStoppedAnimation(
-                          Color(0xFF5B6EF5),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              // Score chip
-              _GlassChip(
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.bolt_rounded,
-                        color: Color(0xFFF5C518), size: 14),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${widget.score}',
-                      style: const TextStyle(
-                          color: _textPrim,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        const SizedBox(height: 20),
-
-        // ── Timer ──
-        AnimatedBuilder(
-          animation: _pulseCtrl,
-          builder: (_, __) {
-            final pulse = _seconds <= 7
-                ? 1.0 + _pulseCtrl.value * 0.15
-                : 1.0;
-            return Transform.scale(
-              scale: pulse,
-              child: _GlassContainer(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.timer_outlined, color: _timerColor, size: 16),
-                    const SizedBox(width: 6),
-                    Text(
-                      '${_seconds}s',
-                      style: TextStyle(
-                        color: _timerColor,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        fontFeatures: const [FontFeature.tabularFigures()],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        ),
-
-        const SizedBox(height: 24),
-
-        // ── Question card ──
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+            ),
+          ])),
+          const SizedBox(width: 8),
+          _GlassChip(child: Row(mainAxisSize: MainAxisSize.min, children: [
+            const Icon(Icons.bolt_rounded, color: Color(0xFFF5C518), size: 14),
+            const SizedBox(width: 4),
+            Text('${widget.score}', style: const TextStyle(color: _textPrim, fontSize: 13, fontWeight: FontWeight.w700)),
+          ])),
+        ]),
+      ),
+      const SizedBox(height: 20),
+      AnimatedBuilder(
+        animation: _pulseCtrl,
+        builder: (_, __) => Transform.scale(
+          scale: _seconds <= 7 ? 1.0 + _pulseCtrl.value * 0.15 : 1.0,
           child: _GlassContainer(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    _TagChip(label: q.subject),
-                    const SizedBox(width: 8),
-                    _TagChip(label: '${q.marks}M'),
-                  ],
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              Icon(Icons.timer_outlined, color: _timerColor, size: 16),
+              const SizedBox(width: 6),
+              Text('${_seconds}s', style: TextStyle(
+                color: _timerColor, fontSize: 15, fontWeight: FontWeight.w700,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              )),
+            ]),
+          ),
+        ),
+      ),
+      const SizedBox(height: 20),
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: _QuestionCard(question: q.question, subject: q.subject, marks: q.marks),
+      ),
+      const SizedBox(height: 20),
+      Expanded(
+        child: ListView.separated(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+          itemCount: q.options.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 12),
+          itemBuilder: (_, i) => _OptionTile(
+            label: String.fromCharCode(65 + i),
+            text: q.options[i],
+            state: widget.picked == null ? _OptionState.idle
+                : i == q.correctIndex ? _OptionState.correct
+                : i == widget.picked  ? _OptionState.wrong
+                : _OptionState.idle,
+            onTap: widget.picked == null ? () => widget.onAnswer(i) : null,
+          ),
+        ),
+      ),
+    ]);
+  }
+}
+
+class _McqResultScreen extends StatefulWidget {
+  final int score, total;
+  final List<int?> answers;
+  final List<QuizQuestion> questions;
+  final VoidCallback onRestart;
+
+  const _McqResultScreen({super.key, required this.score, required this.total,
+      required this.answers, required this.questions, required this.onRestart});
+  @override
+  State<_McqResultScreen> createState() => _McqResultScreenState();
+}
+
+class _McqResultScreenState extends State<_McqResultScreen> with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _scoreAnim;
+  late final ConfettiController _confettiCtrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200))..forward();
+    _scoreAnim = CurvedAnimation(parent: _ctrl, curve: Curves.elasticOut);
+    _confettiCtrl = ConfettiController(duration: const Duration(seconds: 2));
+    if (widget.score / widget.total >= 0.7) _confettiCtrl.play();
+  }
+
+  @override
+  void dispose() { _ctrl.dispose(); _confettiCtrl.dispose(); super.dispose(); }
+
+  String get _grade {
+    final p = widget.score / widget.total;
+    if (p >= 0.9) return 'Outstanding';
+    if (p >= 0.7) return 'Great Work';
+    if (p >= 0.5) return 'Keep Going';
+    return 'Try Again';
+  }
+
+  Color get _gradeColor {
+    final p = widget.score / widget.total;
+    if (p >= 0.9) return _accent;
+    if (p >= 0.7) return const Color(0xFF5B6EF5);
+    if (p >= 0.5) return const Color(0xFFF5C518);
+    return _wrong;
+  }
+
+  int get _correctCount => widget.answers.asMap().entries
+      .where((e) => e.value != null && e.value == widget.questions[e.key].correctIndex).length;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(alignment: Alignment.topCenter, children: [
+      ConfettiWidget(
+        confettiController: _confettiCtrl,
+        blastDirectionality: BlastDirectionality.explosive,
+        shouldLoop: false,
+        colors: const [_accent, Color(0xFF5B6EF5), Color(0xFFF5C518), Colors.white],
+        gravity: 0.2, numberOfParticles: 20,
+      ),
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+          ScaleTransition(
+            scale: _scoreAnim,
+            child: SizedBox(width: 160, height: 160,
+              child: CustomPaint(
+                painter: _RingPainter(progress: widget.score / widget.total, color: _gradeColor),
+                child: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  Text('${widget.score}', style: const TextStyle(color: _textPrim, fontSize: 40, fontWeight: FontWeight.w800)),
+                  Text('of ${widget.total}', style: const TextStyle(color: _textSec, fontSize: 13)),
+                ])),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text(_grade, style: TextStyle(color: _gradeColor, fontSize: 28, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 6),
+          Text('$_correctCount / ${widget.questions.length} correct', style: const TextStyle(color: _textSec, fontSize: 14)),
+          const SizedBox(height: 32),
+          Row(children: [
+            Expanded(child: _StatCard(icon: Icons.check_circle_rounded, iconColor: _correct, label: 'Correct', value: '$_correctCount')),
+            const SizedBox(width: 12),
+            Expanded(child: _StatCard(icon: Icons.cancel_rounded, iconColor: _wrong, label: 'Wrong',
+                value: '${widget.answers.where((a) => a != null).length - _correctCount}')),
+            const SizedBox(width: 12),
+            Expanded(child: _StatCard(icon: Icons.radio_button_unchecked, iconColor: _textSec, label: 'Skipped',
+                value: '${widget.answers.where((a) => a == null).length}')),
+          ]),
+          const SizedBox(height: 32),
+          _StartButton(label: 'New Test', onTap: widget.onRestart),
+        ]),
+      ),
+    ]);
+  }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// WRITTEN PRACTICE FLOW
+// ═════════════════════════════════════════════════════════════════════════════
+
+class _WrittenPracticeFlow extends ConsumerStatefulWidget {
+  final List<OpenQuestion> questions;
+  const _WrittenPracticeFlow({required this.questions});
+  @override
+  ConsumerState<_WrittenPracticeFlow> createState() => _WrittenPracticeFlowState();
+}
+
+class _WrittenPracticeFlowState extends ConsumerState<_WrittenPracticeFlow> {
+  bool? _viewMode;
+  @override
+  Widget build(BuildContext context) {
+    if (_viewMode == null) return _ViewModeChooser(onChoose: (v) => setState(() => _viewMode = v));
+    if (_viewMode == true) return _PaperView(questions: widget.questions, onDone: () => ref.read(mockTestProvider.notifier).reset());
+    return _FlashcardView(questions: widget.questions, onDone: () => ref.read(mockTestProvider.notifier).reset());
+  }
+}
+
+class _ViewModeChooser extends StatelessWidget {
+  final ValueChanged<bool> onChoose;
+  const _ViewModeChooser({required this.onChoose});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: _bg,
+      body: GlassBackground(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+            const Icon(Icons.check_circle_rounded, color: _accent, size: 40),
+            const SizedBox(height: 16),
+            const Text('Questions Ready', style: TextStyle(color: _textPrim, fontSize: 22, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 8),
+            const Text('How would you like to practice?', style: TextStyle(color: _textSec, fontSize: 14)),
+            const SizedBox(height: 40),
+            _ModeCard(icon: Icons.view_agenda_outlined, title: 'One at a time',
+                subtitle: 'Flashcard style — think then reveal answer', onTap: () => onChoose(false)),
+            const SizedBox(height: 16),
+            _ModeCard(icon: Icons.article_outlined, title: 'All at once',
+                subtitle: 'Paper style — scroll through all questions', onTap: () => onChoose(true)),
+          ]),
+        ),
+      ),
+    );
+  }
+}
+
+class _ModeCard extends StatelessWidget {
+  final IconData icon;
+  final String title, subtitle;
+  final VoidCallback onTap;
+  const _ModeCard({required this.icon, required this.title, required this.subtitle, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: _GlassContainer(
+        padding: const EdgeInsets.all(20),
+        child: Row(children: [
+          Container(padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(color: _primary.withOpacity(0.4), borderRadius: BorderRadius.circular(12)),
+              child: Icon(icon, color: _accent, size: 24)),
+          const SizedBox(width: 16),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(title, style: const TextStyle(color: _textPrim, fontSize: 16, fontWeight: FontWeight.w600)),
+            const SizedBox(height: 4),
+            Text(subtitle, style: const TextStyle(color: _textSec, fontSize: 13, height: 1.4)),
+          ])),
+          const Icon(Icons.arrow_forward_ios_rounded, color: _textSec, size: 16),
+        ]),
+      ),
+    );
+  }
+}
+
+// ── Flashcard view ────────────────────────────────────────────────────────────
+
+class _FlashcardView extends StatefulWidget {
+  final List<OpenQuestion> questions;
+  final VoidCallback onDone;
+  const _FlashcardView({required this.questions, required this.onDone});
+  @override
+  State<_FlashcardView> createState() => _FlashcardViewState();
+}
+
+class _FlashcardViewState extends State<_FlashcardView> {
+  int _current  = 0;
+  bool _revealed = false;
+
+  void _next() {
+    if (_current < widget.questions.length - 1) setState(() { _current++; _revealed = false; });
+    else widget.onDone();
+  }
+
+  void _onBackPressed(BuildContext context) {
+    if (_current > 0) setState(() { _current--; _revealed = false; });
+    else Navigator.maybePop(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final q = widget.questions[_current];
+    return Scaffold(
+      backgroundColor: _bg,
+      body: Stack(children: [
+        // Reuse the focus session background — same dark animated gradient the app already has
+        const FocusBackground(slideProgress: 1.0),
+        SafeArea(child: Column(children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+            child: Row(children: [
+              IconButton(onPressed: () => _onBackPressed(context),
+                  icon: const Icon(Icons.arrow_back_ios_new_rounded, color: _textSec, size: 18)),
+              Expanded(child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: LinearProgressIndicator(
+                  value: (_current + 1) / widget.questions.length, minHeight: 5,
+                  backgroundColor: _surface, valueColor: const AlwaysStoppedAnimation(Color(0xFF5B6EF5)),
                 ),
-                const SizedBox(height: 14),
-                Text(
-                  q.question,
-                  style: const TextStyle(
-                    color: _textPrim,
-                    fontSize: 16,
-                    height: 1.55,
-                    fontWeight: FontWeight.w500,
+              )),
+              const SizedBox(width: 12),
+              Text('${_current + 1}/${widget.questions.length}', style: const TextStyle(color: _textSec, fontSize: 13)),
+            ]),
+          ),
+          const SizedBox(height: 20),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                _QuestionCard(question: q.question, subject: q.subject, marks: q.marks),
+                const SizedBox(height: 16),
+                AnimatedCrossFade(
+                  duration: const Duration(milliseconds: 350),
+                  crossFadeState: _revealed ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+                  firstChild: GestureDetector(
+                    onTap: () => setState(() => _revealed = true),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      decoration: BoxDecoration(border: Border.all(color: _accent.withOpacity(0.4)), borderRadius: BorderRadius.circular(14)),
+                      child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                        Icon(Icons.lightbulb_outline_rounded, color: _accent, size: 18),
+                        SizedBox(width: 8),
+                        Text('Reveal Model Answer', style: TextStyle(color: _accent, fontSize: 14, fontWeight: FontWeight.w600)),
+                      ]),
+                    ),
                   ),
+                  secondChild: _ModelAnswerCard(modelAnswer: q.modelAnswer),
                 ),
-              ],
+                const SizedBox(height: 8),
+              ]),
             ),
           ),
-        ),
-
-        const SizedBox(height: 20),
-
-        // ── Options ──
-        Expanded(
-          child: ListView.separated(
+          Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-            itemCount: q.options.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
-            itemBuilder: (_, i) => _OptionTile(
-              label: String.fromCharCode(65 + i),
-              text: q.options[i],
-              state: widget.picked == null
-                  ? _OptionState.idle
-                  : i == q.correctIndex
-                      ? _OptionState.correct
-                      : i == widget.picked
-                          ? _OptionState.wrong
-                          : _OptionState.idle,
-              onTap: widget.picked == null ? () => widget.onAnswer(i) : null,
+            child: _StartButton(label: _current == widget.questions.length - 1 ? '✓ Finish' : 'Next Question →', onTap: _next),
+          ),
+        ])),
+      ]),
+    );
+  }
+}
+
+// ── Paper view ────────────────────────────────────────────────────────────────
+
+class _PaperView extends StatefulWidget {
+  final List<OpenQuestion> questions;
+  final VoidCallback onDone;
+  const _PaperView({required this.questions, required this.onDone});
+  @override
+  State<_PaperView> createState() => _PaperViewState();
+}
+
+class _PaperViewState extends State<_PaperView> {
+  final Set<int> _revealed = {};
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: _bg,
+      body: Stack(children: [
+        const FocusBackground(slideProgress: 1.0),
+        SafeArea(child: Column(children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+            child: Row(children: [
+              IconButton(onPressed: () => Navigator.maybePop(context),
+                  icon: const Icon(Icons.arrow_back_ios_new_rounded, color: _textSec, size: 18)),
+              const Expanded(child: Text('Practice Paper', style: TextStyle(color: _textPrim, fontSize: 16, fontWeight: FontWeight.w600))),
+              Text('${widget.questions.length} questions', style: const TextStyle(color: _textSec, fontSize: 13)),
+            ]),
+          ),
+          const SizedBox(height: 8),
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
+              itemCount: widget.questions.length,
+              itemBuilder: (_, i) {
+                final q = widget.questions[i];
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 20),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    _QuestionCard(question: q.question, subject: q.subject, marks: q.marks, questionNumber: i + 1),
+                    const SizedBox(height: 10),
+                    if (!_revealed.contains(i))
+                      GestureDetector(
+                        onTap: () => setState(() => _revealed.add(i)),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                          decoration: BoxDecoration(border: Border.all(color: _accent.withOpacity(0.4)), borderRadius: BorderRadius.circular(10)),
+                          child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                            Icon(Icons.lightbulb_outline_rounded, color: _accent, size: 15),
+                            SizedBox(width: 6),
+                            Text('Show Answer', style: TextStyle(color: _accent, fontSize: 13, fontWeight: FontWeight.w600)),
+                          ]),
+                        ),
+                      )
+                    else
+                      _ModelAnswerCard(modelAnswer: q.modelAnswer),
+                  ]),
+                );
+              },
             ),
           ),
+        ])),
+        Positioned(
+          bottom: 0, left: 0, right: 0,
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+            decoration: BoxDecoration(gradient: LinearGradient(
+              begin: Alignment.topCenter, end: Alignment.bottomCenter,
+              colors: [_bg.withOpacity(0), _bg],
+            )),
+            child: _StartButton(label: '✦ Finish Session', onTap: widget.onDone),
+          ),
         ),
-      ],
+      ]),
     );
   }
 }
@@ -674,406 +1140,59 @@ class _QuestionScreenState extends State<_QuestionScreen>
 enum _OptionState { idle, correct, wrong }
 
 class _OptionTile extends StatefulWidget {
-  final String label;
-  final String text;
+  final String label, text;
   final _OptionState state;
   final VoidCallback? onTap;
-
-  const _OptionTile({
-    required this.label,
-    required this.text,
-    required this.state,
-    this.onTap,
-  });
-
+  const _OptionTile({required this.label, required this.text, required this.state, this.onTap});
   @override
   State<_OptionTile> createState() => _OptionTileState();
 }
 
-class _OptionTileState extends State<_OptionTile>
-    with SingleTickerProviderStateMixin {
+class _OptionTileState extends State<_OptionTile> with SingleTickerProviderStateMixin {
   late final AnimationController _ctrl;
   late final Animation<double> _scale;
 
   @override
   void initState() {
     super.initState();
-    _ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 120),
-    );
-    _scale = Tween(begin: 1.0, end: 0.96).animate(
-      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
-    );
+    _ctrl  = AnimationController(vsync: this, duration: const Duration(milliseconds: 120));
+    _scale = Tween(begin: 1.0, end: 0.96).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
   }
-
   @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
+  void dispose() { _ctrl.dispose(); super.dispose(); }
 
-  Color get _borderColor {
-    return switch (widget.state) {
-      _OptionState.correct => _correct,
-      _OptionState.wrong   => _wrong,
-      _OptionState.idle    => Colors.white.withOpacity(0.08),
-    };
-  }
-
-  Color get _bgColor {
-    return switch (widget.state) {
-      _OptionState.correct => _correct.withOpacity(0.15),
-      _OptionState.wrong   => _wrong.withOpacity(0.12),
-      _OptionState.idle    => Colors.white.withOpacity(0.03),
-    };
-  }
-
-  Color get _labelColor {
-    return switch (widget.state) {
-      _OptionState.correct => _correct,
-      _OptionState.wrong   => _wrong,
-      _OptionState.idle    => _primary,
-    };
-  }
+  Color get _borderColor => switch (widget.state) { _OptionState.correct => _correct, _OptionState.wrong => _wrong, _ => Colors.white.withOpacity(0.08) };
+  Color get _bgColor     => switch (widget.state) { _OptionState.correct => _correct.withOpacity(0.15), _OptionState.wrong => _wrong.withOpacity(0.12), _ => Colors.white.withOpacity(0.03) };
+  Color get _labelColor  => switch (widget.state) { _OptionState.correct => _correct, _OptionState.wrong => _wrong, _ => _primary };
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTapDown: (_) => _ctrl.forward(),
-      onTapUp: (_) {
-        _ctrl.reverse();
-        widget.onTap?.call();
-      },
+      onTapUp: (_) { _ctrl.reverse(); widget.onTap?.call(); },
       onTapCancel: () => _ctrl.reverse(),
       child: ScaleTransition(
         scale: _scale,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 300),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: BoxDecoration(
-            color: _bgColor,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: _borderColor, width: 1.2),
-          ),
-          child: Row(
-            children: [
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: _labelColor.withOpacity(0.15),
-                  border: Border.all(color: _labelColor, width: 1.2),
-                ),
-                child: Center(
-                  child: Text(
-                    widget.label,
-                    style: TextStyle(
-                      color: _labelColor,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Text(
-                  widget.text,
-                  style: TextStyle(
-                    color: widget.state == _OptionState.idle
-                        ? _textPrim
-                        : widget.state == _OptionState.correct
-                            ? _correct
-                            : _wrong,
-                    fontSize: 14,
-                    height: 1.4,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-              if (widget.state == _OptionState.correct)
-                const Icon(Icons.check_circle_rounded,
-                    color: _correct, size: 20),
-              if (widget.state == _OptionState.wrong)
-                const Icon(Icons.cancel_rounded, color: _wrong, size: 20),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ── Result screen ─────────────────────────────────────────────────────────────
-
-class _ResultScreen extends StatefulWidget {
-  final int score;
-  final int total;
-  final List<int?> answers;
-  final List<QuizQuestion> questions;
-  final VoidCallback onRestart;
-
-  const _ResultScreen({
-    super.key,
-    required this.score,
-    required this.total,
-    required this.answers,
-    required this.questions,
-    required this.onRestart,
-  });
-
-  @override
-  State<_ResultScreen> createState() => _ResultScreenState();
-}
-
-class _ResultScreenState extends State<_ResultScreen>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _ctrl;
-  late final Animation<double> _scoreAnim;
-  late final ConfettiController _confettiCtrl;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1200),
-    )..forward();
-    _scoreAnim = CurvedAnimation(parent: _ctrl, curve: Curves.elasticOut);
-
-    _confettiCtrl = ConfettiController(duration: const Duration(seconds: 2));
-    
-    // Fire burst if score meets or exceeds 70% threshold
-    if (widget.score / widget.total >= 0.7) {
-      _confettiCtrl.play();
-    }
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    _confettiCtrl.dispose();
-    super.dispose();
-  }
-
-  String get _grade {
-    final pct = widget.score / widget.total;
-    if (pct >= 0.9) return 'Outstanding';
-    if (pct >= 0.7) return 'Great Work';
-    if (pct >= 0.5) return 'Keep Going';
-    return 'Try Again';
-  }
-
-  Color get _gradeColor {
-    final pct = widget.score / widget.total;
-    if (pct >= 0.9) return _accent;
-    if (pct >= 0.7) return const Color(0xFF5B6EF5);
-    if (pct >= 0.5) return const Color(0xFFF5C518);
-    return _wrong;
-  }
-
-  int get _correct => widget.answers
-      .asMap()
-      .entries
-      .where((e) =>
-          e.value != null &&
-          e.value == widget.questions[e.key].correctIndex)
-      .length;
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      alignment: Alignment.topCenter,
-      children: [
-        ConfettiWidget(
-          confettiController: _confettiCtrl,
-          blastDirectionality: BlastDirectionality.explosive,
-          shouldLoop: false,
-          colors: const [_accent, Color(0xFF5B6EF5), Color(0xFFF5C518), Colors.white],
-          gravity: 0.2,
-          numberOfParticles: 20,
-          minimumSize: const Size(6, 6),
-          maximumSize: const Size(10, 10),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Score ring
-              ScaleTransition(
-                scale: _scoreAnim,
-                child: SizedBox(
-                  width: 160,
-                  height: 160,
-                  child: CustomPaint(
-                    painter: _RingPainter(
-                      progress: widget.score / widget.total,
-                      color: _gradeColor,
-                    ),
-                    child: Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            '${widget.score}',
-                            style: const TextStyle(
-                              color: _textPrim,
-                              fontSize: 40,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                          Text(
-                            'of ${widget.total}',
-                            style: const TextStyle(
-                                color: _textSec, fontSize: 13),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              Text(
-                _grade,
-                style: TextStyle(
-                  color: _gradeColor,
-                  fontSize: 28,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.5,
-                ),
-              ),
-
-              const SizedBox(height: 6),
-
-              Text(
-                '$_correct / ${widget.questions.length} correct',
-                style: const TextStyle(color: _textSec, fontSize: 14),
-              ),
-
-              const SizedBox(height: 32),
-
-              // Stats row
-              Row(
-                children: [
-                  Expanded(
-                    child: _StatCard(
-                      icon: Icons.check_circle_rounded,
-                      iconColor: _correct_color,
-                      label: 'Correct',
-                      value: '$_correct',
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _StatCard(
-                      icon: Icons.cancel_rounded,
-                      iconColor: _wrong,
-                      label: 'Wrong',
-                      value:
-                          '${widget.answers.where((a) => a != null).length - _correct}',
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _StatCard(
-                      icon: Icons.radio_button_unchecked,
-                      iconColor: _textSec,
-                      label: 'Skipped',
-                      value:
-                          '${widget.answers.where((a) => a == null).length}',
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 32),
-
-              // Restart button
-              GestureDetector(
-                onTap: widget.onRestart,
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [_gradBegin, _gradEnd],
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: _primary.withOpacity(0.4),
-                        blurRadius: 20,
-                        offset: const Offset(0, 6),
-                      ),
-                    ],
-                  ),
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.refresh_rounded, color: _textPrim, size: 18),
-                      SizedBox(width: 8),
-                      Text(
-                        'New Test',
-                        style: TextStyle(
-                          color: _textPrim,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-const _correct_color = _correct;
-
-class _StatCard extends StatelessWidget {
-  final IconData icon;
-  final Color iconColor;
-  final String label;
-  final String value;
-
-  const _StatCard({
-    required this.icon,
-    required this.iconColor,
-    required this.label,
-    required this.value,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return _GlassContainer(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      child: Column(
-        children: [
-          Icon(icon, color: iconColor, size: 22),
-          const SizedBox(height: 6),
-          Text(
-            value,
-            style: const TextStyle(
-              color: _textPrim,
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
+          decoration: BoxDecoration(color: _bgColor, borderRadius: BorderRadius.circular(16), border: Border.all(color: _borderColor, width: 1.2)),
+          child: Row(children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              width: 32, height: 32,
+              decoration: BoxDecoration(shape: BoxShape.circle, color: _labelColor.withOpacity(0.15), border: Border.all(color: _labelColor, width: 1.2)),
+              child: Center(child: Text(widget.label, style: TextStyle(color: _labelColor, fontSize: 13, fontWeight: FontWeight.w700))),
             ),
-          ),
-          const SizedBox(height: 2),
-          Text(label,
-              style: const TextStyle(color: _textSec, fontSize: 11)),
-        ],
+            const SizedBox(width: 14),
+            Expanded(child: Text(widget.text, style: TextStyle(
+              color: widget.state == _OptionState.idle ? _textPrim : widget.state == _OptionState.correct ? _correct : _wrong,
+              fontSize: 14, height: 1.4, fontWeight: FontWeight.w500,
+            ))),
+            if (widget.state == _OptionState.correct) const Icon(Icons.check_circle_rounded, color: _correct, size: 20),
+            if (widget.state == _OptionState.wrong)   const Icon(Icons.cancel_rounded, color: _wrong, size: 20),
+          ]),
+        ),
       ),
     );
   }
@@ -1084,51 +1203,79 @@ class _StatCard extends StatelessWidget {
 class _RingPainter extends CustomPainter {
   final double progress;
   final Color color;
-
   _RingPainter({required this.progress, required this.color});
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2 - 10;
-
-    // Track
-    canvas.drawCircle(
-      center,
-      radius,
-      Paint()
-        ..color = _surface
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 10,
-    );
-
-    // Progress arc
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius),
-      -pi / 2,
-      2 * pi * progress,
-      false,
-      Paint()
-        ..color = color
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 10
-        ..strokeCap = StrokeCap.round,
-    );
+    canvas.drawCircle(center, radius, Paint()..color = _surface..style = PaintingStyle.stroke..strokeWidth = 10);
+    canvas.drawArc(Rect.fromCircle(center: center, radius: radius), -pi / 2, 2 * pi * progress, false,
+        Paint()..color = color..style = PaintingStyle.stroke..strokeWidth = 10..strokeCap = StrokeCap.round);
   }
 
   @override
-  bool shouldRepaint(_RingPainter old) =>
-      old.progress != progress || old.color != color;
+  bool shouldRepaint(_RingPainter old) => old.progress != progress || old.color != color;
 }
 
 // ── Shared UI helpers ─────────────────────────────────────────────────────────
 
+class _SectionLabel extends StatelessWidget {
+  final String text;
+  const _SectionLabel(this.text);
+  @override
+  Widget build(BuildContext context) => Text(text,
+      style: GoogleFonts.googleSans(color: _textSec, fontSize: 12, fontWeight: FontWeight.w600, letterSpacing: 0.5));
+}
+
+class _StartButton extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+  const _StartButton({required this.label, required this.onTap});
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(colors: [AppTheme.primaryGradBegin, AppTheme.primaryGradEnd]),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [BoxShadow(color: _primary.withOpacity(0.4), blurRadius: 20, offset: const Offset(0, 6))],
+        ),
+        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+          const Icon(Icons.auto_awesome_rounded, color: _textPrim, size: 18),
+          const SizedBox(width: 8),
+          Text(label, style: const TextStyle(color: _textPrim, fontSize: 15, fontWeight: FontWeight.w700)),
+        ]),
+      ),
+    );
+  }
+}
+
+class _StatCard extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final String label, value;
+  const _StatCard({required this.icon, required this.iconColor, required this.label, required this.value});
+  @override
+  Widget build(BuildContext context) => _GlassContainer(
+    padding: const EdgeInsets.symmetric(vertical: 16),
+    child: Column(children: [
+      Icon(icon, color: iconColor, size: 22),
+      const SizedBox(height: 6),
+      Text(value, style: const TextStyle(color: _textPrim, fontSize: 20, fontWeight: FontWeight.w800)),
+      const SizedBox(height: 2),
+      Text(label, style: const TextStyle(color: _textSec, fontSize: 11)),
+    ]),
+  );
+}
+
 class _GlassContainer extends StatelessWidget {
   final Widget child;
   final EdgeInsets? padding;
-
   const _GlassContainer({required this.child, this.padding});
-
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
@@ -1140,10 +1287,7 @@ class _GlassContainer extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.04),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.08),
-              width: 1.2,
-            ),
+            border: Border.all(color: Colors.white.withOpacity(0.08), width: 1.2),
           ),
           child: child,
         ),
@@ -1154,9 +1298,7 @@ class _GlassContainer extends StatelessWidget {
 
 class _GlassChip extends StatelessWidget {
   final Widget child;
-
   const _GlassChip({required this.child});
-
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
@@ -1168,79 +1310,9 @@ class _GlassChip extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.05),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.1),
-              width: 1,
-            ),
+            border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
           ),
           child: child,
-        ),
-      ),
-    );
-  }
-}
-
-class _TagChip extends StatelessWidget {
-  final String label;
-
-  const _TagChip({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: _primary.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: _primary.withOpacity(0.5),
-          width: 1,
-         ),
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(
-          color: _textSec,
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
-}
-
-class _GlowBlob extends StatelessWidget {
-  final double? top;
-  final double? bottom;
-  final double? left;
-  final double? right;
-  final double size;
-  final Color color;
-
-  const _GlowBlob({
-    this.top,
-    this.bottom,
-    this.left,
-    this.right,
-    required this.size,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Positioned(
-      top: top,
-      bottom: bottom,
-      left: left,
-      right: right,
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: RadialGradient(
-            colors: [color, color.withOpacity(0)],
-          ),
         ),
       ),
     );

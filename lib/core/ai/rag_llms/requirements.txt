@@ -6,3 +6,4 @@ groq
 python-dotenv
 numpy
 python-multipart
+supabase

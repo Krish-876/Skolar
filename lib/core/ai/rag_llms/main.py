@@ -3,13 +3,16 @@ Run with:
     uvicorn main:app --reload --port 8000
 
 Endpoints:
-    POST /generate          → returns one AI-generated open-ended question
-    POST /generate-batch    → returns N AI-generated MCQs for mock tests
-    POST /upload-pyq        → accepts a PDF, adds questions to the bank
-    GET  /health            → sanity check
-    GET  /stats             → question bank stats
-    GET  /questions         → browse / filter the question bank
+    POST /generate               → one AI-generated open-ended question
+    POST /generate-batch         → N MCQs (Compre Part A / Quiz MCQ mode)
+    POST /generate-open-batch    → N open-ended questions + model answers (Quiz / Midsem / Compre Part B)
+    POST /upload-pyq             → PDF → extract → insert into Supabase
+    GET  /health                 → sanity check
+    GET  /stats                  → question bank stats (scoped by college)
+    GET  /questions              → browse / filter the question bank (scoped by college)
 """
+
+import traceback
 
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -20,6 +23,7 @@ import uvicorn
 from pipeline import (
     run_generate,
     run_generate_mcq_batch,
+    run_generate_open_batch,
     run_upload_pyq,
     load_bank_and_embeddings,
 )
@@ -29,7 +33,7 @@ from pipeline import (
 app = FastAPI(
     title="Skolar AI API",
     description="DICL-based exam question generation using college PYQs",
-    version="1.0.0",
+    version="2.1.0",
 )
 
 app.add_middleware(
@@ -43,6 +47,7 @@ app.add_middleware(
 
 class GenerateRequest(BaseModel):
     subject: str
+    college: str
     year_from: Optional[int] = None
     year_to: Optional[int] = None
     k: Optional[int] = 5
@@ -52,26 +57,51 @@ class GenerateResponse(BaseModel):
     subject: str
     examples_used: int
 
-# Each item in the batch response matches Flutter's QuizQuestion shape exactly
 class McqQuestion(BaseModel):
     question: str
-    options: list[str]          # always length 4
-    correct_index: int          # 0-3
+    options: list[str]       # always length 4
+    correct_index: int       # 0-3
     subject: str
     marks: int
 
 class GenerateBatchRequest(BaseModel):
     subject: str
-    count: Optional[int] = 5       # number of MCQs to generate (1-20)
+    college: str
+    count: Optional[int] = 5
     year_from: Optional[int] = None
     year_to: Optional[int] = None
-    k: Optional[int] = 5          # MMR examples per generation call
+    k: Optional[int] = 5
 
 class GenerateBatchResponse(BaseModel):
     questions: list[McqQuestion]
     subject: str
     requested: int
-    generated: int              # may be < requested if some LLM calls failed
+    generated: int
+
+# ── Open-ended batch (Quiz / Midsem / Compre Part B) ──────────────────────────
+
+class OpenQuestion(BaseModel):
+    question: str
+    subject: str
+    marks: int
+    model_answer: str       # pre-generated; empty string if with_answers=False
+
+class GenerateOpenBatchRequest(BaseModel):
+    subject: str
+    college: str
+    count: Optional[int] = 5
+    year_from: Optional[int] = None
+    year_to: Optional[int] = None
+    k: Optional[int] = 5
+    with_answers: Optional[bool] = True   # always True in practice; kept for flexibility
+
+class GenerateOpenBatchResponse(BaseModel):
+    questions: list[OpenQuestion]
+    subject: str
+    requested: int
+    generated: int
+
+# ── Upload / Stats / Questions ─────────────────────────────────────────────────
 
 class UploadResponse(BaseModel):
     message: str
@@ -100,15 +130,15 @@ class QuestionsResponse(BaseModel):
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "service": "Skolar AI API"}
+    return {"status": "ok", "service": "Skolar AI API", "version": "2.1.0"}
 
 
 @app.get("/stats", response_model=StatsResponse)
-def stats():
+def stats(college: str = Query(...)):
     try:
-        questions, _ = load_bank_and_embeddings()
-    except FileNotFoundError:
-        raise HTTPException(status_code=500, detail="Question bank not found.")
+        questions, _ = load_bank_and_embeddings(college)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
     subjects: dict[str, int] = {}
     years: set[int] = set()
@@ -128,15 +158,17 @@ def stats():
 
 @app.get("/questions", response_model=QuestionsResponse)
 def get_questions(
+    college: str = Query(...),
     subject: Optional[str] = Query(None),
     year: Optional[int] = Query(None),
     exam_type: Optional[str] = Query(None),
     question_type: Optional[str] = Query(None),
+    published_only: bool = Query(False),
 ):
     try:
-        questions, _ = load_bank_and_embeddings()
-    except FileNotFoundError:
-        raise HTTPException(status_code=500, detail="Question bank not found.")
+        questions, _ = load_bank_and_embeddings(college)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
     if subject:
         questions = [q for q in questions if q.get("subject", "").lower() == subject.lower()]
@@ -165,7 +197,6 @@ def get_questions(
 
 @app.post("/generate", response_model=GenerateResponse)
 def generate(req: GenerateRequest):
-    """Generate one new open-ended exam question using the DICL pipeline."""
     year_range = None
     if req.year_from and req.year_to:
         if req.year_from > req.year_to:
@@ -175,7 +206,12 @@ def generate(req: GenerateRequest):
     k = max(1, min(req.k or 5, 10))
 
     try:
-        question = run_generate(subject=req.subject, year_range=year_range, k=k)
+        question = run_generate(
+            subject=req.subject,
+            college=req.college,
+            year_range=year_range,
+            k=k,
+        )
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
@@ -187,18 +223,13 @@ def generate(req: GenerateRequest):
 @app.post("/generate-batch", response_model=GenerateBatchResponse)
 def generate_batch(req: GenerateBatchRequest):
     """
-    Generate N MCQ questions in parallel for a mock test session.
-
-    The questions are topically diverse (each gets an independent MMR pass)
-    and formatted with 4 options + a correct_index, ready for the Flutter quiz UI.
+    Generate N MCQ questions for Compre Part A practice.
 
     Body:
         {
-          "subject":    "Artificial Intelligence",
-          "count":      5,
-          "year_from":  2024,
-          "year_to":    2026,
-          "k":          5
+          "subject": "Artificial Intelligence",
+          "college": "BPHC",
+          "count":   5
         }
     """
     count = max(1, min(req.count or 5, 20))
@@ -214,6 +245,7 @@ def generate_batch(req: GenerateBatchRequest):
     try:
         raw = run_generate_mcq_batch(
             subject=req.subject,
+            college=req.college,
             count=count,
             year_range=year_range,
             k=k,
@@ -226,25 +258,87 @@ def generate_batch(req: GenerateBatchRequest):
     if not raw:
         raise HTTPException(
             status_code=500,
-            detail="All MCQ generation attempts failed. Check Groq API key and question bank."
+            detail="All MCQ generation attempts failed. Check Groq API key and question bank.",
         )
-
-    questions = [
-        McqQuestion(
-            question=q["question"],
-            options=q["options"],
-            correct_index=q["correct_index"],
-            subject=q["subject"],
-            marks=q["marks"],
-        )
-        for q in raw
-    ]
 
     return GenerateBatchResponse(
-        questions=questions,
+        questions=[
+            McqQuestion(
+                question=q["question"],
+                options=q["options"],
+                correct_index=q["correct_index"],
+                subject=q["subject"],
+                marks=q["marks"],
+            )
+            for q in raw
+        ],
         subject=req.subject,
         requested=count,
-        generated=len(questions),
+        generated=len(raw),
+    )
+
+
+@app.post("/generate-open-batch", response_model=GenerateOpenBatchResponse)
+def generate_open_batch(req: GenerateOpenBatchRequest):
+    """
+    Generate N open-ended questions with pre-generated model answers.
+    Used for Quiz, Midsem, and Compre Part B practice modes.
+
+    Body:
+        {
+          "subject":      "Artificial Intelligence",
+          "college":      "BPHC",
+          "count":        5,
+          "with_answers": true
+        }
+
+    Longer timeout needed on the client — each question makes 2 Groq calls.
+    Expect ~8-12s for 5 questions with 3 parallel workers.
+    """
+    count = max(1, min(req.count or 5, 15))
+
+    year_range = None
+    if req.year_from and req.year_to:
+        if req.year_from > req.year_to:
+            raise HTTPException(status_code=400, detail="year_from must be <= year_to")
+        year_range = (req.year_from, req.year_to)
+
+    k = max(1, min(req.k or 5, 10))
+
+    try:
+        raw = run_generate_open_batch(
+            subject=req.subject,
+            college=req.college,
+            count=count,
+            year_range=year_range,
+            k=k,
+            with_answers=req.with_answers if req.with_answers is not None else True,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Pipeline error: {str(e)}")
+
+    if not raw:
+        raise HTTPException(
+            status_code=500,
+            detail="All question generation attempts failed. Check Groq API key and question bank.",
+        )
+
+    return GenerateOpenBatchResponse(
+        questions=[
+            OpenQuestion(
+                question=q["question"],
+                subject=q["subject"],
+                marks=q["marks"],
+                model_answer=q.get("model_answer", ""),
+            )
+            for q in raw
+        ],
+        subject=req.subject,
+        requested=count,
+        generated=len(raw),
     )
 
 
@@ -254,8 +348,8 @@ async def upload_pyq(
     subject: str = Form(...),
     year: int = Form(...),
     exam_type: str = Form("unknown"),
+    college: str = Form(...),
 ):
-    """Upload a PYQ PDF -> extract questions -> add to question bank."""
     if not file.filename.endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files are accepted.")
 
@@ -269,6 +363,7 @@ async def upload_pyq(
             subject=subject,
             year=year,
             exam_type=exam_type,
+            college=college,
         )
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
@@ -278,7 +373,7 @@ async def upload_pyq(
     return UploadResponse(
         message=f"Successfully added {result['added']} questions from {file.filename}",
         added=result["added"],
-        total=result["total"],
+        total=result["added"],
         preview=result["new_questions"],
     )
 

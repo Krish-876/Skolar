@@ -9,12 +9,14 @@ class GenerateQuestionUseCase {
 
   Future<Either<Failure, GeneratedQuestion>> call({
     required String subject,
+    required String college,
     required int k,
     int? yearFrom,
     int? yearTo,
   }) {
     return _repository.generateQuestion(
       subject: subject,
+      college: college,
       k: k,
       yearFrom: yearFrom,
       yearTo: yearTo,
@@ -31,12 +33,14 @@ class UploadPyqUseCase {
     required String subject,
     required int year,
     required String examType,
+    required String college,
   }) {
     return _repository.uploadPyq(
       filePath: filePath,
       subject: subject,
       year: year,
       examType: examType,
+      college: college,
     );
   }
 }
@@ -45,8 +49,10 @@ class GetStatsUseCase {
   final ExamPredictionRepository _repository;
   GetStatsUseCase(this._repository);
 
-  Future<Either<Failure, QuestionBankStats>> call() {
-    return _repository.getStats();
+  Future<Either<Failure, QuestionBankStats>> call({
+    required String college,
+  }) {
+    return _repository.getStats(college: college);
   }
 }
 
@@ -55,12 +61,14 @@ class GetQuestionsUseCase {
   GetQuestionsUseCase(this._repository);
 
   Future<Either<Failure, QuestionsResponse>> call({
+    required String college,
     String? subject,
     int? year,
     String? examType,
     String? questionType,
   }) {
     return _repository.getQuestions(
+      college: college,
       subject: subject,
       year: year,
       examType: examType,

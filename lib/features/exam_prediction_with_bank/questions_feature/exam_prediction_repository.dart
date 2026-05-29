@@ -5,6 +5,7 @@ import '../../../../core/errors/failures.dart';
 abstract class ExamPredictionRepository {
   Future<Either<Failure, GeneratedQuestion>> generateQuestion({
     required String subject,
+    required String college,
     required int k,
     int? yearFrom,
     int? yearTo,
@@ -15,11 +16,15 @@ abstract class ExamPredictionRepository {
     required String subject,
     required int year,
     required String examType,
+    required String college,
   });
 
-  Future<Either<Failure, QuestionBankStats>> getStats();
+  Future<Either<Failure, QuestionBankStats>> getStats({
+    required String college,
+  });
 
   Future<Either<Failure, QuestionsResponse>> getQuestions({
+    required String college,
     String? subject,
     int? year,
     String? examType,

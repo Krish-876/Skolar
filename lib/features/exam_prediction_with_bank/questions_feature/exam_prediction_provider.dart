@@ -4,6 +4,8 @@ import 'package:Skolar/features/exam_prediction_with_bank/questions_feature/exam
 import 'package:Skolar/features/exam_prediction_with_bank/questions_feature/exam_prediction_repository_impl.dart';
 import 'package:Skolar/features/exam_prediction_with_bank/questions_feature/exam_prediction_usecases.dart';
 
+import 'package:Skolar/shared/providers/global_providers.dart' show userProvider;
+
 // ---------------------------------------------------------------------------
 // Infrastructure providers
 // ---------------------------------------------------------------------------
@@ -42,19 +44,23 @@ final getQuestionsUseCaseProvider = Provider<GetQuestionsUseCase>(
 );
 
 // ---------------------------------------------------------------------------
-// Stats notifier
+// Stats notifier  (college read internally — no call-site changes needed)
 // ---------------------------------------------------------------------------
 
 class StatsNotifier extends AsyncNotifier<QuestionBankStats?> {
   @override
   Future<QuestionBankStats?> build() async {
-    final result = await ref.read(getStatsUseCaseProvider).call();
+    final college = ref.read(userProvider).college;
+    final result =
+        await ref.read(getStatsUseCaseProvider).call(college: college);
     return result.fold((_) => null, (s) => s);
   }
 
   Future<void> refresh() async {
     state = const AsyncLoading();
-    final result = await ref.read(getStatsUseCaseProvider).call();
+    final college = ref.read(userProvider).college;
+    final result =
+        await ref.read(getStatsUseCaseProvider).call(college: college);
     state = result.fold(
       (f) => AsyncError(f, StackTrace.current),
       (s) => AsyncData(s),
@@ -82,8 +88,10 @@ class GenerateQuestionNotifier extends AsyncNotifier<GeneratedQuestion?> {
     int? yearTo,
   }) async {
     state = const AsyncLoading();
+    final college = ref.read(userProvider).college;
     final result = await ref.read(generateQuestionUseCaseProvider).call(
           subject: subject,
+          college: college,
           k: k,
           yearFrom: yearFrom,
           yearTo: yearTo,
@@ -101,7 +109,7 @@ final generateQuestionProvider =
 );
 
 // ---------------------------------------------------------------------------
-// Upload PYQ notifier
+// Upload PYQ notifier  (used by the existing single-file _UploadTab)
 // ---------------------------------------------------------------------------
 
 class UploadPyqNotifier extends AsyncNotifier<UploadResult?> {
@@ -115,11 +123,13 @@ class UploadPyqNotifier extends AsyncNotifier<UploadResult?> {
     required String examType,
   }) async {
     state = const AsyncLoading();
+    final college = ref.read(userProvider).college;
     final result = await ref.read(uploadPyqUseCaseProvider).call(
           filePath: filePath,
           subject: subject,
           year: year,
           examType: examType,
+          college: college,
         );
     state = result.fold(
       (f) => AsyncError(f, StackTrace.current),
@@ -140,7 +150,10 @@ final uploadPyqProvider =
 class QuestionsNotifier extends AsyncNotifier<QuestionsResponse?> {
   @override
   Future<QuestionsResponse?> build() async {
-    final result = await ref.read(getQuestionsUseCaseProvider).call();
+    final college = ref.read(userProvider).college;
+    final result = await ref
+        .read(getQuestionsUseCaseProvider)
+        .call(college: college);
     return result.fold((_) => null, (q) => q);
   }
 
@@ -151,7 +164,9 @@ class QuestionsNotifier extends AsyncNotifier<QuestionsResponse?> {
     String? questionType,
   }) async {
     state = const AsyncLoading();
+    final college = ref.read(userProvider).college;
     final result = await ref.read(getQuestionsUseCaseProvider).call(
+          college: college,
           subject: subject,
           year: year,
           examType: examType,
