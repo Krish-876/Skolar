@@ -1,4 +1,8 @@
+import 'package:Skolar/core/loading/loading_overlay.dart';
+import 'package:Skolar/core/loading/loading_provider.dart';
+import 'package:Skolar/core/loading/test_page.dart';
 import 'package:Skolar/features/pyq_upload/presentation/pages/pyq_upload_pages.dart';
+import 'package:Skolar/features/splash%20screen/splash_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:Skolar/features/analytics/presentation/pages/analytics_pages.dart';
@@ -16,6 +20,8 @@ import 'package:Skolar/features/profile/presentation/pages/profile_pages1.dart';
 // ---------------------------------------------------------------------------
 import 'package:flutter/services.dart';
 
+
+final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setSystemUIOverlayStyle(
@@ -35,6 +41,7 @@ class NovaApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorObservers: [routeObserver],
       title: 'Nova',
       debugShowCheckedModeBanner: false,
 
@@ -54,6 +61,7 @@ class NovaApp extends StatelessWidget {
 
       initialRoute: AppRoutes.home,
       routes: AppRoutes.routes,
+      builder: (context, child) => LoadingOverlay(child: child!),
     );
   }
 }
@@ -75,6 +83,7 @@ abstract class AppRoutes {
   static const syllabus = '/syllabus';
   static const feed = '/feed';
   static const focusSession = '/focus-session';
+  static const test = '/test';
 
   static final Map<String, WidgetBuilder> routes = {
   home: (_) => const _DevMenu(),
@@ -82,15 +91,16 @@ abstract class AppRoutes {
   auth: (_) => const AuthScreen(),
   dashboard: (_) => const DashboardPage(),
   analytics: (_) => const AnalyticsPage(),
-  feed: (_) => const FeedPage(),         // ← add this
+  feed: (_) => const FeedPage(),         
   colleges: (_) => const CollegesPage(),
   examPrediction: (_) => const ExamPredictionPage(),
   mockTests: (_) => const MockTestPage(),
   profile: (_) => const SkolarDashboardApp(),
   pyqUpload: (_) => const PyqUploadPage(),
   subjects: (_) => const _PlaceholderPage(title: 'Subjects'),
-  syllabus: (_) => const _PlaceholderPage(title: 'Syllabus'),
+  syllabus: (_) => const SplashScreen(),
   focusSession: (_) => const FocusTimerPage(),
+  test: (_) => const TestLoadingPage(),
 };
 }
 
@@ -114,6 +124,7 @@ class _DevMenu extends StatelessWidget {
     ('Syllabus', AppRoutes.syllabus),
     ('Feed', AppRoutes.feed),
     ('Focus Session', AppRoutes.focusSession),
+    ('Loading Screen', AppRoutes.test)
   ];
 
   @override
