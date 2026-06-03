@@ -1,257 +1,135 @@
-## Nova - Complete Architecture Index
+## Skolar - Complete Architecture Index
 
-### ✅ Completed Scaffold
+###  Completed (Phases 1–3)
 
 #### Core Infrastructure
-- [x] Error handling (`core/errors/`)
-  - Failure model (Freezed)
-  - Either type (functional error handling)
-  - Exception classes
-  
-- [x] Network layer (`core/network/`)
-  - HTTP client wrapper (Dio)
-  - API interceptor
-  - API response generic wrapper
-  
-- [x] Dependency Injection (`core/di/`)
-  - Service locator setup (GetIt)
-  - Riverpod provider exports
-  
-- [x] Configuration (`core/config/`)
-  - AppConfig (environment-based)
-  - AppConstants
-  
-- [x] Theme (`core/theme/`)
-  - Material 3 theme setup
-  - Color palette
-  - Typography scales
-  
-- [x] Routing (`core/routing/`)
-  - GoRouter configuration
-  - Named routes
-  
-- [x] Services (`core/services/`)
-  - AI service abstraction
-  
-- [x] Storage (`core/storage/`)
-  - Storage service abstraction
-  - Cache metadata
-  
-- [x] Utils (`core/utils/`)
-  - UseCase base class
-  - Generic types
-  
-- [x] Widgets (`core/widgets/`)
-  - Reusable UI builders
+- [x] Error handling (`core/errors/`) — Failure model, Either type, exception classes
+- [x] Network layer (`core/network/`) — Dio HTTP client, interceptors, response wrapper
+- [x] Dependency Injection (`core/di/`) — GetIt service locator, Riverpod provider exports
+- [x] Configuration (`core/config/`) — AppConfig, AppConstants
+- [x] Theme (`core/theme/`) — Material 3, color palette, typography, animated + static mesh themes
+- [x] Routing (`core/routing/`) — GoRouter, named routes
+- [x] Services (`core/services/`) — AI service abstraction, logging
+- [x] Storage (`core/storage/`) — Storage service abstraction
+- [x] Widgets (`core/widgets/`) — GlassBackground, AnimatedProfileGradient
+
+#### AI Backend (`core/ai/rag_llms/`)
+- [x] `main.py` — FastAPI app, 7 endpoints
+- [x] `pipeline.py` — DICL pipeline: PDF parsing, embedding, MMR, generation, Supabase I/O
+- [x] Supabase integration — PostgreSQL + pgvector (replaces question_bank.json + embeddings.npy)
+- [x] PDF parsing — pdfplumber → raw text extraction
+- [x] Question extraction — Groq LLaMA 3.3 70B → structured questions with marks, type, year
+- [x] Semantic embeddings — sentence-transformers all-MiniLM-L6-v2 → vector(384)
+- [x] MMR algorithm — diverse example selection (alpha=0.7)
+- [x] Exam type filtering — quiz / midsem / compre scoping with graceful fallback
+- [x] MCQ generation — 4 options + correct index
+- [x] Open question generation — with marks-calibrated structured model answers
+- [x] Thread-safe parallel generation — ThreadPoolExecutor (3 workers, Groq free-tier safe)
 
 #### Shared Modules
-- [x] Models (`shared/models/`)
-  - Entity base class
-  - DTO base class
-  - Pagination support
-  
-- [x] Extensions (`shared/extensions/`)
-  - String extensions
-  - List extensions
-  - Num extensions
-  
-- [x] Components (`shared/components/`)
-  - LoadingButton
-  - AppTextField
-  
-- [x] Providers (`shared/providers/`)
-  - Global state providers
-  - Loading state management
+- [x] Models (`shared/models/`) — Entity base, DTO base, UserModel, pagination
+- [x] Extensions (`shared/extensions/`) — String, List, Num
+- [x] Components (`shared/components/`) — LoadingButton, AppTextField
+- [x] Providers (`shared/providers/`) — userProvider, isLoadingProvider
 
-#### Features (10 Scaffolded)
-Each feature has complete 3-layer structure:
+#### Features
 
-1. **Auth Feature** ✅ (Full Example Implementation)
-   - Data layer (datasource, DTO, repository impl)
-   - Domain layer (entities, repository abstract, usecases)
-   - Presentation layer (providers, pages, widgets)
-
-2. **Onboarding** ✅ (Skeleton)
-3. **Dashboard** ✅ (Skeleton)
-4. **Colleges** ✅ (Skeleton)
-5. **Subjects** ✅ (Skeleton)
-6. **Syllabus** ✅ (Skeleton)
-7. **PYQ Upload** ✅ (Skeleton)
-8. **Exam Prediction** ✅ (Skeleton)
-9. **Analytics** ✅ (Skeleton)
-10. **Mock Tests** ✅ (Skeleton)
-11. **Profile** ✅ (Skeleton)
-
-#### Documentation
-- [x] ARCHITECTURE.md - Complete architecture guide
-- [x] CONTRIBUTING.md - Code standards and patterns
-- [x] INDEX.md - This file
-
-### 📊 File Count Summary
-
-**Total Files Created**: ~200+
-
-#### By Category
-- Core infrastructure: ~15 files
-- Shared modules: ~6 files
-- Feature skeletons: ~180 files (11 features × 3 layers)
-- Documentation: 3 files
-
-### 🏗️ Architecture Features
-
-#### Implemented Abstractions
-- ✅ Either type for functional error handling
-- ✅ UseCase base class
-- ✅ Repository pattern
-- ✅ Data source abstraction
-- ✅ DTO/Entity mapping
-- ✅ Riverpod integration
-- ✅ AI service layer
-- ✅ Storage service abstraction
-- ✅ HTTP client wrapper
-
-#### Design Patterns Used
-- ✅ Clean Architecture (3-layer)
-- ✅ Repository Pattern
-- ✅ UseCase Pattern
-- ✅ Factory Pattern (Freezed)
-- ✅ Singleton Pattern (GetIt)
-- ✅ Provider Pattern (Riverpod)
-- ✅ Builder Pattern (Riverpod builders)
-
-#### Technology Stack
-- ✅ Flutter (latest stable)
-- ✅ Dart (latest stable)
-- ✅ Riverpod (state management)
-- ✅ GoRouter (navigation)
-- ✅ Dio (networking)
-- ✅ Freezed (immutable models)
-- ✅ GetIt (DI)
-- ✅ json_serializable (serialization)
-
-### 📝 Implementation Status
-
-#### Ready for Implementation
-- Domain layer (pure, no dependencies)
-- Data layer abstraction
-- Error handling
-- State management structure
-- Routing structure
-- Theme system
-- Shared components
-
-#### Next Steps
-1. Add actual API implementations in data layer
-2. Implement AI orchestration providers
-3. Build presentation UI pages
-4. Write unit tests
-5. Set up integration tests
-6. Configure Firebase/Backend
-7. Implement authentication flow
-8. Add analytics tracking
-9. Set up CI/CD pipeline
-10. Performance optimization
-
-### 🎯 Scalability Metrics
-
-- **Max supported features**: 100+
-- **Feature isolation**: Complete (no cross-feature imports)
-- **Dependency depth**: 3 layers (max)
-- **Bundle size**: Modular (features can be lazy-loaded)
-- **Test coverage**: Framework ready (testable at all layers)
-- **Microservices ready**: Yes (repository layer acts as API boundary)
-
-### 🔧 Quick Start for Developers
-
-```bash
-# 1. Setup Flutter
-flutter pub get
-
-# 2. Generate code (Freezed, json_serializable, etc.)
-dart run build_runner build --delete-conflicting-outputs
-
-# 3. Format code
-dart format lib/
-
-# 4. Analyze
-dart analyze lib/
-
-# 5. Run app
-flutter run
-
-# 6. Add new feature
-# Copy auth feature structure and rename
-```
-
-### 📚 File Organization Reference
-
-```
-Each feature follows this strict pattern:
-
-feature_name/
-├── data/
-│   ├── datasources/
-│   │   └── {feature}_datasource.dart
-│   ├── dtos/
-│   │   └── {feature}_dto.dart
-│   └── repository_impl/
-│       └── {feature}_repository_impl.dart
-├── domain/
-│   ├── entities/
-│   │   └── {feature}_entity.dart
-│   ├── repositories/
-│   │   └── {feature}_repository.dart
-│   └── usecases/
-│       └── {feature}_usecases.dart
-└── presentation/
-    ├── pages/
-    │   └── {feature}_pages.dart
-    ├── providers/
-    │   └── {feature}_provider.dart
-    └── widgets/
-        └── {feature}_widgets.dart
-```
-
-### 🔐 Architectural Constraints
-
-✅ **Enforced**
-- No Flutter imports in domain layer
-- No circular dependencies
-- Dependency rule: inward only
-- No direct widget instantiation in business logic
-- No state in widgets (use Riverpod)
-
-### 📦 What's Included
-
-1. **Complete folder structure** (ready for 100+ features)
-2. **Error handling system** (Either + Exceptions)
-3. **DI container** (GetIt + Riverpod)
-4. **Network infrastructure** (Dio + interceptors)
-5. **State management** (Riverpod)
-6. **Navigation system** (GoRouter)
-7. **Theme system** (Material 3)
-8. **AI abstraction layer** (pluggable providers)
-9. **Storage abstraction** (offline-ready)
-10. **Reusable components** (widgets + extensions)
-11. **11 feature modules** (scaffolded, ready to implement)
-12. **Documentation** (architecture + standards)
-
-### 🚀 Production Readiness
-
-This architecture is **production-grade** and supports:
-- Enterprise scalability (100+ features)
-- Team collaboration (feature isolation)
-- Testing at all layers
-- Performance optimization (lazy loading ready)
-- Feature toggles (provider-based)
-- A/B testing (Riverpod state)
-- Analytics integration (service layer)
-- Microservices migration (repository boundary)
-- Offline-first capabilities (storage abstraction)
-- Multi-environment deployment (config system)
+1. **Auth**  scaffold ready — pending Firebase/Supabase Auth integration (Phase 4)
+2. **Onboarding**  scaffold ready
+3. **Dashboard**  fully implemented
+   - Donut ring chart, weekly line chart, task list, recent activity feed
+   - Backed by analytics.json via AnalyticsLocalDataSourceImpl
+4. **Colleges**  scaffold ready
+5. **Subjects**  scaffold ready
+6. **Syllabus**  scaffold ready
+7. **PYQ Upload**  scaffold ready — app UI pending (Phase 4), API endpoint working
+8. **Exam Prediction**  fully implemented
+   - Question bank browser, filters by subject/year/exam_type/question_type
+   - Full Clean Architecture: datasource → repo → usecase → notifier
+9. **Analytics**  fully implemented (see Dashboard)
+10. **Mock Tests**  fully implemented
+    - 4 exam types: Quiz, Midsem, Compre Part A, Compre Part B
+    - MCQ Blitz mode + Written Practice mode (flashcard + paper views)
+    - Model answers with markdown rendering
+11. **Feed**  fully implemented (mock data — pending API connection in Phase 4)
+    - Feed cards, upvotes, attempt counts, sort sheet
+    - Architecture ready for FeedLocalDataSource → FeedRemoteDataSource swap
+12. **Focus Session**  fully implemented
+    - Countdown timer, wave background, slide-to-start, custom duration picker
+    - Presentation-layer only, no backend dependency
+13. **Profile**  scaffold ready
+14. **Loading Screen**  implemented
 
 ---
 
-**Architecture Status**: ✅ **COMPLETE - READY FOR FEATURE DEVELOPMENT**
+###  In Progress (Phase 4)
 
-Last Updated: 2024
+- [ ] College email authentication (Firebase Auth / Supabase Auth)
+- [ ] PYQ upload through app UI
+- [ ] Community feed → live Supabase query (swap datasource)
+- [ ] Wire Attempt button in feed → MockTestNotifier.fetchQuestions()
+- [ ] College name from userProvider (remove hardcoded fallback)
+- [ ] Vote state persistence → Supabase write on auth
+
+---
+
+###  Planned (Phase 5 — Personalisation)
+
+- [ ] Personal learning goal mode (e.g. DSA every day for 90 days)
+- [ ] AI daily question plan
+- [ ] Lives and streak system
+- [ ] Coin economy: earn 1 coin per completed daily task, spend to protect streaks
+- [ ] Daily college-wide brain puzzle (LinkedIn-style, same for all students that day)
+- [ ] College leaderboard (ranked by coins, streak, tests attempted)
+- [ ] Mock test scores on dashboard
+- [ ] Focus session history and streak tracking
+
+---
+
+###  Planned (Phase 6 — ML Extension)
+
+- [ ] Full DICL: top-15 cosine retrieval → MMR over those 15 → pick 5 (tech debt fix)
+- [ ] Fine-tune FLAN-T5 on generated question-answer pairs
+- [ ] MMR vs random vs top-k experiment
+- [ ] Distractor quality analysis for MCQ options
+
+---
+
+###  Backlog (Brainstormed — Not Yet Scheduled)
+
+- [ ] Weakness Tracker: flag weak topics after mock test, correlate with real exam marks, weight generation toward gaps ⭐
+- [ ] Quick Revision mode: flashcard session over flagged weak areas before compre
+- [ ] Clean Subject Discussion Feed: replace college WhatsApp groups, searchable and permanent
+- [ ] Peer-to-Peer Doubt Solving: post doubt → batchmates answer → upvote → earn coins
+- [ ] User Growth Card / Resume Export: one-tap shareable card with Skolar branding
+- [ ] B2B Professor Portal: web UI over /upload-pyq → institutional licensing model
+
+---
+
+###  File Count
+
+- Core infrastructure: ~15 files
+- Shared modules: ~6 files
+- Feature implementations: ~180+ files
+- AI backend: 2 files (main.py, pipeline.py)
+- Documentation: README.md, ARCHITECTURE.md, CONTRIBUTING.md, NOTES.md, INDEX.md
+
+---
+
+###  Quick Start
+
+```bash
+# Flutter app
+flutter pub get
+dart run build_runner build --delete-conflicting-outputs
+flutter run
+
+# Python backend
+cd lib/core/ai/rag_llms
+source myenv311/bin/activate
+uvicorn main:app --reload --port 8000
+```
+
+---
+
+*Skolar — Built by Krishna, BITS Pilani Hyderabad, B.Tech CSE 2024–2028*
