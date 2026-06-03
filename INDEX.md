@@ -18,7 +18,7 @@
 - [x] `pipeline.py` — DICL pipeline: PDF parsing, embedding, MMR, generation, Supabase I/O
 - [x] Supabase integration — PostgreSQL + pgvector (replaces question_bank.json + embeddings.npy)
 - [x] PDF parsing — pdfplumber → raw text extraction
-- [x] Question extraction — Groq LLaMA 3.3 70B → structured questions with marks, type, year
+- [x] Question extraction — Groq LLaMA 3.3 70B → structured questions with marks, type, paper_year
 - [x] Semantic embeddings — sentence-transformers all-MiniLM-L6-v2 → vector(384)
 - [x] MMR algorithm — diverse example selection (alpha=0.7)
 - [x] Exam type filtering — quiz / midsem / compre scoping with graceful fallback

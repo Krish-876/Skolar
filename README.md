@@ -86,10 +86,10 @@ Before MMR runs, the question bank is filtered to only include PYQs relevant to 
 
 | Exam Type | PYQs used as examples |
 |---|---|
-| Quiz | `quiz` only |
-| Midsem | `midsem` + `quiz` |
-| Compre Part A | `compre` + `midsem` + `quiz` |
-| Compre Part B | `compre` + `midsem` + `quiz` |
+| Quiz        | quiz only                          |
+| Midsem      | midsem + quiz1                     |
+| Quiz 2      | quiz2 + midsem + quiz1             |
+| Compre      | compre + quiz2 + midsem + quiz1    |
 
 This reflects the real syllabus structure — compre includes midsem portion, midsem includes quiz portion. If no questions match the filter (e.g. no quiz PYQs uploaded yet), the pipeline falls back to the full bank so generation never hard-fails.
 
@@ -145,7 +145,7 @@ question_text   text
 marks           integer
 question_type   text  — mcq | short_answer | long_answer | numerical
 subject         text
-year            integer
+paper_year      integer
 exam_type       text  — quiz | midsem | compre | generated
 college         text  — used to scope all queries
 embedding       vector(384)  — all-MiniLM-L6-v2 embedding of question_text
@@ -673,6 +673,34 @@ Order to stay consistent with the architecture:
 11. Run `dart run build_runner build --delete-conflicting-outputs`
 
 Use the `analytics` feature as the reference implementation. Features with no persistence or backend requirement (like focus session) can skip steps 2–7 and use a `ChangeNotifier` directly in the presentation layer.
+
+## Tech Debt
+
+### `academic_year` filtering (exam prediction + pipeline)
+
+`academic_year` exists on the `questions` table and in `UserModel` but is not
+yet used as a filter anywhere in the Flutter app or the FastAPI pipeline.
+
+**What's missing:**
+
+- `pipeline.py` — `load_bank_and_embeddings` selects and returns `paper_year`
+  but not `academic_year`. Add it to the Supabase select and the returned dict.
+- `GET /questions` — no `academic_year` query param. Add it to `main.py` and
+  the filter chain in `get_questions`.
+- Datasource → repository → usecase → provider chain — `academicYear` param
+  missing from all four layers in the exam prediction feature.
+- UI — no academic year filter chip on the question bank browser. Simplest fix
+  is to read it silently from `userProvider.academicYear` in
+  `QuestionsNotifier.build()` so students see only their year by default.
+
+**Why it's safe to defer:** Clean Architecture means each layer is independent.
+Adding the param is mechanical — no existing behaviour changes.
+
+**When to fix:** Before Phase 5 personalisation, since the daily question plan
+needs to scope questions to the student's academic year.
+
+and also Full DICL: top-15 cosine retrieval → MMR over those 15 → pick 5 (tech debt fix)
+
 
 ---
 
