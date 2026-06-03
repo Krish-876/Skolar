@@ -43,6 +43,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ── Valid exam types (mirrors schema CHECK constraint) ────────────────────────
+
+_VALID_EXAM_TYPES = {"quiz1", "midsem", "quiz2", "compre", "generated"}
+
 # ── Request / Response models ─────────────────────────────────────────────────
 
 class GenerateRequest(BaseModel):
@@ -114,14 +118,14 @@ class UploadResponse(BaseModel):
 class StatsResponse(BaseModel):
     total_questions: int
     subjects: dict
-    years: list[int]
+    paper_years: list[int]
 
 class QuestionItem(BaseModel):
     question_text: str
     marks: int
     question_type: str
     subject: str
-    year: int
+    paper_year: int
     exam_type: str
 
 class QuestionsResponse(BaseModel):
@@ -143,18 +147,18 @@ def stats(college: str = Query(...)):
         raise HTTPException(status_code=500, detail=str(e))
 
     subjects: dict[str, int] = {}
-    years: set[int] = set()
+    paper_years: set[int] = set()
     for q in questions:
         subj = q.get("subject", "Unknown")
         subjects[subj] = subjects.get(subj, 0) + 1
-        yr = q.get("year")
+        yr = q.get("paper_year")
         if yr:
-            years.add(yr)
+            paper_years.add(yr)
 
     return StatsResponse(
         total_questions=len(questions),
         subjects=subjects,
-        years=sorted(years),
+        paper_years=sorted(paper_years),
     )
 
 
@@ -162,10 +166,9 @@ def stats(college: str = Query(...)):
 def get_questions(
     college: str = Query(...),
     subject: Optional[str] = Query(None),
-    year: Optional[int] = Query(None),
+    paper_year: Optional[int] = Query(None),
     exam_type: Optional[str] = Query(None),
     question_type: Optional[str] = Query(None),
-    published_only: bool = Query(False),
 ):
     try:
         questions, _ = load_bank_and_embeddings(college)
@@ -174,8 +177,8 @@ def get_questions(
 
     if subject:
         questions = [q for q in questions if q.get("subject", "").lower() == subject.lower()]
-    if year:
-        questions = [q for q in questions if q.get("year") == year]
+    if paper_year:
+        questions = [q for q in questions if q.get("paper_year") == paper_year]
     if exam_type:
         questions = [q for q in questions if q.get("exam_type", "").lower() == exam_type.lower()]
     if question_type:
@@ -189,7 +192,7 @@ def get_questions(
                 marks=int(round(q.get("marks", 0))),
                 question_type=q.get("question_type", "unknown"),
                 subject=q.get("subject", "Unknown"),
-                year=q.get("year", 0),
+                paper_year=q.get("paper_year", 0),
                 exam_type=q.get("exam_type", "unknown"),
             )
             for q in questions
@@ -231,9 +234,16 @@ def generate_batch(req: GenerateBatchRequest):
         {
           "subject": "Artificial Intelligence",
           "college": "BPHC",
-          "count":   5
+          "count":   5,
+          "exam_type": "compre"
         }
     """
+    if req.exam_type and req.exam_type not in _VALID_EXAM_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid exam_type '{req.exam_type}'. Must be one of: {sorted(_VALID_EXAM_TYPES)}",
+        )
+
     count = max(1, min(req.count or 5, 20))
 
     year_range = None
@@ -292,12 +302,19 @@ def generate_open_batch(req: GenerateOpenBatchRequest):
           "subject":      "Artificial Intelligence",
           "college":      "BPHC",
           "count":        5,
+          "exam_type":    "midsem",
           "with_answers": true
         }
 
     Longer timeout needed on the client — each question makes 2 Groq calls.
     Expect ~8-12s for 5 questions with 3 parallel workers.
     """
+    if req.exam_type and req.exam_type not in _VALID_EXAM_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid exam_type '{req.exam_type}'. Must be one of: {sorted(_VALID_EXAM_TYPES)}",
+        )
+
     count = max(1, min(req.count or 5, 15))
 
     year_range = None
@@ -350,12 +367,18 @@ def generate_open_batch(req: GenerateOpenBatchRequest):
 async def upload_pyq(
     file: UploadFile = File(...),
     subject: str = Form(...),
-    year: int = Form(...),
-    exam_type: str = Form("unknown"),
+    paper_year: int = Form(...),
+    exam_type: str = Form(...),
     college: str = Form(...),
 ):
     if not file.filename.endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files are accepted.")
+
+    if exam_type not in _VALID_EXAM_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid exam_type '{exam_type}'. Must be one of: {sorted(_VALID_EXAM_TYPES)}",
+        )
 
     pdf_bytes = await file.read()
     if len(pdf_bytes) == 0:
@@ -365,7 +388,7 @@ async def upload_pyq(
         result = run_upload_pyq(
             pdf_bytes=pdf_bytes,
             subject=subject,
-            year=year,
+            paper_year=paper_year,
             exam_type=exam_type,
             college=college,
         )

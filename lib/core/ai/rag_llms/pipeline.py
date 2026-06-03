@@ -62,7 +62,12 @@ def extract_raw_text(pdf_bytes: bytes) -> str:
 
 # ── Step 2 — Question Extraction ──────────────────────────────────────────────
 
-def extract_questions_from_text(raw_text: str, subject: str, year: int, exam_type: str) -> list[dict]:
+def extract_questions_from_text(
+    raw_text: str,
+    subject: str,
+    paper_year: int,
+    exam_type: str,
+) -> list[dict]:
     client = get_groq_client()
     chunks = [raw_text[i:i+CHUNK_SIZE] for i in range(0, len(raw_text), CHUNK_SIZE)]
     all_questions = []
@@ -102,10 +107,10 @@ Text:
                     raw = raw[4:]
             parsed = json.loads(raw)
             for q in parsed:
-                q["subject"]   = subject
-                q["year"]      = year
-                q["exam_type"] = exam_type
-                q["marks"]     = int(round(q.get("marks", 0)))
+                q["subject"]    = subject
+                q["paper_year"] = paper_year
+                q["exam_type"]  = exam_type
+                q["marks"]      = int(round(q.get("marks", 0)))
             all_questions.extend(parsed)
         except Exception:
             continue
@@ -153,11 +158,19 @@ def mmr(
     return selected
 
 # ── Exam type filter ──────────────────────────────────────────────────────────
+#
+# Syllabus inclusion (mirrors schema CHECK constraint):
+#   quiz1   ⊂  midsem  ⊂  quiz2  ⊂  compre
+#
+# When a student practises for midsem they should see quiz1 questions too,
+# because quiz1 syllabus is a strict subset of midsem syllabus, and so on.
+# 'generated' questions are always included as they have no syllabus scope.
 
 _EXAM_TYPE_ALLOWED: dict[str, set[str]] = {
-    'quiz':   {'quiz'},
-    'midsem': {'midsem', 'quiz'},
-    'compre': {'compre', 'midsem', 'quiz'},
+    "quiz1":  {"quiz1",  "generated"},
+    "midsem": {"midsem", "quiz1",  "generated"},
+    "quiz2":  {"quiz2",  "midsem", "quiz1",  "generated"},
+    "compre": {"compre", "quiz2",  "midsem", "quiz1", "generated"},
 }
 
 def _filter_by_exam_type(
@@ -172,7 +185,7 @@ def _filter_by_exam_type(
         return questions, embeddings
     indices = [
         i for i, q in enumerate(questions)
-        if q.get('exam_type', '').lower() in allowed
+        if q.get("exam_type", "").lower() in allowed
     ]
     if not indices:
         return questions, embeddings  # graceful fallback
@@ -339,7 +352,7 @@ def load_bank_and_embeddings(
 ) -> tuple[list[dict], np.ndarray]:
     sb = get_supabase()
     query = sb.table("questions").select(
-        "id, question_text, marks, question_type, subject, year, exam_type, embedding"
+        "id, question_text, marks, question_type, subject, paper_year, exam_type, embedding"
     ).eq("college", college)
 
     if subject:
@@ -360,7 +373,7 @@ def load_bank_and_embeddings(
             "marks":         row["marks"],
             "question_type": row["question_type"],
             "subject":       row["subject"],
-            "year":          row["year"],
+            "paper_year":    row["paper_year"],
             "exam_type":     row["exam_type"],
         })
         emb = row.get("embedding")
@@ -388,10 +401,11 @@ def save_questions_with_embeddings(
             "marks":         q["marks"],
             "question_type": q["question_type"],
             "subject":       q["subject"],
-            "year":          q["year"],
+            "paper_year":    q["paper_year"],
             "exam_type":     q["exam_type"],
             "college":       college,
             "embedding":     emb.tolist(),
+            "published":     False,
         })
 
     if not rows:
@@ -419,7 +433,7 @@ def run_generate(
     if year_range:
         indices = [
             i for i, q in enumerate(all_questions)
-            if year_range[0] <= q.get("year", 0) <= year_range[1]
+            if year_range[0] <= q.get("paper_year", 0) <= year_range[1]
         ]
         all_questions = [all_questions[i] for i in indices]
         embeddings    = embeddings[indices]
@@ -446,7 +460,7 @@ def run_generate_mcq_batch(
     if year_range:
         indices = [
             i for i, q in enumerate(all_questions)
-            if year_range[0] <= q.get("year", 0) <= year_range[1]
+            if year_range[0] <= q.get("paper_year", 0) <= year_range[1]
         ]
         all_questions = [all_questions[i] for i in indices]
         embeddings    = embeddings[indices]
@@ -499,7 +513,7 @@ def run_generate_open_batch(
     if year_range:
         indices = [
             i for i, q in enumerate(all_questions)
-            if year_range[0] <= q.get("year", 0) <= year_range[1]
+            if year_range[0] <= q.get("paper_year", 0) <= year_range[1]
         ]
         all_questions = [all_questions[i] for i in indices]
         embeddings    = embeddings[indices]
@@ -556,12 +570,12 @@ def run_generate_open_batch(
 def run_upload_pyq(
     pdf_bytes: bytes,
     subject: str,
-    year: int,
+    paper_year: int,
     exam_type: str,
     college: str,
 ) -> dict:
     raw_text      = extract_raw_text(pdf_bytes)
-    new_questions = extract_questions_from_text(raw_text, subject, year, exam_type)
+    new_questions = extract_questions_from_text(raw_text, subject, paper_year, exam_type)
 
     if not new_questions:
         raise ValueError("No questions could be extracted from the PDF.")
