@@ -105,7 +105,7 @@ class _UploadBatchNotifier extends Notifier<_UploadBatchState> {
 
   Future<void> uploadAll({
     required String subject,
-    required int year,
+    required int paperYear,
     required String examType,
     required String college,
     required ExamPredictionRemoteDataSource dataSource,
@@ -131,7 +131,7 @@ class _UploadBatchNotifier extends Notifier<_UploadBatchState> {
         final UploadResultDto result = await dataSource.uploadPyq(
           filePath: state.files[i].filePath,
           subject: subject,
-          year: year,
+          paperYear: paperYear,      // was: year: year
           examType: examType,
           college: college,
         );
@@ -185,7 +185,7 @@ class _PyqUploadPageState extends ConsumerState<PyqUploadPage> {
       TextEditingController(text: DateTime.now().year.toString());
   String _selectedExamType = 'compre';
 
-  static const _examTypes = ['compre', 'midsem', 'endsem', 'unknown'];
+  static const _examTypes = ['quiz1', 'midsem', 'quiz2', 'compre', 'generated'];
 
   @override
   void dispose() {
@@ -222,7 +222,7 @@ class _PyqUploadPageState extends ConsumerState<PyqUploadPage> {
 
     ref.read(_uploadBatchProvider.notifier).uploadAll(
       subject: subject,
-      year: year,
+      paperYear: year,
       examType: _selectedExamType,
       college: college,
       dataSource: dataSource,
