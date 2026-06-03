@@ -119,7 +119,7 @@ class UploadPyqNotifier extends AsyncNotifier<UploadResult?> {
   Future<void> upload({
     required String filePath,
     required String subject,
-    required int year,
+    required int paperYear,
     required String examType,
   }) async {
     state = const AsyncLoading();
@@ -127,7 +127,7 @@ class UploadPyqNotifier extends AsyncNotifier<UploadResult?> {
     final result = await ref.read(uploadPyqUseCaseProvider).call(
           filePath: filePath,
           subject: subject,
-          year: year,
+          year: paperYear,
           examType: examType,
           college: college,
         );
@@ -159,7 +159,7 @@ class QuestionsNotifier extends AsyncNotifier<QuestionsResponse?> {
 
   Future<void> filter({
     String? subject,
-    int? year,
+    int? paperYear,
     String? examType,
     String? questionType,
   }) async {
@@ -168,7 +168,7 @@ class QuestionsNotifier extends AsyncNotifier<QuestionsResponse?> {
     final result = await ref.read(getQuestionsUseCaseProvider).call(
           college: college,
           subject: subject,
-          year: year,
+          year: paperYear,
           examType: examType,
           questionType: questionType,
         );

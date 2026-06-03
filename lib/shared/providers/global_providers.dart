@@ -30,8 +30,10 @@ Future<T> withLoadingState<T>(
 final userProvider = Provider<UserModel>((ref) {
   return UserModel(
     name: 'Krishna',
+    email: 'f20240175@hyderabad.bits-pilani.ac.in',
     college: 'BPHC',
     rollNumber: '2024A7PS0175H',
+    academicYear: 1,
     streakDays: 15,
     targetDays: 90,
     totalWatch: '24h 30m',

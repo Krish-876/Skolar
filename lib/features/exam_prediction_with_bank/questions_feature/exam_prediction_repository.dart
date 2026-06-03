@@ -14,7 +14,7 @@ abstract class ExamPredictionRepository {
   Future<Either<Failure, UploadResult>> uploadPyq({
     required String filePath,
     required String subject,
-    required int year,
+    required int paperYear,      
     required String examType,
     required String college,
   });
@@ -26,7 +26,7 @@ abstract class ExamPredictionRepository {
   Future<Either<Failure, QuestionsResponse>> getQuestions({
     required String college,
     String? subject,
-    int? year,
+    int? paperYear,              
     String? examType,
     String? questionType,
   });

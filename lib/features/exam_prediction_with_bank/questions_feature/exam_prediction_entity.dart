@@ -29,7 +29,7 @@ class QuestionBankStats with _$QuestionBankStats {
   const factory QuestionBankStats({
     required int totalQuestions,
     required Map<String, int> subjects,
-    @Default([]) List<int> years,
+    @Default([]) List<int> paperYears,
   }) = _QuestionBankStats;
 }
 
@@ -41,7 +41,7 @@ class QuestionItem with _$QuestionItem {
     required int marks,
     required String questionType,
     required String subject,
-    required int year,
+    required int paperYear,
     required String examType,
   }) = _QuestionItem;
 }

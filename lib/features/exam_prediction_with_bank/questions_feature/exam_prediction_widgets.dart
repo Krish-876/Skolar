@@ -30,7 +30,7 @@ class StatsCard extends StatelessWidget {
                 ),
                 _StatChip(
                   icon: Icons.calendar_today,
-                  label: '${stats.years.length}',
+                  label: '${stats.paperYears.length}',
                   sublabel: 'Years',
                 ),
                 _StatChip(
@@ -269,7 +269,7 @@ class QuestionBankCard extends StatelessWidget {
               spacing: 6,
               children: [
                 _Tag(label: question.subject, color: Colors.indigo.shade100),
-                _Tag(label: '${question.year}', color: Colors.grey.shade200),
+                _Tag(label: '${question.paperYear}', color: Colors.grey.shade200),
                 _Tag(
                     label: question.examType,
                     color: Colors.teal.shade100),

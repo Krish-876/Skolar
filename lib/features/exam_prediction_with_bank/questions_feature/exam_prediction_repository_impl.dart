@@ -35,7 +35,7 @@ class ExamPredictionRepositoryImpl implements ExamPredictionRepository {
   Future<Either<Failure, UploadResult>> uploadPyq({
     required String filePath,
     required String subject,
-    required int year,
+    required int paperYear,
     required String examType,
     required String college,
   }) async {
@@ -43,7 +43,7 @@ class ExamPredictionRepositoryImpl implements ExamPredictionRepository {
       final dto = await _dataSource.uploadPyq(
         filePath: filePath,
         subject: subject,
-        year: year,
+        paperYear: paperYear,
         examType: examType,
         college: college,
       );
@@ -71,7 +71,7 @@ class ExamPredictionRepositoryImpl implements ExamPredictionRepository {
   Future<Either<Failure, QuestionsResponse>> getQuestions({
     required String college,
     String? subject,
-    int? year,
+    int? paperYear,
     String? examType,
     String? questionType,
   }) async {
@@ -79,7 +79,7 @@ class ExamPredictionRepositoryImpl implements ExamPredictionRepository {
       final dto = await _dataSource.getQuestions(
         college: college,
         subject: subject,
-        year: year,
+        paperYear: paperYear,
         examType: examType,
         questionType: questionType,
       );

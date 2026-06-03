@@ -65,12 +65,12 @@ class QuestionBankStatsDto {
   final int totalQuestions;
   final Map<String, int> subjects;
   @JsonKey(defaultValue: <int>[])
-  final List<int> years;
+  final List<int> paperYears;
 
   const QuestionBankStatsDto({
     required this.totalQuestions,
     required this.subjects,
-    required this.years,
+    required this.paperYears,
   });
 
   factory QuestionBankStatsDto.fromJson(Map<String, dynamic> json) =>
@@ -81,7 +81,7 @@ class QuestionBankStatsDto {
   QuestionBankStats toDomain() => QuestionBankStats(
         totalQuestions: totalQuestions,
         subjects: subjects,
-        years: years,
+        paperYears: paperYears,
       );
 }
 
@@ -94,7 +94,7 @@ class QuestionItemDto {
   @JsonKey(name: 'question_type')
   final String questionType;
   final String subject;
-  final int year;
+  final int paperYear;
   @JsonKey(name: 'exam_type')
   final String examType;
 
@@ -103,7 +103,7 @@ class QuestionItemDto {
     required this.marks,
     required this.questionType,
     required this.subject,
-    required this.year,
+    required this.paperYear,
     required this.examType,
   });
 
@@ -117,7 +117,7 @@ class QuestionItemDto {
         marks: marks,
         questionType: questionType,
         subject: subject,
-        year: year,
+        paperYear: paperYear,
         examType: examType,
       );
 }

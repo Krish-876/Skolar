@@ -406,7 +406,7 @@ abstract class _UploadResult implements UploadResult {
 mixin _$QuestionBankStats {
   int get totalQuestions => throw _privateConstructorUsedError;
   Map<String, int> get subjects => throw _privateConstructorUsedError;
-  List<int> get years => throw _privateConstructorUsedError;
+  List<int> get paperYears => throw _privateConstructorUsedError;
 
   /// Create a copy of QuestionBankStats
   /// with the given fields replaced by the non-null parameter values.
@@ -422,7 +422,11 @@ abstract class $QuestionBankStatsCopyWith<$Res> {
     $Res Function(QuestionBankStats) then,
   ) = _$QuestionBankStatsCopyWithImpl<$Res, QuestionBankStats>;
   @useResult
-  $Res call({int totalQuestions, Map<String, int> subjects, List<int> years});
+  $Res call({
+    int totalQuestions,
+    Map<String, int> subjects,
+    List<int> paperYears,
+  });
 }
 
 /// @nodoc
@@ -442,7 +446,7 @@ class _$QuestionBankStatsCopyWithImpl<$Res, $Val extends QuestionBankStats>
   $Res call({
     Object? totalQuestions = null,
     Object? subjects = null,
-    Object? years = null,
+    Object? paperYears = null,
   }) {
     return _then(
       _value.copyWith(
@@ -454,9 +458,9 @@ class _$QuestionBankStatsCopyWithImpl<$Res, $Val extends QuestionBankStats>
                 ? _value.subjects
                 : subjects // ignore: cast_nullable_to_non_nullable
                       as Map<String, int>,
-            years: null == years
-                ? _value.years
-                : years // ignore: cast_nullable_to_non_nullable
+            paperYears: null == paperYears
+                ? _value.paperYears
+                : paperYears // ignore: cast_nullable_to_non_nullable
                       as List<int>,
           )
           as $Val,
@@ -473,7 +477,11 @@ abstract class _$$QuestionBankStatsImplCopyWith<$Res>
   ) = __$$QuestionBankStatsImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({int totalQuestions, Map<String, int> subjects, List<int> years});
+  $Res call({
+    int totalQuestions,
+    Map<String, int> subjects,
+    List<int> paperYears,
+  });
 }
 
 /// @nodoc
@@ -492,7 +500,7 @@ class __$$QuestionBankStatsImplCopyWithImpl<$Res>
   $Res call({
     Object? totalQuestions = null,
     Object? subjects = null,
-    Object? years = null,
+    Object? paperYears = null,
   }) {
     return _then(
       _$QuestionBankStatsImpl(
@@ -504,9 +512,9 @@ class __$$QuestionBankStatsImplCopyWithImpl<$Res>
             ? _value._subjects
             : subjects // ignore: cast_nullable_to_non_nullable
                   as Map<String, int>,
-        years: null == years
-            ? _value._years
-            : years // ignore: cast_nullable_to_non_nullable
+        paperYears: null == paperYears
+            ? _value._paperYears
+            : paperYears // ignore: cast_nullable_to_non_nullable
                   as List<int>,
       ),
     );
@@ -519,9 +527,9 @@ class _$QuestionBankStatsImpl implements _QuestionBankStats {
   const _$QuestionBankStatsImpl({
     required this.totalQuestions,
     required final Map<String, int> subjects,
-    final List<int> years = const [],
+    final List<int> paperYears = const [],
   }) : _subjects = subjects,
-       _years = years;
+       _paperYears = paperYears;
 
   @override
   final int totalQuestions;
@@ -533,18 +541,18 @@ class _$QuestionBankStatsImpl implements _QuestionBankStats {
     return EqualUnmodifiableMapView(_subjects);
   }
 
-  final List<int> _years;
+  final List<int> _paperYears;
   @override
   @JsonKey()
-  List<int> get years {
-    if (_years is EqualUnmodifiableListView) return _years;
+  List<int> get paperYears {
+    if (_paperYears is EqualUnmodifiableListView) return _paperYears;
     // ignore: implicit_dynamic_type
-    return EqualUnmodifiableListView(_years);
+    return EqualUnmodifiableListView(_paperYears);
   }
 
   @override
   String toString() {
-    return 'QuestionBankStats(totalQuestions: $totalQuestions, subjects: $subjects, years: $years)';
+    return 'QuestionBankStats(totalQuestions: $totalQuestions, subjects: $subjects, paperYears: $paperYears)';
   }
 
   @override
@@ -555,7 +563,10 @@ class _$QuestionBankStatsImpl implements _QuestionBankStats {
             (identical(other.totalQuestions, totalQuestions) ||
                 other.totalQuestions == totalQuestions) &&
             const DeepCollectionEquality().equals(other._subjects, _subjects) &&
-            const DeepCollectionEquality().equals(other._years, _years));
+            const DeepCollectionEquality().equals(
+              other._paperYears,
+              _paperYears,
+            ));
   }
 
   @override
@@ -563,7 +574,7 @@ class _$QuestionBankStatsImpl implements _QuestionBankStats {
     runtimeType,
     totalQuestions,
     const DeepCollectionEquality().hash(_subjects),
-    const DeepCollectionEquality().hash(_years),
+    const DeepCollectionEquality().hash(_paperYears),
   );
 
   /// Create a copy of QuestionBankStats
@@ -582,7 +593,7 @@ abstract class _QuestionBankStats implements QuestionBankStats {
   const factory _QuestionBankStats({
     required final int totalQuestions,
     required final Map<String, int> subjects,
-    final List<int> years,
+    final List<int> paperYears,
   }) = _$QuestionBankStatsImpl;
 
   @override
@@ -590,7 +601,7 @@ abstract class _QuestionBankStats implements QuestionBankStats {
   @override
   Map<String, int> get subjects;
   @override
-  List<int> get years;
+  List<int> get paperYears;
 
   /// Create a copy of QuestionBankStats
   /// with the given fields replaced by the non-null parameter values.
@@ -606,7 +617,7 @@ mixin _$QuestionItem {
   int get marks => throw _privateConstructorUsedError;
   String get questionType => throw _privateConstructorUsedError;
   String get subject => throw _privateConstructorUsedError;
-  int get year => throw _privateConstructorUsedError;
+  int get paperYear => throw _privateConstructorUsedError;
   String get examType => throw _privateConstructorUsedError;
 
   /// Create a copy of QuestionItem
@@ -628,7 +639,7 @@ abstract class $QuestionItemCopyWith<$Res> {
     int marks,
     String questionType,
     String subject,
-    int year,
+    int paperYear,
     String examType,
   });
 }
@@ -652,7 +663,7 @@ class _$QuestionItemCopyWithImpl<$Res, $Val extends QuestionItem>
     Object? marks = null,
     Object? questionType = null,
     Object? subject = null,
-    Object? year = null,
+    Object? paperYear = null,
     Object? examType = null,
   }) {
     return _then(
@@ -673,9 +684,9 @@ class _$QuestionItemCopyWithImpl<$Res, $Val extends QuestionItem>
                 ? _value.subject
                 : subject // ignore: cast_nullable_to_non_nullable
                       as String,
-            year: null == year
-                ? _value.year
-                : year // ignore: cast_nullable_to_non_nullable
+            paperYear: null == paperYear
+                ? _value.paperYear
+                : paperYear // ignore: cast_nullable_to_non_nullable
                       as int,
             examType: null == examType
                 ? _value.examType
@@ -701,7 +712,7 @@ abstract class _$$QuestionItemImplCopyWith<$Res>
     int marks,
     String questionType,
     String subject,
-    int year,
+    int paperYear,
     String examType,
   });
 }
@@ -724,7 +735,7 @@ class __$$QuestionItemImplCopyWithImpl<$Res>
     Object? marks = null,
     Object? questionType = null,
     Object? subject = null,
-    Object? year = null,
+    Object? paperYear = null,
     Object? examType = null,
   }) {
     return _then(
@@ -745,9 +756,9 @@ class __$$QuestionItemImplCopyWithImpl<$Res>
             ? _value.subject
             : subject // ignore: cast_nullable_to_non_nullable
                   as String,
-        year: null == year
-            ? _value.year
-            : year // ignore: cast_nullable_to_non_nullable
+        paperYear: null == paperYear
+            ? _value.paperYear
+            : paperYear // ignore: cast_nullable_to_non_nullable
                   as int,
         examType: null == examType
             ? _value.examType
@@ -766,7 +777,7 @@ class _$QuestionItemImpl implements _QuestionItem {
     required this.marks,
     required this.questionType,
     required this.subject,
-    required this.year,
+    required this.paperYear,
     required this.examType,
   });
 
@@ -779,13 +790,13 @@ class _$QuestionItemImpl implements _QuestionItem {
   @override
   final String subject;
   @override
-  final int year;
+  final int paperYear;
   @override
   final String examType;
 
   @override
   String toString() {
-    return 'QuestionItem(questionText: $questionText, marks: $marks, questionType: $questionType, subject: $subject, year: $year, examType: $examType)';
+    return 'QuestionItem(questionText: $questionText, marks: $marks, questionType: $questionType, subject: $subject, paperYear: $paperYear, examType: $examType)';
   }
 
   @override
@@ -799,7 +810,8 @@ class _$QuestionItemImpl implements _QuestionItem {
             (identical(other.questionType, questionType) ||
                 other.questionType == questionType) &&
             (identical(other.subject, subject) || other.subject == subject) &&
-            (identical(other.year, year) || other.year == year) &&
+            (identical(other.paperYear, paperYear) ||
+                other.paperYear == paperYear) &&
             (identical(other.examType, examType) ||
                 other.examType == examType));
   }
@@ -811,7 +823,7 @@ class _$QuestionItemImpl implements _QuestionItem {
     marks,
     questionType,
     subject,
-    year,
+    paperYear,
     examType,
   );
 
@@ -830,7 +842,7 @@ abstract class _QuestionItem implements QuestionItem {
     required final int marks,
     required final String questionType,
     required final String subject,
-    required final int year,
+    required final int paperYear,
     required final String examType,
   }) = _$QuestionItemImpl;
 
@@ -843,7 +855,7 @@ abstract class _QuestionItem implements QuestionItem {
   @override
   String get subject;
   @override
-  int get year;
+  int get paperYear;
   @override
   String get examType;
 

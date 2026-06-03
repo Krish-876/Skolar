@@ -47,8 +47,8 @@ QuestionBankStatsDto _$QuestionBankStatsDtoFromJson(
 ) => QuestionBankStatsDto(
   totalQuestions: (json['total_questions'] as num).toInt(),
   subjects: Map<String, int>.from(json['subjects'] as Map),
-  years:
-      (json['years'] as List<dynamic>?)
+  paperYears:
+      (json['paperYears'] as List<dynamic>?)
           ?.map((e) => (e as num).toInt())
           .toList() ??
       [],
@@ -59,7 +59,7 @@ Map<String, dynamic> _$QuestionBankStatsDtoToJson(
 ) => <String, dynamic>{
   'total_questions': instance.totalQuestions,
   'subjects': instance.subjects,
-  'years': instance.years,
+  'paperYears': instance.paperYears,
 };
 
 QuestionItemDto _$QuestionItemDtoFromJson(Map<String, dynamic> json) =>
@@ -68,7 +68,7 @@ QuestionItemDto _$QuestionItemDtoFromJson(Map<String, dynamic> json) =>
       marks: (json['marks'] as num).toInt(),
       questionType: json['question_type'] as String,
       subject: json['subject'] as String,
-      year: (json['year'] as num).toInt(),
+      paperYear: (json['paperYear'] as num).toInt(),
       examType: json['exam_type'] as String,
     );
 
@@ -78,7 +78,7 @@ Map<String, dynamic> _$QuestionItemDtoToJson(QuestionItemDto instance) =>
       'marks': instance.marks,
       'question_type': instance.questionType,
       'subject': instance.subject,
-      'year': instance.year,
+      'paperYear': instance.paperYear,
       'exam_type': instance.examType,
     };
 

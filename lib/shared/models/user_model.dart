@@ -1,7 +1,9 @@
 class UserModel {
   final String name;
-  final String college;
+  final String email;
+  final String college;       // campus short_name e.g. 'BPHC' — used by pipeline
   final String rollNumber;
+  final int academicYear;     // 1–4, drives subject picker UI
   final int streakDays;
   final int targetDays;
   final String totalWatch;
@@ -12,8 +14,10 @@ class UserModel {
 
   UserModel({
     required this.name,
+    required this.email,
     required this.college,
     required this.rollNumber,
+    required this.academicYear,
     required this.streakDays,
     required this.targetDays,
     required this.totalWatch,

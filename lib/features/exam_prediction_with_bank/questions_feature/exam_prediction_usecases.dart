@@ -38,7 +38,7 @@ class UploadPyqUseCase {
     return _repository.uploadPyq(
       filePath: filePath,
       subject: subject,
-      year: year,
+      paperYear: year,
       examType: examType,
       college: college,
     );
@@ -70,7 +70,7 @@ class GetQuestionsUseCase {
     return _repository.getQuestions(
       college: college,
       subject: subject,
-      year: year,
+      paperYear: year,
       examType: examType,
       questionType: questionType,
     );

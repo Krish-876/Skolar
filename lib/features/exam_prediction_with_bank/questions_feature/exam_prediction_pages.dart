@@ -243,7 +243,7 @@ class _UploadTabState extends ConsumerState<_UploadTab> {
     ref.read(uploadPyqProvider.notifier).upload(
           filePath: _pickedFilePath!,
           subject: _subjectController.text.trim(),
-          year: year,
+          paperYear: year,
           examType: _selectedExamType,
         );
   }
