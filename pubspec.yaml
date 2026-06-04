@@ -54,7 +54,7 @@ flutter:
     - assets/animations/
     - .env                    
     
-  fonts:                      # ✅ now correctly nested under flutter:
+  fonts:                      
     - family: ClashDisplay
       fonts:
         - asset: assets/fonts/ClashDisplay-Regular.otf
@@ -64,7 +64,7 @@ flutter:
           weight: 600
         - asset: assets/fonts/ClashDisplay-Bold.otf
           weight: 700
-    - family: GoogleSans      # ✅ moved inside flutter: fonts
+    - family: GoogleSans      
       fonts:
         - asset: assets/fonts/GoogleSans-Regular.ttf
           weight: 400
@@ -74,5 +74,5 @@ flutter:
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: false
-  image_path: "assets/images/mascot.jpeg"
+  image_path: "assets/images/logo.jpeg"
   min_sdk_android: 21
