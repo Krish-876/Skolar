@@ -397,10 +397,17 @@ async def upload_pyq(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Upload error: {str(e)}")
 
+    # FIX 3: fetch actual bank total after insert, instead of echoing added count
+    try:
+        all_questions, _ = load_bank_and_embeddings(college, subject)
+        bank_total = len(all_questions)
+    except Exception:
+        bank_total = result["added"]  # fallback if stats fetch fails
+
     return UploadResponse(
         message=f"Successfully added {result['added']} questions from {file.filename}",
         added=result["added"],
-        total=result["added"],
+        total=bank_total,
         preview=result["new_questions"],
     )
 

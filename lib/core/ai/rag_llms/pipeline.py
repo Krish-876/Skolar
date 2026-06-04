@@ -3,6 +3,8 @@ os.environ["OPENBLAS_NUM_THREADS"] = "1"
 os.environ["OMP_NUM_THREADS"] = "1"
 
 import json
+import random
+import logging
 import numpy as np
 from numpy.linalg import norm
 import pdfplumber
@@ -13,6 +15,11 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from supabase import create_client, Client
 
 load_dotenv()
+
+# ── Logging ───────────────────────────────────────────────────────────────────
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+logger = logging.getLogger(__name__)
 
 # ── Constants ────────────────────────────────────────────────────────────────
 
@@ -72,7 +79,7 @@ def extract_questions_from_text(
     chunks = [raw_text[i:i+CHUNK_SIZE] for i in range(0, len(raw_text), CHUNK_SIZE)]
     all_questions = []
 
-    for chunk in chunks:
+    for chunk_idx, chunk in enumerate(chunks):
         prompt = f"""You are extracting exam questions from a scanned question paper.
 
 Rules:
@@ -112,7 +119,9 @@ Text:
                 q["exam_type"]  = exam_type
                 q["marks"]      = int(round(q.get("marks", 0)))
             all_questions.extend(parsed)
-        except Exception:
+        except Exception as e:
+            # FIX 1: log instead of silently swallowing
+            logger.warning(f"[extract_questions] chunk {chunk_idx} failed: {e}")
             continue
 
     return all_questions
@@ -135,7 +144,16 @@ def mmr(
     candidate_questions: list[dict],
     k: int = 5,
     alpha: float = 0.7,
+    seed: int | None = None,
 ) -> list[dict]:
+    # FIX 2: accept optional seed so each parallel worker gets a different starting pool
+    rng = random.Random(seed)
+    indices = list(range(len(candidate_questions)))
+    if seed is not None:
+        rng.shuffle(indices)
+        candidate_questions = [candidate_questions[i] for i in indices]
+        candidate_embeddings = candidate_embeddings[indices]
+
     query_sims = [cosine_sim(query_embedding, e) for e in candidate_embeddings]
     selected, selected_embeddings, remaining = [], [], list(range(len(candidate_questions)))
 
@@ -473,11 +491,14 @@ def run_generate_mcq_batch(
     model = get_embed_model()
     query_embedding = model.encode([subject])[0]
 
-    def _generate_one(_: int) -> dict | None:
+    # FIX 2: pass worker index as seed so each call gets a different shuffled pool
+    def _generate_one(worker_idx: int) -> dict | None:
         try:
-            examples = mmr(query_embedding, embeddings, all_questions, k=k)
+            examples = mmr(query_embedding, embeddings, all_questions, k=k, seed=worker_idx)
             return generate_mcq(subject, examples)
-        except Exception:
+        except Exception as e:
+            # FIX 1: log instead of silently swallowing
+            logger.warning(f"[generate_mcq worker={worker_idx}] failed: {e}")
             return None
 
     results: list[dict] = []
@@ -535,9 +556,10 @@ def run_generate_open_batch(
     written_embeddings = model.encode(written_texts)
     query_embedding = model.encode([subject])[0]
 
-    def _generate_one(_: int) -> dict | None:
+    # FIX 2: pass worker index as seed so each call gets a different shuffled pool
+    def _generate_one(worker_idx: int) -> dict | None:
         try:
-            examples = mmr(query_embedding, written_embeddings, written_questions, k=k)
+            examples = mmr(query_embedding, written_embeddings, written_questions, k=k, seed=worker_idx)
             marks_list = [e.get("marks", 5) for e in examples]
             target_marks = sorted(marks_list)[len(marks_list) // 2]
 
@@ -552,7 +574,9 @@ def run_generate_open_batch(
                 "marks":        target_marks,
                 "model_answer": model_answer,
             }
-        except Exception:
+        except Exception as e:
+            # FIX 1: log instead of silently swallowing
+            logger.warning(f"[generate_open worker={worker_idx}] failed: {e}")
             return None
 
     results: list[dict] = []
