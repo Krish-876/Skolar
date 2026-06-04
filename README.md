@@ -208,6 +208,43 @@ uvicorn main:app --reload --port 8000
 }
 ```
 
+### Pipeline Evaluation
+
+`evaluate.py` measures generation quality across two dimensions: accuracy and diversity.
+Run it after any pipeline change or after uploading new PYQs.
+
+```bash
+cd lib/core/ai/rag_llms
+myenv311\Scripts\activate
+python evaluate.py
+```
+
+**Tests run:**
+
+| Test | What it checks | Pass threshold |
+|---|---|---|
+| Health | Server is reachable | 200 OK |
+| Stats | Question bank has data | total_questions > 0 |
+| MCQ Accuracy | correct_index is 0–3, all 4 options distinct, non-empty question | 10/10 |
+| MCQ Diversity | Pairwise cosine similarity across 10 generated questions | avg < 0.5, max < 0.8 |
+| Open Quality | Non-empty questions, substantive answers (>50 chars), not MCQ format | 5/5 |
+| Open Diversity | Pairwise cosine similarity across 5 open-ended questions | avg < 0.5, max < 0.8 |
+
+**Interpreting diversity scores:**
+
+- `avg < 0.5` — questions cover meaningfully different topics
+- `max < 0.8` — no two questions are near-duplicates
+- Scores above threshold indicate the question bank is too small or topic-skewed — upload more PYQs covering different topics
+
+**Current baseline (BPHC / Artificial Intelligence, 33 questions):**
+
+| Metric | Score | Status |
+|---|---|---|
+| MCQ avg similarity | 0.435 | ✅ Pass |
+| MCQ max similarity | 0.996 | ❌ Fail — duplicate DFS question in bank |
+| Open avg similarity | 0.539 | ❌ Fail — bank skewed toward RL questions |
+| Open max similarity | 0.887 | ❌ Fail — bank skewed toward RL questions |
+
 ### Thread Safety
 
 Multiple concurrent generation requests are safe. The `ThreadPoolExecutor` for parallel generation is capped at 3 workers to stay within Groq free-tier rate limits. Supabase handles concurrent reads natively.
@@ -219,6 +256,7 @@ lib/core/ai/rag_llms/
   main.py              — FastAPI app and all endpoints
   pipeline.py          — DICL pipeline: parsing, embedding, MMR, generation, bank I/O
   .env                 — GROQ_API_KEY, SUPABASE_URL, SUPABASE_KEY (not committed)
+  evaluate.py          — Pipeline evaluation: accuracy, diversity scoring
 ```
 
 ---
