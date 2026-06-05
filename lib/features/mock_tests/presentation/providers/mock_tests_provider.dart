@@ -4,7 +4,7 @@ import 'package:Skolar/features/mock_tests/presentation/pages/mock_tests_pages.d
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
-const _kBaseUrl = 'http://192.168.0.122:8000';
+const _kBaseUrl = 'https://skolar-production.up.railway.app';
 
 // ── Exam mode ─────────────────────────────────────────────────────────────────
 
