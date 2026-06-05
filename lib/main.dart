@@ -1,12 +1,12 @@
 import 'package:Skolar/core/loading/loading_overlay.dart';
-import 'package:Skolar/core/loading/loading_provider.dart';
 import 'package:Skolar/core/loading/test_page.dart';
+import 'package:Skolar/features/auth/presentation/pages/auth_pages.dart';
+import 'package:Skolar/features/auth/presentation/providers/auth_provider.dart';
 import 'package:Skolar/features/pyq_upload/presentation/pages/pyq_upload_pages.dart';
 import 'package:Skolar/features/splash%20screen/splash_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:Skolar/features/analytics/presentation/pages/analytics_pages.dart';
-import 'package:Skolar/features/auth/presentation/pages/auth_pages.dart';
 import 'package:Skolar/features/colleges/presentation/pages/colleges_pages.dart';
 import 'package:Skolar/features/dashboard/presentation/pages/dashboard_pages.dart';
 import 'package:Skolar/features/exam_prediction_with_bank/questions_feature/exam_prediction_pages.dart';
@@ -19,53 +19,60 @@ import 'package:Skolar/features/profile/presentation/pages/profile_pages1.dart';
 // Entry point
 // ---------------------------------------------------------------------------
 import 'package:flutter/services.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 
 final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  await Supabase.initialize(
+    url: 'https://nohxpwqlqdwqwptuvzyf.supabase.co',
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5vaHhwd3FscWR3cXdwdHV2enlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk3Nzk2NTcsImV4cCI6MjA5NTM1NTY1N30.eKdk942COAvD7368xtGYN3I06H0TvX0-60s8p6lKHiw',
+    authOptions: const FlutterAuthClientOptions(
+      authFlowType: AuthFlowType.pkce,
+    ),
+  );
+
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       systemNavigationBarColor: Colors.transparent,
       systemNavigationBarContrastEnforced: false,
     ),
   );
+
   runApp(const ProviderScope(child: NovaApp()));
 }
 // ---------------------------------------------------------------------------
 // App root
 // ---------------------------------------------------------------------------
-class NovaApp extends StatelessWidget {
+class NovaApp extends ConsumerWidget {
   const NovaApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final session = ref.watch(authSessionProvider);
+
     return MaterialApp(
       navigatorObservers: [routeObserver],
-      title: 'Nova',
+      title: 'Skolar',
       debugShowCheckedModeBanner: false,
-
       theme: ThemeData(
         brightness: Brightness.dark,
-
         scaffoldBackgroundColor: Colors.black,
         canvasColor: Colors.black,
-
         colorScheme: ColorScheme.dark(
           primary: Colors.deepPurple,
           surface: Colors.black,
         ),
-
         useMaterial3: true,
       ),
-
       initialRoute: AppRoutes.home,
       routes: AppRoutes.routes,
       builder: (context, child) => LoadingOverlay(child: child!),
     );
   }
-}
-// ---------------------------------------------------------------------------
+}// ---------------------------------------------------------------------------
 // Routes
 // ---------------------------------------------------------------------------
 abstract class AppRoutes {

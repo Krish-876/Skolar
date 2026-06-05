@@ -1,14 +1,26 @@
-import '../../../../core/errors/either.dart';
-import '../../../../core/errors/failures.dart';
-import '../../../../core/utils/usecase.dart';
 import '../entities/auth_entity.dart';
 import '../repositories/auth_repository.dart';
 
-class GetAllAuth implements UseCase<List<AuthEntity>, NoParams> {
-  final AuthRepository repository;
-  const GetAllAuth(this.repository);
+class SendMagicLinkUseCase {
+  final AuthRepository _repo;
+  const SendMagicLinkUseCase(this._repo);
+  Future<void> call(String email) => _repo.sendMagicLink(email);
+}
 
-  @override
-  Future<Either<Failure, List<AuthEntity>>> call(NoParams params) =>
-      repository.getAll();
+class ValidateCollegeEmailUseCase {
+  final AuthRepository _repo;
+  const ValidateCollegeEmailUseCase(this._repo);
+  Future<bool> call(String email) => _repo.isValidCollegeEmail(email);
+}
+
+class GetCurrentUserUseCase {
+  final AuthRepository _repo;
+  const GetCurrentUserUseCase(this._repo);
+  AppUser? call() => _repo.getCurrentUser();
+}
+
+class SignOutUseCase {
+  final AuthRepository _repo;
+  const SignOutUseCase(this._repo);
+  Future<void> call() => _repo.signOut();
 }

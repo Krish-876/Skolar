@@ -1,8 +1,8 @@
-import '../../../../core/errors/either.dart';
-import '../../../../core/errors/failures.dart';
-import '../entities/auth_entity.dart';
+import 'package:Skolar/features/auth/domain/entities/auth_entity.dart';
 
 abstract class AuthRepository {
-  Future<Either<Failure, List<AuthEntity>>> getAll();
-  Future<Either<Failure, AuthEntity>> getById(String id);
+  Future<void> sendMagicLink(String email);
+  AppUser? getCurrentUser();
+  Future<void> signOut();
+  Future<bool> isValidCollegeEmail(String email);
 }

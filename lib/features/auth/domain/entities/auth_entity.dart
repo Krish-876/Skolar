@@ -1,7 +1,11 @@
-import 'package:Skolar/shared/models/base_models.dart';
-
-class AuthEntity extends BaseEntity {
+class AppUser {
+  final String id;
   final String email;
-  final String displayName;
-  const AuthEntity({required super.id, required this.email, required this.displayName});
+  final bool isNewUser;
+
+  const AppUser({
+    required this.id,
+    required this.email,
+    required this.isNewUser,
+  });
 }

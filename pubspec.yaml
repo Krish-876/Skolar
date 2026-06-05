@@ -37,6 +37,7 @@ dependencies:
   flutter_animate: ^4.5.2
   rive: 0.13.4
   gif: ^2.3.0
+  supabase_flutter: ^2.14.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

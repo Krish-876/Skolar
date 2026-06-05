@@ -1,23 +1,22 @@
 import '../../domain/entities/auth_entity.dart';
 
-class AuthDto {
+class AppUserDto {
   final String id;
   final String email;
-  final String displayName;
 
-  const AuthDto({required this.id, required this.email, required this.displayName});
+  const AppUserDto({
+    required this.id,
+    required this.email,
+  });
 
-  factory AuthDto.fromJson(Map<String, dynamic> json) => AuthDto(
-      id: json['id'] as String,
-      email: json['email'] as String,
-      displayName: json['displayName'] as String,
-  );
+  factory AppUserDto.fromSupabase(Map<String, dynamic> data) => AppUserDto(
+        id: data['id'] as String,
+        email: data['email'] as String,
+      );
 
-  Map<String, dynamic> toJson() => {
-      'id': id,
-      'email': email,
-      'displayName': displayName,
-  };
-
-  AuthEntity toEntity() => AuthEntity(id: id, email: email, displayName: displayName);
+  AppUser toDomain({required bool isNewUser}) => AppUser(
+        id: id,
+        email: email,
+        isNewUser: isNewUser,
+      );
 }

@@ -1,6 +1,6 @@
 import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
-import 'package:Skolar/features/auth/presentation/pages/auth_pages.dart';
+import 'package:Skolar/features/auth/presentation/pages/pages.dart';
 import 'package:Skolar/features/colleges/presentation/pages/colleges_pages.dart';
 import 'package:Skolar/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:Skolar/features/focus_session/presentation/focus_timer_page.dart';
