@@ -204,3 +204,42 @@ create policy "users read own profile"
 create policy "users update own profile"
     on users for update
     using (id = auth.uid());
+
+-- -----------------------------------------------------------------------------
+-- PUBLISHED TESTS
+-- Created automatically when a student generates a mock test.
+-- question_ids = array of question UUIDs from the questions table.
+-- Feed reads from this table. Attempt fetches questions by question_ids.
+-- -----------------------------------------------------------------------------
+create table published_tests (
+    id               uuid primary key default gen_random_uuid(),
+    published_by     uuid references users(id) on delete set null,
+    college          text not null,
+    subject          text not null,
+    exam_type        text not null
+                         check (exam_type in
+                             ('quiz1', 'midsem', 'quiz2', 'compre', 'generated')),
+    question_ids     uuid[] not null,
+    upvotes          int not null default 0,
+    attempts         int not null default 0,
+    created_at       timestamptz not null default now()
+);
+
+-- Feed query index
+create index idx_published_tests_college
+    on published_tests (college, created_at desc);
+
+-- RLS
+alter table published_tests enable row level security;
+
+create policy "students read own campus published tests"
+    on published_tests for select
+    using (
+        college = (
+            select u.college from users u where u.id = auth.uid()
+        )
+    );
+
+create policy "students insert own published tests"
+    on published_tests for insert
+    with check (published_by = auth.uid());

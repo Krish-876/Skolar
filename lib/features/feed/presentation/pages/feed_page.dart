@@ -1,3 +1,4 @@
+import 'package:Skolar/shared/providers/global_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -61,9 +62,10 @@ class FeedPage extends ConsumerWidget {
 
 // ── Top bar ───────────────────────────────────────────────────────────────────
 
-class _TopBar extends StatelessWidget {
+class _TopBar extends ConsumerWidget  {
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final college = ref.watch(userProvider).college;
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
       child: Row(
@@ -82,7 +84,7 @@ class _TopBar extends StatelessWidget {
                 ),
                 const SizedBox(height: 1),
                 Text(
-                  'BITS Pilani · Hyderabad',
+                  college,
                   style: GoogleFonts.googleSans(
                     fontSize: 11,
                     color: AppTheme.textGradBegin.withOpacity(0.4),

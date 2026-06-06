@@ -1,30 +1,21 @@
-import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:Skolar/features/mock_tests/presentation/pages/mock_tests_pages.dart';
-
-// ── Config ────────────────────────────────────────────────────────────────────
-
-const _kBaseUrl = 'https://skolar-production.up.railway.app';
+import 'package:Skolar/features/mock_tests/data/datasources/mock_test_datasource.dart';
+import 'package:Skolar/features/mock_tests/data/repository_impl/mock_test_repository_impl.dart';
+import 'package:Skolar/features/mock_tests/domain/entities/mock_test_entity.dart';
+import 'package:Skolar/features/mock_tests/domain/usecases/mock_test_usecases.dart';
+import 'package:Skolar/shared/models/exam_type.dart';
+import 'package:Skolar/shared/providers/global_providers.dart';
 
 // ── Exam mode ─────────────────────────────────────────────────────────────────
 
-enum ExamMode {
-  /// Timed MCQ blitz — used for Compre Part A practice
-  mcqBlitz,
-
-  /// Open-ended written practice — used for Quiz, Midsem, Compre Part B
-  writtenPractice,
-}
-
-enum ExamType { quiz, midsem, comprePaA, comprePartB }
+enum ExamMode { mcqBlitz, writtenPractice }
 
 // ── Request model ─────────────────────────────────────────────────────────────
 
 class MockTestRequest {
   final String subject;
-  final String college;
   final ExamMode mode;
-  final String examType;
+  final ExamType examType;
   final int count;
   final int? yearFrom;
   final int? yearTo;
@@ -32,7 +23,6 @@ class MockTestRequest {
 
   const MockTestRequest({
     required this.subject,
-    required this.college,
     required this.mode,
     required this.examType,
     this.count = 5,
@@ -40,22 +30,6 @@ class MockTestRequest {
     this.yearTo,
     this.k = 5,
   });
-
-  Map<String, dynamic> toJson() => {
-        'subject': subject,
-        'college': college,
-        'count': count,
-        'exam_type': examType,
-        if (yearFrom != null) 'year_from': yearFrom,
-        if (yearTo != null) 'year_to': yearTo,
-        'k': k,
-        // with_answers always true for written practice
-        if (mode == ExamMode.writtenPractice) 'with_answers': true,
-      };
-
-  String get endpoint => mode == ExamMode.mcqBlitz
-      ? '/generate-batch'
-      : '/generate-open-batch';
 }
 
 // ── State ─────────────────────────────────────────────────────────────────────
@@ -75,8 +49,7 @@ class MockTestState {
     this.error,
   });
 
-  bool get hasQuestions =>
-      mcqQuestions.isNotEmpty || openQuestions.isNotEmpty;
+  bool get hasQuestions => mcqQuestions.isNotEmpty || openQuestions.isNotEmpty;
 
   MockTestState copyWith({
     List<QuizQuestion>? mcqQuestions,
@@ -95,78 +68,95 @@ class MockTestState {
       );
 }
 
+// ── Infrastructure providers ──────────────────────────────────────────────────
+
+final _mockTestDataSourceProvider = Provider<MockTestRemoteDataSource>(
+  (_) => MockTestRemoteDataSourceImpl(),
+);
+
+final _mockTestRepositoryProvider = Provider<MockTestRepositoryImpl>(
+  (ref) => MockTestRepositoryImpl(ref.read(_mockTestDataSourceProvider)),
+);
+
+final _fetchMcqUseCaseProvider = Provider<FetchMcqQuestionsUseCase>(
+  (ref) => FetchMcqQuestionsUseCase(ref.read(_mockTestRepositoryProvider)),
+);
+
+final _fetchOpenUseCaseProvider = Provider<FetchOpenQuestionsUseCase>(
+  (ref) => FetchOpenQuestionsUseCase(ref.read(_mockTestRepositoryProvider)),
+);
+
 // ── Notifier ──────────────────────────────────────────────────────────────────
 
 class MockTestNotifier extends Notifier<MockTestState> {
-  late final Dio _dio;
-
   @override
-  MockTestState build() {
-    _dio = Dio(BaseOptions(
-      baseUrl: _kBaseUrl,
-      connectTimeout: const Duration(seconds: 30),
-      // Written practice makes 2 Groq calls per question — needs longer timeout
-      receiveTimeout: const Duration(minutes: 3),
-    ));
-    return const MockTestState();
-  }
+  MockTestState build() => const MockTestState();
 
   Future<void> fetchQuestions(MockTestRequest request) async {
     state = state.copyWith(isLoading: true, clearError: true);
 
-    try {
-      final response = await _dio.post<Map<String, dynamic>>(
-        request.endpoint,
-        data: request.toJson(),
+    final college = ref.read(userProvider).college;
+
+    if (request.mode == ExamMode.mcqBlitz) {
+      final result = await ref.read(_fetchMcqUseCaseProvider).call(
+            subject:  request.subject,
+            college:  college,
+            examType: request.examType.apiValue,
+            count:    request.count,
+            k:        request.k,
+            yearFrom: request.yearFrom,
+            yearTo:   request.yearTo,
+          );
+      result.fold(
+        (failure) => state = state.copyWith(
+            isLoading: false, error: failure.message),
+        (questions) => state = state.copyWith(
+            mcqQuestions: questions,
+            openQuestions: [],
+            mode: ExamMode.mcqBlitz,
+            isLoading: false),
       );
-
-      final data = response.data!;
-      final rawList = data['questions'] as List<dynamic>;
-
-      if (request.mode == ExamMode.mcqBlitz) {
-        final questions = rawList.map((item) {
-          final map = item as Map<String, dynamic>;
-          return QuizQuestion(
-            question:     map['question']      as String,
-            options:      List<String>.from(map['options'] as List),
-            correctIndex: map['correct_index'] as int,
-            subject:      map['subject']       as String,
-            marks:        map['marks']         as int,
+    } else {
+      final result = await ref.read(_fetchOpenUseCaseProvider).call(
+            subject:  request.subject,
+            college:  college,
+            examType: request.examType.apiValue,
+            count:    request.count,
+            k:        request.k,
+            yearFrom: request.yearFrom,
+            yearTo:   request.yearTo,
           );
-        }).toList();
+      result.fold(
+        (failure) => state = state.copyWith(
+            isLoading: false, error: failure.message),
+        (questions) => state = state.copyWith(
+            openQuestions: questions,
+            mcqQuestions: [],
+            mode: ExamMode.writtenPractice,
+            isLoading: false),
+      );
+    }
+  }
 
-        state = state.copyWith(
-          mcqQuestions: questions,
-          openQuestions: [],
-          mode: ExamMode.mcqBlitz,
-          isLoading: false,
-        );
-      } else {
-        final questions = rawList.map((item) {
-          final map = item as Map<String, dynamic>;
-          return OpenQuestion(
-            question:    map['question']     as String,
-            subject:     map['subject']      as String,
-            marks:       map['marks']        as int,
-            modelAnswer: map['model_answer'] as String,
-          );
-        }).toList();
+  Future<void> loadExistingTest({
+    required List<String> questionIds,
+    required ExamMode mode,
+  }) async {
+    state = state.copyWith(isLoading: true, clearError: true);
 
-        state = state.copyWith(
+    final result = await ref.read(_fetchByIdsUseCaseProvider).call(
+      questionIds: questionIds,
+    );
+
+    result.fold(
+      (failure) => state = state.copyWith(
+          isLoading: false, error: failure.message),
+      (questions) => state = state.copyWith(
           openQuestions: questions,
           mcqQuestions: [],
-          mode: ExamMode.writtenPractice,
-          isLoading: false,
-        );
-      }
-    } on DioException catch (e) {
-      final msg = e.response?.data?['detail']?.toString() ??
-          e.message ??
-          'Network error';
-      state = state.copyWith(isLoading: false, error: msg);
-    } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
-    }
+          mode: mode,
+          isLoading: false),
+    );
   }
 
   void reset() => state = const MockTestState();
@@ -176,4 +166,8 @@ class MockTestNotifier extends Notifier<MockTestState> {
 
 final mockTestProvider = NotifierProvider<MockTestNotifier, MockTestState>(
   MockTestNotifier.new,
+);
+
+final _fetchByIdsUseCaseProvider = Provider<FetchQuestionsByIdsUseCase>(
+  (ref) => FetchQuestionsByIdsUseCase(ref.read(_mockTestRepositoryProvider)),
 );

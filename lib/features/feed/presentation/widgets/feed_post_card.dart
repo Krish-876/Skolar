@@ -1,3 +1,5 @@
+import 'package:Skolar/features/mock_tests/presentation/providers/mock_tests_provider.dart';
+import 'package:Skolar/shared/models/exam_type.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:Skolar/core/theme/app_theme.dart';
@@ -68,6 +70,27 @@ class _FeedPostCardState extends ConsumerState<FeedPostCard>
     ref.read(feedProvider.notifier).toggleDownvote(widget.post.id);
   }
 
+  void _handleAttempt() async {
+    final mode = widget.post.examType == ExamType.compre
+        ? ExamMode.mcqBlitz
+        : ExamMode.writtenPractice;
+
+    await ref.read(mockTestProvider.notifier).loadExistingTest(
+      questionIds: widget.post.questionIds,
+      mode: mode,
+    );
+
+    final state = ref.read(mockTestProvider);
+    print('hasQuestions: ${state.hasQuestions}');
+    print('openQuestions: ${state.openQuestions.length}');
+    print('isLoading: ${state.isLoading}');
+    print('error: ${state.error}');
+    print('questionIds passed: ${widget.post.questionIds}');
+
+    if (!mounted) return;
+    Navigator.pushNamed(context, '/mock-tests');
+  }
+
   @override
   Widget build(BuildContext context) {
     // .select ensures only THIS card rebuilds when its own vote state changes
@@ -106,6 +129,7 @@ class _FeedPostCardState extends ConsumerState<FeedPostCard>
             downvoteScale: _downvoteScale,
             onUpvote: _handleUpvote,
             onDownvote: _handleDownvote,
+            onAttempt: _handleAttempt,
           ),
         ],
       ),
@@ -285,6 +309,7 @@ class _CardFooter extends StatelessWidget {
   final Animation<double> downvoteScale;
   final VoidCallback onUpvote;
   final VoidCallback onDownvote;
+  final VoidCallback onAttempt;
 
   const _CardFooter({
     required this.post,
@@ -295,6 +320,7 @@ class _CardFooter extends StatelessWidget {
     required this.downvoteScale,
     required this.onUpvote,
     required this.onDownvote,
+    required this.onAttempt,
   });
 
   @override
@@ -361,8 +387,10 @@ class _CardFooter extends StatelessWidget {
         ),
         const Spacer(),
         // Attempt button
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 4),
+      GestureDetector(
+        onTap: onAttempt,
+        child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 4),
           decoration: BoxDecoration(
             color: Colors.transparent,
             borderRadius: BorderRadius.circular(20),
@@ -374,6 +402,7 @@ class _CardFooter extends StatelessWidget {
               fontSize: 11,
               color: FeedColors.attemptText,
               fontFamily: 'DM Sans',
+              ),
             ),
           ),
         ),

@@ -611,3 +611,45 @@ def run_upload_pyq(
         "added":         inserted,
         "new_questions": [q["question_text"][:80] + "..." for q in new_questions],
     }
+
+def save_generated_test(
+    questions: list[dict],
+    college: str,
+    subject: str,
+    exam_type: str,
+    published_by: str | None = None,
+) -> str:
+    """
+    Saves generated questions to the questions table and creates a
+    published_tests row grouping them. Returns the published_test id.
+    """
+    sb = get_supabase()
+
+    # Insert questions with published=True and get back their UUIDs
+    rows = []
+    for q in questions:
+        rows.append({
+            "question_text": q.get("question", q.get("question_text", "")),
+            "marks":         int(q.get("marks", 0)),
+            "question_type": "mcq" if "correct_index" in q else "short_answer",
+            "subject":       subject,
+            "college":       college,
+            "exam_type":     exam_type,
+            "published":     True,
+            "published_by":  published_by,
+            "published_at":  "now()",
+        })
+
+    response = sb.table("questions").insert(rows).execute()
+    question_ids = [row["id"] for row in response.data]
+
+    # Create the published_tests row
+    test_response = sb.table("published_tests").insert({
+        "college":      college,
+        "subject":      subject,
+        "exam_type":    exam_type,
+        "question_ids": question_ids,
+        "published_by": published_by,
+    }).execute()
+
+    return test_response.data[0]["id"]

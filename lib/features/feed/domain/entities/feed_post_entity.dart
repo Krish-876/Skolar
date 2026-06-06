@@ -1,3 +1,5 @@
+import 'package:Skolar/shared/models/exam_type.dart';
+
 class FeedPostEntity {
   final String id;
   final String authorName;
@@ -6,7 +8,7 @@ class FeedPostEntity {
   final String authorBranch;
   final String subject;
   final String title;
-  final String difficulty; // 'easy' | 'medium' | 'hard'
+  final String difficulty;
   final String yearRange;
   final int questionCount;
   final int upvotes;
@@ -14,7 +16,8 @@ class FeedPostEntity {
   final List<String> tags;
   final bool isPublished;
   final DateTime createdAt;
-  final List<int> bankIndices;
+  final ExamType examType;
+  final List<String> questionIds;  // UUIDs from published_tests.question_ids
 
   const FeedPostEntity({
     required this.id,
@@ -32,6 +35,7 @@ class FeedPostEntity {
     required this.tags,
     required this.isPublished,
     required this.createdAt,
-    this.bankIndices = const [],
+    required this.examType,
+    this.questionIds = const [],
   });
 }

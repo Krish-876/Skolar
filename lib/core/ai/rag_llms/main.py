@@ -14,7 +14,9 @@ Endpoints:
 
 import traceback
 
+import logging
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Query
+logger = logging.getLogger(__name__)
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
@@ -26,6 +28,7 @@ from pipeline import (
     run_generate_open_batch,
     run_upload_pyq,
     load_bank_and_embeddings,
+    save_generated_test,
 )
 
 # ── App setup ─────────────────────────────────────────────────────────────────
@@ -76,6 +79,7 @@ class GenerateBatchRequest(BaseModel):
     year_from: Optional[int] = None
     year_to: Optional[int] = None
     k: Optional[int] = 5
+    published_by: Optional[str] = None 
 
 class GenerateBatchResponse(BaseModel):
     questions: list[McqQuestion]
@@ -100,6 +104,7 @@ class GenerateOpenBatchRequest(BaseModel):
     year_to: Optional[int] = None
     k: Optional[int] = 5
     with_answers: Optional[bool] = True   # always True in practice; kept for flexibility
+    published_by: Optional[str] = None
 
 class GenerateOpenBatchResponse(BaseModel):
     questions: list[OpenQuestion]
@@ -274,6 +279,18 @@ def generate_batch(req: GenerateBatchRequest):
             detail="All MCQ generation attempts failed. Check Groq API key and question bank.",
         )
 
+
+    try:
+        save_generated_test(
+            questions=raw,
+            college=req.college,
+            subject=req.subject,
+            exam_type=req.exam_type or "generated",
+            published_by=req.published_by,
+        )
+    except Exception as e:
+        logger.warning(f"[generate_batch] failed to save to feed: {e}")
+
     return GenerateBatchResponse(
         questions=[
             McqQuestion(
@@ -346,6 +363,17 @@ def generate_open_batch(req: GenerateOpenBatchRequest):
             status_code=500,
             detail="All question generation attempts failed. Check Groq API key and question bank.",
         )
+    
+    try:
+        save_generated_test(
+            questions=raw,
+            college=req.college,
+            subject=req.subject,
+            exam_type=req.exam_type or "generated",
+            published_by=req.published_by,
+        )
+    except Exception as e:
+        logger.warning(f"[generate_open_batch] failed to save to feed: {e}")
 
     return GenerateOpenBatchResponse(
         questions=[

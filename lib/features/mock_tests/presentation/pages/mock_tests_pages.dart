@@ -1,9 +1,12 @@
 import 'dart:async';
 import 'dart:math';
 import 'dart:ui';
+import 'package:Skolar/core/loading/test_page.dart';
 import 'package:Skolar/core/widgets/animated_profile_gradient.dart';
 import 'package:Skolar/features/focus_session/widgets/focus_background.dart';
-import 'package:Skolar/shared/providers/global_providers.dart';
+import 'package:Skolar/features/mock_tests/domain/entities/mock_test_entity.dart';
+import 'package:Skolar/shared/models/exam_type.dart';
+// import 'package:Skolar/shared/providers/global_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:confetti/confetti.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
@@ -12,36 +15,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:Skolar/core/theme/app_theme.dart';
 import 'package:Skolar/features/mock_tests/presentation/providers/mock_tests_provider.dart';
-
-class QuizQuestion {
-  final String question;
-  final List<String> options;
-  final int correctIndex;
-  final String subject;
-  final int marks;
-
-  const QuizQuestion({
-    required this.question,
-    required this.options,
-    required this.correctIndex,
-    required this.subject,
-    required this.marks,
-  });
-}
-
-class OpenQuestion {
-  final String question;
-  final String subject;
-  final int marks;
-  final String modelAnswer;
-
-  const OpenQuestion({
-    required this.question,
-    required this.subject,
-    required this.marks,
-    required this.modelAnswer,
-  });
-}
 
 const _bg       = Color(0xFF05061A);
 const _primary  = Color(0xFF1E2A8A);
@@ -69,11 +42,11 @@ MarkdownStyleSheet _answerMarkdownStyle() {
     h3: const TextStyle(color: _accent, fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 0.7),
     strong: const TextStyle(color: _textPrim, fontWeight: FontWeight.w600, fontSize: 14),
     em: const TextStyle(color: _textSec, fontStyle: FontStyle.italic, fontSize: 14),
-    code: TextStyle(color: _accent, backgroundColor: _primary.withOpacity(0.3), fontSize: 13, fontFamily: 'monospace'),
+    code: TextStyle(color: _accent, backgroundColor: _primary.withValues(alpha: 0.3), fontSize: 13, fontFamily: 'monospace'),
     codeblockDecoration: BoxDecoration(
-      color: _primary.withOpacity(0.2),
+      color: _primary.withValues(alpha: 0.2),
       borderRadius: BorderRadius.circular(8),
-      border: Border.all(color: _primary.withOpacity(0.4)),
+      border: Border.all(color: _primary.withValues(alpha: 0.4)),
     ),
     codeblockPadding: const EdgeInsets.all(12),
     listBullet: const TextStyle(color: _accent, fontSize: 14),
@@ -85,7 +58,7 @@ MarkdownStyleSheet _answerMarkdownStyle() {
     tableHeadAlign: TextAlign.center,
     tableColumnWidth: const FlexColumnWidth(),
     tableCellsPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-    tableCellsDecoration: BoxDecoration(color: _primary.withOpacity(0.4)),
+    tableCellsDecoration: BoxDecoration(color: _primary.withValues(alpha: 0.4)),
     horizontalRuleDecoration: BoxDecoration(border: Border(top: BorderSide(color: _surface, width: 1))),
   );
 }
@@ -95,7 +68,7 @@ MarkdownStyleSheet _questionMarkdownStyle() {
     p: const TextStyle(color: _textPrim, fontSize: 13, height: 1.65, fontWeight: FontWeight.w500),
     strong: const TextStyle(color: _textPrim, fontWeight: FontWeight.w700, fontSize: 13),
     em: const TextStyle(color: _textSec, fontStyle: FontStyle.italic, fontSize: 13),
-    code: TextStyle(color: _accent, backgroundColor: _primary.withOpacity(0.3), fontSize: 12, fontFamily: 'monospace'),
+    code: TextStyle(color: _accent, backgroundColor: _primary.withValues(alpha: 0.3), fontSize: 12, fontFamily: 'monospace'),
     listBullet: const TextStyle(color: _textSec, fontSize: 13),
     listIndent: 16,
     blockSpacing: 8,
@@ -105,49 +78,55 @@ MarkdownStyleSheet _questionMarkdownStyle() {
     tableHeadAlign: TextAlign.center,
     tableColumnWidth: const FlexColumnWidth(),
     tableCellsPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-    tableCellsDecoration: BoxDecoration(color: _primary.withOpacity(0.35)),
+    tableCellsDecoration: BoxDecoration(color: _primary.withValues(alpha: 0.35)),
   );
 }
 
-enum _ExamType { quiz, midsem, compreA, compreB }
+// ── Exam type enum — in syllabus order: quiz1 ⊂ midsem ⊂ quiz2 ⊂ compre ─────
+
+enum _ExamType { quiz1, midsem, quiz2, compreA, compreB }
 
 extension _ExamTypeExt on _ExamType {
   String get label => switch (this) {
-    _ExamType.quiz    => 'Quiz',
+    _ExamType.quiz1   => 'Quiz 1',
     _ExamType.midsem  => 'Midsem',
+    _ExamType.quiz2   => 'Quiz 2',
     _ExamType.compreA => 'Compre Part A',
     _ExamType.compreB => 'Compre Part B',
   };
 
+  ExamType get examType => switch (this) {
+    _ExamType.quiz1   => ExamType.quiz1,
+    _ExamType.midsem  => ExamType.midsem,
+    _ExamType.quiz2   => ExamType.quiz2,
+    _ExamType.compreA => ExamType.compre,
+    _ExamType.compreB => ExamType.compre,
+  };
+
   ExamMode get mode => switch (this) {
     _ExamType.compreA => ExamMode.mcqBlitz,
-    _               => ExamMode.writtenPractice,
+    _                 => ExamMode.writtenPractice,
   };
 
   int get defaultCount => switch (this) {
-    _ExamType.quiz    => 5,
+    _ExamType.quiz1   => 5,
     _ExamType.midsem  => 6,
+    _ExamType.quiz2   => 5,
     _ExamType.compreA => 8,
     _ExamType.compreB => 4,
   };
 
   int get maxCount => switch (this) {
     _ExamType.compreA => 15,
-    _               => 10,
+    _                 => 10,
   };
 
   IconData get icon => switch (this) {
-    _ExamType.quiz    => Icons.quiz_outlined,
+    _ExamType.quiz1   => Icons.quiz_outlined,
     _ExamType.midsem  => Icons.description_outlined,
+    _ExamType.quiz2   => Icons.quiz_outlined,
     _ExamType.compreA => Icons.flash_on_rounded,
     _ExamType.compreB => Icons.edit_note_rounded,
-  };
-  
-  String get examType => switch (this) {
-    _ExamType.quiz    => 'quiz',
-    _ExamType.midsem  => 'midsem',
-    _ExamType.compreA => 'compre',
-    _ExamType.compreB => 'compre',
   };
 }
 
@@ -169,14 +148,13 @@ class MockTestPage extends ConsumerStatefulWidget {
 
 class _MockTestPageState extends ConsumerState<MockTestPage> {
   String _selectedSubject = _kSubjects.first;
-  _ExamType _selectedExam = _ExamType.quiz;
+  _ExamType _selectedExam = _ExamType.quiz1;
   int _questionCount = 5;
 
   @override
   Widget build(BuildContext context) {
     final mockState = ref.watch(mockTestProvider);
-    if (mockState.isLoading) return _LoadingScreen(subject: _selectedSubject, examType: _selectedExam);
-    if (mockState.error != null) {
+    if (mockState.isLoading) return const TestLoadingPage();    if (mockState.error != null) {
       return _ErrorScreen(
         error: mockState.error!,
         onRetry: _start,
@@ -200,13 +178,11 @@ class _MockTestPageState extends ConsumerState<MockTestPage> {
   }
 
   void _start() {
-    final college = ref.read(userProvider).college;
     ref.read(mockTestProvider.notifier).fetchQuestions(MockTestRequest(
-      subject: _selectedSubject,
-      college: college,
-      mode: _selectedExam.mode,
+      subject:  _selectedSubject,
+      mode:     _selectedExam.mode,
       examType: _selectedExam.examType,
-      count: _questionCount,
+      count:    _questionCount,
     ));
   }
 }
@@ -231,79 +207,77 @@ class _SetupScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _bg,
-      body: GlassBackground(
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                IconButton(
-                  onPressed: () => Navigator.maybePop(context),
-                  icon: const Icon(Icons.arrow_back_ios_new_rounded, color: _textSec, size: 18),
-                  padding: EdgeInsets.zero,
-                ),
-                const SizedBox(height: 16),
-                Text('Mock Test', style: GoogleFonts.googleSansFlex(fontSize: 32, fontWeight: FontWeight.w600, color: Colors.white)),
-                const SizedBox(height: 4),
-                Text('AI-generated from your college PYQs', style: GoogleFonts.googleSans(color: _textSec, fontSize: 14)),
-                const SizedBox(height: 28),
-                _SectionLabel('Exam Type'),
-                const SizedBox(height: 10),
-                _ExamTypeGrid(selected: selectedExam, onChanged: onExamChanged),
-                const SizedBox(height: 24),
-                _SectionLabel('Subject'),
-                const SizedBox(height: 10),
-                _GlassContainer(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      value: selectedSubject, isExpanded: true,
-                      dropdownColor: const Color(0xFF1A1B2E),
-                      style: const TextStyle(color: _textPrim, fontSize: 15),
-                      iconEnabledColor: _textSec,
-                      items: _kSubjects.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
-                      onChanged: (v) => onSubjectChanged(v!),
-                    ),
+      backgroundColor: AppTheme.background,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              IconButton(
+                onPressed: () => Navigator.maybePop(context),
+                icon: const Icon(Icons.arrow_back_ios_new_rounded, color: _textSec, size: 18),
+                padding: EdgeInsets.zero,
+              ),
+              const SizedBox(height: 16),
+              Text('Mock Test', style: GoogleFonts.googleSansFlex(fontSize: 32, fontWeight: FontWeight.w600, color: Colors.white)),
+              const SizedBox(height: 4),
+              Text('AI-generated from your college PYQs', style: GoogleFonts.googleSans(color: _textSec, fontSize: 14)),
+              const SizedBox(height: 28),
+              _SectionLabel('Exam Type'),
+              const SizedBox(height: 10),
+              _ExamTypeGrid(selected: selectedExam, onChanged: onExamChanged),
+              const SizedBox(height: 24),
+              _SectionLabel('Subject'),
+              const SizedBox(height: 10),
+              _GlassContainer(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: selectedSubject, isExpanded: true,
+                    dropdownColor: const Color(0xFF1A1B2E),
+                    style: const TextStyle(color: _textPrim, fontSize: 15),
+                    iconEnabledColor: _textSec,
+                    items: _kSubjects.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                    onChanged: (v) => onSubjectChanged(v!),
                   ),
                 ),
-                const SizedBox(height: 24),
-                Row(children: [
-                  _SectionLabel('Questions'),
-                  const Spacer(),
-                  _GlassChip(child: Text('$questionCount', style: const TextStyle(color: _textPrim, fontSize: 14, fontWeight: FontWeight.w700))),
-                ]),
-                const SizedBox(height: 8),
-                SliderTheme(
-                  data: SliderThemeData(
-                    trackHeight: 3, activeTrackColor: _accent, inactiveTrackColor: _surface,
-                    thumbColor: _accent, overlayColor: _accent.withOpacity(0.15),
-                  ),
-                  child: Slider(
-                    min: 3, max: selectedExam.maxCount.toDouble(),
-                    divisions: selectedExam.maxCount - 3,
-                    value: questionCount.clamp(3, selectedExam.maxCount).toDouble(),
-                    onChanged: (v) => onCountChanged(v.round()),
-                  ),
-                ),
-                Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                  Text('3', style: const TextStyle(color: _textSec, fontSize: 11)),
-                  Text('${selectedExam.maxCount}', style: const TextStyle(color: _textSec, fontSize: 11)),
-                ]),
+              ),
+              const SizedBox(height: 24),
+              Row(children: [
+                _SectionLabel('Questions'),
                 const Spacer(),
-                _StartButton(label: 'Start Test', onTap: onStart),
-                const SizedBox(height: 8),
-                Center(
-                  child: Text(
-                    selectedExam.mode == ExamMode.mcqBlitz
-                        ? 'Generation takes ~${questionCount * 4}s'
-                        : 'Generation takes ~${questionCount * 8}s (questions + answers)',
-                    style: const TextStyle(color: _textSec, fontSize: 12),
-                  ),
+                _GlassChip(child: Text('$questionCount', style: const TextStyle(color: _textPrim, fontSize: 14, fontWeight: FontWeight.w700))),
+              ]),
+              const SizedBox(height: 8),
+              SliderTheme(
+                data: SliderThemeData(
+                  trackHeight: 3, activeTrackColor: _accent, inactiveTrackColor: _surface,
+                  thumbColor: _accent, overlayColor: _accent.withValues(alpha: 0.15),
                 ),
-              ],
-            ),
+                child: Slider(
+                  min: 3, max: selectedExam.maxCount.toDouble(),
+                  divisions: selectedExam.maxCount - 3,
+                  value: questionCount.clamp(3, selectedExam.maxCount).toDouble(),
+                  onChanged: (v) => onCountChanged(v.round()),
+                ),
+              ),
+              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                Text('3', style: const TextStyle(color: _textSec, fontSize: 11)),
+                Text('${selectedExam.maxCount}', style: const TextStyle(color: _textSec, fontSize: 11)),
+              ]),
+              const Spacer(),
+              _StartButton(label: 'Start Test', onTap: onStart),
+              const SizedBox(height: 8),
+              Center(
+                child: Text(
+                  selectedExam.mode == ExamMode.mcqBlitz
+                      ? 'Generation takes ~${questionCount * 4}s'
+                      : 'Generation takes ~${questionCount * 8}s (questions + answers)',
+                  style: const TextStyle(color: _textSec, fontSize: 12),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -332,9 +306,9 @@ class _ExamTypeGrid extends StatelessWidget {
             duration: const Duration(milliseconds: 200),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
-              color: isSel ? _primary.withOpacity(0.5) : Colors.white.withOpacity(0.04),
+              color: isSel ? _primary.withValues(alpha: 0.5) : Colors.white.withValues(alpha: 0.04),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: isSel ? _accent : Colors.white.withOpacity(0.08), width: isSel ? 1.5 : 1),
+              border: Border.all(color: isSel ? _accent : Colors.white.withValues(alpha: 0.08), width: isSel ? 1.5 : 1),
             ),
             child: Row(children: [
               Icon(type.icon, color: isSel ? _accent : _textSec, size: 16),
@@ -429,7 +403,6 @@ class _QuestionCard extends StatelessWidget {
     this.questionNumber,
   });
 
-  // Splits question into context (data/table/preamble) + the actual ask.
   ({String context, String ask}) _split() {
     final trimmed = question.trim();
     final doubleNewline = trimmed.lastIndexOf('\n\n');
@@ -454,21 +427,20 @@ class _QuestionCard extends StatelessWidget {
         filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.04),
+            color: Colors.white.withValues(alpha: 0.04),
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: Colors.white.withOpacity(0.08), width: 1.2),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.08), width: 1.2),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── Header: number + subject + coloured marks chip ─────────────
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
                 child: Row(children: [
                   if (questionNumber != null) ...[
                     Container(
                       width: 28, height: 28,
-                      decoration: BoxDecoration(color: _primary.withOpacity(0.6), borderRadius: BorderRadius.circular(8)),
+                      decoration: BoxDecoration(color: _primary.withValues(alpha: 0.6), borderRadius: BorderRadius.circular(8)),
                       child: Center(child: Text('$questionNumber', style: const TextStyle(color: _textPrim, fontSize: 12, fontWeight: FontWeight.w700))),
                     ),
                     const SizedBox(width: 10),
@@ -477,9 +449,9 @@ class _QuestionCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: mc.withOpacity(0.15),
+                      color: mc.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: mc.withOpacity(0.5), width: 1),
+                      border: Border.all(color: mc.withValues(alpha: 0.5), width: 1),
                     ),
                     child: Row(mainAxisSize: MainAxisSize.min, children: [
                       Icon(Icons.star_rounded, color: mc, size: 11),
@@ -489,21 +461,19 @@ class _QuestionCard extends StatelessWidget {
                   ),
                 ]),
               ),
-              // ── Context zone: dimmed background for data/preamble ──────────
               if (parts.context.isNotEmpty)
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.02),
+                    color: Colors.white.withValues(alpha: 0.02),
                     border: Border(
-                      top: BorderSide(color: Colors.white.withOpacity(0.06)),
-                      bottom: BorderSide(color: Colors.white.withOpacity(0.06)),
+                      top: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
+                      bottom: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
                     ),
                   ),
                   child: MarkdownBody(data: parts.context, styleSheet: _questionMarkdownStyle(), softLineBreak: true, extensionSet: _gfm),
                 ),
-              // ── Actual question: accent left-border when context present ───
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
@@ -543,25 +513,23 @@ class _ModelAnswerCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header with tinted background
           Container(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
             decoration: BoxDecoration(
-              color: _accent.withOpacity(0.08),
-              border: Border(bottom: BorderSide(color: _accent.withOpacity(0.2), width: 1)),
+              color: _accent.withValues(alpha: 0.08),
+              border: Border(bottom: BorderSide(color: _accent.withValues(alpha: 0.2), width: 1)),
               borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
             ),
             child: Row(children: [
               Container(
                 padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(color: _accent.withOpacity(0.15), borderRadius: BorderRadius.circular(8)),
+                decoration: BoxDecoration(color: _accent.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(8)),
                 child: const Icon(Icons.lightbulb_rounded, color: _accent, size: 14),
               ),
               const SizedBox(width: 10),
               const Text('Model Answer', style: TextStyle(color: _accent, fontSize: 13, fontWeight: FontWeight.w700, letterSpacing: 0.3)),
             ]),
           ),
-          // Body with accent-bar headings
           Padding(
             padding: const EdgeInsets.all(16),
             child: _MarkdownWithAccentHeadings(data: modelAnswer, styleSheet: _answerMarkdownStyle()),
@@ -571,8 +539,6 @@ class _ModelAnswerCard extends StatelessWidget {
     );
   }
 }
-
-// ── Renders ### headings as accent left-bar labels instead of plain text ──────
 
 class _MarkdownWithAccentHeadings extends StatelessWidget {
   final String data;
@@ -962,7 +928,7 @@ class _ModeCard extends StatelessWidget {
         padding: const EdgeInsets.all(20),
         child: Row(children: [
           Container(padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(color: _primary.withOpacity(0.4), borderRadius: BorderRadius.circular(12)),
+              decoration: BoxDecoration(color: _primary.withValues(alpha: 0.4), borderRadius: BorderRadius.circular(12)),
               child: Icon(icon, color: _accent, size: 24)),
           const SizedBox(width: 16),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -1007,7 +973,6 @@ class _FlashcardViewState extends State<_FlashcardView> {
     return Scaffold(
       backgroundColor: _bg,
       body: Stack(children: [
-        // Reuse the focus session background — same dark animated gradient the app already has
         const FocusBackground(slideProgress: 1.0),
         SafeArea(child: Column(children: [
           Padding(
@@ -1041,7 +1006,7 @@ class _FlashcardViewState extends State<_FlashcardView> {
                     child: Container(
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      decoration: BoxDecoration(border: Border.all(color: _accent.withOpacity(0.4)), borderRadius: BorderRadius.circular(14)),
+                      decoration: BoxDecoration(border: Border.all(color: _accent.withValues(alpha: 0.4)), borderRadius: BorderRadius.circular(14)),
                       child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                         Icon(Icons.lightbulb_outline_rounded, color: _accent, size: 18),
                         SizedBox(width: 8),
@@ -1111,7 +1076,7 @@ class _PaperViewState extends State<_PaperView> {
                         onTap: () => setState(() => _revealed.add(i)),
                         child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-                          decoration: BoxDecoration(border: Border.all(color: _accent.withOpacity(0.4)), borderRadius: BorderRadius.circular(10)),
+                          decoration: BoxDecoration(border: Border.all(color: _accent.withValues(alpha: 0.4)), borderRadius: BorderRadius.circular(10)),
                           child: const Row(mainAxisSize: MainAxisSize.min, children: [
                             Icon(Icons.lightbulb_outline_rounded, color: _accent, size: 15),
                             SizedBox(width: 6),
@@ -1133,7 +1098,7 @@ class _PaperViewState extends State<_PaperView> {
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
             decoration: BoxDecoration(gradient: LinearGradient(
               begin: Alignment.topCenter, end: Alignment.bottomCenter,
-              colors: [_bg.withOpacity(0), _bg],
+              colors: [_bg.withValues(alpha: 0), _bg],
             )),
             child: _StartButton(label: '✦ Finish Session', onTap: widget.onDone),
           ),
@@ -1169,8 +1134,8 @@ class _OptionTileState extends State<_OptionTile> with SingleTickerProviderState
   @override
   void dispose() { _ctrl.dispose(); super.dispose(); }
 
-  Color get _borderColor => switch (widget.state) { _OptionState.correct => _correct, _OptionState.wrong => _wrong, _ => Colors.white.withOpacity(0.08) };
-  Color get _bgColor     => switch (widget.state) { _OptionState.correct => _correct.withOpacity(0.15), _OptionState.wrong => _wrong.withOpacity(0.12), _ => Colors.white.withOpacity(0.03) };
+  Color get _borderColor => switch (widget.state) { _OptionState.correct => _correct, _OptionState.wrong => _wrong, _ => Colors.white.withValues(alpha: 0.08) };
+  Color get _bgColor     => switch (widget.state) { _OptionState.correct => _correct.withValues(alpha: 0.15), _OptionState.wrong => _wrong.withValues(alpha: 0.12), _ => Colors.white.withValues(alpha: 0.03) };
   Color get _labelColor  => switch (widget.state) { _OptionState.correct => _correct, _OptionState.wrong => _wrong, _ => _primary };
 
   @override
@@ -1189,7 +1154,7 @@ class _OptionTileState extends State<_OptionTile> with SingleTickerProviderState
             AnimatedContainer(
               duration: const Duration(milliseconds: 300),
               width: 32, height: 32,
-              decoration: BoxDecoration(shape: BoxShape.circle, color: _labelColor.withOpacity(0.15), border: Border.all(color: _labelColor, width: 1.2)),
+              decoration: BoxDecoration(shape: BoxShape.circle, color: _labelColor.withValues(alpha: 0.15), border: Border.all(color: _labelColor, width: 1.2)),
               child: Center(child: Text(widget.label, style: TextStyle(color: _labelColor, fontSize: 13, fontWeight: FontWeight.w700))),
             ),
             const SizedBox(width: 14),
@@ -1250,7 +1215,7 @@ class _StartButton extends StatelessWidget {
         decoration: BoxDecoration(
           gradient: const LinearGradient(colors: [AppTheme.primaryGradBegin, AppTheme.primaryGradEnd]),
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [BoxShadow(color: _primary.withOpacity(0.4), blurRadius: 20, offset: const Offset(0, 6))],
+          boxShadow: [BoxShadow(color: _primary.withValues(alpha: 0.4), blurRadius: 20, offset: const Offset(0, 6))],
         ),
         child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
           const Icon(Icons.auto_awesome_rounded, color: _textPrim, size: 18),
@@ -1293,9 +1258,9 @@ class _GlassContainer extends StatelessWidget {
         child: Container(
           padding: padding,
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.04),
+            color: Colors.white.withValues(alpha: 0.04),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withOpacity(0.08), width: 1.2),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.08), width: 1.2),
           ),
           child: child,
         ),
@@ -1316,9 +1281,9 @@ class _GlassChip extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.05),
+            color: Colors.white.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.1), width: 1),
           ),
           child: child,
         ),

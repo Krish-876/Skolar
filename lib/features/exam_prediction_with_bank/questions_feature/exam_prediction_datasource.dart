@@ -36,7 +36,7 @@ class ExamPredictionRemoteDataSourceImpl
     implements ExamPredictionRemoteDataSource {
   final Dio _dio;
 
-  static const String _baseUrl = 'https://skolar-production.up.railway.app';
+  static const String _baseUrl = 'http://192.168.0.122:8000';
 
   ExamPredictionRemoteDataSourceImpl({Dio? dio})
       : _dio = dio ??
