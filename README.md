@@ -20,13 +20,14 @@ An AI-powered exam preparation platform built with Flutter. Helps students track
 - [Code Generation](#code-generation)
 - [Running the Backend](#running-the-backend)
 - [Adding a New Feature](#adding-a-new-feature)
+- [Tech Debt](#tech-debt)
 - [Roadmap](#roadmap)
 
 ---
 
 ## Project Overview
 
-This is an AI-powered study platform designed for college exam preparation. It offers personalized mock tests calibrated to a student’s college difficulty level using Diverse In-Context Learning (DICL), along with PYQ analysis, performance analytics, goal tracking, and distraction-free focus sessions. Students can also access a community feed of AI-generated tests shared across subjects within their college ecosystem. Authentication through college email ensures secure, college-specific access to resources and data isolation.
+This is an AI-powered study platform designed for college exam preparation. It offers personalized mock tests calibrated to a student's college difficulty level using Diverse In-Context Learning (DICL), along with PYQ analysis, performance analytics, goal tracking, and distraction-free focus sessions. Students can also access a community feed of AI-generated tests shared across subjects within their college ecosystem. Authentication through college email ensures secure, college-specific access to resources and data isolation.
 
 ---
 
@@ -68,6 +69,50 @@ DataSource (Supabase / FastAPI / local storage)
 
 ---
 
+## Mock Test Platform
+
+The mock test feature lets students take AI-generated tests calibrated to their subject, college, and exam type. It follows full Clean Architecture across all layers.
+
+### Exam Types
+
+| Type | Mode | Default Questions | Max Questions | Description |
+|---|---|---|---|---|
+| Quiz | Written Practice | 5 | 10 | Short open-ended questions, model answers included |
+| Midsem | Written Practice | 6 | 10 | Medium difficulty, draws from midsem + quiz PYQs |
+| Compre Part A | MCQ Blitz | 8 | 15 | Timed MCQ quiz, draws from full syllabus PYQs |
+| Compre Part B | Written Practice | 4 | 10 | Long-answer practice, draws from full syllabus PYQs |
+
+### Flutter Files
+
+| File | Role |
+|---|---|
+| `domain/entities/mock_test_entity.dart` | `MockTestEntity`, `McqQuestion`, `OpenQuestion` — freezed domain models |
+| `domain/repositories/mock_test_repository.dart` | Abstract repository interface |
+| `domain/usecases/mock_test_usecases.dart` | `FetchMcqQuestionsUseCase`, `FetchOpenQuestionsUseCase`, `FetchQuestionsByIdsUseCase` |
+| `data/dtos/mock_test_dto.dart` | DTOs with `fromJson` / `toJson` |
+| `data/datasources/mock_test_datasource.dart` | Calls `/generate-batch`, `/generate-open-batch`, fetches by IDs from Supabase |
+| `data/repository_impl/mock_test_repository_impl.dart` | Wraps datasource in `Either<Failure, T>` |
+| `presentation/providers/mock_tests_provider.dart` | `MockTestNotifier` — state, API calls, exam mode routing, `loadExistingTest` |
+| `presentation/pages/mock_tests_pages.dart` | Full UI: setup screen, loading, error, MCQ flow, written practice flow, result screen |
+| `shared/models/exam_type.dart` | `ExamType` enum — single source of truth used across mock tests and feed |
+
+### `ExamMode` Mapping
+
+```dart
+ExamType.compreA  →  ExamMode.mcqBlitz      →  POST /generate-batch
+ExamType.quiz     →  ExamMode.writtenPractice  →  POST /generate-open-batch
+ExamType.midsem   →  ExamMode.writtenPractice  →  POST /generate-open-batch
+ExamType.compreB  →  ExamMode.writtenPractice  →  POST /generate-open-batch
+```
+
+### Load Existing Test
+
+`loadExistingTest(questionIds, examType)` fetches questions by their Supabase IDs and reconstructs the test state. Used by the community feed Attempt button. Currently only supports written practice exam types — see Tech Debt for Compre Part A limitation.
+
+---
+
+## AI Pipeline (DICL)
+
 ### Core Idea
 
 Instead of generating generic questions, Skolar uses the college's own Previous Year Questions (PYQs) as a reference. The generated questions match that specific college's difficulty level, question style, and topic distribution. No manual labeling or tagging is required — the system infers difficulty from context.
@@ -76,13 +121,13 @@ Instead of generating generic questions, Skolar uses the college's own Previous 
 
 The pipeline is based on the paper *"Exploring the Role of Diversity in Example Selection for In-Context Learning"* published at SIGIR 2025. The key finding is that selecting diverse examples for the LLM prompt produces better outputs than selecting the most similar examples.
 
-Naive example selection picks the most similar PYQs to the query. This causes topical bias, the LLM sees only one subtopic and generates repetitive questions. DICL uses MMR (Maximal Marginal Relevance) to pick examples that are both relevant and diverse, spreading coverage across different topics.
+Naive example selection picks the most similar PYQs to the query. This causes topical bias — the LLM sees only one subtopic and generates repetitive questions. DICL uses MMR (Maximal Marginal Relevance) to pick examples that are both relevant and diverse, spreading coverage across different topics.
 
 Token efficiency: instead of sending all PYQs to the LLM, MMR selects 5 diverse examples (~2,000 tokens). This is a 95% reduction in token usage with better output quality.
 
 ### Exam Type Filtering
 
-Before MMR runs, the question bank is filtered to only include PYQs relevant to the chosen exam type. This ensures the LLM sees examples calibrated to the correct difficulty and syllabus scope:
+Before MMR runs, the question bank is filtered to only include PYQs relevant to the chosen exam type:
 
 | Exam Type | PYQs used as examples |
 |---|---|
@@ -91,7 +136,7 @@ Before MMR runs, the question bank is filtered to only include PYQs relevant to 
 | Quiz 2      | quiz2 + midsem + quiz1             |
 | Compre      | compre + quiz2 + midsem + quiz1    |
 
-This reflects the real syllabus structure — compre includes midsem portion, midsem includes quiz portion. If no questions match the filter (e.g. no quiz PYQs uploaded yet), the pipeline falls back to the full bank so generation never hard-fails.
+If no questions match the filter, the pipeline falls back to the full bank so generation never hard-fails.
 
 ### Generation Modes
 
@@ -122,6 +167,8 @@ Groq LLM (LLaMA 3.3 70B) — generate MCQ or open question
       ↓  (written practice only)
 Groq LLM (LLaMA 3.3 70B) — generate structured model answer
       ↓
+Auto-save to published_tests (written practice only — see Tech Debt)
+      ↓
 Questions returned to Flutter app
 ```
 
@@ -137,7 +184,7 @@ Alpha = 0.7 means 70% relevance, 30% diversity. Greedy algorithm that builds sel
 
 ### Supabase Schema
 
-Every row in the `questions` table uses a unified schema whether it came from a PYQ PDF or was AI-generated:
+#### `questions` table
 
 ```
 id              uuid, primary key
@@ -149,6 +196,22 @@ paper_year      integer
 exam_type       text  — quiz | midsem | compre | generated
 college         text  — used to scope all queries
 embedding       vector(384)  — all-MiniLM-L6-v2 embedding of question_text
+options         jsonb  — MCQ options array (null for open questions)
+correct_index   smallint  — correct option index 0–3 (null for open questions)
+```
+
+#### `published_tests` table
+
+```
+id              uuid, primary key
+subject         text
+college         text
+exam_type       text
+question_ids    uuid[]  — references questions.id
+created_at      timestamptz
+student_name    text
+attempt_count   integer
+upvotes         integer
 ```
 
 PYQ entries are uploaded via `/upload-pyq`. The `college` field on every row ensures complete data isolation between colleges.
@@ -161,11 +224,9 @@ Model answers are structured markdown, calibrated to marks:
 - **4–6 marks**: direct answer + `### Steps` (computational) or `### Key points` (conceptual)
 - **7+ marks**: full worked answer with `### Working`, `### Result`, or `### Approach / Explanation / Conclusion`
 
-The LLM is instructed to use the specific data from the question (numbers, tables, probabilities) rather than generic theory.
-
 ### FastAPI Endpoints
 
-The backend runs at `http://<LAN_IP>:8000`. Start it with:
+The backend is deployed on Railway. Start locally with:
 
 ```bash
 uvicorn main:app --reload --port 8000
@@ -178,7 +239,7 @@ uvicorn main:app --reload --port 8000
 | `GET` | `/questions` | Browse/filter the question bank |
 | `POST` | `/generate` | One open-ended question |
 | `POST` | `/generate-batch` | N MCQs in parallel (Compre Part A) |
-| `POST` | `/generate-open-batch` | N open questions + model answers (Quiz / Midsem / Compre Part B) |
+| `POST` | `/generate-open-batch` | N open questions + model answers, auto-saves to `published_tests` |
 | `POST` | `/upload-pyq` | PDF → extract questions → insert into Supabase |
 
 #### `POST /generate-batch` — Request body
@@ -211,7 +272,6 @@ uvicorn main:app --reload --port 8000
 ### Pipeline Evaluation
 
 `evaluate.py` measures generation quality across two dimensions: accuracy and diversity.
-Run it after any pipeline change or after uploading new PYQs.
 
 ```bash
 cd lib/core/ai/rag_llms
@@ -229,12 +289,6 @@ python evaluate.py
 | MCQ Diversity | Pairwise cosine similarity across 10 generated questions | avg < 0.5, max < 0.8 |
 | Open Quality | Non-empty questions, substantive answers (>50 chars), not MCQ format | 5/5 |
 | Open Diversity | Pairwise cosine similarity across 5 open-ended questions | avg < 0.5, max < 0.8 |
-
-**Interpreting diversity scores:**
-
-- `avg < 0.5` — questions cover meaningfully different topics
-- `max < 0.8` — no two questions are near-duplicates
-- Scores above threshold indicate the question bank is too small or topic-skewed — upload more PYQs covering different topics
 
 **Current baseline (BPHC / Artificial Intelligence, 33 questions):**
 
@@ -257,47 +311,6 @@ lib/core/ai/rag_llms/
   pipeline.py          — DICL pipeline: parsing, embedding, MMR, generation, bank I/O
   .env                 — GROQ_API_KEY, SUPABASE_URL, SUPABASE_KEY (not committed)
   evaluate.py          — Pipeline evaluation: accuracy, diversity scoring
-```
-
----
-
-## Mock Test Platform
-
-The mock test feature lets students take AI-generated tests calibrated to their subject, college, and exam type.
-
-### Exam Types
-
-| Type | Mode | Default Questions | Max Questions | Description |
-|---|---|---|---|---|
-| Quiz | Written Practice | 5 | 10 | Short open-ended questions, model answers included |
-| Midsem | Written Practice | 6 | 10 | Medium difficulty, draws from midsem + quiz PYQs |
-| Compre Part A | MCQ Blitz | 8 | 15 | Timed MCQ quiz, draws from full syllabus PYQs |
-| Compre Part B | Written Practice | 4 | 10 | Long-answer practice, draws from full syllabus PYQs |
-
-### Flutter Files
-
-| File | Role |
-|---|---|
-| `mock_tests_pages.dart` | Full UI: setup screen, loading, error, MCQ flow, written practice flow, result screen |
-| `mock_tests_provider.dart` | `MockTestNotifier` — state management, API calls, exam mode routing |
-
-### `MockTestRequest` Fields
-
-| Field | Type | Description |
-|---|---|---|
-| `subject` | `String` | Subject to generate questions for |
-| `college` | `String` | College identifier, scopes Supabase query |
-| `mode` | `ExamMode` | `mcqBlitz` or `writtenPractice` |
-| `examType` | `String` | `'quiz'`, `'midsem'`, or `'compre'` — controls PYQ filter |
-| `count` | `int` | Number of questions to generate |
-
-### `ExamMode` Mapping
-
-```dart
-_ExamType.compreA  →  ExamMode.mcqBlitz      →  POST /generate-batch
-_ExamType.quiz     →  ExamMode.writtenPractice  →  POST /generate-open-batch
-_ExamType.midsem   →  ExamMode.writtenPractice  →  POST /generate-open-batch
-_ExamType.compreB  →  ExamMode.writtenPractice  →  POST /generate-open-batch
 ```
 
 ---
@@ -341,7 +354,7 @@ The focus session feature gives students a distraction-free countdown timer for 
 
 The focus session is presentation-layer only. There is no domain layer or backend call. State is managed by `FocusTimerController`, a `ChangeNotifier` consumed directly by `FocusTimerPage` via `addListener`.
 
-This is intentional - the timer resets if the user leaves the app (AppLifecycleState observer), enforcing distraction free focus. If session history or streak tracking is added in Phase 5, a `StorageService.saveSession()` call should be added inside `_onTick` when `_secondsLeft` reaches zero.
+This is intentional — the timer resets if the user leaves the app (AppLifecycleState observer), enforcing distraction-free focus. If session history or streak tracking is added in Phase 5, a `StorageService.saveSession()` call should be added inside `_onTick` when `_secondsLeft` reaches zero.
 
 ### Flutter Files
 
@@ -369,42 +382,48 @@ This is intentional - the timer resets if the user leaves the app (AppLifecycleS
 
 ## Community Feed
 
-The community feed is the social layer of Skolar. It surfaces AI-generated tests created by students on college subjects.
+The community feed surfaces AI-generated tests created by students on college subjects. It is backed by a live Supabase query against the `published_tests` table.
 
 ### How a Test Gets Published
 
 ```
-Student generates a test on "Artificial Intelligence"
+Student generates a written practice test (Quiz / Midsem / Compre B)
         ↓
-isCollegeSubject("Artificial Intelligence") == true
+Backend auto-saves questions to Supabase and inserts row into published_tests
         ↓
-After quiz completion, Flutter calls POST /publish with bank_indices
+published_tests row contains: subject, college, exam_type, question_ids[], student_name
         ↓
-Backend sets published=true on those questions in Supabase
-        ↓
-Questions appear in GET /questions?published_only=true
+GET /questions?published_only=true returns the questions
         ↓
 Community feed shows the test with student name, subject, question count
+        ↓
+Attempt button calls loadExistingTest(questionIds, examType) on MockTestNotifier
 ```
+
+Note: Compre Part A (MCQ Blitz) tests are not currently published or displayed in the feed — see Tech Debt.
 
 ### Feed Architecture
 
-The feed follows the same Clean Architecture pattern as every other feature. The datasource swap from local mock data to the real API touches exactly one file:
+The feed follows the same Clean Architecture pattern as every other feature. The datasource was swapped from local mock data to the live API in one file:
 
 ```
 FeedLocalDataSourceImpl  →  FeedRemoteDataSourceImpl
-        (mock JSON)               (GET /questions?published_only=true)
+        (mock JSON)               (Supabase: published_tests table)
 ```
 
-Everything above — `FeedRepositoryImpl`, `GetFeedUseCase`, `FeedNotifier`, `FeedPage`, `FeedPostCard` — stays identical.
+Everything above — `FeedRepositoryImpl`, `GetFeedUseCase`, `FeedNotifier`, `FeedPage`, `FeedPostCard` — stayed identical.
 
-### Feed Open Ends (pre-API checklist)
+### Flutter Files
 
-**1. Attempt button** — `_CardFooter` renders the Attempt button as a static `Container` with no gesture handler. Wire it to `MockTestNotifier.fetchQuestions()` with the post's subject.
-
-**2. Vote state persistence** — `upvotedPostsProvider` and `downvotedPostsProvider` are in-memory only. When Firebase/Supabase auth lands, add a write alongside the local state update.
-
-**3. College name** — `'BITS Pilani · Hyderabad'` is hardcoded in `_TopBar`. Replace with `ref.watch(userProvider).college` when auth lands.
+| File | Role |
+|---|---|
+| `data/datasources/feed_remote_datasource.dart` | Queries `published_tests` from Supabase |
+| `data/dtos/feed_post_dto.dart` | `fromSupabase` factory, `questionIds`, `examType` fields |
+| `data/repository_impl/feed_repository_impl.dart` | Wraps remote datasource in `Either<Failure, T>` |
+| `domain/entities/feed_post_entity.dart` | `examType`, `questionIds` fields; `bankIndices` removed |
+| `presentation/providers/feed_provider.dart` | College read from `userProvider`, not hardcoded |
+| `presentation/pages/feed_page.dart` | College from `userProvider` (hardcoded fallback removed) |
+| `presentation/widgets/feed_post_card.dart` | Attempt button wired to `loadExistingTest` |
 
 ---
 
@@ -425,6 +444,7 @@ lib/
 │   ├── network/
 │   ├── routing/
 │   ├── services/
+│   │   └── activity_log_service.dart   # stub — pending implementation
 │   ├── storage/
 │   ├── theme/
 │   └── widgets/
@@ -433,6 +453,7 @@ lib/
 │   ├── components/
 │   ├── extensions/
 │   ├── models/
+│   │   └── exam_type.dart           # ExamType enum — single source of truth
 │   └── providers/
 │
 ├── features/
@@ -459,6 +480,10 @@ lib/
 │   │       └── providers/
 │   │
 │   ├── feed/
+│   │   ├── data/
+│   │   │   ├── datasources/         # feed_remote_datasource.dart
+│   │   │   ├── dtos/
+│   │   │   └── repository_impl/
 │   │   └── presentation/
 │   │       ├── pages/
 │   │       └── widgets/
@@ -472,6 +497,14 @@ lib/
 │   │   └── widgets/
 │   │
 │   ├── mock_tests/
+│   │   ├── data/
+│   │   │   ├── datasources/         # mock_test_datasource.dart
+│   │   │   ├── dtos/                # mock_test_dto.dart
+│   │   │   └── repository_impl/     # mock_test_repository_impl.dart
+│   │   ├── domain/
+│   │   │   ├── entities/            # mock_test_entity.dart + .freezed.dart
+│   │   │   ├── repositories/        # mock_test_repository.dart
+│   │   │   └── usecases/            # mock_test_usecases.dart
 │   │   └── presentation/
 │   │       ├── pages/               # mock_tests_pages.dart
 │   │       └── providers/           # mock_tests_provider.dart
@@ -514,6 +547,7 @@ lib/
 | Model answer generation | Groq API — LLaMA 3.3 70B |
 | Parallel generation | `concurrent.futures.ThreadPoolExecutor` (3 workers) |
 | Backend API | FastAPI + uvicorn |
+| Deployment | Railway |
 | Data store | Supabase (PostgreSQL + pgvector) |
 
 ---
@@ -538,13 +572,15 @@ lib/
   - LLM MCQ generation with 4 options + correct answer
   - LLM open question generation with structured model answers
   - Thread-safe parallel generation (3 concurrent Groq calls)
-- FastAPI backend with 7 endpoints, fully Supabase-backed
-- Mock test platform
+  - Auto-save generated written practice tests to `published_tests`
+- FastAPI backend with 7 endpoints, fully Supabase-backed, deployed on Railway
+- Mock test platform — full Clean Architecture
+  - `ExamType` enum as single source of truth (`shared/models/exam_type.dart`)
   - 4 exam types: Quiz, Midsem, Compre Part A, Compre Part B
   - MCQ Blitz mode (Compre Part A): timed quiz, score tracking, confetti
   - Written Practice mode (Quiz / Midsem / Compre Part B): flashcard + paper views
   - Model answers with structured markdown rendering
-  - Setup screen with exam type grid, subject picker, question count slider
+  - `loadExistingTest` — reconstruct written practice test from Supabase question IDs
 - Exam prediction / question bank browser
   - Filter by subject, year, exam type, question type
 - Focus session timer
@@ -554,9 +590,11 @@ lib/
   - Animated wave background
   - Give Up confirmation sheet
   - Auto-reset if user leaves app mid-session
-- Community feed
+- Community feed — live from Supabase
+  - Backed by `published_tests` table via `FeedRemoteDataSourceImpl`
   - Feed cards with student name, subject, difficulty badge, upvotes, attempt count
-  - Attempt button (UI complete, gesture handler pending auth)
+  - Attempt button wired to `loadExistingTest` on `MockTestNotifier`
+  - College read from `userProvider`
 
 ### Planned
 
@@ -566,7 +604,7 @@ lib/
 - PYQ upload through the app UI
 - Personal learning goal mode (daily AI question plan with lives/streaks)
 - Focus session history and streak tracking
-- Community feed backend connection (replace mock data with Supabase)
+- Compre Part A (MCQ Blitz) published to feed and loadable from feed
 
 ---
 
@@ -690,7 +728,7 @@ uvicorn main:app --reload --port 8000
 
 The server starts at `http://0.0.0.0:8000`. Interactive API docs at `http://localhost:8000/docs`.
 
-**Testing from Flutter on a physical device:** replace `localhost` with your machine's LAN IP (e.g. `192.168.29.196`). The base URL is defined in `mock_tests_provider.dart` as `_kBaseUrl`.
+The backend is deployed on Railway. The base URL is defined in `mock_tests_provider.dart` as `_kBaseUrl`. When running locally on a physical device, replace with your machine's LAN IP (e.g. `192.168.29.196`).
 
 ---
 
@@ -712,33 +750,50 @@ Order to stay consistent with the architecture:
 
 Use the `analytics` feature as the reference implementation. Features with no persistence or backend requirement (like focus session) can skip steps 2–7 and use a `ChangeNotifier` directly in the presentation layer.
 
+---
+
 ## Tech Debt
+
+### Compre Part A (MCQ Blitz) — not published or loadable from feed
+
+- `/generate-batch` does not save to `published_tests` (only `/generate-open-batch` does)
+- `options` and `correct_index` columns exist on the `questions` table but the backend does not populate them on save yet
+- `loadExistingTest` in the provider has no MCQ Blitz path — it would need to reconstruct `McqQuestion` objects from `options` / `correct_index`
+- The feed page's Attempt button always routes to written practice mode regardless of `examType`
+
+**When to fix:** When the backend is updated to save MCQ options on generation, wire the full path: save `options` + `correct_index` to `questions` → insert into `published_tests` → fetch with options on load → route to MCQ Blitz mode in feed.
+
+---
 
 ### `academic_year` filtering (exam prediction + pipeline)
 
-`academic_year` exists on the `questions` table and in `UserModel` but is not
-yet used as a filter anywhere in the Flutter app or the FastAPI pipeline.
+`academic_year` exists on the `questions` table and in `UserModel` but is not yet used as a filter anywhere in the Flutter app or the FastAPI pipeline.
 
 **What's missing:**
 
-- `pipeline.py` — `load_bank_and_embeddings` selects and returns `paper_year`
-  but not `academic_year`. Add it to the Supabase select and the returned dict.
-- `GET /questions` — no `academic_year` query param. Add it to `main.py` and
-  the filter chain in `get_questions`.
-- Datasource → repository → usecase → provider chain — `academicYear` param
-  missing from all four layers in the exam prediction feature.
-- UI — no academic year filter chip on the question bank browser. Simplest fix
-  is to read it silently from `userProvider.academicYear` in
-  `QuestionsNotifier.build()` so students see only their year by default.
+- `pipeline.py` — `load_bank_and_embeddings` selects and returns `paper_year` but not `academic_year`. Add it to the Supabase select and the returned dict.
+- `GET /questions` — no `academic_year` query param. Add it to `main.py` and the filter chain in `get_questions`.
+- Datasource → repository → usecase → provider chain — `academicYear` param missing from all four layers in the exam prediction feature.
+- UI — no academic year filter chip on the question bank browser. Simplest fix is to read it silently from `userProvider.academicYear` in `QuestionsNotifier.build()` so students see only their year by default.
 
-**Why it's safe to defer:** Clean Architecture means each layer is independent.
-Adding the param is mechanical — no existing behaviour changes.
+**Why it's safe to defer:** Clean Architecture means each layer is independent. Adding the param is mechanical — no existing behaviour changes.
 
-**When to fix:** Before Phase 5 personalisation, since the daily question plan
-needs to scope questions to the student's academic year.
+**When to fix:** Before Phase 5 personalisation, since the daily question plan needs to scope questions to the student's academic year.
 
-and also Full DICL: top-15 cosine retrieval → MMR over those 15 → pick 5 (tech debt fix)
+---
 
+### Full DICL: top-15 cosine retrieval → MMR over those 15 → pick 5
+
+Currently MMR runs over the entire question bank. The correct DICL implementation first retrieves the top-15 most relevant questions via cosine similarity, then runs MMR over just those 15 to pick 5. This gives better relevance at the same diversity level.
+
+---
+
+### Focus session — minor issues
+
+- **Duplicate controller file** — `widgets/focus_timer_controller.dart` duplicates `controllers/focus_timer_controller.dart`. Delete the widgets copy and update imports.
+- **`resume()` is a no-op** — only calls `notifyListeners()`. Either remove or re-start the ticker if pause is introduced later.
+- **`paused` state is unused** — `FocusTimerStatus.paused` is defined but never set.
+- **No session persistence** — add `StorageService.saveSession(duration, completedAt)` inside `_onTick` when Phase 5 streak tracking lands.
 
 ---
 
@@ -761,22 +816,28 @@ Phase 2 — AI Pipeline (complete)
     Thread-safe parallel generation
     FastAPI backend with 7 endpoints
     Supabase integration (replaces question_bank.json + embeddings.npy)
+    Railway deployment
 
 Phase 3 — Core Features (complete)
-    Mock test platform
+    Mock test platform — full Clean Architecture
+        ExamType enum as single source of truth
         4 exam types: Quiz, Midsem, Compre Part A, Compre Part B
         MCQ Blitz mode with timed quiz UI
         Written Practice mode with flashcard + paper views
         Model answers with structured markdown rendering
+        loadExistingTest — reconstruct test from Supabase question IDs
     Exam prediction / question bank browser
-    Community feed (feed_page, feed_post_card, upvotes, attempt counts)
+    Community feed — live from Supabase (published_tests table)
+        Attempt button wired to loadExistingTest
+        College name read from userProvider
     Focus session timer (countdown, wave background, slide-to-start, custom duration picker)
+    Auto-save written practice tests to published_tests on generation
 
 Phase 4 — Auth and Backend
     College email authentication (Firebase Auth / Supabase Auth)
     PYQ upload through the app UI
-    Community feed backend connection (replace mock data with Supabase live query)
-    College name read from userProvider (remove hardcoded fallback)
+    Vote state persistence → Supabase write on auth
+    Compre Part A → published_tests pipeline + feed load support
 
 Phase 5 — Personalisation
     Personal learning goal mode
@@ -784,8 +845,10 @@ Phase 5 — Personalisation
     Lives and streak system
     Dashboard integration with mock test scores
     Focus session history and streak tracking
+    academic_year filter across pipeline + exam prediction
 
 Phase 6 — ML Extension
+    Full DICL: top-15 cosine retrieval → MMR over those 15 → pick 5
     Fine-tune FLAN-T5 on generated question-answer pairs
     Experiment comparing MMR vs random vs top-k selection
     Distractor quality analysis for MCQ options
