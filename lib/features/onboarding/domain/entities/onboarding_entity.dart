@@ -1,27 +1,32 @@
-/// Onboarding data collected before auth.
-/// Plain Dart — no @freezed until Firebase lands (Phase 5).
 class OnboardingEntity {
   final String? nickname;
   final String? branch;
   final String? studyGoal;
+  final String plan;
+  final List<String> selectedSubjectIds;
 
-  const OnboardingEntity({this.nickname, this.branch, this.studyGoal});
+  const OnboardingEntity({
+    this.nickname,
+    this.branch,
+    this.studyGoal,
+    this.plan = 'free',
+    this.selectedSubjectIds = const [],
+  });
 
   OnboardingEntity copyWith({
     String? nickname,
     String? branch,
     String? studyGoal,
-  }) =>
-      OnboardingEntity(
-        nickname:  nickname  ?? this.nickname,
-        branch:    branch    ?? this.branch,
-        studyGoal: studyGoal ?? this.studyGoal,
-      );
+    String? plan,
+    List<String>? selectedSubjectIds,
+  }) => OnboardingEntity(
+    nickname:           nickname           ?? this.nickname,
+    branch:             branch             ?? this.branch,
+    studyGoal:          studyGoal          ?? this.studyGoal,
+    plan:               plan               ?? this.plan,
+    selectedSubjectIds: selectedSubjectIds ?? this.selectedSubjectIds,
+  );
 
-  /// Gates the final CTA — all three fields must be filled.
   bool get isComplete =>
-      nickname != null &&
-      nickname!.trim().isNotEmpty &&
-      branch != null &&
-      studyGoal != null;
+      nickname != null && nickname!.trim().isNotEmpty && branch != null;
 }

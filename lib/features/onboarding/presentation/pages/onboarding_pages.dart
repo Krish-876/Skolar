@@ -6,6 +6,7 @@ import 'package:Skolar/core/theme/app_theme.dart';
 import 'package:Skolar/core/widgets/glass_background.dart';
 import 'package:Skolar/features/onboarding/presentation/providers/onboarding_provider.dart';
 import 'package:Skolar/features/onboarding/presentation/widgets/onboarding_widgets.dart';
+import 'package:go_router/go_router.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants
@@ -82,7 +83,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage>
 
   // ── Navigation ─────────────────────────────────────────────────────────────
 
-  void _advance() {
+  Future<void> _advance() async {
     // Dismiss keyboard before any navigation so it doesn't overlap the next step.
     FocusManager.instance.primaryFocus?.unfocus();
     HapticFeedback.lightImpact();
@@ -113,8 +114,8 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage>
       return;
     }
 
-    ref.read(onboardingProvider.notifier).complete();
-    Navigator.pushReplacementNamed(context, AppRoutes.auth);
+    await ref.read(onboardingProvider.notifier).complete();
+    if (mounted) context.go(AppRoutes.dashboard);
   }
 
   void _back() {
