@@ -9,13 +9,14 @@ An AI-powered exam preparation platform built with Flutter. Helps students track
 - [Project Overview](#project-overview)
 - [Architecture](#architecture)
 - [Mock Test Platform](#mock-test-platform)
+- [AI Pipeline (DICL)](#ai-pipeline-dicl)
 - [Exam Prediction Feature](#exam-prediction-feature)
 - [Focus Session](#focus-session)
 - [Community Feed](#community-feed)
 - [Folder Structure](#folder-structure)
 - [Tech Stack](#tech-stack)
 - [Features](#features)
-- [Dashboard -- How It Works](#dashboard--how-it-works)
+- [Dashboard -- How It Works](#dashboard----how-it-works)
 - [Running the App](#running-the-app)
 - [Code Generation](#code-generation)
 - [Running the Backend](#running-the-backend)
@@ -27,7 +28,7 @@ An AI-powered exam preparation platform built with Flutter. Helps students track
 
 ## Project Overview
 
-This is an AI-powered study platform designed for college exam preparation. It offers personalized mock tests calibrated to a student's college difficulty level using Diverse In-Context Learning (DICL), along with PYQ analysis, performance analytics, goal tracking, and distraction-free focus sessions. Students can also access a community feed of AI-generated tests shared across subjects within their college ecosystem. Authentication through college email ensures secure, college-specific access to resources and data isolation.
+An AI-powered study platform designed for college exam preparation. It offers personalized mock tests calibrated to a student's college difficulty level using Diverse In-Context Learning (DICL), along with PYQ analysis, performance analytics, goal tracking, and distraction-free focus sessions. Students can also access a community feed of AI-generated tests shared across subjects within their college ecosystem. Authentication through college email ensures secure, college-specific access to resources and data isolation.
 
 ---
 
@@ -99,7 +100,7 @@ The mock test feature lets students take AI-generated tests calibrated to their 
 ### `ExamMode` Mapping
 
 ```dart
-ExamType.compreA  →  ExamMode.mcqBlitz      →  POST /generate-batch
+ExamType.compreA  →  ExamMode.mcqBlitz        →  POST /generate-batch
 ExamType.quiz     →  ExamMode.writtenPractice  →  POST /generate-open-batch
 ExamType.midsem   →  ExamMode.writtenPractice  →  POST /generate-open-batch
 ExamType.compreB  →  ExamMode.writtenPractice  →  POST /generate-open-batch
@@ -131,10 +132,10 @@ Before MMR runs, the question bank is filtered to only include PYQs relevant to 
 
 | Exam Type | PYQs used as examples |
 |---|---|
-| Quiz        | quiz only                          |
-| Midsem      | midsem + quiz1                     |
-| Quiz 2      | quiz2 + midsem + quiz1             |
-| Compre      | compre + quiz2 + midsem + quiz1    |
+| Quiz | quiz only |
+| Midsem | midsem + quiz1 |
+| Quiz 2 | quiz2 + midsem + quiz1 |
+| Compre | compre + quiz2 + midsem + quiz1 |
 
 If no questions match the filter, the pipeline falls back to the full bank so generation never hard-fails.
 
@@ -184,34 +185,102 @@ Alpha = 0.7 means 70% relevance, 30% diversity. Greedy algorithm that builds sel
 
 ### Supabase Schema
 
+#### `institutions` table
+
+```
+id                uuid, primary key
+name              text
+short_name        text
+email_patterns    jsonb
+website           text, nullable
+created_at        timestamptz
+```
+
+#### `campuses` table
+
+```
+id                uuid, primary key
+institution_id    uuid, references institutions.id
+name              text
+short_name        text
+subdomain         text, nullable
+location          text, nullable
+created_at        timestamptz
+```
+
+#### `users` table
+
+```
+id                uuid, primary key
+email             text
+full_name         text, nullable
+roll_number       text, nullable
+college           text, nullable
+institution_id    uuid, nullable
+campus_id         uuid, nullable
+academic_year     smallint, nullable
+avatar_url        text, nullable
+branch            text, nullable
+plan              text
+created_at        timestamptz
+updated_at        timestamptz
+```
+
+RLS policies: insert, update, select scoped to `auth.uid()`.
+
+#### `subjects` table
+
+```
+id                uuid, primary key
+institution_id    uuid, references institutions.id
+name              text
+short_name        text, nullable
+academic_year     smallint
+created_at        timestamptz
+```
+
+#### `user_subjects` table
+
+```
+user_id           uuid, references users.id
+subject_id        uuid, references subjects.id
+semester          text
+primary key       (user_id, subject_id)
+```
+
 #### `questions` table
 
 ```
-id              uuid, primary key
-question_text   text
-marks           integer
-question_type   text  — mcq | short_answer | long_answer | numerical
-subject         text
-paper_year      integer
-exam_type       text  — quiz | midsem | compre | generated
-college         text  — used to scope all queries
-embedding       vector(384)  — all-MiniLM-L6-v2 embedding of question_text
-options         jsonb  — MCQ options array (null for open questions)
-correct_index   smallint  — correct option index 0–3 (null for open questions)
+id                uuid, primary key
+question_text     text
+marks             integer
+question_type     text  — mcq | short_answer | long_answer | numerical
+subject           text
+college           text  — used to scope all queries
+paper_year        integer, nullable
+academic_year     smallint, nullable
+exam_type         text  — quiz | midsem | compre | generated
+embedding         vector(384), nullable  — all-MiniLM-L6-v2
+published         boolean
+published_by      uuid, nullable
+published_at      timestamptz, nullable
+created_at        timestamptz
+options           jsonb, nullable  — MCQ options array
+correct_index     smallint, nullable  — correct option index 0–3
 ```
 
 #### `published_tests` table
 
 ```
-id              uuid, primary key
-subject         text
-college         text
-exam_type       text
-question_ids    uuid[]  — references questions.id
-created_at      timestamptz
-student_name    text
-attempt_count   integer
-upvotes         integer
+id                uuid, primary key
+published_by      uuid, nullable  — references users.id
+college           text
+subject           text
+exam_type         text
+question_ids      uuid[]  — references questions.id
+upvotes           integer
+attempts          integer
+created_at        timestamptz
 ```
 
 PYQ entries are uploaded via `/upload-pyq`. The `college` field on every row ensures complete data isolation between colleges.
@@ -292,6 +361,8 @@ python evaluate.py
 
 **Current baseline (BPHC / Artificial Intelligence, 33 questions):**
 
+> Note: eval scores at this bank size are not meaningful — 33 questions is too small for MMR to diversify effectively. Re-run when the bank reaches 100+ questions per subject.
+
 | Metric | Score | Status |
 |---|---|---|
 | MCQ avg similarity | 0.435 | ✅ Pass |
@@ -368,16 +439,6 @@ This is intentional — the timer resets if the user leaves the app (AppLifecycl
 | `widgets/present_chip.dart` | Animated chip widget used for preset selection on both pages |
 | `data/models/focus_present.dart` | `FocusPreset` value type with three default presets |
 
-### Known Issues and Next Steps
-
-**Duplicate controller file** — `widgets/focus_timer_controller.dart` duplicates `controllers/focus_timer_controller.dart`. Delete the widgets copy and update imports.
-
-**`resume()` is a no-op** — `FocusTimerController.resume()` only calls `notifyListeners()`. Either remove it or have it re-start the ticker if a pause state is introduced later.
-
-**`paused` state is unused** — `FocusTimerStatus.paused` is defined but never set.
-
-**No session persistence** — completed sessions are not written anywhere. When streak and history tracking land in Phase 5, add a `StorageService.saveSession(duration, completedAt)` call inside `_onTick` when `_secondsLeft` reaches zero.
-
 ---
 
 ## Community Feed
@@ -391,11 +452,9 @@ Student generates a written practice test (Quiz / Midsem / Compre B)
         ↓
 Backend auto-saves questions to Supabase and inserts row into published_tests
         ↓
-published_tests row contains: subject, college, exam_type, question_ids[], student_name
+published_tests row contains: subject, college, exam_type, question_ids[], published_by
         ↓
-GET /questions?published_only=true returns the questions
-        ↓
-Community feed shows the test with student name, subject, question count
+Community feed shows the test with subject, question count, upvotes, attempts
         ↓
 Attempt button calls loadExistingTest(questionIds, examType) on MockTestNotifier
 ```
@@ -437,16 +496,19 @@ lib/
 │   │   └── rag_llms/                # Python backend
 │   │       ├── main.py              # FastAPI app (all endpoints)
 │   │       ├── pipeline.py          # DICL pipeline
+│   │       ├── evaluate.py          # Pipeline evaluation
 │   │       └── .env                 # GROQ_API_KEY, SUPABASE_URL, SUPABASE_KEY
 │   ├── config/
 │   ├── di/
 │   ├── errors/
 │   ├── network/
-│   ├── routing/
+│   ├── routing/                     # GoRouter — auth guard, named routes
 │   ├── services/
 │   │   └── activity_log_service.dart   # stub — pending implementation
 │   ├── storage/
 │   ├── theme/
+│   ├── utils/
+│   │   └── email_parser.dart        # Parses BITS email → roll_number, academic_year, subdomain
 │   └── widgets/
 │
 ├── shared/
@@ -457,12 +519,33 @@ lib/
 │   └── providers/
 │
 ├── features/
+│   ├── auth/
+│   │   ├── presentation/
+│   │   │   └── pages/               # auth_page.dart — magic link flow
+│   │   └── providers/               # authSessionProvider, _justLoggedIn flag
+│   │
+│   ├── onboarding/
+│   │   ├── data/
+│   │   │   └── datasources/         # onboarding_remote_datasource.dart
+│   │   ├── presentation/
+│   │   │   └── pages/               # onboarding_page.dart
+│   │   └── providers/               # onboarding_provider.dart
+│   │
+│   ├── subjects/
+│   │   ├── data/
+│   │   │   ├── datasources/         # subjects_datasource.dart
+│   │   │   ├── dtos/                # subject_dto.dart
+│   │   │   └── repository_impl/     # subjects_repository_impl.dart
+│   │   ├── domain/
+│   │   │   ├── entities/            # subject_entity.dart
+│   │   │   ├── repositories/        # subjects_repository.dart
+│   │   │   └── usecases/            # get_subjects_usecase.dart
+│   │   └── presentation/
+│   │       └── providers/           # subjects_provider.dart
+│   │
 │   ├── analytics/
 │   ├── dashboard/
-│   ├── auth/
-│   ├── onboarding/
 │   ├── colleges/
-│   ├── subjects/
 │   ├── syllabus/
 │   ├── pyq_upload/
 │   │
@@ -556,15 +639,27 @@ lib/
 
 ### Built
 
-- Scrollable analytics dashboard
-  - Donut ring chart (task progress breakdown)
-  - Weekly line chart (performance over 7 days)
-  - Task list with assignee avatars and due dates
-  - Recent activity feed
-- Dark theme with custom color palette
-- Clean Architecture scaffold for all features
-- Dev menu for navigating between pages during development
-- Full AI pipeline (DICL + MMR + Supabase)
+- **Authentication** — magic link via BITS college email (Supabase Auth)
+  - `_isNewUser()` check routes new users to onboarding, returning users to app
+  - `authSessionProvider` listener with `_justLoggedIn` flag prevents spurious redirects on app resume
+- **Onboarding** — full flow wired to Supabase
+  - `EmailParser` utility parses BITS email → extracts `roll_number`, `academic_year`, `subdomain`
+  - Campus resolved from `campuses` table via subdomain (`hyderabad` → BPHC)
+  - Writes to `users` table: `full_name`, `branch`, `college`, `campus_id`, `institution_id`, `academic_year`, `roll_number`, `plan`
+  - Writes selected subjects to `user_subjects` table
+  - Subject selection step UI exists — not yet wired to real subjects from DB
+- **Real user data via `userProvider`**
+  - `StateNotifierProvider` fetches from Supabase on load
+  - `UserModel` extended with `email`, `campusId`, `institutionId`, `placeholder()` factory
+- **Subjects feature** — full Clean Architecture (8 files)
+  - Fetches subjects filtered by `institution_id` and `academic_year`
+  - No UI screen yet
+- **Routing** — GoRouter with auth guard
+  - Auth guard redirect, dev menu at `/`, `context.push()` for stack-based navigation
+- **Scrollable analytics dashboard**
+  - Donut ring chart, weekly line chart, task list, recent activity feed
+- **Dark theme** with custom color palette
+- **Full AI pipeline** (DICL + MMR + Supabase)
   - PDF parsing and question extraction
   - Semantic embedding stored in Supabase pgvector
   - MMR-based diverse example selection
@@ -573,35 +668,42 @@ lib/
   - LLM open question generation with structured model answers
   - Thread-safe parallel generation (3 concurrent Groq calls)
   - Auto-save generated written practice tests to `published_tests`
-- FastAPI backend with 7 endpoints, fully Supabase-backed, deployed on Railway
-- Mock test platform — full Clean Architecture
-  - `ExamType` enum as single source of truth (`shared/models/exam_type.dart`)
+- **FastAPI backend** — 7 endpoints, fully Supabase-backed, deployed on Railway
+- **Mock test platform** — full Clean Architecture
+  - `ExamType` enum as single source of truth
   - 4 exam types: Quiz, Midsem, Compre Part A, Compre Part B
   - MCQ Blitz mode (Compre Part A): timed quiz, score tracking, confetti
   - Written Practice mode (Quiz / Midsem / Compre Part B): flashcard + paper views
   - Model answers with structured markdown rendering
   - `loadExistingTest` — reconstruct written practice test from Supabase question IDs
-- Exam prediction / question bank browser
+- **Exam prediction** / question bank browser
   - Filter by subject, year, exam type, question type
-- Focus session timer
+- **Focus session timer**
   - Preset chips: Pomodoro (25 min), 45 min, 1 hr
   - Custom duration picker (5 min to 3 hr)
   - Slide-to-start track with spring physics
   - Animated wave background
   - Give Up confirmation sheet
   - Auto-reset if user leaves app mid-session
-- Community feed — live from Supabase
+- **Community feed** — live from Supabase
   - Backed by `published_tests` table via `FeedRemoteDataSourceImpl`
-  - Feed cards with student name, subject, difficulty badge, upvotes, attempt count
+  - Feed cards with subject, difficulty badge, upvotes, attempt count
   - Attempt button wired to `loadExistingTest` on `MockTestNotifier`
   - College read from `userProvider`
 
+### Still Mock
+
+- Streak and coins on profile
+- PYQ upload UI
+- Friends on profile
+- Onboarding subject selection step (UI exists, not wired to DB)
+- Subjects UI screen (provider done, no page yet)
+
 ### Planned
 
-- Authentication flow with college email (Firebase Auth)
-- Firestore / Supabase Auth integration
 - Syllabus progress tracking
 - PYQ upload through the app UI
+- Vote state persistence → Supabase write
 - Personal learning goal mode (daily AI question plan with lives/streaks)
 - Focus session history and streak tracking
 - Compre Part A (MCQ Blitz) published to feed and loadable from feed
@@ -745,7 +847,7 @@ Order to stay consistent with the architecture:
 7. Implement the repository in `data/repository_impl/`
 8. Create a Riverpod `AsyncNotifierProvider` in `presentation/providers/`
 9. Build the page and widgets in `presentation/pages/` and `presentation/widgets/`
-10. Add a route in `main.dart`
+10. Add a route in `core/routing/`
 11. Run `dart run build_runner build --delete-conflicting-outputs`
 
 Use the `analytics` feature as the reference implementation. Features with no persistence or backend requirement (like focus session) can skip steps 2–7 and use a `ChangeNotifier` directly in the presentation layer.
@@ -761,7 +863,7 @@ Use the `analytics` feature as the reference implementation. Features with no pe
 - `loadExistingTest` in the provider has no MCQ Blitz path — it would need to reconstruct `McqQuestion` objects from `options` / `correct_index`
 - The feed page's Attempt button always routes to written practice mode regardless of `examType`
 
-**When to fix:** When the backend is updated to save MCQ options on generation, wire the full path: save `options` + `correct_index` to `questions` → insert into `published_tests` → fetch with options on load → route to MCQ Blitz mode in feed.
+**When to fix:** After Phase 5 ships. Save `options` + `correct_index` on generation → insert into `published_tests` → fetch with options on load → route to MCQ Blitz mode in feed.
 
 ---
 
@@ -770,21 +872,28 @@ Use the `analytics` feature as the reference implementation. Features with no pe
 `academic_year` exists on the `questions` table and in `UserModel` but is not yet used as a filter anywhere in the Flutter app or the FastAPI pipeline.
 
 **What's missing:**
+- `pipeline.py` — add `academic_year` to the Supabase select and returned dict
+- `GET /questions` — add `academic_year` query param to `main.py`
+- Datasource → repository → usecase → provider chain — `academicYear` param missing from all four layers in the exam prediction feature
+- UI — no academic year filter chip; simplest fix is to read silently from `userProvider.academicYear` in `QuestionsNotifier.build()`
 
-- `pipeline.py` — `load_bank_and_embeddings` selects and returns `paper_year` but not `academic_year`. Add it to the Supabase select and the returned dict.
-- `GET /questions` — no `academic_year` query param. Add it to `main.py` and the filter chain in `get_questions`.
-- Datasource → repository → usecase → provider chain — `academicYear` param missing from all four layers in the exam prediction feature.
-- UI — no academic year filter chip on the question bank browser. Simplest fix is to read it silently from `userProvider.academicYear` in `QuestionsNotifier.build()` so students see only their year by default.
-
-**Why it's safe to defer:** Clean Architecture means each layer is independent. Adding the param is mechanical — no existing behaviour changes.
-
-**When to fix:** Before Phase 5 personalisation, since the daily question plan needs to scope questions to the student's academic year.
+**When to fix:** Before Phase 5 personalisation — the daily question plan needs to scope questions to the student's academic year.
 
 ---
 
 ### Full DICL: top-15 cosine retrieval → MMR over those 15 → pick 5
 
 Currently MMR runs over the entire question bank. The correct DICL implementation first retrieves the top-15 most relevant questions via cosine similarity, then runs MMR over just those 15 to pick 5. This gives better relevance at the same diversity level.
+
+**When to fix:** Phase 6. Requires a meaningful question bank (100+ per subject) before the improvement is measurable.
+
+---
+
+### Onboarding subject selection — not wired to DB
+
+The subject selection step in onboarding shows UI but does not fetch real subjects from the `subjects` table. The `subjects` provider and datasource are complete — this is just a wiring task.
+
+**When to fix:** Before real user onboarding goes live.
 
 ---
 
@@ -833,16 +942,27 @@ Phase 3 — Core Features (complete)
     Focus session timer (countdown, wave background, slide-to-start, custom duration picker)
     Auto-save written practice tests to published_tests on generation
 
-Phase 4 — Auth and Backend
-    College email authentication (Firebase Auth / Supabase Auth)
-    PYQ upload through the app UI
-    Vote state persistence → Supabase write on auth
-    Compre Part A → published_tests pipeline + feed load support
+Phase 4 — Auth and Backend (complete)
+    ✅ Magic link auth via BITS college email (Supabase Auth)
+    ✅ _isNewUser() routing — new → onboarding, returning → app
+    ✅ Onboarding → Supabase write (users + user_subjects tables)
+    ✅ EmailParser — roll_number, academic_year, subdomain from BITS email
+    ✅ Campus resolution from campuses table via subdomain
+    ✅ Real userProvider — fetches from Supabase, replaces hardcoded mock
+    ✅ Subjects feature — full Clean Architecture (8 files)
+    ✅ GoRouter migration — auth guard, named routes, context.push()
+    ✅ RLS policies on users table
+    ⬜ PYQ upload through app UI
+    ⬜ Vote state persistence → Supabase write
+    ⬜ Compre Part A → published_tests pipeline + feed (deferred to post-Phase 5)
 
 Phase 5 — Personalisation
     Personal learning goal mode
     AI daily question plan
     Lives and streak system
+    Coin economy (earn by studying, spend to protect streaks)
+    Daily college-wide brain puzzle
+    College leaderboard (resets each semester)
     Dashboard integration with mock test scores
     Focus session history and streak tracking
     academic_year filter across pipeline + exam prediction
