@@ -1,5 +1,7 @@
+import 'package:Skolar/core/routing/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:Skolar/core/theme/app_theme.dart';
 import 'package:Skolar/features/dashboard/presentation/providers/dashboard_provider.dart';
@@ -12,6 +14,7 @@ import 'package:Skolar/features/dashboard/presentation/widgets/task_list_tile.da
 import 'package:Skolar/features/dashboard/presentation/widgets/weekly_line_chart.dart';
 // ignore: unused_import
 import 'package:Skolar/shared/providers/global_providers.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class DashboardPage extends ConsumerWidget {
   const DashboardPage({super.key});
@@ -168,9 +171,71 @@ class DashboardPage extends ConsumerWidget {
               ),
             ),
 
+            // ── Dev Navigation ─────────────────────────────────────────────────────
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.only(bottom: 8),
+                      child: Text('Dev Nav', style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+                    ),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        _DevButton('Mock Tests',     () => context.go(AppRoutes.mockTests)),
+                        _DevButton('Feed',           () => context.go(AppRoutes.feed)),
+                        _DevButton('Focus',          () => context.go(AppRoutes.focusSession)),
+                        _DevButton('Exam Predict',   () => context.go(AppRoutes.examPrediction)),
+                        _DevButton('Profile',        () => context.go(AppRoutes.profile)),
+                        _DevButton('PYQ Upload',     () => context.go(AppRoutes.pyqUpload)),
+                        _DevButton('Colleges',       () => context.go(AppRoutes.colleges)),
+                        _DevButton('Onboarding',     () => context.go(AppRoutes.onboarding)),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: ElevatedButton(
+                  onPressed: () async {
+                    await Supabase.instance.client.auth.signOut();
+                    context.go(AppRoutes.auth);
+                  },
+                  child: const Text('Sign Out'),
+                ),
+              ),
+            ),
           ],
         ),
       ),
+    );
+  }
+}
+// This should be at the very bottom of the file, outside everything else
+class _DevButton extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+  const _DevButton(this.label, this.onTap);
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton(
+      onPressed: onTap,
+      style: OutlinedButton.styleFrom(
+        foregroundColor: AppTheme.textPrimary,
+        side: const BorderSide(color: AppTheme.accent),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        minimumSize: Size.zero,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+      child: Text(label, style: const TextStyle(fontSize: 12)),
     );
   }
 }
