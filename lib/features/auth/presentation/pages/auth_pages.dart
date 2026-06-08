@@ -1,6 +1,8 @@
 import 'package:Skolar/core/routing/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:Skolar/features/auth/presentation/providers/auth_provider.dart';
 
 class AuthScreen extends ConsumerStatefulWidget {
@@ -12,6 +14,7 @@ class AuthScreen extends ConsumerStatefulWidget {
 
 class _AuthScreenState extends ConsumerState<AuthScreen> {
   final _emailController = TextEditingController();
+  bool _justLoggedIn = false;
 
   @override
   void dispose() {
@@ -25,6 +28,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
       _showSnackbar('Please enter your college email');
       return;
     }
+    _justLoggedIn = true;
     ref.read(authNotifierProvider.notifier).sendMagicLink(email);
   }
 
@@ -49,15 +53,22 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     });
 
     ref.listen(authSessionProvider, (_, next) {
-      next.whenData((session) {
-        if (session != null) {
-          Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
+      next.whenData((session) async {
+        if (session == null || !mounted || !_justLoggedIn) return;
+        _justLoggedIn = false;
+        final router = GoRouter.of(context);  // capture before async gap
+        final isNew = await _isNewUser(session.user.id);
+        if (!mounted) return;
+        if (isNew) {
+          router.go(AppRoutes.onboarding);
+        } else {
+          router.go('/');
         }
       });
     });
 
     final isLoading = authState.status == AuthStatus.loading;
-    final isSent = authState.status == AuthStatus.magicLinkSent;
+    final isSent    = authState.status == AuthStatus.magicLinkSent;
 
     return Scaffold(
       body: SafeArea(
@@ -109,5 +120,22 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
         ),
       ),
     );
+  }
+
+  // Returns true if user row doesn't exist or has no full_name yet
+  Future<bool> _isNewUser(String userId) async {
+    try {
+      final response = await Supabase.instance.client
+          .from('users')
+          .select('full_name')
+          .eq('id', userId)
+          .maybeSingle();
+
+      if (response == null) return true;
+      final name = response['full_name'] as String?;
+      return name == null || name.trim().isEmpty;
+    } catch (_) {
+      return true;
+    }
   }
 }
