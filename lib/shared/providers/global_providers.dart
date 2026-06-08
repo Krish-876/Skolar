@@ -1,45 +1,52 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:Skolar/shared/models/user_model.dart';
 
-/// Global loading state provider
-final isLoadingProvider = StateProvider<bool>((ref) => false);
-
-/// Global error state provider
+final isLoadingProvider    = StateProvider<bool>((ref) => false);
 final errorMessageProvider = StateProvider<String?>((ref) => null);
-
-/// Global success message provider
 final successMessageProvider = StateProvider<String?>((ref) => null);
 
-/// Utility function to handle async operations
-Future<T> withLoadingState<T>(
-  WidgetRef ref,
-  Future<T> Function() operation,
-) async {
-  ref.read(isLoadingProvider.notifier).state = true;
-  try {
-    final result = await operation();
-    ref.read(isLoadingProvider.notifier).state = false;
-    return result;
-  } catch (e) {
-    ref.read(isLoadingProvider.notifier).state = false;
-    ref.read(errorMessageProvider.notifier).state = e.toString();
-    rethrow;
-  }
-}
+// ── User provider — reads from Supabase, falls back to placeholder ──────────
 
-final userProvider = Provider<UserModel>((ref) {
-  return UserModel(
-    name: 'Krishna',
-    email: 'f20240175@hyderabad.bits-pilani.ac.in',
-    college: 'BPHC',
-    rollNumber: '2024A7PS0175H',
-    academicYear: 1,
-    streakDays: 15,
-    targetDays: 90,
-    totalWatch: '24h 30m',
-    totalUploads: 8,
-    friendCount: 12,
-    weekProgress: [true, true, true, false, null, null, null],
-    weekLabels: ['Mon', 'Tue', 'Wed', 'Thurs', 'Fri', 'Sat', 'Sun'],
-  );
-});
+final userProvider = StateNotifierProvider<UserNotifier, UserModel>(
+  (ref) => UserNotifier(),
+);
+
+class UserNotifier extends StateNotifier<UserModel> {
+  UserNotifier() : super(UserModel.placeholder()) {
+    _loadFromSupabase();
+  }
+
+  Future<void> _loadFromSupabase() async {
+    final client = Supabase.instance.client;
+    final authUser = client.auth.currentUser;
+    if (authUser == null) return;
+
+    try {
+      final response = await client
+          .from('users')
+          .select('id, email, full_name, roll_number, college, campus_id, institution_id, academic_year, branch, plan')
+          .eq('id', authUser.id)
+          .single();
+
+      state = UserModel(
+        id:            response['id']            as String,
+        name:          response['full_name']      as String? ?? 'Student',
+        email:         response['email']          as String? ?? '',
+        college:       response['college']        as String? ?? 'BPHC',
+        rollNumber:    response['roll_number']    as String? ?? '',
+        academicYear:  response['academic_year']  as int?    ?? 1,
+        branch:        response['branch']         as String?,
+        plan:          response['plan']           as String? ?? 'free',
+        institutionId: response['institution_id'] as String?,
+        campusId:      response['campus_id']      as String?,
+      );
+    } catch (_) {
+      // Keep placeholder if fetch fails — app still works
+    }
+  }
+
+  Future<void> refresh() => _loadFromSupabase();
+
+  void update(UserModel user) => state = user;
+}
