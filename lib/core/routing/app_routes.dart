@@ -1,3 +1,4 @@
+import 'package:Skolar/model_viewer.dart';
 import 'package:Skolar/place_holder.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -32,6 +33,7 @@ class AppRoutes {
   static const String syllabus        = '/syllabus';
   static const String subjects        = '/subjects';
   static const String test            = '/test';
+  static const String knowledgeTree = '/knowledge-tree';
 }
 
 final goRouterProvider = GoRouter(
@@ -109,6 +111,13 @@ final goRouterProvider = GoRouter(
       path: AppRoutes.test,
       builder: (_, __) => const TestLoadingPage(),
     ),
+
+    GoRoute(
+      path: AppRoutes.knowledgeTree,
+      builder: (_, __) => const KnowledgeTreeBackground(
+        modelPath: 'assets/models/knowledge_tree.glb',
+      ),
+    ),
   ],
 );
 
@@ -130,6 +139,7 @@ class _DevMenu extends StatelessWidget {
     ('Feed', AppRoutes.feed),
     ('Focus Session', AppRoutes.focusSession),
     ('Loading Screen', AppRoutes.test),
+    ('Knowledge Tree', AppRoutes.knowledgeTree),
   ];
 
   @override

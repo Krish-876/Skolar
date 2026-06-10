@@ -18,15 +18,14 @@ class ExamPredictionRepositoryImpl implements ExamPredictionRepository {
   }) async {
     try {
       final dto = await _dataSource.generateQuestion(
-        subject: subject,
-        college: college,
-        k: k,
+        subject:  subject,
+        college:  college,
+        k:        k,
         yearFrom: yearFrom,
-        yearTo: yearTo,
+        yearTo:   yearTo,
       );
       return Right(dto.toDomain());
     } catch (e) {
-      print('REPO ERROR generateQuestion: $e');
       return Left(ServerFailure(e.toString()));
     }
   }
@@ -38,18 +37,25 @@ class ExamPredictionRepositoryImpl implements ExamPredictionRepository {
     required int paperYear,
     required String examType,
     required String college,
+    String? subjectId,
+    String? campusId,
+    String? uploadedBy,
+    String? docType,
   }) async {
     try {
       final dto = await _dataSource.uploadPyq(
-        filePath: filePath,
-        subject: subject,
-        paperYear: paperYear,
-        examType: examType,
-        college: college,
+        filePath:   filePath,
+        subject:    subject,
+        paperYear:  paperYear,
+        examType:   examType,
+        college:    college,
+        subjectId:  subjectId,
+        campusId:   campusId,
+        uploadedBy: uploadedBy,
+        docType:    docType,
       );
       return Right(dto.toDomain());
     } catch (e) {
-      print('REPO ERROR uploadPyq: $e');
       return Left(ServerFailure(e.toString()));
     }
   }
@@ -62,7 +68,6 @@ class ExamPredictionRepositoryImpl implements ExamPredictionRepository {
       final dto = await _dataSource.getStats(college: college);
       return Right(dto.toDomain());
     } catch (e) {
-      print('REPO ERROR getStats: $e');
       return Left(ServerFailure(e.toString()));
     }
   }
@@ -77,15 +82,14 @@ class ExamPredictionRepositoryImpl implements ExamPredictionRepository {
   }) async {
     try {
       final dto = await _dataSource.getQuestions(
-        college: college,
-        subject: subject,
-        paperYear: paperYear,
-        examType: examType,
+        college:      college,
+        subject:      subject,
+        paperYear:    paperYear,
+        examType:     examType,
         questionType: questionType,
       );
       return Right(dto.toDomain());
     } catch (e) {
-      print('REPO ERROR getQuestions: $e');
       return Left(ServerFailure(e.toString()));
     }
   }

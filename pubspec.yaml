@@ -38,6 +38,7 @@ dependencies:
   rive: 0.13.4
   gif: ^2.3.0
   supabase_flutter: ^2.14.0
+  model_viewer_plus: ^1.10.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -53,6 +54,7 @@ flutter:
     - assets/images/
     - assets/data/
     - assets/animations/
+    - assets/models/
     - .env                    
     
   fonts:                      

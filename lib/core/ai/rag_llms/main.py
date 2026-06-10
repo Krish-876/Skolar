@@ -36,7 +36,7 @@ from pipeline import (
 app = FastAPI(
     title="Skolar AI API",
     description="DICL-based exam question generation using college PYQs",
-    version="2.1.0",
+    version="2.2.0",
 )
 
 app.add_middleware(
@@ -49,6 +49,10 @@ app.add_middleware(
 # ── Valid exam types (mirrors schema CHECK constraint) ────────────────────────
 
 _VALID_EXAM_TYPES = {"quiz1", "midsem", "quiz2", "compre", "generated"}
+
+# ── Valid doc types (mirrors uploaded_pdfs CHECK constraint) ──────────────────
+
+_VALID_DOC_TYPES = {"pyq", "tutorial", "solution", "lab", "misc"}
 
 # ── Request / Response models ─────────────────────────────────────────────────
 
@@ -79,7 +83,7 @@ class GenerateBatchRequest(BaseModel):
     year_from: Optional[int] = None
     year_to: Optional[int] = None
     k: Optional[int] = 5
-    published_by: Optional[str] = None 
+    published_by: Optional[str] = None
 
 class GenerateBatchResponse(BaseModel):
     questions: list[McqQuestion]
@@ -93,7 +97,7 @@ class OpenQuestion(BaseModel):
     question: str
     subject: str
     marks: int
-    model_answer: str       # pre-generated; empty string if with_answers=False
+    model_answer: str
 
 class GenerateOpenBatchRequest(BaseModel):
     subject: str
@@ -103,7 +107,7 @@ class GenerateOpenBatchRequest(BaseModel):
     year_from: Optional[int] = None
     year_to: Optional[int] = None
     k: Optional[int] = 5
-    with_answers: Optional[bool] = True   # always True in practice; kept for flexibility
+    with_answers: Optional[bool] = True
     published_by: Optional[str] = None
 
 class GenerateOpenBatchResponse(BaseModel):
@@ -112,13 +116,14 @@ class GenerateOpenBatchResponse(BaseModel):
     requested: int
     generated: int
 
-# ── Upload / Stats / Questions ─────────────────────────────────────────────────
+# ── Upload / Stats / Questions ────────────────────────────────────────────────
 
 class UploadResponse(BaseModel):
     message: str
     added: int
     total: int
     preview: list[str]
+    pdf_id: Optional[str] = None   # uploaded_pdfs row uuid, useful for client-side status polling
 
 class StatsResponse(BaseModel):
     total_questions: int
@@ -141,7 +146,7 @@ class QuestionsResponse(BaseModel):
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "service": "Skolar AI API", "version": "2.1.0"}
+    return {"status": "ok", "service": "Skolar AI API", "version": "2.2.0"}
 
 
 @app.get("/stats", response_model=StatsResponse)
@@ -279,7 +284,6 @@ def generate_batch(req: GenerateBatchRequest):
             detail="All MCQ generation attempts failed. Check Groq API key and question bank.",
         )
 
-
     try:
         save_generated_test(
             questions=raw,
@@ -363,7 +367,7 @@ def generate_open_batch(req: GenerateOpenBatchRequest):
             status_code=500,
             detail="All question generation attempts failed. Check Groq API key and question bank.",
         )
-    
+
     try:
         save_generated_test(
             questions=raw,
@@ -396,16 +400,30 @@ async def upload_pyq(
     file: UploadFile = File(...),
     subject: str = Form(...),
     paper_year: int = Form(...),
-    exam_type: str = Form(...),
+    exam_type: Optional[str] = Form(None),
     college: str = Form(...),
+    # ── New optional fields wired to uploaded_pdfs + questions tables ─────────
+    # All optional so existing clients that don't send them continue to work.
+    subject_id:  Optional[str] = Form(None),   # uuid from subjects table
+    campus_id:   Optional[str] = Form(None),   # uuid from campuses table
+    uploaded_by: Optional[str] = Form(None),   # uuid of uploading user
+    doc_type:    Optional[str] = Form("pyq"),  # pyq | tutorial | solution | lab | misc
 ):
     if not file.filename.endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files are accepted.")
 
-    if exam_type not in _VALID_EXAM_TYPES:
+    resolved_doc_type = doc_type or "pyq"
+    if resolved_doc_type not in _VALID_DOC_TYPES:
         raise HTTPException(
             status_code=400,
-            detail=f"Invalid exam_type '{exam_type}'. Must be one of: {sorted(_VALID_EXAM_TYPES)}",
+            detail=f"Invalid doc_type '{resolved_doc_type}'. Must be one of: {sorted(_VALID_DOC_TYPES)}",
+        )
+    
+    if resolved_doc_type == "pyq":
+        if not exam_type or exam_type not in _VALID_EXAM_TYPES:
+            raise HTTPException(
+            status_code=400,
+            detail=f"exam_type required for pyq. Must be one of: {sorted(_VALID_EXAM_TYPES)}",
         )
 
     pdf_bytes = await file.read()
@@ -417,26 +435,31 @@ async def upload_pyq(
             pdf_bytes=pdf_bytes,
             subject=subject,
             paper_year=paper_year,
-            exam_type=exam_type,
+            exam_type=exam_type if resolved_doc_type == "pyq" else None,
             college=college,
+            subject_id=subject_id,
+            campus_id=campus_id,
+            uploaded_by=uploaded_by,
+            doc_type=resolved_doc_type,
+            storage_path=file.filename,   # use filename as storage_path for now
         )
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Upload error: {str(e)}")
 
-    # FIX 3: fetch actual bank total after insert, instead of echoing added count
     try:
         all_questions, _ = load_bank_and_embeddings(college, subject)
         bank_total = len(all_questions)
     except Exception:
-        bank_total = result["added"]  # fallback if stats fetch fails
+        bank_total = result["added"]
 
     return UploadResponse(
         message=f"Successfully added {result['added']} questions from {file.filename}",
         added=result["added"],
         total=bank_total,
         preview=result["new_questions"],
+        pdf_id=result.get("pdf_id"),
     )
 
 

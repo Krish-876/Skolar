@@ -15,8 +15,13 @@ abstract class ExamPredictionRemoteDataSource {
     required String filePath,
     required String subject,
     required int paperYear,
-    required String examType,
+    required String? examType,
     required String college,
+    // ── New optional fields — wired to uploaded_pdfs + questions tables ──
+    String? subjectId,
+    String? campusId,
+    String? uploadedBy,
+    String? docType,
   });
 
   Future<QuestionBankStatsDto> getStats({
@@ -36,7 +41,7 @@ class ExamPredictionRemoteDataSourceImpl
     implements ExamPredictionRemoteDataSource {
   final Dio _dio;
 
-  static const String _baseUrl = 'http://192.168.0.122:8000';
+  static const String _baseUrl = 'http://172.16.18.138:8000';
 
   ExamPredictionRemoteDataSourceImpl({Dio? dio})
       : _dio = dio ??
@@ -76,8 +81,12 @@ class ExamPredictionRemoteDataSourceImpl
     required String filePath,
     required String subject,
     required int paperYear,
-    required String examType,
+    required String? examType,
     required String college,
+    String? subjectId,
+    String? campusId,
+    String? uploadedBy,
+    String? docType,
   }) async {
     try {
       final formData = FormData.fromMap({
@@ -85,10 +94,15 @@ class ExamPredictionRemoteDataSourceImpl
           filePath,
           filename: File(filePath).uri.pathSegments.last,
         ),
-        'subject': subject,
+        'subject':    subject,
         'paper_year': paperYear,
-        'exam_type': examType,
-        'college': college,
+        if (examType != null) 'exam_type': examType,
+        'college':    college,
+        // Only include new fields if provided — backend treats them as optional
+        if (subjectId  != null) 'subject_id':  subjectId,
+        if (campusId   != null) 'campus_id':   campusId,
+        if (uploadedBy != null) 'uploaded_by': uploadedBy,
+        if (docType    != null) 'doc_type':    docType,
       });
       final response = await _dio.post<Map<String, dynamic>>(
         '/upload-pyq',
@@ -126,9 +140,9 @@ class ExamPredictionRemoteDataSourceImpl
     try {
       final queryParams = <String, dynamic>{
         'college': college,
-        if (subject != null) 'subject': subject,
-        if (paperYear != null) 'paper_year': paperYear,
-        if (examType != null) 'exam_type': examType,
+        if (subject      != null) 'subject':       subject,
+        if (paperYear    != null) 'paper_year':    paperYear,
+        if (examType     != null) 'exam_type':     examType,
         if (questionType != null) 'question_type': questionType,
       };
       final response = await _dio.get<Map<String, dynamic>>(

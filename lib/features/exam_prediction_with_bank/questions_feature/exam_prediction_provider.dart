@@ -44,7 +44,7 @@ final getQuestionsUseCaseProvider = Provider<GetQuestionsUseCase>(
 );
 
 // ---------------------------------------------------------------------------
-// Stats notifier  (college read internally — no call-site changes needed)
+// Stats notifier
 // ---------------------------------------------------------------------------
 
 class StatsNotifier extends AsyncNotifier<QuestionBankStats?> {
@@ -109,7 +109,11 @@ final generateQuestionProvider =
 );
 
 // ---------------------------------------------------------------------------
-// Upload PYQ notifier  (used by the existing single-file _UploadTab)
+// Upload PYQ notifier
+// Now passes subjectId, campusId, uploadedBy through to the datasource so
+// the backend can populate uploaded_pdfs and questions with proper uuid refs.
+// All new params are optional — existing call sites that don't supply them
+// continue to work unchanged.
 // ---------------------------------------------------------------------------
 
 class UploadPyqNotifier extends AsyncNotifier<UploadResult?> {
@@ -121,15 +125,24 @@ class UploadPyqNotifier extends AsyncNotifier<UploadResult?> {
     required String subject,
     required int paperYear,
     required String examType,
+    String? subjectId,
+    String? campusId,
+    String? docType,
   }) async {
     state = const AsyncLoading();
-    final college = ref.read(userProvider).college;
+    final user    = ref.read(userProvider);
+    final college = user.college;
+
     final result = await ref.read(uploadPyqUseCaseProvider).call(
-          filePath: filePath,
-          subject: subject,
-          year: paperYear,
-          examType: examType,
-          college: college,
+          filePath:   filePath,
+          subject:    subject,
+          year:       paperYear,
+          examType:   examType,
+          college:    college,
+          subjectId:  subjectId,
+          campusId:   campusId  ?? user.campusId,
+          uploadedBy: user.id,
+          docType:    docType   ?? 'pyq',
         );
     state = result.fold(
       (f) => AsyncError(f, StackTrace.current),
@@ -166,10 +179,10 @@ class QuestionsNotifier extends AsyncNotifier<QuestionsResponse?> {
     state = const AsyncLoading();
     final college = ref.read(userProvider).college;
     final result = await ref.read(getQuestionsUseCaseProvider).call(
-          college: college,
-          subject: subject,
-          year: paperYear,
-          examType: examType,
+          college:      college,
+          subject:      subject,
+          year:         paperYear,
+          examType:     examType,
           questionType: questionType,
         );
     state = result.fold(
