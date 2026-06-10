@@ -953,7 +953,7 @@ Phase 4 — Auth and Backend (complete)
     ✅ GoRouter migration — auth guard, named routes, context.push()
     ✅ RLS policies on users table
     ✅ PYQ upload through app UI
-    ⬜ Vote state persistence → Supabase write
+    ✅ Vote state persistence → Supabase write
     ⬜ Compre Part A → published_tests pipeline + feed (deferred to post-Phase 5)
 
 Phase 5 — Personalisation
