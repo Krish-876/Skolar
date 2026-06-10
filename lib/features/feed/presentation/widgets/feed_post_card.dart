@@ -100,8 +100,14 @@ class _FeedPostCardState extends ConsumerState<FeedPostCard>
     final downvoted = ref.watch(
       downvotedPostsProvider.select((s) => s.contains(widget.post.id)),
     );
-    final upvoteCount =
-        widget.post.upvotes + (upvoted ? 1 : 0) - (downvoted ? 1 : 0);
+    final currentPost = ref.watch(feedProvider).maybeWhen(
+      data: (posts) => posts.firstWhere(
+        (p) => p.id == widget.post.id,
+        orElse: () => widget.post,
+      ),
+      orElse: () => widget.post,
+    );
+    final upvoteCount = currentPost.upvotes;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),

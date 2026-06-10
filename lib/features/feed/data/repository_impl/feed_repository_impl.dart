@@ -19,4 +19,30 @@ class FeedRepositoryImpl implements FeedRepository {
       return Left(ServerFailure(e.toString()));
     }
   }
+
+  @override
+  Future<Either<Failure, void>> castVote({
+    required String postId,
+    required String userId,
+    required int vote,
+  }) async {
+    try {
+      await dataSource.castVote(postId: postId, userId: userId, vote: vote);
+      return const Right(null);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, Map<String, int>>> fetchUserVotes({
+    required String userId,
+  }) async {
+    try {
+      final votes = await dataSource.fetchUserVotes(userId: userId);
+      return Right(votes);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
 }

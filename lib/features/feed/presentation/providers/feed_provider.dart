@@ -30,7 +30,7 @@ final feedSortProvider = StateProvider<FeedSortOption>(
   (_) => FeedSortOption.upvotes,
 );
 
-// ── Vote state (local, per post id) ──────────────────────────────────────────
+// ── Vote state (persisted via Supabase, mirrored locally for optimistic UI) ──
 
 final upvotedPostsProvider   = StateProvider<Set<String>>((_) => {});
 final downvotedPostsProvider = StateProvider<Set<String>>((_) => {});
@@ -72,11 +72,35 @@ class FeedNotifier extends AsyncNotifier<List<FeedPostEntity>> {
   @override
   Future<List<FeedPostEntity>> build() async {
     final useCase = ref.watch(getFeedUseCaseProvider);
-    final result  = await useCase();
-    return result.fold(
+    final repo    = ref.read(feedRepositoryProvider);
+    final userId  = ref.read(userProvider).id;
+
+    // Load posts
+    final result = await useCase();
+    final posts  = result.fold(
       (failure) => throw Exception(failure.message),
       (posts)   => posts,
     );
+
+    // Load persisted votes and hydrate local state
+    if (userId.isNotEmpty) {
+      final votesResult = await repo.fetchUserVotes(userId: userId);
+      votesResult.fold(
+        (_) => null,
+        (votes) {
+          final upvoted   = <String>{};
+          final downvoted = <String>{};
+          for (final entry in votes.entries) {
+            if (entry.value == 1)  upvoted.add(entry.key);
+            if (entry.value == -1) downvoted.add(entry.key);
+          }
+          ref.read(upvotedPostsProvider.notifier).state   = upvoted;
+          ref.read(downvotedPostsProvider.notifier).state = downvoted;
+        },
+      );
+    }
+
+    return posts;
   }
 
   Future<void> refresh() async {
@@ -84,28 +108,84 @@ class FeedNotifier extends AsyncNotifier<List<FeedPostEntity>> {
     await future;
   }
 
-  void toggleUpvote(String postId) {
-    ref.read(downvotedPostsProvider.notifier).update((set) {
-      final next = Set<String>.from(set)..remove(postId);
-      return next;
-    });
+  Future<void> toggleUpvote(String postId) async {
+    final isUpvoted   = ref.read(upvotedPostsProvider).contains(postId);
+    final isDownvoted = ref.read(downvotedPostsProvider).contains(postId);
+
+    // Update arrow state
+    ref.read(downvotedPostsProvider.notifier).update((set) => Set<String>.from(set)..remove(postId));
     ref.read(upvotedPostsProvider.notifier).update((set) {
       final next = Set<String>.from(set);
       if (next.contains(postId)) { next.remove(postId); } else { next.add(postId); }
       return next;
     });
+
+    // Update count in local posts list immediately
+    state = AsyncData(state.value!.map((post) {
+      if (post.id != postId) return post;
+      int upvotes   = post.upvotes;
+      int downvotes = post.downvotes;
+      if (isUpvoted) {
+        upvotes -= 1;
+      } else {
+        upvotes += 1;
+        if (isDownvoted) downvotes -= 1;
+      }
+      return FeedPostEntity(
+        id: post.id, authorName: post.authorName, authorInitials: post.authorInitials,
+        authorYear: post.authorYear, authorBranch: post.authorBranch, subject: post.subject,
+        title: post.title, difficulty: post.difficulty, yearRange: post.yearRange,
+        questionCount: post.questionCount, upvotes: upvotes, downvotes: downvotes,
+        attempts: post.attempts, tags: post.tags, isPublished: post.isPublished,
+        createdAt: post.createdAt, examType: post.examType, questionIds: post.questionIds,
+      );
+    }).toList());
+
+    // Persist to Supabase
+    final userId = ref.read(userProvider).id;
+    if (userId.isEmpty) return;
+    final repo = ref.read(feedRepositoryProvider);
+    await repo.castVote(postId: postId, userId: userId, vote: 1);
   }
 
-  void toggleDownvote(String postId) {
-    ref.read(upvotedPostsProvider.notifier).update((set) {
-      final next = Set<String>.from(set)..remove(postId);
-      return next;
-    });
+  Future<void> toggleDownvote(String postId) async {
+    final isDownvoted = ref.read(downvotedPostsProvider).contains(postId);
+    final isUpvoted   = ref.read(upvotedPostsProvider).contains(postId);
+
+    // Update arrow state
+    ref.read(upvotedPostsProvider.notifier).update((set) => Set<String>.from(set)..remove(postId));
     ref.read(downvotedPostsProvider.notifier).update((set) {
       final next = Set<String>.from(set);
       if (next.contains(postId)) { next.remove(postId); } else { next.add(postId); }
       return next;
     });
+
+    // Update count in local posts list immediately
+    state = AsyncData(state.value!.map((post) {
+      if (post.id != postId) return post;
+      int upvotes   = post.upvotes;
+      int downvotes = post.downvotes;
+      if (isDownvoted) {
+        downvotes -= 1;
+      } else {
+        downvotes += 1;
+        if (isUpvoted) upvotes -= 1;
+      }
+      return FeedPostEntity(
+        id: post.id, authorName: post.authorName, authorInitials: post.authorInitials,
+        authorYear: post.authorYear, authorBranch: post.authorBranch, subject: post.subject,
+        title: post.title, difficulty: post.difficulty, yearRange: post.yearRange,
+        questionCount: post.questionCount, upvotes: upvotes, downvotes: downvotes,
+        attempts: post.attempts, tags: post.tags, isPublished: post.isPublished,
+        createdAt: post.createdAt, examType: post.examType, questionIds: post.questionIds,
+      );
+    }).toList());
+
+    // Persist to Supabase
+    final userId = ref.read(userProvider).id;
+    if (userId.isEmpty) return;
+    final repo = ref.read(feedRepositoryProvider);
+    await repo.castVote(postId: postId, userId: userId, vote: -1);
   }
 }
 

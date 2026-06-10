@@ -12,6 +12,7 @@ class FeedPostEntity {
   final String yearRange;
   final int questionCount;
   final int upvotes;
+  final int downvotes;
   final int attempts;
   final List<String> tags;
   final bool isPublished;
@@ -31,6 +32,7 @@ class FeedPostEntity {
     required this.yearRange,
     required this.questionCount,
     required this.upvotes,
+    required this.downvotes,
     required this.attempts,
     required this.tags,
     required this.isPublished,

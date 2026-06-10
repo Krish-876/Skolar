@@ -13,6 +13,7 @@ class FeedPostDto {
   final String yearRange;
   final int questionCount;
   final int upvotes;
+  final int downvotes;
   final int attempts;
   final List<String> tags;
   final bool isPublished;
@@ -32,6 +33,7 @@ class FeedPostDto {
     required this.yearRange,
     required this.questionCount,
     required this.upvotes,
+    required this.downvotes,
     required this.attempts,
     required this.tags,
     required this.isPublished,
@@ -54,6 +56,7 @@ class FeedPostDto {
       yearRange:      json['yearRange']      as String,
       questionCount:  json['questionCount']  as int,
       upvotes:        json['upvotes']        as int,
+      downvotes:      json['downvotes']      as int? ?? 0,
       attempts:       json['attempts']       as int,
       tags:           List<String>.from(json['tags'] as List),
       isPublished:    json['isPublished']    as bool,
@@ -110,6 +113,7 @@ class FeedPostDto {
       yearRange:      '',
       questionCount:  questionIds.length,
       upvotes:        row['upvotes']  as int? ?? 0,
+      downvotes:      row['downvotes'] as int? ?? 0,
       attempts:       row['attempts'] as int? ?? 0,
       tags:           [subject, examLabel],
       isPublished:    true,
@@ -132,6 +136,7 @@ class FeedPostDto {
       yearRange:      yearRange,
       questionCount:  questionCount,
       upvotes:        upvotes,
+      downvotes:      downvotes,
       attempts:       attempts,
       tags:           tags,
       isPublished:    isPublished,
