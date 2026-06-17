@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:Skolar/core/utils/email_parser.dart';
+import 'package:Skolar/features/subjects/domain/utils/semester_utils.dart';
 import '../dtos/onboarding_dto.dart';
 
 abstract class OnboardingDataSource {
@@ -55,7 +56,7 @@ class OnboardingRemoteDataSource implements OnboardingDataSource {
 
     // Save selected subjects
     if (dto.selectedSubjectIds.isNotEmpty) {
-      final semester = _currentSemester();
+      final semester = SemesterUtils.currentSemesterLabel();
       final rows = dto.selectedSubjectIds.map((subjectId) => {
         'user_id':    authUser.id,
         'subject_id': subjectId,
@@ -66,11 +67,5 @@ class OnboardingRemoteDataSource implements OnboardingDataSource {
           .from('user_subjects')
           .upsert(rows, onConflict: 'user_id,subject_id,semester');
     }
-  }
-
-  String _currentSemester() {
-    final now = DateTime.now();
-    final semester = now.month >= 7 ? 'S1' : 'S2';
-    return '${now.year}-$semester';
   }
 }

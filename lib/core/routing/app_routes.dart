@@ -1,5 +1,6 @@
+import 'package:Skolar/features/subjects/presentation/pages/subjects_pages.dart';
 import 'package:Skolar/model_viewer.dart';
-import 'package:Skolar/place_holder.dart';
+// import 'package:Skolar/place_holder.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -101,7 +102,7 @@ final goRouterProvider = GoRouter(
     ),
     GoRoute(
       path: AppRoutes.subjects,
-      builder: (_, __) => const PlaceholderPage(title: 'Subjects'),
+      builder: (_, __) => const SubjectsPage(),
     ),
     GoRoute(
       path: AppRoutes.syllabus,
