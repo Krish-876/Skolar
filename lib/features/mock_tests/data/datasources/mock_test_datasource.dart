@@ -32,7 +32,7 @@ class MockTestRemoteDataSourceImpl implements MockTestRemoteDataSource {
   final Dio _dio;
   final _supabase = Supabase.instance.client;
 
-  static const String _baseUrl = 'http://172.16.18.138:8000';
+  static const String _baseUrl = 'http://192.168.0.122:8000';
 
   MockTestRemoteDataSourceImpl({Dio? dio})
       : _dio = dio ??

@@ -5,6 +5,7 @@ import 'package:Skolar/core/loading/test_page.dart';
 import 'package:Skolar/core/widgets/animated_profile_gradient.dart';
 import 'package:Skolar/features/focus_session/widgets/focus_background.dart';
 import 'package:Skolar/features/mock_tests/domain/entities/mock_test_entity.dart';
+import 'package:Skolar/features/subjects/presentation/providers/subjects_provider.dart';
 import 'package:Skolar/shared/models/exam_type.dart';
 // import 'package:Skolar/shared/providers/global_providers.dart';
 import 'package:flutter/material.dart';
@@ -130,14 +131,6 @@ extension _ExamTypeExt on _ExamType {
   };
 }
 
-const _kSubjects = [
-  'Artificial Intelligence',
-  'Computer Science',
-  'Mathematics',
-  'Physics',
-  'Chemistry',
-];
-
 // ── Entry point ───────────────────────────────────────────────────────────────
 
 class MockTestPage extends ConsumerStatefulWidget {
@@ -147,14 +140,26 @@ class MockTestPage extends ConsumerStatefulWidget {
 }
 
 class _MockTestPageState extends ConsumerState<MockTestPage> {
-  String _selectedSubject = _kSubjects.first;
+  String? _selectedSubject;
   _ExamType _selectedExam = _ExamType.quiz1;
-  int _questionCount = 5;
+  int _questionCount = _ExamType.quiz1.defaultCount;
+
+  /// Keeps `_selectedSubject` valid as the subjects list resolves or
+  /// changes (e.g. user deleted the previously-selected subject in a
+  /// past session). Only mutates when necessary — cheap to call every
+  /// build.
+  void _syncSelectedSubject(List<String> names) {
+    if (names.isEmpty) return;
+    if (_selectedSubject == null || !names.contains(_selectedSubject)) {
+      _selectedSubject = names.first;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final mockState = ref.watch(mockTestProvider);
-    if (mockState.isLoading) return const TestLoadingPage();    if (mockState.error != null) {
+    if (mockState.isLoading) return const TestLoadingPage();
+    if (mockState.error != null) {
       return _ErrorScreen(
         error: mockState.error!,
         onRetry: _start,
@@ -166,20 +171,59 @@ class _MockTestPageState extends ConsumerState<MockTestPage> {
           ? _McqQuizFlow(questions: mockState.mcqQuestions)
           : _WrittenPracticeFlow(questions: mockState.openQuestions);
     }
-    return _SetupScreen(
-      selectedSubject: _selectedSubject,
-      selectedExam: _selectedExam,
-      questionCount: _questionCount,
-      onSubjectChanged: (s) => setState(() => _selectedSubject = s),
-      onExamChanged: (e) => setState(() { _selectedExam = e; _questionCount = e.defaultCount; }),
-      onCountChanged: (c) => setState(() => _questionCount = c),
-      onStart: _start,
+
+    final subjectsAsync = ref.watch(subjectsProvider);
+
+    return subjectsAsync.when(
+      loading: () => const TestLoadingPage(),
+      error: (e, _) => _ErrorScreen(
+        error: 'Could not load your subjects.\n$e',
+        onRetry: () => ref.invalidate(subjectsProvider),
+        onBack: () => Navigator.maybePop(context),
+      ),
+      data: (subjectsState) {
+        // Dedup by name, preserve original order.
+        final seen = <String>{};
+        final subjectNames = <String>[
+          for (final s in subjectsState.subjects)
+            if (seen.add(s.name)) s.name,
+        ];
+
+        if (subjectNames.isEmpty) {
+          // Defensive fallback. This page is normally only reachable
+          // after the user has confirmed their subjects (CDCs are
+          // auto-seeded on first load), so this shouldn't occur in
+          // practice — but guard against it rather than crashing on
+          // an empty dropdown / null selection.
+          return _NoSubjectsScreen(
+            onAddSubjects: () => Navigator.maybePop(context),
+          );
+        }
+
+        _syncSelectedSubject(subjectNames);
+
+        return _SetupScreen(
+          subjects: subjectNames,
+          selectedSubject: _selectedSubject!,
+          selectedExam: _selectedExam,
+          questionCount: _questionCount,
+          onSubjectChanged: (s) => setState(() => _selectedSubject = s),
+          onExamChanged: (e) => setState(() {
+            _selectedExam = e;
+            _questionCount = e.defaultCount;
+          }),
+          onCountChanged: (c) => setState(() => _questionCount = c),
+          onStart: _start,
+        );
+      },
     );
   }
 
   void _start() {
+    final subject = _selectedSubject;
+    if (subject == null) return;
     ref.read(mockTestProvider.notifier).fetchQuestions(MockTestRequest(
-      subject:  _selectedSubject,
+      subject:  subject,
       mode:     _selectedExam.mode,
       examType: _selectedExam.examType,
       count:    _questionCount,
@@ -187,9 +231,42 @@ class _MockTestPageState extends ConsumerState<MockTestPage> {
   }
 }
 
+// ── No subjects screen (defensive fallback) ─────────────────────────────────
+
+class _NoSubjectsScreen extends StatelessWidget {
+  final VoidCallback onAddSubjects;
+  const _NoSubjectsScreen({required this.onAddSubjects});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: _bg,
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            const Icon(Icons.menu_book_outlined, color: _textSec, size: 48),
+            const SizedBox(height: 16),
+            const Text('No subjects yet', style: TextStyle(color: _textPrim, fontSize: 18, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 8),
+            const Text(
+              'Add your subjects first to generate a mock test.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: _textSec, fontSize: 13),
+            ),
+            const SizedBox(height: 24),
+            _StartButton(label: 'Go to Subjects', onTap: onAddSubjects),
+          ]),
+        ),
+      ),
+    );
+  }
+}
+
 // ── Setup screen ──────────────────────────────────────────────────────────────
 
 class _SetupScreen extends StatelessWidget {
+  final List<String> subjects;
   final String selectedSubject;
   final _ExamType selectedExam;
   final int questionCount;
@@ -199,7 +276,7 @@ class _SetupScreen extends StatelessWidget {
   final VoidCallback onStart;
 
   const _SetupScreen({
-    required this.selectedSubject, required this.selectedExam,
+    required this.subjects, required this.selectedSubject, required this.selectedExam,
     required this.questionCount, required this.onSubjectChanged,
     required this.onExamChanged, required this.onCountChanged, required this.onStart,
   });
@@ -238,7 +315,7 @@ class _SetupScreen extends StatelessWidget {
                     dropdownColor: const Color(0xFF1A1B2E),
                     style: const TextStyle(color: _textPrim, fontSize: 15),
                     iconEnabledColor: _textSec,
-                    items: _kSubjects.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                    items: subjects.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
                     onChanged: (v) => onSubjectChanged(v!),
                   ),
                 ),
