@@ -478,7 +478,7 @@ def _filter_by_exam_type(
         return questions, embeddings
     indices = [
         i for i, q in enumerate(questions)
-        if q.get("exam_type", "").lower() in allowed
+        if (q.get("exam_type") or "").lower() in allowed
     ]
     if not indices:
         return questions, embeddings
