@@ -13,6 +13,7 @@ An AI-powered exam preparation platform built with Flutter. Helps students track
 - [Exam Prediction Feature](#exam-prediction-feature)
 - [Focus Session](#focus-session)
 - [Community Feed](#community-feed)
+- [Subjects and Handout Upload](#subjects-and-handout-upload)
 - [Folder Structure](#folder-structure)
 - [Tech Stack](#tech-stack)
 - [Features](#features)
@@ -173,6 +174,28 @@ Auto-save to published_tests (written practice only — see Tech Debt)
 Questions returned to Flutter app
 ```
 
+### Study Plan Generation Pipeline
+
+```
+Student uploads handout PDF (Flutter → Supabase Storage)
+      ↓
+handout_url + handout_filename written to user_subjects row
+      ↓
+Fire-and-forget POST /extract-plan (FastAPI)
+      ↓
+pdfplumber — extract raw text from handout
+      ↓
+Groq LLM — extract flat topic list from handout text
+      ↓
+Groq LLM — generate weekly study plan grouped by topic
+      ↓
+Deactivate existing active plan for this user_subject
+      ↓
+Insert new row into study_plans (topics jsonb, weekly_plan jsonb, is_active true)
+```
+
+The upload completes and the UI updates immediately. Plan generation runs in the background and persists permanently in `study_plans`. Re-uploading a new handout deactivates the previous plan and generates a fresh one.
+
 ### MMR Algorithm
 
 At every step, MMR picks the candidate that maximises:
@@ -245,6 +268,8 @@ created_at        timestamptz
 user_id           uuid, references users.id
 subject_id        uuid, references subjects.id
 semester          text
+handout_url       text, nullable
+handout_filename  text, nullable
 primary key       (user_id, subject_id)
 ```
 
@@ -283,6 +308,23 @@ attempts          integer
 created_at        timestamptz
 ```
 
+#### `study_plans` table
+
+```
+id                uuid, primary key
+user_subject_id   uuid, references user_subjects.id ON DELETE CASCADE
+user_id           uuid, references users.id ON DELETE CASCADE
+subject_name      text
+handout_url       text
+topics            jsonb  — flat list of topic strings
+weekly_plan       jsonb  — array of {week, topics, study_hours, focus}
+is_active         boolean, default true
+generated_at      timestamptz
+updated_at        timestamptz
+```
+
+Only one plan per `user_subject_id` is active at a time. Uploading a new handout deactivates the previous plan before inserting the new one.
+
 PYQ entries are uploaded via `/upload-pyq`. The `college` field on every row ensures complete data isolation between colleges.
 
 ### Model Answer Structure
@@ -310,6 +352,18 @@ uvicorn main:app --reload --port 8000
 | `POST` | `/generate-batch` | N MCQs in parallel (Compre Part A) |
 | `POST` | `/generate-open-batch` | N open questions + model answers, auto-saves to `published_tests` |
 | `POST` | `/upload-pyq` | PDF → extract questions → insert into Supabase |
+| `POST` | `/extract-plan` | Handout PDF → topic list + weekly study plan → insert into `study_plans` |
+
+#### `POST /extract-plan` — Request body
+
+```json
+{
+  "user_subject_id": "<uuid>",
+  "user_id": "<uuid>",
+  "subject_name": "Operating Systems",
+  "handout_url": "https://..."
+}
+```
 
 #### `POST /generate-batch` — Request body
 
@@ -379,7 +433,7 @@ Multiple concurrent generation requests are safe. The `ThreadPoolExecutor` for p
 ```
 lib/core/ai/rag_llms/
   main.py              — FastAPI app and all endpoints
-  pipeline.py          — DICL pipeline: parsing, embedding, MMR, generation, bank I/O
+  pipeline.py          — DICL pipeline: parsing, embedding, MMR, generation, bank I/O, study plan extraction
   .env                 — GROQ_API_KEY, SUPABASE_URL, SUPABASE_KEY (not committed)
   evaluate.py          — Pipeline evaluation: accuracy, diversity scoring
 ```
@@ -486,6 +540,54 @@ Everything above — `FeedRepositoryImpl`, `GetFeedUseCase`, `FeedNotifier`, `Fe
 
 ---
 
+## Subjects and Handout Upload
+
+The subjects feature lets students view their enrolled subjects for the current semester and upload a course handout PDF per subject. Uploading a handout triggers automatic AI study plan generation in the background.
+
+### How Handout Upload Works
+
+```
+Student taps "Upload handout" chip on a subject card
+        ↓
+FilePicker.pickFiles() — native PDF picker (file_picker v11)
+        ↓
+PDF uploaded to Supabase Storage: handouts/{userId}/{userSubjectId}/{filename}
+        ↓
+handout_url + handout_filename written to user_subjects row
+        ↓
+UI chip updates to show filename immediately
+        ↓
+Fire-and-forget POST /extract-plan → study plan generated and saved to study_plans
+```
+
+The upload and UI update are synchronous from the user's perspective. Plan generation is asynchronous — it completes in the background and persists permanently. Re-uploading replaces the handout and regenerates the plan.
+
+### Supabase Storage
+
+Bucket: `handouts` (public)
+
+RLS policies:
+- `INSERT` — authenticated users only, `bucket_id = 'handouts'`
+- `SELECT` — authenticated users only, `bucket_id = 'handouts'` (required for post-upload URL resolution)
+
+### Flutter Files
+
+| File | Role |
+|---|---|
+| `data/datasources/subjects_datasource.dart` | `uploadHandout` — uploads to Storage, updates `user_subjects`, triggers plan extraction |
+| `data/repository_impl/subjects_repository_impl.dart` | Wraps `uploadHandout` in `Either<Failure, SubjectEntity>` |
+| `presentation/pages/subjects_pages.dart` | `_SubjectsNotifier.uploadHandout`, `_HandoutChip`, `_pickAndUploadHandout` |
+
+### `_HandoutChip` States
+
+| State | Appearance |
+|---|---|
+| No handout | "Upload handout" with upload icon, dimmed border |
+| Uploading | Spinner + "Generating plan…" text |
+| Handout uploaded | Filename + ↺ icon, primary color border |
+
+---
+
 ## Folder Structure
 
 ```
@@ -495,7 +597,7 @@ lib/
 │   │   ├── data/                    # PYQ PDF files
 │   │   └── rag_llms/                # Python backend
 │   │       ├── main.py              # FastAPI app (all endpoints)
-│   │       ├── pipeline.py          # DICL pipeline
+│   │       ├── pipeline.py          # DICL pipeline + study plan extraction
 │   │       ├── evaluate.py          # Pipeline evaluation
 │   │       └── .env                 # GROQ_API_KEY, SUPABASE_URL, SUPABASE_KEY
 │   ├── config/
@@ -533,15 +635,15 @@ lib/
 │   │
 │   ├── subjects/
 │   │   ├── data/
-│   │   │   ├── datasources/         # subjects_datasource.dart
-│   │   │   ├── dtos/                # subject_dto.dart
+│   │   │   ├── datasources/         # subjects_datasource.dart — getSubjects, addCustom, delete, uploadHandout
+│   │   │   ├── dtos/                # subject_dto.dart — handout_url, handout_filename fields
 │   │   │   └── repository_impl/     # subjects_repository_impl.dart
 │   │   ├── domain/
-│   │   │   ├── entities/            # subject_entity.dart
+│   │   │   ├── entities/            # subject_entity.dart — handoutUrl, handoutFilename fields
 │   │   │   ├── repositories/        # subjects_repository.dart
 │   │   │   └── usecases/            # get_subjects_usecase.dart
 │   │   └── presentation/
-│   │       └── providers/           # subjects_provider.dart
+│   │       └── pages/               # subjects_pages.dart — handout chip, upload flow
 │   │
 │   ├── analytics/
 │   ├── dashboard/
@@ -616,6 +718,7 @@ lib/
 | Charts | `fl_chart` |
 | Quiz confetti | `confetti ^0.8.0` |
 | Markdown rendering | `flutter_markdown_plus` |
+| File picker | `file_picker ^11.0.2` |
 | Code generation | `build_runner` |
 
 ### AI Backend
@@ -624,6 +727,7 @@ lib/
 |---|---|
 | PDF text extraction | `pdfplumber` |
 | Question extraction | Groq API — LLaMA 3.3 70B |
+| Topic + study plan extraction | Groq API — LLaMA 3.3 70B |
 | Semantic embeddings | `sentence-transformers` — all-MiniLM-L6-v2 |
 | Diversity selection | MMR algorithm (numpy) |
 | MCQ + open question generation | Groq API — LLaMA 3.3 70B |
@@ -632,6 +736,7 @@ lib/
 | Backend API | FastAPI + uvicorn |
 | Deployment | Railway |
 | Data store | Supabase (PostgreSQL + pgvector) |
+| File storage | Supabase Storage (handouts bucket) |
 
 ---
 
@@ -651,9 +756,13 @@ lib/
 - **Real user data via `userProvider`**
   - `StateNotifierProvider` fetches from Supabase on load
   - `UserModel` extended with `email`, `campusId`, `institutionId`, `placeholder()` factory
-- **Subjects feature** — full Clean Architecture (8 files)
+- **Subjects feature** — full Clean Architecture
   - Fetches subjects filtered by `institution_id` and `academic_year`
-  - No UI screen yet
+  - Credit ring showing total enrolled credits vs semester target
+  - Long-press to enter edit mode, tap to mark for deletion
+  - Add custom subject via bottom sheet
+  - **Handout upload** per subject — PDF picker, Supabase Storage upload, chip UI
+  - Fire-and-forget study plan generation via `/extract-plan`
 - **Routing** — GoRouter with auth guard
   - Auth guard redirect, dev menu at `/`, `context.push()` for stack-based navigation
 - **Scrollable analytics dashboard**
@@ -668,7 +777,8 @@ lib/
   - LLM open question generation with structured model answers
   - Thread-safe parallel generation (3 concurrent Groq calls)
   - Auto-save generated written practice tests to `published_tests`
-- **FastAPI backend** — 7 endpoints, fully Supabase-backed, deployed on Railway
+  - **Study plan generation** from handout PDF — topic extraction + weekly schedule
+- **FastAPI backend** — 8 endpoints, fully Supabase-backed, deployed on Railway
 - **Mock test platform** — full Clean Architecture
   - `ExamType` enum as single source of truth
   - 4 exam types: Quiz, Midsem, Compre Part A, Compre Part B
@@ -697,10 +807,11 @@ lib/
 - PYQ upload UI
 - Friends on profile
 - Onboarding subject selection step (UI exists, not wired to DB)
-- Subjects UI screen (provider done, no page yet)
+- Study plan display UI (plan is generated and persisted, no page to show it yet)
 
 ### Planned
 
+- Study plan display page per subject
 - Syllabus progress tracking
 - PYQ upload through the app UI
 - Vote state persistence → Supabase write
@@ -817,7 +928,7 @@ myenv311\Scripts\activate          # Windows
 source myenv311/bin/activate       # macOS / Linux
 
 # Install dependencies
-pip install fastapi uvicorn pdfplumber sentence-transformers numpy groq python-dotenv supabase
+pip install fastapi uvicorn pdfplumber sentence-transformers numpy groq python-dotenv supabase requests
 
 # Create .env file with all three keys
 echo GROQ_API_KEY=your_key_here > .env
@@ -864,6 +975,22 @@ Use the `analytics` feature as the reference implementation. Features with no pe
 - The feed page's Attempt button always routes to written practice mode regardless of `examType`
 
 **When to fix:** After Phase 5 ships. Save `options` + `correct_index` on generation → insert into `published_tests` → fetch with options on load → route to MCQ Blitz mode in feed.
+
+---
+
+### Study plan display UI — not yet built
+
+`study_plans` rows are generated and persisted correctly. There is no Flutter page to display them yet. The next step is a `StudyPlanPage` per subject that reads from `study_plans` where `user_subject_id = <id> AND is_active = true` and renders the topic list and weekly schedule.
+
+**When to fix:** Phase 5 personalisation — the plan is the foundation for the daily question scheduler.
+
+---
+
+### `_triggerPlanExtraction` — needs real FastAPI URL
+
+Currently calls a Supabase Edge Function named `extract-plan-proxy`. This needs to either point to the deployed Railway URL directly via `http.post`, or the Edge Function needs to be created as a thin proxy.
+
+**When to fix:** Before study plan display UI is built — the plan won't exist in `study_plans` until this is wired.
 
 ---
 
@@ -949,16 +1076,21 @@ Phase 4 — Auth and Backend (complete)
     ✅ EmailParser — roll_number, academic_year, subdomain from BITS email
     ✅ Campus resolution from campuses table via subdomain
     ✅ Real userProvider — fetches from Supabase, replaces hardcoded mock
-    ✅ Subjects feature — full Clean Architecture (8 files)
+    ✅ Subjects feature — full Clean Architecture
+    ✅ Handout upload per subject — Supabase Storage, chip UI, fire-and-forget plan trigger
+    ✅ study_plans table — AI-generated topic list + weekly schedule from handout PDF
     ✅ GoRouter migration — auth guard, named routes, context.push()
-    ✅ RLS policies on users table
+    ✅ RLS policies on users table and storage.objects
     ✅ PYQ upload through app UI
     ✅ Vote state persistence → Supabase write
+    ⬜ _triggerPlanExtraction wired to real FastAPI URL
+    ⬜ Study plan display UI per subject
     ⬜ Compre Part A → published_tests pipeline + feed (deferred to post-Phase 5)
 
 Phase 5 — Personalisation
+    Study plan display page per subject
     Personal learning goal mode
-    AI daily question plan
+    AI daily question plan (current_topic from study_plans → MMR anchor)
     Lives and streak system
     Coin economy (earn by studying, spend to protect streaks)
     Daily college-wide brain puzzle
