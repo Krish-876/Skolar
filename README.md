@@ -14,6 +14,8 @@ An AI-powered exam preparation platform built with Flutter. Helps students track
 - [Focus Session](#focus-session)
 - [Community Feed](#community-feed)
 - [Subjects and Handout Upload](#subjects-and-handout-upload)
+- [Test Attempts, Question Results, and AI Evaluation](#test-attempts-question-results-and-ai-evaluation)
+- [PDF Upload Pipeline](#pdf-upload-pipeline)
 - [Folder Structure](#folder-structure)
 - [Tech Stack](#tech-stack)
 - [Features](#features)
@@ -92,7 +94,7 @@ The mock test feature lets students take AI-generated tests calibrated to their 
 | `domain/repositories/mock_test_repository.dart` | Abstract repository interface |
 | `domain/usecases/mock_test_usecases.dart` | `FetchMcqQuestionsUseCase`, `FetchOpenQuestionsUseCase`, `FetchQuestionsByIdsUseCase` |
 | `data/dtos/mock_test_dto.dart` | DTOs with `fromJson` / `toJson` |
-| `data/datasources/mock_test_datasource.dart` | Calls `/generate-batch`, `/generate-open-batch`, fetches by IDs from Supabase |
+| `data/datasources/mock_test_datasource.dart` | Calls `/generate-batch`, `/generate-open-batch`, fetches by IDs from Supabase, now sources subjects dynamically per user instead of a hardcoded list |
 | `data/repository_impl/mock_test_repository_impl.dart` | Wraps datasource in `Either<Failure, T>` |
 | `presentation/providers/mock_tests_provider.dart` | `MockTestNotifier` — state, API calls, exam mode routing, `loadExistingTest` |
 | `presentation/pages/mock_tests_pages.dart` | Full UI: setup screen, loading, error, MCQ flow, written practice flow, result screen |
@@ -110,6 +112,10 @@ ExamType.compreB  →  ExamMode.writtenPractice  →  POST /generate-open-batch
 ### Load Existing Test
 
 `loadExistingTest(questionIds, examType)` fetches questions by their Supabase IDs and reconstructs the test state. Used by the community feed Attempt button. Currently only supports written practice exam types — see Tech Debt for Compre Part A limitation.
+
+### Dynamic Subject Sourcing
+
+As of the latest fix, the mock test setup screen pulls the student's subject list from their actual `user_subjects` enrollment rather than a hardcoded list, end-to-end with the subjects feature's retrieval fix.
 
 ---
 
@@ -138,7 +144,7 @@ Before MMR runs, the question bank is filtered to only include PYQs relevant to 
 | Quiz 2 | quiz2 + midsem + quiz1 |
 | Compre | compre + quiz2 + midsem + quiz1 |
 
-If no questions match the filter, the pipeline falls back to the full bank so generation never hard-fails.
+If no questions match the filter, the pipeline falls back to the full bank so generation never hard-fails. A null `exam_type` value from Supabase is also handled defensively so it no longer raises an `AttributeError` during filtering.
 
 ### Generation Modes
 
@@ -208,27 +214,29 @@ Alpha = 0.7 means 70% relevance, 30% diversity. Greedy algorithm that builds sel
 
 ### Supabase Schema
 
+> The schema below reflects the live database as queried directly via `information_schema` and `pg_policies`, not just what's referenced in application code. Tables with no corresponding Flutter/Python description yet are marked **(schema only)**.
+
 #### `institutions` table
 
 ```
-id                uuid, primary key
-name              text
-short_name        text
-email_patterns    jsonb
+id                uuid, primary key, default gen_random_uuid()
+name              text, not null
+short_name        text, not null, unique
+email_patterns    jsonb, not null, default '[]'::jsonb
 website           text, nullable
-created_at        timestamptz
+created_at        timestamptz, not null, default now()
 ```
 
 #### `campuses` table
 
 ```
-id                uuid, primary key
-institution_id    uuid, references institutions.id
-name              text
-short_name        text
+id                uuid, primary key, default gen_random_uuid()
+institution_id    uuid, not null, references institutions.id ON DELETE CASCADE
+name              text, not null
+short_name        text, not null, unique
 subdomain         text, nullable
 location          text, nullable
-created_at        timestamptz
+created_at        timestamptz, not null, default now()
 ```
 
 #### `users` table
@@ -254,78 +262,224 @@ RLS policies: insert, update, select scoped to `auth.uid()`.
 #### `subjects` table
 
 ```
-id                uuid, primary key
-institution_id    uuid, references institutions.id
-name              text
+id                uuid, primary key, default gen_random_uuid()
+institution_id    uuid, not null, references institutions.id ON DELETE CASCADE, unique
+name              text, not null, unique
 short_name        text, nullable
 academic_year     smallint
 created_at        timestamptz
 ```
 
-#### `user_subjects` table
+#### `custom_subjects` table **(schema only)**
+
+User- or institution-defined subjects that don't exist in the shared `subjects` catalog yet.
 
 ```
-user_id           uuid, references users.id
-subject_id        uuid, references subjects.id
-semester          text
-handout_url       text, nullable
-handout_filename  text, nullable
-primary key       (user_id, subject_id)
+id                uuid, primary key, default gen_random_uuid()
+institution_id    uuid, not null, references institutions.id ON DELETE CASCADE, unique
+course_code       text, not null, unique
+name              text, not null
+credits           smallint, nullable
+created_at        timestamptz, not null, default now()
 ```
+
+#### `user_subjects` table
+
+> PK is a standalone `id` column, not the composite `(user_id, subject_id)` previously documented here.
+
+```
+id                    uuid, primary key, default gen_random_uuid()
+user_id               uuid, not null, references users.id ON DELETE CASCADE
+subject_id            uuid, nullable, references subjects.id ON DELETE CASCADE
+custom_subject_id     uuid, nullable, references custom_subjects.id ON DELETE SET NULL
+semester              text, not null
+handout_url           text, nullable
+handout_filename      text, nullable
+handout_uploaded_at   timestamptz, nullable
+topic_schedule        jsonb, nullable
+```
+
+A `user_subjects` row can reference either a catalog `subjects` row or a `custom_subjects` row via `custom_subject_id`. If a custom subject is deleted, the link is nulled rather than the enrollment row being removed.
 
 #### `questions` table
 
 ```
-id                uuid, primary key
-question_text     text
-marks             integer
-question_type     text  — mcq | short_answer | long_answer | numerical
-subject           text
-college           text  — used to scope all queries
-paper_year        integer, nullable
-academic_year     smallint, nullable
-exam_type         text  — quiz | midsem | compre | generated
-embedding         vector(384), nullable  — all-MiniLM-L6-v2
-published         boolean
-published_by      uuid, nullable
-published_at      timestamptz, nullable
-created_at        timestamptz
-options           jsonb, nullable  — MCQ options array
-correct_index     smallint, nullable  — correct option index 0–3
+id                  uuid, primary key, default gen_random_uuid()
+question_text       text, not null
+marks               integer, not null, default 0
+question_type       text, not null  — mcq | short_answer | long_answer | numerical
+subject             text, not null
+college             text, not null  — used to scope all queries
+paper_year          integer, nullable
+academic_year       smallint, nullable
+exam_type           text, nullable  — quiz | midsem | compre | generated
+embedding           vector(384), nullable  — all-MiniLM-L6-v2
+published           boolean, not null, default false
+published_by        uuid, nullable, references users.id ON DELETE SET NULL
+published_at        timestamptz, nullable
+created_at          timestamptz, not null, default now()
+options              jsonb, nullable  — MCQ options array
+correct_index        smallint, nullable  — correct option index 0–3
+subject_id           uuid, nullable, references subjects.id
+campus_id            uuid, nullable, references campuses.id
+source_pdf_id        uuid, nullable, references uploaded_pdfs.id
+doc_type             text, nullable
+topic                text, nullable
+has_diagram          boolean, not null, default false
+sub_parts            jsonb, nullable
+model_answer         text, nullable
+answer_source        text, nullable
+confidence_score     numeric, nullable
+marks_inferred       boolean, not null, default false
 ```
+
+`subject_id` / `campus_id` / `source_pdf_id` normalize what `subject` / `college` previously captured as plain text, alongside the original text columns. None of `subject_id`, `campus_id`, or `source_pdf_id` cascade on delete — deleting a referenced `subjects`, `campuses`, or `uploaded_pdfs` row is blocked while questions still reference it.
 
 #### `published_tests` table
 
 ```
-id                uuid, primary key
-published_by      uuid, nullable  — references users.id
-college           text
-subject           text
-exam_type         text
-question_ids      uuid[]  — references questions.id
-upvotes           integer
-attempts          integer
-created_at        timestamptz
+id                uuid, primary key, default gen_random_uuid()
+published_by      uuid, nullable, references users.id ON DELETE SET NULL
+college           text, not null
+subject           text, not null
+exam_type         text, not null
+question_ids      uuid[], not null  — references questions.id (not a DB-enforced FK)
+upvotes           integer, not null, default 0
+downvotes         integer, not null, default 0
+attempts          integer, not null, default 0
+created_at        timestamptz, not null, default now()
+subject_id        uuid, nullable
+campus_id         uuid, nullable
+```
+
+`question_ids` is a plain array column, not a foreign key — deleting a `questions` row will not cascade or block here, it will silently leave a dangling ID in the array.
+
+#### `post_votes` table
+
+Implemented and live — vote state is persisted to Supabase with optimistic UI on the client.
+
+```
+user_id           uuid, not null, references users.id ON DELETE CASCADE
+post_id           uuid, not null, references published_tests.id ON DELETE CASCADE
+vote              smallint, not null
+created_at        timestamptz, not null, default now()
+primary key       (user_id, post_id)
 ```
 
 #### `study_plans` table
 
 ```
-id                uuid, primary key
-user_subject_id   uuid, references user_subjects.id ON DELETE CASCADE
-user_id           uuid, references users.id ON DELETE CASCADE
-subject_name      text
-handout_url       text
-topics            jsonb  — flat list of topic strings
-weekly_plan       jsonb  — array of {week, topics, study_hours, focus}
-is_active         boolean, default true
-generated_at      timestamptz
-updated_at        timestamptz
+id                uuid, primary key, default gen_random_uuid()
+user_subject_id   uuid, not null, references user_subjects.id ON DELETE CASCADE
+user_id           uuid, not null, references users.id ON DELETE CASCADE
+subject_name      text, not null
+handout_url       text, not null
+topics            jsonb, not null  — flat list of topic strings
+weekly_plan       jsonb, not null  — array of {week, topics, study_hours, focus}
+is_active         boolean, not null, default true
+generated_at      timestamptz, not null, default now()
+updated_at        timestamptz, not null, default now()
 ```
 
-Only one plan per `user_subject_id` is active at a time. Uploading a new handout deactivates the previous plan before inserting the new one.
+Only one plan per `user_subject_id` is active at a time. Uploading a new handout deactivates the previous plan before inserting the new one. Deleting the parent `user_subjects` row (or the parent `users` row) cascades and removes associated study plans.
+
+#### `uploaded_pdfs` table **(schema only)**
+
+Tracks PDF uploads (PYQ papers, handouts, etc.) through ingestion, independent of which feature triggered the upload.
+
+```
+id                    uuid, primary key, default gen_random_uuid()
+uploaded_by           uuid, nullable, references users.id ON DELETE SET NULL
+uploaded_as           text, not null, default 'student'
+storage_path          text, not null
+doc_type              text, not null
+subject_id            uuid, nullable, references subjects.id
+campus_id             uuid, nullable, references campuses.id
+exam_type             text, nullable
+paper_year            integer, nullable
+topic                 text, nullable
+status                text, not null, default 'pending'
+questions_extracted   integer, not null, default 0
+questions_failed      integer, not null, default 0
+created_at            timestamptz, not null, default now()
+```
+
+`questions.source_pdf_id` references this table. Deleting a `subjects` or `campuses` row referenced here is blocked (`NO ACTION`) while uploads still reference it.
+
+#### `test_attempts` table **(schema only)**
+
+```
+id                uuid, primary key, default gen_random_uuid()
+test_id           uuid, not null, references published_tests.id ON DELETE CASCADE, unique
+user_id           uuid, not null, references users.id ON DELETE CASCADE, unique
+subject_id        uuid, nullable, references subjects.id
+attempt_number    smallint, not null, default 1, unique
+total_marks       integer, not null, default 0
+obtained_marks    integer, not null, default 0
+completed_at      timestamptz, not null, default now()
+```
+
+> `test_id`, `user_id`, and `attempt_number` are each declared as independent `UNIQUE` constraints rather than a single composite uniqueness rule across all three. As written, this restricts the table to at most one row per test, one row per user, and one row per attempt number globally — worth confirming against the actual intent (likely a composite `UNIQUE (test_id, user_id, attempt_number)`) before this table is used beyond a single test/user pairing.
+
+#### `question_results` table **(schema only)**
+
+Per-question outcome within a single test attempt.
+
+```
+id                  uuid, primary key, default gen_random_uuid()
+attempt_id          uuid, not null, references test_attempts.id ON DELETE CASCADE
+question_id         uuid, not null, references questions.id
+topic               text, nullable
+is_correct          boolean, nullable
+marks_available     integer, not null, default 0
+marks_obtained      numeric, not null, default 0
+self_rating         smallint, nullable
+ai_evaluation_id    uuid, nullable, references ai_evaluations.id ON DELETE SET NULL
+created_at          timestamptz, not null, default now()
+```
+
+`question_id` does not cascade — a `questions` row cannot be deleted while results reference it.
+
+#### `ai_evaluations` table **(schema only)**
+
+AI-graded evaluation of a student's photographed/handwritten answer against the model answer.
+
+```
+id                    uuid, primary key, default gen_random_uuid()
+question_result_id    uuid, not null, references question_results.id ON DELETE CASCADE
+user_id               uuid, not null, references users.id ON DELETE CASCADE
+question_id           uuid, not null, references questions.id
+answer_photo_url      text, nullable
+extracted_text        text, nullable
+model_answer_used     text, nullable
+score_awarded         numeric, nullable
+max_score             numeric, nullable
+feedback_json         jsonb, nullable
+evaluated_at          timestamptz, not null, default now()
+```
+
+`question_id` does not cascade — same restriction as `question_results`.
 
 PYQ entries are uploaded via `/upload-pyq`. The `college` field on every row ensures complete data isolation between colleges.
+
+### Cascade Behavior Summary
+
+| Parent deleted | Cascades to | Effect |
+|---|---|---|
+| `users` | `ai_evaluations`, `post_votes`, `study_plans`, `test_attempts`, `user_subjects` | hard delete |
+| `institutions` | `campuses`, `custom_subjects`, `subjects` | hard delete |
+| `subjects` | `user_subjects` | hard delete — but blocked by `NO ACTION` from `questions`, `test_attempts`, `uploaded_pdfs` if any reference the subject |
+| `user_subjects` | `study_plans` | hard delete |
+| `published_tests` | `post_votes`, `test_attempts` | hard delete |
+| `test_attempts` | `question_results` | hard delete |
+| `question_results` | `ai_evaluations` | hard delete |
+| `users` (as `published_by` / `uploaded_by`) | `published_tests`, `questions`, `uploaded_pdfs` | `SET NULL` — content kept, authorship orphaned |
+| `custom_subjects` | `user_subjects.custom_subject_id` | `SET NULL` — enrollment kept, custom-subject link cleared |
+| `ai_evaluations` | `question_results.ai_evaluation_id` | `SET NULL` |
+| `questions` | `ai_evaluations`, `question_results` | `NO ACTION` — delete blocked while referenced |
+| `subjects` / `campuses` / `uploaded_pdfs` | `questions`, `test_attempts`, `uploaded_pdfs` (various) | `NO ACTION` — delete blocked while referenced |
+
+In practice, a `subjects` row can only be deleted while it has zero questions, test attempts, or PDF uploads against it — once any exist, the catalog row is effectively permanent via plain `DELETE`.
 
 ### Model Answer Structure
 
@@ -526,6 +680,10 @@ FeedLocalDataSourceImpl  →  FeedRemoteDataSourceImpl
 
 Everything above — `FeedRepositoryImpl`, `GetFeedUseCase`, `FeedNotifier`, `FeedPage`, `FeedPostCard` — stayed identical.
 
+### Vote Persistence
+
+Upvote/downvote state is persisted to Supabase via the `post_votes` table, with optimistic UI updates on the client so the vote reflects instantly before the write confirms.
+
 ### Flutter Files
 
 | File | Role |
@@ -536,7 +694,7 @@ Everything above — `FeedRepositoryImpl`, `GetFeedUseCase`, `FeedNotifier`, `Fe
 | `domain/entities/feed_post_entity.dart` | `examType`, `questionIds` fields; `bankIndices` removed |
 | `presentation/providers/feed_provider.dart` | College read from `userProvider`, not hardcoded |
 | `presentation/pages/feed_page.dart` | College from `userProvider` (hardcoded fallback removed) |
-| `presentation/widgets/feed_post_card.dart` | Attempt button wired to `loadExistingTest` |
+| `presentation/widgets/feed_post_card.dart` | Attempt button wired to `loadExistingTest`, vote buttons wired to Supabase via `post_votes` |
 
 ---
 
@@ -562,6 +720,10 @@ Fire-and-forget POST /extract-plan → study plan generated and saved to study_p
 
 The upload and UI update are synchronous from the user's perspective. Plan generation is asynchronous — it completes in the background and persists permanently. Re-uploading replaces the handout and regenerates the plan.
 
+### Subject Retrieval Fix
+
+Subject retrieval was corrected and user-selected subjects are now wired end-to-end — from `user_subjects` through to the mock test setup screen, which previously used a hardcoded subject list. This also surfaced and fixed a related pipeline bug where a null `exam_type` from Supabase caused an `AttributeError` during question filtering.
+
 ### Supabase Storage
 
 Bucket: `handouts` (public)
@@ -574,7 +736,7 @@ RLS policies:
 
 | File | Role |
 |---|---|
-| `data/datasources/subjects_datasource.dart` | `uploadHandout` — uploads to Storage, updates `user_subjects`, triggers plan extraction |
+| `data/datasources/subjects_datasource.dart` | `uploadHandout` — uploads to Storage, updates `user_subjects`, triggers plan extraction; subject retrieval logic corrected |
 | `data/repository_impl/subjects_repository_impl.dart` | Wraps `uploadHandout` in `Either<Failure, SubjectEntity>` |
 | `presentation/pages/subjects_pages.dart` | `_SubjectsNotifier.uploadHandout`, `_HandoutChip`, `_pickAndUploadHandout` |
 
@@ -585,6 +747,34 @@ RLS policies:
 | No handout | "Upload handout" with upload icon, dimmed border |
 | Uploading | Spinner + "Generating plan…" text |
 | Handout uploaded | Filename + ↺ icon, primary color border |
+
+---
+
+## Test Attempts, Question Results, and AI Evaluation
+
+> Schema is live in Supabase; no Flutter or FastAPI code description exists yet for this flow. Documented here from the database only so the data model is tracked ahead of implementation.
+
+A `test_attempts` row represents one student's attempt at a `published_tests` entry. Each question answered within that attempt becomes a `question_results` row, capturing correctness, marks, and an optional self-rating. For written/photographed answers, a `question_results` row can link to an `ai_evaluations` row, which stores the answer photo, OCR-extracted text, the model answer it was graded against, the AI-awarded score, and structured feedback.
+
+```
+published_tests
+      ↓ (student attempts)
+test_attempts  (total_marks, obtained_marks, completed_at)
+      ↓ (one row per question)
+question_results  (is_correct, marks_obtained, self_rating)
+      ↓ (optional, for photographed/handwritten answers)
+ai_evaluations  (answer_photo_url → extracted_text → score_awarded, feedback_json)
+```
+
+See the [Supabase Schema](#supabase-schema) section for full column definitions, and Tech Debt for the `test_attempts` uniqueness constraint issue that needs resolving before this flow can support multiple users/attempts.
+
+---
+
+## PDF Upload Pipeline
+
+> Schema is live in Supabase (`uploaded_pdfs` table); no corresponding Flutter/FastAPI description exists yet.
+
+`uploaded_pdfs` tracks any PDF (PYQ paper, handout, etc.) through ingestion independent of which feature triggered the upload, including extraction status (`pending` / etc.) and a count of questions successfully extracted vs. failed. `questions.source_pdf_id` links generated/extracted questions back to the source upload.
 
 ---
 
@@ -758,9 +948,10 @@ lib/
   - `UserModel` extended with `email`, `campusId`, `institutionId`, `placeholder()` factory
 - **Subjects feature** — full Clean Architecture
   - Fetches subjects filtered by `institution_id` and `academic_year`
+  - Subject retrieval corrected; user-selected subjects wired end-to-end into mock tests
   - Credit ring showing total enrolled credits vs semester target
   - Long-press to enter edit mode, tap to mark for deletion
-  - Add custom subject via bottom sheet
+  - Add custom subject via bottom sheet (now backed by the `custom_subjects` table)
   - **Handout upload** per subject — PDF picker, Supabase Storage upload, chip UI
   - Fire-and-forget study plan generation via `/extract-plan`
 - **Routing** — GoRouter with auth guard
@@ -772,7 +963,7 @@ lib/
   - PDF parsing and question extraction
   - Semantic embedding stored in Supabase pgvector
   - MMR-based diverse example selection
-  - Exam type filtering (quiz / midsem / compre scope)
+  - Exam type filtering (quiz / midsem / compre scope), with defensive handling of null `exam_type` values from Supabase
   - LLM MCQ generation with 4 options + correct answer
   - LLM open question generation with structured model answers
   - Thread-safe parallel generation (3 concurrent Groq calls)
@@ -786,6 +977,7 @@ lib/
   - Written Practice mode (Quiz / Midsem / Compre Part B): flashcard + paper views
   - Model answers with structured markdown rendering
   - `loadExistingTest` — reconstruct written practice test from Supabase question IDs
+  - Subject list sourced dynamically from `user_subjects`, replacing the previous hardcoded list
 - **Exam prediction** / question bank browser
   - Filter by subject, year, exam type, question type
 - **Focus session timer**
@@ -800,6 +992,15 @@ lib/
   - Feed cards with subject, difficulty badge, upvotes, attempt count
   - Attempt button wired to `loadExistingTest` on `MockTestNotifier`
   - College read from `userProvider`
+  - **Vote state persisted to Supabase** (`post_votes` table) with optimistic UI
+
+### Schema Live, No UI/Code Description Yet
+
+These tables exist and are populated/usable in Supabase but have no corresponding Flutter or FastAPI implementation documented:
+
+- **Test attempts, question results, AI evaluation** (`test_attempts`, `question_results`, `ai_evaluations`) — see [Test Attempts, Question Results, and AI Evaluation](#test-attempts-question-results-and-ai-evaluation)
+- **PDF upload tracking** (`uploaded_pdfs`) — see [PDF Upload Pipeline](#pdf-upload-pipeline)
+- **Custom subjects** (`custom_subjects`) — referenced by `user_subjects.custom_subject_id`; add-custom-subject UI in the subjects feature may already write here, needs confirming
 
 ### Still Mock
 
@@ -814,7 +1015,6 @@ lib/
 - Study plan display page per subject
 - Syllabus progress tracking
 - PYQ upload through the app UI
-- Vote state persistence → Supabase write
 - Personal learning goal mode (daily AI question plan with lives/streaks)
 - Focus session history and streak tracking
 - Compre Part A (MCQ Blitz) published to feed and loadable from feed
@@ -994,6 +1194,14 @@ Currently calls a Supabase Edge Function named `extract-plan-proxy`. This needs 
 
 ---
 
+### `test_attempts` uniqueness constraints likely wrong
+
+`test_id`, `user_id`, and `attempt_number` on `test_attempts` are each independently `UNIQUE` rather than jointly unique. As declared, this caps the table at one row per test, one row per user, and one row per attempt number — system-wide. Needs to be a composite `UNIQUE (test_id, user_id, attempt_number)` (or similar) before the attempts/results/AI-evaluation flow can support more than a single user attempting a single test once.
+
+**When to fix:** Before building any Flutter UI or FastAPI logic on top of `test_attempts` / `question_results` / `ai_evaluations` — currently these tables can't be used for real multi-user data without this fix.
+
+---
+
 ### `academic_year` filtering (exam prediction + pipeline)
 
 `academic_year` exists on the `questions` table and in `UserModel` but is not yet used as a filter anywhere in the Flutter app or the FastAPI pipeline.
@@ -1030,6 +1238,14 @@ The subject selection step in onboarding shows UI but does not fetch real subjec
 - **`resume()` is a no-op** — only calls `notifyListeners()`. Either remove or re-start the ticker if pause is introduced later.
 - **`paused` state is unused** — `FocusTimerStatus.paused` is defined but never set.
 - **No session persistence** — add `StorageService.saveSession(duration, completedAt)` inside `_onTick` when Phase 5 streak tracking lands.
+
+---
+
+### `published_tests.question_ids` is not a real foreign key
+
+`question_ids` is a plain `uuid[]` array column, not a DB-enforced FK to `questions.id`. Deleting a `questions` row will silently leave a dangling ID in any `published_tests.question_ids` array that referenced it — no error, no cleanup. Relevant if a question-deletion or moderation feature is ever added.
+
+**When to fix:** Before any admin/moderation tooling that deletes individual questions is built.
 
 ---
 
@@ -1082,7 +1298,9 @@ Phase 4 — Auth and Backend (complete)
     ✅ GoRouter migration — auth guard, named routes, context.push()
     ✅ RLS policies on users table and storage.objects
     ✅ PYQ upload through app UI
-    ✅ Vote state persistence → Supabase write
+    ✅ Vote state persistence → Supabase write (post_votes table, optimistic UI)
+    ✅ Subject retrieval corrected, user-selected subjects wired end-to-end into mock tests
+    ✅ Null exam_type handled defensively in pipeline question filtering
     ⬜ _triggerPlanExtraction wired to real FastAPI URL
     ⬜ Study plan display UI per subject
     ⬜ Compre Part A → published_tests pipeline + feed (deferred to post-Phase 5)
@@ -1098,6 +1316,7 @@ Phase 5 — Personalisation
     Dashboard integration with mock test scores
     Focus session history and streak tracking
     academic_year filter across pipeline + exam prediction
+    Wire test_attempts / question_results / ai_evaluations into the app (composite uniqueness fix required first)
 
 Phase 6 — ML Extension
     Full DICL: top-15 cosine retrieval → MMR over those 15 → pick 5
