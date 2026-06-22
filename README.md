@@ -1192,13 +1192,6 @@ Currently calls a Supabase Edge Function named `extract-plan-proxy`. This needs 
 
 **When to fix:** Before study plan display UI is built — the plan won't exist in `study_plans` until this is wired.
 
----
-
-### `test_attempts` uniqueness constraints likely wrong
-
-`test_id`, `user_id`, and `attempt_number` on `test_attempts` are each independently `UNIQUE` rather than jointly unique. As declared, this caps the table at one row per test, one row per user, and one row per attempt number — system-wide. Needs to be a composite `UNIQUE (test_id, user_id, attempt_number)` (or similar) before the attempts/results/AI-evaluation flow can support more than a single user attempting a single test once.
-
-**When to fix:** Before building any Flutter UI or FastAPI logic on top of `test_attempts` / `question_results` / `ai_evaluations` — currently these tables can't be used for real multi-user data without this fix.
 
 ---
 
@@ -1316,7 +1309,7 @@ Phase 5 — Personalisation
     Dashboard integration with mock test scores
     Focus session history and streak tracking
     academic_year filter across pipeline + exam prediction
-    Wire test_attempts / question_results / ai_evaluations into the app (composite uniqueness fix required first)
+    Wire test_attempts / question_results / ai_evaluations into the app
 
 Phase 6 — ML Extension
     Full DICL: top-15 cosine retrieval → MMR over those 15 → pick 5
