@@ -16,6 +16,7 @@ An AI-powered exam preparation platform built with Flutter. Helps students track
 - [Subjects and Handout Upload](#subjects-and-handout-upload)
 - [Test Attempts, Question Results, and AI Evaluation](#test-attempts-question-results-and-ai-evaluation)
 - [PDF Upload Pipeline](#pdf-upload-pipeline)
+- [Nova — Adaptive Prep Planner](#nova--adaptive-prep-planner)
 - [Folder Structure](#folder-structure)
 - [Tech Stack](#tech-stack)
 - [Features](#features)
@@ -94,7 +95,7 @@ The mock test feature lets students take AI-generated tests calibrated to their 
 | `domain/repositories/mock_test_repository.dart` | Abstract repository interface |
 | `domain/usecases/mock_test_usecases.dart` | `FetchMcqQuestionsUseCase`, `FetchOpenQuestionsUseCase`, `FetchQuestionsByIdsUseCase` |
 | `data/dtos/mock_test_dto.dart` | DTOs with `fromJson` / `toJson` |
-| `data/datasources/mock_test_datasource.dart` | Calls `/generate-batch`, `/generate-open-batch`, fetches by IDs from Supabase, now sources subjects dynamically per user instead of a hardcoded list |
+| `data/datasources/mock_test_datasource.dart` | Calls `/generate-batch`, `/generate-open-batch`, fetches by IDs from Supabase, sources subjects dynamically per user |
 | `data/repository_impl/mock_test_repository_impl.dart` | Wraps datasource in `Either<Failure, T>` |
 | `presentation/providers/mock_tests_provider.dart` | `MockTestNotifier` — state, API calls, exam mode routing, `loadExistingTest` |
 | `presentation/pages/mock_tests_pages.dart` | Full UI: setup screen, loading, error, MCQ flow, written practice flow, result screen |
@@ -115,7 +116,7 @@ ExamType.compreB  →  ExamMode.writtenPractice  →  POST /generate-open-batch
 
 ### Dynamic Subject Sourcing
 
-As of the latest fix, the mock test setup screen pulls the student's subject list from their actual `user_subjects` enrollment rather than a hardcoded list, end-to-end with the subjects feature's retrieval fix.
+The mock test setup screen pulls the student's subject list from their actual `user_subjects` enrollment rather than a hardcoded list.
 
 ---
 
@@ -144,7 +145,7 @@ Before MMR runs, the question bank is filtered to only include PYQs relevant to 
 | Quiz 2 | quiz2 + midsem + quiz1 |
 | Compre | compre + quiz2 + midsem + quiz1 |
 
-If no questions match the filter, the pipeline falls back to the full bank so generation never hard-fails. A null `exam_type` value from Supabase is also handled defensively so it no longer raises an `AttributeError` during filtering.
+If no questions match the filter, the pipeline falls back to the full bank so generation never hard-fails. A null `exam_type` value from Supabase is handled defensively so it no longer raises an `AttributeError` during filtering.
 
 ### Generation Modes
 
@@ -197,7 +198,7 @@ Groq LLM — generate weekly study plan grouped by topic
       ↓
 Deactivate existing active plan for this user_subject
       ↓
-Insert new row into study_plans (topics jsonb, weekly_plan jsonb, is_active true)
+Insert new row into study_plans (topics jsonb, weekly_plan jsonb, raw_handout_data jsonb, is_active true)
 ```
 
 The upload completes and the UI updates immediately. Plan generation runs in the background and persists permanently in `study_plans`. Re-uploading a new handout deactivates the previous plan and generates a fresh one.
@@ -214,7 +215,7 @@ Alpha = 0.7 means 70% relevance, 30% diversity. Greedy algorithm that builds sel
 
 ### Supabase Schema
 
-> The schema below reflects the live database as queried directly via `information_schema` and `pg_policies`, not just what's referenced in application code. Tables with no corresponding Flutter/Python description yet are marked **(schema only)**.
+> The schema below reflects the live database. Tables with no corresponding Flutter/Python description yet are marked **(schema only)**. Nova-specific tables are documented in the [Nova section](#nova--adaptive-prep-planner).
 
 #### `institutions` table
 
@@ -239,36 +240,41 @@ location          text, nullable
 created_at        timestamptz, not null, default now()
 ```
 
-#### `users` table
-
-```
-id                uuid, primary key
-email             text
-full_name         text, nullable
-roll_number       text, nullable
-college           text, nullable
-institution_id    uuid, nullable
-campus_id         uuid, nullable
-academic_year     smallint, nullable
-avatar_url        text, nullable
-branch            text, nullable
-plan              text
-created_at        timestamptz
-updated_at        timestamptz
-```
-
-RLS policies: insert, update, select scoped to `auth.uid()`.
-
 #### `subjects` table
 
 ```
 id                uuid, primary key, default gen_random_uuid()
-institution_id    uuid, not null, references institutions.id ON DELETE CASCADE, unique
-name              text, not null, unique
+institution_id    uuid, not null, references institutions.id ON DELETE CASCADE
+name              text, not null
 short_name        text, nullable
-academic_year     smallint
-created_at        timestamptz
+academic_year     smallint, not null, check (1–4)
+semester          smallint, nullable
+credits           smallint, nullable
+campus_id         uuid, nullable, references campuses.id
+created_at        timestamptz, not null, default now()
 ```
+
+#### `users` table
+
+```
+id                uuid, primary key, references auth.users(id)
+email             text, not null, unique
+full_name         text, nullable
+roll_number       text, nullable
+college           text, nullable
+institution_id    uuid, nullable, references institutions.id
+campus_id         uuid, nullable, references campuses.id
+academic_year     smallint, nullable, check (1–4)
+avatar_url        text, nullable
+branch            text, nullable
+plan              text, not null, default 'free'
+role              text, not null, default 'student', check (student|admin|super_admin)
+semester_credits  smallint, nullable
+created_at        timestamptz, not null, default now()
+updated_at        timestamptz, not null, default now()
+```
+
+RLS policies: insert, update, select scoped to `auth.uid()`.
 
 #### `custom_subjects` table **(schema only)**
 
@@ -276,16 +282,14 @@ User- or institution-defined subjects that don't exist in the shared `subjects` 
 
 ```
 id                uuid, primary key, default gen_random_uuid()
-institution_id    uuid, not null, references institutions.id ON DELETE CASCADE, unique
-course_code       text, not null, unique
+institution_id    uuid, not null, references institutions.id ON DELETE CASCADE
+course_code       text, not null
 name              text, not null
 credits           smallint, nullable
 created_at        timestamptz, not null, default now()
 ```
 
 #### `user_subjects` table
-
-> PK is a standalone `id` column, not the composite `(user_id, subject_id)` previously documented here.
 
 ```
 id                    uuid, primary key, default gen_random_uuid()
@@ -296,10 +300,42 @@ semester              text, not null
 handout_url           text, nullable
 handout_filename      text, nullable
 handout_uploaded_at   timestamptz, nullable
-topic_schedule        jsonb, nullable
 ```
 
-A `user_subjects` row can reference either a catalog `subjects` row or a `custom_subjects` row via `custom_subject_id`. If a custom subject is deleted, the link is nulled rather than the enrollment row being removed.
+**Constraint:** exactly one of `subject_id` / `custom_subject_id` must be set — enforced via CHECK constraint `user_subjects_subject_check`.
+
+> `topic_schedule` column was present in an earlier version and has been dropped. Study plan data lives in `study_plans`.
+
+#### `user_subject_exams` table
+
+Stores exam dates per enrolled subject. Nova uses this for `time_left` urgency signal.
+
+```
+id                uuid, primary key, default gen_random_uuid()
+user_subject_id   uuid, not null, references user_subjects.id ON DELETE CASCADE
+exam_type         text, not null, check (quiz1|midsem|quiz2|compre)
+exam_date         date, not null
+created_at        timestamptz, not null, default now()
+unique            (user_subject_id, exam_type)
+```
+
+RLS: scoped to student via `user_subject_id` join.
+
+#### `topics` table
+
+Canonical topic list extracted from PYQs and handouts. All free-text `topic` columns across the schema have a corresponding `topic_id` FK to this table.
+
+```
+id                  uuid, primary key, default gen_random_uuid()
+subject_id          uuid, nullable, references subjects.id
+custom_subject_id   uuid, nullable, references custom_subjects.id
+name                text, not null
+created_at          timestamptz, not null, default now()
+```
+
+**Constraint:** exactly one of `subject_id` / `custom_subject_id` must be set. Case-insensitive unique indexes prevent "Normalization" and "normalization" from being stored as separate topics.
+
+RLS: read-only for all authenticated users. Write access pending pipeline key confirmation (service-role vs anon).
 
 #### `questions` table
 
@@ -307,61 +343,60 @@ A `user_subjects` row can reference either a catalog `subjects` row or a `custom
 id                  uuid, primary key, default gen_random_uuid()
 question_text       text, not null
 marks               integer, not null, default 0
-question_type       text, not null  — mcq | short_answer | long_answer | numerical
-subject             text, not null
-college             text, not null  — used to scope all queries
+question_type       text, not null — mcq|short_answer|long_answer|numerical
+subject             text, not null  — legacy text, kept for pipeline compatibility
+college             text, not null  — legacy text, kept for pipeline compatibility
 paper_year          integer, nullable
 academic_year       smallint, nullable
-exam_type           text, nullable  — quiz | midsem | compre | generated
-embedding           vector(384), nullable  — all-MiniLM-L6-v2
+exam_type           text, nullable — quiz1|midsem|quiz2|compre|generated
+embedding           vector(384), nullable — all-MiniLM-L6-v2
 published           boolean, not null, default false
 published_by        uuid, nullable, references users.id ON DELETE SET NULL
 published_at        timestamptz, nullable
 created_at          timestamptz, not null, default now()
-options              jsonb, nullable  — MCQ options array
-correct_index        smallint, nullable  — correct option index 0–3
-subject_id           uuid, nullable, references subjects.id
-campus_id            uuid, nullable, references campuses.id
-source_pdf_id        uuid, nullable, references uploaded_pdfs.id
-doc_type             text, nullable
-topic                text, nullable
-has_diagram          boolean, not null, default false
-sub_parts            jsonb, nullable
-model_answer         text, nullable
-answer_source        text, nullable
-confidence_score     numeric, nullable
-marks_inferred       boolean, not null, default false
+options             jsonb, nullable — MCQ options array
+correct_index       smallint, nullable — correct option index 0–3
+subject_id          uuid, nullable, references subjects.id — canonical FK
+campus_id           uuid, nullable, references campuses.id
+source_pdf_id       uuid, nullable, references uploaded_pdfs.id
+doc_type            text, nullable
+topic               text, nullable — legacy free text, kept for pipeline compatibility
+topic_id            uuid, nullable, references topics.id — canonical FK
+has_diagram         boolean, not null, default false
+sub_parts           jsonb, nullable
+model_answer        text, nullable
+answer_source       text, nullable
+confidence_score    numeric, nullable
+marks_inferred      boolean, not null, default false
 ```
 
-`subject_id` / `campus_id` / `source_pdf_id` normalize what `subject` / `college` previously captured as plain text, alongside the original text columns. None of `subject_id`, `campus_id`, or `source_pdf_id` cascade on delete — deleting a referenced `subjects`, `campuses`, or `uploaded_pdfs` row is blocked while questions still reference it.
+`subject` and `topic` text columns coexist with their FK replacements (`subject_id`, `topic_id`) during migration. New code should write both; future cleanup will drop the text columns once the pipeline is fully migrated.
 
 #### `published_tests` table
 
 ```
 id                uuid, primary key, default gen_random_uuid()
 published_by      uuid, nullable, references users.id ON DELETE SET NULL
-college           text, not null
-subject           text, not null
-exam_type         text, not null
-question_ids      uuid[], not null  — references questions.id (not a DB-enforced FK)
+college           text, not null — legacy
+subject           text, not null — legacy
+subject_id        uuid, nullable — canonical FK
+campus_id         uuid, nullable
+exam_type         text, not null, check (quiz1|midsem|quiz2|compre|generated)
+question_ids      uuid[], not null — plain array, not FK-enforced
 upvotes           integer, not null, default 0
 downvotes         integer, not null, default 0
 attempts          integer, not null, default 0
 created_at        timestamptz, not null, default now()
-subject_id        uuid, nullable
-campus_id         uuid, nullable
 ```
 
-`question_ids` is a plain array column, not a foreign key — deleting a `questions` row will not cascade or block here, it will silently leave a dangling ID in the array.
+`question_ids` is a plain array — deleting a `questions` row will silently leave a dangling ID here.
 
 #### `post_votes` table
-
-Implemented and live — vote state is persisted to Supabase with optimistic UI on the client.
 
 ```
 user_id           uuid, not null, references users.id ON DELETE CASCADE
 post_id           uuid, not null, references published_tests.id ON DELETE CASCADE
-vote              smallint, not null
+vote              smallint, not null, check (1 or -1)
 created_at        timestamptz, not null, default now()
 primary key       (user_id, post_id)
 ```
@@ -372,77 +407,71 @@ primary key       (user_id, post_id)
 id                uuid, primary key, default gen_random_uuid()
 user_subject_id   uuid, not null, references user_subjects.id ON DELETE CASCADE
 user_id           uuid, not null, references users.id ON DELETE CASCADE
-subject_name      text, not null
-handout_url       text, not null
-topics            jsonb, not null  — flat list of topic strings
-weekly_plan       jsonb, not null  — array of {week, topics, study_hours, focus}
+subject_name      text, not null — denormalized for query convenience
+handout_url       text, not null — which handout version this plan was generated from
+topics            jsonb, not null — flat list of topic strings
+weekly_plan       jsonb, not null — array of {week, topics, study_hours, focus}
+raw_handout_data  jsonb, nullable — full extracted handout data, preserves all content
 is_active         boolean, not null, default true
 generated_at      timestamptz, not null, default now()
 updated_at        timestamptz, not null, default now()
 ```
 
-Only one plan per `user_subject_id` is active at a time. Uploading a new handout deactivates the previous plan before inserting the new one. Deleting the parent `user_subjects` row (or the parent `users` row) cascades and removes associated study plans.
+Only one plan per `user_subject_id` is active at a time. Uploading a new handout deactivates the previous plan before inserting the new one.
 
 #### `uploaded_pdfs` table **(schema only)**
-
-Tracks PDF uploads (PYQ papers, handouts, etc.) through ingestion, independent of which feature triggered the upload.
 
 ```
 id                    uuid, primary key, default gen_random_uuid()
 uploaded_by           uuid, nullable, references users.id ON DELETE SET NULL
-uploaded_as           text, not null, default 'student'
+uploaded_as           text, not null, default 'student', check (student|admin)
 storage_path          text, not null
-doc_type              text, not null
+doc_type              text, not null, check (pyq|tutorial|solution|lab|misc)
 subject_id            uuid, nullable, references subjects.id
 campus_id             uuid, nullable, references campuses.id
 exam_type             text, nullable
 paper_year            integer, nullable
 topic                 text, nullable
-status                text, not null, default 'pending'
+topic_id              uuid, nullable, references topics.id
+status                text, not null, default 'pending', check (pending|running|succeeded|partial|failed)
 questions_extracted   integer, not null, default 0
 questions_failed      integer, not null, default 0
 created_at            timestamptz, not null, default now()
 ```
 
-`questions.source_pdf_id` references this table. Deleting a `subjects` or `campuses` row referenced here is blocked (`NO ACTION`) while uploads still reference it.
-
 #### `test_attempts` table **(schema only)**
 
 ```
 id                uuid, primary key, default gen_random_uuid()
-test_id           uuid, not null, references published_tests.id ON DELETE CASCADE, unique
-user_id           uuid, not null, references users.id ON DELETE CASCADE, unique
+test_id           uuid, not null, references published_tests.id ON DELETE CASCADE
+user_id           uuid, not null, references users.id ON DELETE CASCADE
 subject_id        uuid, nullable, references subjects.id
-attempt_number    smallint, not null, default 1, unique
+exam_type         text, nullable, check (quiz1|midsem|quiz2|compre)
+attempt_number    smallint, not null, default 1
 total_marks       integer, not null, default 0
 obtained_marks    integer, not null, default 0
 completed_at      timestamptz, not null, default now()
+unique            (test_id, user_id, attempt_number)
 ```
 
-> `test_id`, `user_id`, and `attempt_number` are each declared as independent `UNIQUE` constraints rather than a single composite uniqueness rule across all three. As written, this restricts the table to at most one row per test, one row per user, and one row per attempt number globally — worth confirming against the actual intent (likely a composite `UNIQUE (test_id, user_id, attempt_number)`) before this table is used beyond a single test/user pairing.
-
 #### `question_results` table **(schema only)**
-
-Per-question outcome within a single test attempt.
 
 ```
 id                  uuid, primary key, default gen_random_uuid()
 attempt_id          uuid, not null, references test_attempts.id ON DELETE CASCADE
 question_id         uuid, not null, references questions.id
-topic               text, nullable
+topic               text, nullable — legacy free text
+topic_id            uuid, nullable, references topics.id — canonical FK
 is_correct          boolean, nullable
 marks_available     integer, not null, default 0
 marks_obtained      numeric, not null, default 0
-self_rating         smallint, nullable
+self_rating         smallint, nullable, check (1–5)
+error_category      text, nullable, check (concept_gap|practice_gap|careless)
 ai_evaluation_id    uuid, nullable, references ai_evaluations.id ON DELETE SET NULL
 created_at          timestamptz, not null, default now()
 ```
 
-`question_id` does not cascade — a `questions` row cannot be deleted while results reference it.
-
 #### `ai_evaluations` table **(schema only)**
-
-AI-graded evaluation of a student's photographed/handwritten answer against the model answer.
 
 ```
 id                    uuid, primary key, default gen_random_uuid()
@@ -458,28 +487,40 @@ feedback_json         jsonb, nullable
 evaluated_at          timestamptz, not null, default now()
 ```
 
-`question_id` does not cascade — same restriction as `question_results`.
+#### `user_topic_weights` table
 
-PYQ entries are uploaded via `/upload-pyq`. The `college` field on every row ensures complete data isolation between colleges.
+EMA-style weakness signal per topic per student.
+
+```
+id                  uuid, primary key, default gen_random_uuid()
+user_id             uuid, not null, references users.id
+subject_id          uuid, nullable, references subjects.id — null for custom subjects
+custom_subject_id   uuid, nullable, references custom_subjects.id — null for catalog subjects
+topic               text, not null — legacy free text
+topic_id            uuid, nullable, references topics.id — canonical FK
+weight              numeric, not null, default 0.5, check (0–1)
+created_at          timestamptz, not null, default now()
+updated_at          timestamptz, not null, default now()
+unique              (user_id, subject_id, topic)
+```
+
+**Constraint:** exactly one of `subject_id` / `custom_subject_id` must be set — enforced via CHECK constraint `user_topic_weights_subject_check`.
 
 ### Cascade Behavior Summary
 
 | Parent deleted | Cascades to | Effect |
 |---|---|---|
-| `users` | `ai_evaluations`, `post_votes`, `study_plans`, `test_attempts`, `user_subjects` | hard delete |
+| `users` | `ai_evaluations`, `post_votes`, `study_plans`, `test_attempts`, `user_subjects`, `nova_*` tables | hard delete |
 | `institutions` | `campuses`, `custom_subjects`, `subjects` | hard delete |
-| `subjects` | `user_subjects` | hard delete — but blocked by `NO ACTION` from `questions`, `test_attempts`, `uploaded_pdfs` if any reference the subject |
-| `user_subjects` | `study_plans` | hard delete |
+| `subjects` | `user_subjects` | hard delete — but blocked by `NO ACTION` from `questions`, `test_attempts`, `uploaded_pdfs` |
+| `user_subjects` | `study_plans`, `user_subject_exams`, `staleness_tracker` | hard delete |
 | `published_tests` | `post_votes`, `test_attempts` | hard delete |
 | `test_attempts` | `question_results` | hard delete |
 | `question_results` | `ai_evaluations` | hard delete |
 | `users` (as `published_by` / `uploaded_by`) | `published_tests`, `questions`, `uploaded_pdfs` | `SET NULL` — content kept, authorship orphaned |
-| `custom_subjects` | `user_subjects.custom_subject_id` | `SET NULL` — enrollment kept, custom-subject link cleared |
+| `custom_subjects` | `user_subjects.custom_subject_id` | `SET NULL` — enrollment kept, link cleared |
 | `ai_evaluations` | `question_results.ai_evaluation_id` | `SET NULL` |
 | `questions` | `ai_evaluations`, `question_results` | `NO ACTION` — delete blocked while referenced |
-| `subjects` / `campuses` / `uploaded_pdfs` | `questions`, `test_attempts`, `uploaded_pdfs` (various) | `NO ACTION` — delete blocked while referenced |
-
-In practice, a `subjects` row can only be deleted while it has zero questions, test attempts, or PDF uploads against it — once any exist, the catalog row is effectively permanent via plain `DELETE`.
 
 ### Model Answer Structure
 
@@ -497,6 +538,8 @@ The backend is deployed on Railway. Start locally with:
 uvicorn main:app --reload --port 8000
 ```
 
+#### Question Generation + Upload (`main.py`)
+
 | Method | Endpoint | Description |
 |---|---|---|
 | `GET` | `/health` | Sanity check |
@@ -505,9 +548,38 @@ uvicorn main:app --reload --port 8000
 | `POST` | `/generate` | One open-ended question |
 | `POST` | `/generate-batch` | N MCQs in parallel (Compre Part A) |
 | `POST` | `/generate-open-batch` | N open questions + model answers, auto-saves to `published_tests` |
-| `POST` | `/upload-pyq` | PDF → extract questions → insert into Supabase |
+| `POST` | `/upload-pyq` | PDF → extract → insert into Supabase |
 | `POST` | `/extract-plan` | Handout PDF → topic list + weekly study plan → insert into `study_plans` |
 
+#### Nova (`nova_router.py`, mounted at `/nova`)
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/nova/capacity` | Submit today's capacity tap (light/normal/packed) |
+| `POST` | `/nova/trigger/check` | Run trigger layer — decides if a reasoning pass is needed |
+| `POST` | `/nova/plan/generate` | Run reasoning pass, return ranked focus list + time budgets + why |
+| `GET` | `/nova/plan/current` | Fetch today's active plan |
+| `GET` | `/nova/plan/log` | Full audit trail of all plan changes |
+| `POST` | `/nova/flags/situation` | Propose + confirm a situation flag |
+| `POST` | `/nova/flags/standing` | Propose + confirm a standing flag |
+| `DELETE` | `/nova/flags/{flag_id}` | Remove an active flag |
+| `POST` | `/nova/career/track` | Add a career/industry unit to track |
+| `POST` | `/nova/career/relevance/refresh` | Trigger industry relevance web lookup |
+| `GET` | `/nova/career/tracks` | List active career units with relevance + staleness |
+| `POST` | `/nova/conversation` | Send a message to Nova — stores turn, extracts facts, proposes writes |
+| `GET` | `/nova/conversation/history` | Fetch active conversation history |
+| `POST` | `/nova/override/one-off` | Log a one-off override — never persisted to schema |
+| `GET` | `/nova/proposals/pending` | List unconfirmed proposals awaiting confirmation |
+| `POST` | `/nova/proposals/{proposal_id}/confirm` | Confirm a proposal — triggers schema write + reasoning pass |
+| `DELETE` | `/nova/proposals/{proposal_id}` | Reject and discard a pending proposal |
+
+#### Notes
+
+- All `/nova/*` endpoints are scoped to the authenticated student — no cross-student data access
+- Nova never calls `pipeline.py` — question generation and Nova are fully separate
+- `/nova/trigger/check` is called on app open, after test submission, and after flag confirmation
+- `/nova/conversation` never writes silently — all fact writes go through `/nova/proposals/{id}/confirm`
+- Minor re-ranks (no LLM call) and full reasoning passes both go through `/nova/plan/generate` — trigger severity decided beforehand by `/nova/trigger/check`
 #### `POST /extract-plan` — Request body
 
 ```json
@@ -519,32 +591,7 @@ uvicorn main:app --reload --port 8000
 }
 ```
 
-#### `POST /generate-batch` — Request body
-
-```json
-{
-  "subject": "Artificial Intelligence",
-  "college": "BPHC",
-  "count": 8,
-  "exam_type": "compre",
-  "year_from": 2022,
-  "year_to": 2025,
-  "k": 5
-}
-```
-
-#### `POST /generate-open-batch` — Request body
-
-```json
-{
-  "subject": "Artificial Intelligence",
-  "college": "BPHC",
-  "count": 5,
-  "exam_type": "midsem",
-  "with_answers": true,
-  "k": 5
-}
-```
+> Note: this endpoint is not yet wired in Flutter — see Tech Debt.
 
 ### Pipeline Evaluation
 
@@ -691,10 +738,10 @@ Upvote/downvote state is persisted to Supabase via the `post_votes` table, with 
 | `data/datasources/feed_remote_datasource.dart` | Queries `published_tests` from Supabase |
 | `data/dtos/feed_post_dto.dart` | `fromSupabase` factory, `questionIds`, `examType` fields |
 | `data/repository_impl/feed_repository_impl.dart` | Wraps remote datasource in `Either<Failure, T>` |
-| `domain/entities/feed_post_entity.dart` | `examType`, `questionIds` fields; `bankIndices` removed |
-| `presentation/providers/feed_provider.dart` | College read from `userProvider`, not hardcoded |
-| `presentation/pages/feed_page.dart` | College from `userProvider` (hardcoded fallback removed) |
-| `presentation/widgets/feed_post_card.dart` | Attempt button wired to `loadExistingTest`, vote buttons wired to Supabase via `post_votes` |
+| `domain/entities/feed_post_entity.dart` | `examType`, `questionIds` fields |
+| `presentation/providers/feed_provider.dart` | College read from `userProvider` |
+| `presentation/pages/feed_page.dart` | College from `userProvider` |
+| `presentation/widgets/feed_post_card.dart` | Attempt button wired to `loadExistingTest`, vote buttons wired to Supabase |
 
 ---
 
@@ -720,23 +767,19 @@ Fire-and-forget POST /extract-plan → study plan generated and saved to study_p
 
 The upload and UI update are synchronous from the user's perspective. Plan generation is asynchronous — it completes in the background and persists permanently. Re-uploading replaces the handout and regenerates the plan.
 
-### Subject Retrieval Fix
-
-Subject retrieval was corrected and user-selected subjects are now wired end-to-end — from `user_subjects` through to the mock test setup screen, which previously used a hardcoded subject list. This also surfaced and fixed a related pipeline bug where a null `exam_type` from Supabase caused an `AttributeError` during question filtering.
-
 ### Supabase Storage
 
 Bucket: `handouts` (public)
 
 RLS policies:
 - `INSERT` — authenticated users only, `bucket_id = 'handouts'`
-- `SELECT` — authenticated users only, `bucket_id = 'handouts'` (required for post-upload URL resolution)
+- `SELECT` — authenticated users only, `bucket_id = 'handouts'`
 
 ### Flutter Files
 
 | File | Role |
 |---|---|
-| `data/datasources/subjects_datasource.dart` | `uploadHandout` — uploads to Storage, updates `user_subjects`, triggers plan extraction; subject retrieval logic corrected |
+| `data/datasources/subjects_datasource.dart` | `uploadHandout` — uploads to Storage, updates `user_subjects`, triggers plan extraction |
 | `data/repository_impl/subjects_repository_impl.dart` | Wraps `uploadHandout` in `Either<Failure, SubjectEntity>` |
 | `presentation/pages/subjects_pages.dart` | `_SubjectsNotifier.uploadHandout`, `_HandoutChip`, `_pickAndUploadHandout` |
 
@@ -752,21 +795,19 @@ RLS policies:
 
 ## Test Attempts, Question Results, and AI Evaluation
 
-> Schema is live in Supabase; no Flutter or FastAPI code description exists yet for this flow. Documented here from the database only so the data model is tracked ahead of implementation.
+> Schema is live in Supabase; no Flutter or FastAPI code description exists yet for this flow.
 
-A `test_attempts` row represents one student's attempt at a `published_tests` entry. Each question answered within that attempt becomes a `question_results` row, capturing correctness, marks, and an optional self-rating. For written/photographed answers, a `question_results` row can link to an `ai_evaluations` row, which stores the answer photo, OCR-extracted text, the model answer it was graded against, the AI-awarded score, and structured feedback.
+A `test_attempts` row represents one student's attempt at a `published_tests` entry. Each question answered within that attempt becomes a `question_results` row, capturing correctness, marks, error category, and an optional self-rating. For written/photographed answers, a `question_results` row can link to an `ai_evaluations` row.
 
 ```
 published_tests
       ↓ (student attempts)
-test_attempts  (total_marks, obtained_marks, completed_at)
+test_attempts  (total_marks, obtained_marks, exam_type, completed_at)
       ↓ (one row per question)
-question_results  (is_correct, marks_obtained, self_rating)
+question_results  (is_correct, marks_obtained, error_category, topic_id, self_rating)
       ↓ (optional, for photographed/handwritten answers)
 ai_evaluations  (answer_photo_url → extracted_text → score_awarded, feedback_json)
 ```
-
-See the [Supabase Schema](#supabase-schema) section for full column definitions, and Tech Debt for the `test_attempts` uniqueness constraint issue that needs resolving before this flow can support multiple users/attempts.
 
 ---
 
@@ -774,7 +815,156 @@ See the [Supabase Schema](#supabase-schema) section for full column definitions,
 
 > Schema is live in Supabase (`uploaded_pdfs` table); no corresponding Flutter/FastAPI description exists yet.
 
-`uploaded_pdfs` tracks any PDF (PYQ paper, handout, etc.) through ingestion independent of which feature triggered the upload, including extraction status (`pending` / etc.) and a count of questions successfully extracted vs. failed. `questions.source_pdf_id` links generated/extracted questions back to the source upload.
+`uploaded_pdfs` tracks any PDF through ingestion independent of which feature triggered the upload. `questions.source_pdf_id` links extracted questions back to the source upload.
+
+---
+
+## Nova — Adaptive Prep Planner
+
+Nova is an AI mentor that tells the student where to put their hours today. It reasons over a fresh facts snapshot every day, weighing exam urgency, weakness type, capacity, career relevance, and history — with no hardcoded priority rules.
+
+### Core Principle
+
+Nothing about what to prioritize is hardcoded. Only the plumbing — what triggers re-evaluation, what gets confirmed, what gets logged — is rule-based. The actual judgment is reasoned fresh every time by an LLM acting like an experienced senior.
+
+### Nova Schema Tables
+
+All Nova tables have RLS enabled, scoped to `user_id = auth.uid()`.
+
+#### `nova_capacity_log` table
+
+Daily capacity tap per student. One row per student per day, upserted when student changes their tap.
+
+```
+id                uuid, primary key, default gen_random_uuid()
+user_id           uuid, not null, references users.id
+capacity          text, not null, check (light|normal|packed)
+logged_for_date   date, not null
+created_at        timestamptz, not null, default now()
+updated_at        timestamptz, not null, default now()
+unique            (user_id, logged_for_date)
+```
+
+When upserting: `ON CONFLICT (user_id, logged_for_date) DO UPDATE SET capacity = EXCLUDED.capacity, updated_at = now()`.
+
+#### `staleness_tracker` table
+
+Tracks when each unit (academic subject or career unit) was last meaningfully worked on. Used by the trigger layer to detect neglected topics.
+
+```
+id                        uuid, primary key, default gen_random_uuid()
+user_id                   uuid, not null, references users.id
+user_subject_id           uuid, nullable, references user_subjects.id
+career_unit_id            uuid, nullable, references career_units.id
+topic_id                  uuid, nullable, references topics.id
+last_meaningfully_touched timestamptz, not null, default now()
+created_at                timestamptz, not null, default now()
+updated_at                timestamptz, not null, default now()
+```
+
+**Constraint:** exactly one of `user_subject_id` / `career_unit_id` must be set (XOR).
+
+#### `standing_flags` table
+
+Durable instructions from the student that persist until explicitly removed or superseded. Example: "always buffer DBMS practicals."
+
+```
+id                uuid, primary key, default gen_random_uuid()
+user_id           uuid, not null, references users.id
+user_subject_id   uuid, nullable, references user_subjects.id
+instruction_text  text, not null
+confirmed_at      timestamptz, nullable — null = pending confirmation, inert until confirmed
+superseded_at     timestamptz, nullable — set when a newer statement replaces this one
+supersedes_id     uuid, nullable, references standing_flags.id — links to the flag this replaced
+created_at        timestamptz, not null, default now()
+```
+
+Active flags: `WHERE superseded_at IS NULL AND confirmed_at IS NOT NULL`.
+
+#### `situation_flags` table
+
+Temporary context the student tells Nova. Example: "I'm sick this week," "I have a family event Saturday."
+
+```
+id                uuid, primary key, default gen_random_uuid()
+user_id           uuid, not null, references users.id
+user_subject_id   uuid, nullable, references user_subjects.id
+flag_text         text, not null
+confirmed_at      timestamptz, nullable
+superseded_at     timestamptz, nullable
+supersedes_id     uuid, nullable, references situation_flags.id
+starts_at         timestamptz, not null, default now()
+expires_at        timestamptz, nullable — null = no fixed end date
+created_at        timestamptz, not null, default now()
+```
+
+**Constraint:** `expires_at IS NULL OR expires_at > starts_at`.
+
+#### `nova_history` table
+
+What has worked for this student before, conversation-fed only. Not auto-inferred from scores (v2 deferral).
+
+```
+id                uuid, primary key, default gen_random_uuid()
+user_id           uuid, not null, references users.id
+user_subject_id   uuid, nullable, references user_subjects.id
+content           text, not null — free text, preserves full nuance
+confirmed_at      timestamptz, nullable
+superseded_at     timestamptz, nullable
+supersedes_id     uuid, nullable, references nova_history.id
+created_at        timestamptz, not null, default now()
+```
+
+**Known dependency:** contradiction detection (setting `supersedes_id` correctly) must be handled by the conversation layer at write time. The schema cannot enforce this.
+
+#### `career_units` table
+
+Career/industry skills or directions the student is tracking alongside academic prep.
+
+```
+id                              uuid, primary key, default gen_random_uuid()
+user_id                         uuid, not null, references users.id
+name                            text, not null
+description                     text, nullable
+industry_relevance_text         text, nullable — human-readable relevance signal
+industry_relevance_score        numeric, nullable, check (0–1) — machine-readable, used by trigger layer
+industry_relevance_updated_at   timestamptz, nullable — when relevance was last refreshed
+confirmed_at                    timestamptz, nullable
+paused_at                       timestamptz, nullable — null = active, set = paused
+created_at                      timestamptz, not null, default now()
+updated_at                      timestamptz, not null, default now()
+```
+
+Active units: `WHERE paused_at IS NULL AND confirmed_at IS NOT NULL`. Career units use pause/resume rather than supersession — pausing a skill is not the same shape as contradicting a stated preference.
+
+### Nova Facts Snapshot (not a table)
+
+Nova's facts snapshot is derived live at reasoning time by `nova_pipeline.py`, not stored as a materialized table. It joins:
+
+- `user_subject_exams` → `time_left` per subject
+- `nova_capacity_log` → today's capacity
+- `staleness_tracker` → last touched per unit
+- `standing_flags` + `situation_flags` → active flags
+- `nova_history` → confirmed history entries
+- `career_units` → active career units with relevance scores
+- `question_results` + `user_topic_weights` → performance and error_category per topic
+- `study_plans` → topic structure per subject
+
+The snapshot is logged as jsonb inside `nova_why_log` for auditability. A pre-materialized table is not used because it would create a sync problem and violate the spec's atomic-fetch requirement.
+
+### Nova Tables Still To Build
+
+| Table | Purpose |
+|---|---|
+| `nova_conversations` | Conversation turn history with Nova |
+| `nova_conversations_archive` | Older conversations moved out for performance |
+| `nova_plan_outputs` | Ranked plan the student sees — subjects, time budgets, one-line reasons per item |
+| `nova_why_log` | Audit trail — full facts snapshot + reasoning summary, linked to plan output |
+| `nova_trigger_log` | What fired each reasoning pass and why |
+| `nova_config` | Per-student configuration, staleness thresholds, preferences |
+| `nova_unconfirmed_proposals` | Conversation-proposed changes inert until student confirms |
+| `nova_industry_relevance_log` | Web lookup history for career unit relevance signals |
+| `nova_one_off_overrides` | Today-only overrides, never persisted to schema |
 
 ---
 
@@ -789,7 +979,7 @@ lib/
 │   │       ├── main.py              # FastAPI app (all endpoints)
 │   │       ├── pipeline.py          # DICL pipeline + study plan extraction
 │   │       ├── evaluate.py          # Pipeline evaluation
-│   │       └── .env                 # GROQ_API_KEY, SUPABASE_URL, SUPABASE_KEY
+│   │       └── .env                 # GROQ_API_KEY, SUPABASE_URL, SUPABASE_KEY (not committed)
 │   ├── config/
 │   ├── di/
 │   ├── errors/
@@ -812,78 +1002,18 @@ lib/
 │
 ├── features/
 │   ├── auth/
-│   │   ├── presentation/
-│   │   │   └── pages/               # auth_page.dart — magic link flow
-│   │   └── providers/               # authSessionProvider, _justLoggedIn flag
-│   │
 │   ├── onboarding/
-│   │   ├── data/
-│   │   │   └── datasources/         # onboarding_remote_datasource.dart
-│   │   ├── presentation/
-│   │   │   └── pages/               # onboarding_page.dart
-│   │   └── providers/               # onboarding_provider.dart
-│   │
 │   ├── subjects/
-│   │   ├── data/
-│   │   │   ├── datasources/         # subjects_datasource.dart — getSubjects, addCustom, delete, uploadHandout
-│   │   │   ├── dtos/                # subject_dto.dart — handout_url, handout_filename fields
-│   │   │   └── repository_impl/     # subjects_repository_impl.dart
-│   │   ├── domain/
-│   │   │   ├── entities/            # subject_entity.dart — handoutUrl, handoutFilename fields
-│   │   │   ├── repositories/        # subjects_repository.dart
-│   │   │   └── usecases/            # get_subjects_usecase.dart
-│   │   └── presentation/
-│   │       └── pages/               # subjects_pages.dart — handout chip, upload flow
-│   │
 │   ├── analytics/
 │   ├── dashboard/
 │   ├── colleges/
 │   ├── syllabus/
 │   ├── pyq_upload/
-│   │
 │   ├── exam_prediction/
-│   │   ├── data/
-│   │   │   ├── datasources/
-│   │   │   ├── dtos/
-│   │   │   └── repository_impl/
-│   │   ├── domain/
-│   │   │   ├── entities/
-│   │   │   ├── repositories/
-│   │   │   └── usecases/
-│   │   └── presentation/
-│   │       ├── pages/
-│   │       └── providers/
-│   │
 │   ├── feed/
-│   │   ├── data/
-│   │   │   ├── datasources/         # feed_remote_datasource.dart
-│   │   │   ├── dtos/
-│   │   │   └── repository_impl/
-│   │   └── presentation/
-│   │       ├── pages/
-│   │       └── widgets/
-│   │
 │   ├── focus_session/
-│   │   ├── controllers/
-│   │   ├── data/
-│   │   │   └── models/
-│   │   ├── presentation/
-│   │   │   └── pages/
-│   │   └── widgets/
-│   │
 │   ├── mock_tests/
-│   │   ├── data/
-│   │   │   ├── datasources/         # mock_test_datasource.dart
-│   │   │   ├── dtos/                # mock_test_dto.dart
-│   │   │   └── repository_impl/     # mock_test_repository_impl.dart
-│   │   ├── domain/
-│   │   │   ├── entities/            # mock_test_entity.dart + .freezed.dart
-│   │   │   ├── repositories/        # mock_test_repository.dart
-│   │   │   └── usecases/            # mock_test_usecases.dart
-│   │   └── presentation/
-│   │       ├── pages/               # mock_tests_pages.dart
-│   │       └── providers/           # mock_tests_provider.dart
-│   │
+│   ├── nova/                        # planned — Nova conversation + plan display
 │   └── profile/
 │
 └── main.dart
@@ -935,72 +1065,24 @@ lib/
 ### Built
 
 - **Authentication** — magic link via BITS college email (Supabase Auth)
-  - `_isNewUser()` check routes new users to onboarding, returning users to app
-  - `authSessionProvider` listener with `_justLoggedIn` flag prevents spurious redirects on app resume
 - **Onboarding** — full flow wired to Supabase
-  - `EmailParser` utility parses BITS email → extracts `roll_number`, `academic_year`, `subdomain`
-  - Campus resolved from `campuses` table via subdomain (`hyderabad` → BPHC)
-  - Writes to `users` table: `full_name`, `branch`, `college`, `campus_id`, `institution_id`, `academic_year`, `roll_number`, `plan`
-  - Writes selected subjects to `user_subjects` table
-  - Subject selection step UI exists — not yet wired to real subjects from DB
 - **Real user data via `userProvider`**
-  - `StateNotifierProvider` fetches from Supabase on load
-  - `UserModel` extended with `email`, `campusId`, `institutionId`, `placeholder()` factory
-- **Subjects feature** — full Clean Architecture
-  - Fetches subjects filtered by `institution_id` and `academic_year`
-  - Subject retrieval corrected; user-selected subjects wired end-to-end into mock tests
-  - Credit ring showing total enrolled credits vs semester target
-  - Long-press to enter edit mode, tap to mark for deletion
-  - Add custom subject via bottom sheet (now backed by the `custom_subjects` table)
-  - **Handout upload** per subject — PDF picker, Supabase Storage upload, chip UI
-  - Fire-and-forget study plan generation via `/extract-plan`
+- **Subjects feature** — full Clean Architecture, handout upload, study plan generation
 - **Routing** — GoRouter with auth guard
-  - Auth guard redirect, dev menu at `/`, `context.push()` for stack-based navigation
 - **Scrollable analytics dashboard**
-  - Donut ring chart, weekly line chart, task list, recent activity feed
 - **Dark theme** with custom color palette
 - **Full AI pipeline** (DICL + MMR + Supabase)
-  - PDF parsing and question extraction
-  - Semantic embedding stored in Supabase pgvector
-  - MMR-based diverse example selection
-  - Exam type filtering (quiz / midsem / compre scope), with defensive handling of null `exam_type` values from Supabase
-  - LLM MCQ generation with 4 options + correct answer
-  - LLM open question generation with structured model answers
-  - Thread-safe parallel generation (3 concurrent Groq calls)
-  - Auto-save generated written practice tests to `published_tests`
-  - **Study plan generation** from handout PDF — topic extraction + weekly schedule
 - **FastAPI backend** — 8 endpoints, fully Supabase-backed, deployed on Railway
-- **Mock test platform** — full Clean Architecture
-  - `ExamType` enum as single source of truth
-  - 4 exam types: Quiz, Midsem, Compre Part A, Compre Part B
-  - MCQ Blitz mode (Compre Part A): timed quiz, score tracking, confetti
-  - Written Practice mode (Quiz / Midsem / Compre Part B): flashcard + paper views
-  - Model answers with structured markdown rendering
-  - `loadExistingTest` — reconstruct written practice test from Supabase question IDs
-  - Subject list sourced dynamically from `user_subjects`, replacing the previous hardcoded list
+- **Mock test platform** — full Clean Architecture, 4 exam types, MCQ Blitz + Written Practice
 - **Exam prediction** / question bank browser
-  - Filter by subject, year, exam type, question type
 - **Focus session timer**
-  - Preset chips: Pomodoro (25 min), 45 min, 1 hr
-  - Custom duration picker (5 min to 3 hr)
-  - Slide-to-start track with spring physics
-  - Animated wave background
-  - Give Up confirmation sheet
-  - Auto-reset if user leaves app mid-session
-- **Community feed** — live from Supabase
-  - Backed by `published_tests` table via `FeedRemoteDataSourceImpl`
-  - Feed cards with subject, difficulty badge, upvotes, attempt count
-  - Attempt button wired to `loadExistingTest` on `MockTestNotifier`
-  - College read from `userProvider`
-  - **Vote state persisted to Supabase** (`post_votes` table) with optimistic UI
+- **Community feed** — live from Supabase, vote persistence
 
-### Schema Live, No UI/Code Description Yet
+### Schema Live, No UI/Code Yet
 
-These tables exist and are populated/usable in Supabase but have no corresponding Flutter or FastAPI implementation documented:
-
-- **Test attempts, question results, AI evaluation** (`test_attempts`, `question_results`, `ai_evaluations`) — see [Test Attempts, Question Results, and AI Evaluation](#test-attempts-question-results-and-ai-evaluation)
-- **PDF upload tracking** (`uploaded_pdfs`) — see [PDF Upload Pipeline](#pdf-upload-pipeline)
-- **Custom subjects** (`custom_subjects`) — referenced by `user_subjects.custom_subject_id`; add-custom-subject UI in the subjects feature may already write here, needs confirming
+- `test_attempts`, `question_results`, `ai_evaluations` — test attempt flow
+- `uploaded_pdfs` — PDF upload tracking
+- All Nova tables listed in [Nova Tables Still To Build](#nova-tables-still-to-build)
 
 ### Still Mock
 
@@ -1015,48 +1097,37 @@ These tables exist and are populated/usable in Supabase but have no correspondin
 - Study plan display page per subject
 - Syllabus progress tracking
 - PYQ upload through the app UI
-- Personal learning goal mode (daily AI question plan with lives/streaks)
+- Nova conversation UI + daily plan display
+- Personal learning goal mode
 - Focus session history and streak tracking
-- Compre Part A (MCQ Blitz) published to feed and loadable from feed
+- Compre Part A published to feed
 
 ---
 
 ## Dashboard -- How It Works
 
-The dashboard is the most complete feature. Understanding it explains how every other feature will work too.
-
-### Data Source
-
-All dashboard data lives in a single JSON file:
-
-```
-assets/data/analytics.json
-```
-
-To change what appears on screen, edit this file and hot-restart the app.
+All dashboard data lives in `assets/data/analytics.json`. To change what appears on screen, edit this file and hot-restart the app.
 
 ### Data Flow
 
 ```
 assets/data/analytics.json
         ↓
-AnalyticsLocalDataSourceImpl     reads file with rootBundle.loadString()
+AnalyticsLocalDataSourceImpl
         ↓
-AnalyticsDataDto.fromJson()      converts JSON → Dart DTO objects
+AnalyticsDataDto.fromJson()
         ↓
-dto.toDomain()                   converts DTO → clean domain entity (AnalyticsData)
+dto.toDomain()
         ↓
-AnalyticsRepositoryImpl          wraps result in Either<Failure, AnalyticsData>
+AnalyticsRepositoryImpl
         ↓
-GetAnalyticsUseCase              single callable entry point
+GetAnalyticsUseCase
         ↓
-DashboardNotifier                AsyncNotifier — holds loading/error/data state
+DashboardNotifier
         ↓
-dashboardProvider                widgets that watch this rebuild when data changes
+dashboardProvider
         ↓
-DashboardPage                    state.when(loading, error, data)
-        ↓
-DonutProgressChart / WeeklyLineChart / TaskListTile / RecentActivityTile
+DashboardPage → charts and tiles
 ```
 
 ---
@@ -1064,56 +1135,26 @@ DonutProgressChart / WeeklyLineChart / TaskListTile / RecentActivityTile
 ## Running the App
 
 ```bash
-# Install dependencies
 flutter pub get
-
-# Generate code (required before first run and after any model change)
 dart run build_runner build --delete-conflicting-outputs
-
-# Run the app
 flutter run
 ```
-
-The app opens to a Dev Menu listing all features. Tap any feature to navigate to it directly.
 
 ---
 
 ## Code Generation
 
-Skolar uses two code generation tools.
-
-### What gets generated
-
 | File suffix | Generated by | Purpose |
 |---|---|---|
-| `.freezed.dart` | `freezed` | Immutable value classes: `copyWith`, `==`, `hashCode`, pattern matching |
+| `.freezed.dart` | `freezed` | Immutable value classes |
 | `.g.dart` | `json_serializable` | `fromJson` / `toJson` methods |
 
-These files are committed to git. Never edit them manually.
-
-### When to run it
-
-Run `build_runner` after any of these:
-- Adding a new `@freezed` class
-- Adding or removing a field on a `@freezed` class
-- Adding a new `@JsonSerializable` DTO
-- After a `git pull` that touched any model files
-
-### Commands
+Run `build_runner` after adding or changing any `@freezed` class or `@JsonSerializable` DTO.
 
 ```bash
-# One-time build
 dart run build_runner build --delete-conflicting-outputs
-
-# Watch mode — auto-rebuilds on file save
 dart run build_runner watch --delete-conflicting-outputs
-
-# Clean and rebuild from scratch
-dart run build_runner clean
-dart run build_runner build --delete-conflicting-outputs
 ```
-
-Always use `--delete-conflicting-outputs`.
 
 ---
 
@@ -1121,33 +1162,17 @@ Always use `--delete-conflicting-outputs`.
 
 ```bash
 cd lib/core/ai/rag_llms
-
-# Create and activate environment
 python -m venv myenv311
-myenv311\Scripts\activate          # Windows
-source myenv311/bin/activate       # macOS / Linux
-
-# Install dependencies
+myenv311\Scripts\activate
 pip install fastapi uvicorn pdfplumber sentence-transformers numpy groq python-dotenv supabase requests
-
-# Create .env file with all three keys
-echo GROQ_API_KEY=your_key_here > .env
-echo SUPABASE_URL=your_url_here >> .env
-echo SUPABASE_KEY=your_key_here >> .env
-
-# Start the server
 uvicorn main:app --reload --port 8000
 ```
 
-The server starts at `http://0.0.0.0:8000`. Interactive API docs at `http://localhost:8000/docs`.
-
-The backend is deployed on Railway. The base URL is defined in `mock_tests_provider.dart` as `_kBaseUrl`. When running locally on a physical device, replace with your machine's LAN IP (e.g. `192.168.29.196`).
+Interactive API docs at `http://localhost:8000/docs`.
 
 ---
 
 ## Adding a New Feature
-
-Order to stay consistent with the architecture:
 
 1. Create folder structure under `lib/features/your_feature/`
 2. Define domain entities in `domain/entities/` using `@freezed`
@@ -1161,65 +1186,53 @@ Order to stay consistent with the architecture:
 10. Add a route in `core/routing/`
 11. Run `dart run build_runner build --delete-conflicting-outputs`
 
-Use the `analytics` feature as the reference implementation. Features with no persistence or backend requirement (like focus session) can skip steps 2–7 and use a `ChangeNotifier` directly in the presentation layer.
-
 ---
 
 ## Tech Debt
 
 ### Compre Part A (MCQ Blitz) — not published or loadable from feed
 
-- `/generate-batch` does not save to `published_tests` (only `/generate-open-batch` does)
-- `options` and `correct_index` columns exist on the `questions` table but the backend does not populate them on save yet
-- `loadExistingTest` in the provider has no MCQ Blitz path — it would need to reconstruct `McqQuestion` objects from `options` / `correct_index`
-- The feed page's Attempt button always routes to written practice mode regardless of `examType`
+`/generate-batch` does not save to `published_tests`. `loadExistingTest` has no MCQ Blitz path. Feed Attempt button always routes to written practice regardless of `examType`.
 
-**When to fix:** After Phase 5 ships. Save `options` + `correct_index` on generation → insert into `published_tests` → fetch with options on load → route to MCQ Blitz mode in feed.
+**When to fix:** After Phase 5 ships.
 
 ---
 
 ### Study plan display UI — not yet built
 
-`study_plans` rows are generated and persisted correctly. There is no Flutter page to display them yet. The next step is a `StudyPlanPage` per subject that reads from `study_plans` where `user_subject_id = <id> AND is_active = true` and renders the topic list and weekly schedule.
+`study_plans` rows are generated and persisted. No Flutter page exists to display them yet.
 
-**When to fix:** Phase 5 personalisation — the plan is the foundation for the daily question scheduler.
+**When to fix:** Phase 5 — foundation for the daily question scheduler.
 
 ---
 
 ### `_triggerPlanExtraction` — needs real FastAPI URL
 
-Currently calls a Supabase Edge Function named `extract-plan-proxy`. This needs to either point to the deployed Railway URL directly via `http.post`, or the Edge Function needs to be created as a thin proxy.
+Currently calls a Supabase Edge Function placeholder. Needs to point to the deployed Railway URL.
 
-**When to fix:** Before study plan display UI is built — the plan won't exist in `study_plans` until this is wired.
-
-
----
-
-### `academic_year` filtering (exam prediction + pipeline)
-
-`academic_year` exists on the `questions` table and in `UserModel` but is not yet used as a filter anywhere in the Flutter app or the FastAPI pipeline.
-
-**What's missing:**
-- `pipeline.py` — add `academic_year` to the Supabase select and returned dict
-- `GET /questions` — add `academic_year` query param to `main.py`
-- Datasource → repository → usecase → provider chain — `academicYear` param missing from all four layers in the exam prediction feature
-- UI — no academic year filter chip; simplest fix is to read silently from `userProvider.academicYear` in `QuestionsNotifier.build()`
-
-**When to fix:** Before Phase 5 personalisation — the daily question plan needs to scope questions to the student's academic year.
+**When to fix:** Before study plan display UI is built.
 
 ---
 
-### Full DICL: top-15 cosine retrieval → MMR over those 15 → pick 5
+### `academic_year` filtering — not wired
 
-Currently MMR runs over the entire question bank. The correct DICL implementation first retrieves the top-15 most relevant questions via cosine similarity, then runs MMR over just those 15 to pick 5. This gives better relevance at the same diversity level.
+`academic_year` exists in `questions` and `UserModel` but is not used as a filter in Flutter or the pipeline.
 
-**When to fix:** Phase 6. Requires a meaningful question bank (100+ per subject) before the improvement is measurable.
+**When to fix:** Before Phase 5 — daily question plan needs year scoping.
+
+---
+
+### Full DICL — top-15 cosine retrieval not implemented
+
+MMR currently runs over the entire question bank. Correct DICL first retrieves top-15 by cosine similarity, then runs MMR over those 15.
+
+**When to fix:** Phase 6. Needs 100+ questions per subject to be measurable.
 
 ---
 
 ### Onboarding subject selection — not wired to DB
 
-The subject selection step in onboarding shows UI but does not fetch real subjects from the `subjects` table. The `subjects` provider and datasource are complete — this is just a wiring task.
+Subject selection step UI exists but does not fetch real subjects from the `subjects` table.
 
 **When to fix:** Before real user onboarding goes live.
 
@@ -1227,18 +1240,34 @@ The subject selection step in onboarding shows UI but does not fetch real subjec
 
 ### Focus session — minor issues
 
-- **Duplicate controller file** — `widgets/focus_timer_controller.dart` duplicates `controllers/focus_timer_controller.dart`. Delete the widgets copy and update imports.
-- **`resume()` is a no-op** — only calls `notifyListeners()`. Either remove or re-start the ticker if pause is introduced later.
-- **`paused` state is unused** — `FocusTimerStatus.paused` is defined but never set.
-- **No session persistence** — add `StorageService.saveSession(duration, completedAt)` inside `_onTick` when Phase 5 streak tracking lands.
+- Duplicate controller file in `widgets/` vs `controllers/` — delete widgets copy
+- `resume()` is a no-op
+- `FocusTimerStatus.paused` defined but never set
+- No session persistence — add `StorageService.saveSession()` when Phase 5 streak tracking lands
 
 ---
 
 ### `published_tests.question_ids` is not a real foreign key
 
-`question_ids` is a plain `uuid[]` array column, not a DB-enforced FK to `questions.id`. Deleting a `questions` row will silently leave a dangling ID in any `published_tests.question_ids` array that referenced it — no error, no cleanup. Relevant if a question-deletion or moderation feature is ever added.
+Plain `uuid[]` array — deleting a `questions` row silently leaves a dangling ID.
 
-**When to fix:** Before any admin/moderation tooling that deletes individual questions is built.
+**When to fix:** Before any question-deletion or moderation tooling is built.
+
+---
+
+### `topics` RLS — write policy not yet set
+
+RLS is enabled on `topics` with read-only access for authenticated users. Write policy (for pipeline inserts) is pending confirmation of whether the FastAPI backend connects via service-role or anon key.
+
+**When to fix:** Before wiring the pipeline to write `topic_id` on question extraction.
+
+---
+
+### Free-text `topic` columns — migration in progress
+
+`questions`, `question_results`, `uploaded_pdfs`, `user_topic_weights`, and `staleness_tracker` all have both a legacy `topic` text column and a new `topic_id` FK to the `topics` table. Old code writes to `topic` text. New code should write both. Text columns will be dropped once the pipeline is fully migrated.
+
+**When to fix:** When the pipeline is updated to write `topic_id` on extraction.
 
 ---
 
@@ -1255,61 +1284,75 @@ Phase 2 — AI Pipeline (complete)
     PDF parsing and question extraction
     Semantic embeddings with sentence-transformers
     MMR-based diverse example selection (DICL)
-    LLM MCQ generation with 4 options + correct index
-    LLM open question generation with structured model answers
-    Exam type filtering (quiz / midsem / compre scope)
+    LLM MCQ + open question generation
+    Exam type filtering
     Thread-safe parallel generation
-    FastAPI backend with 7 endpoints
-    Supabase integration (replaces question_bank.json + embeddings.npy)
+    FastAPI backend with 8 endpoints
+    Supabase integration
     Railway deployment
 
 Phase 3 — Core Features (complete)
     Mock test platform — full Clean Architecture
-        ExamType enum as single source of truth
-        4 exam types: Quiz, Midsem, Compre Part A, Compre Part B
-        MCQ Blitz mode with timed quiz UI
-        Written Practice mode with flashcard + paper views
-        Model answers with structured markdown rendering
-        loadExistingTest — reconstruct test from Supabase question IDs
     Exam prediction / question bank browser
-    Community feed — live from Supabase (published_tests table)
-        Attempt button wired to loadExistingTest
-        College name read from userProvider
-    Focus session timer (countdown, wave background, slide-to-start, custom duration picker)
-    Auto-save written practice tests to published_tests on generation
+    Community feed — live from Supabase
+    Focus session timer
+    Auto-save written practice tests to published_tests
 
 Phase 4 — Auth and Backend (complete)
-    ✅ Magic link auth via BITS college email (Supabase Auth)
-    ✅ _isNewUser() routing — new → onboarding, returning → app
-    ✅ Onboarding → Supabase write (users + user_subjects tables)
-    ✅ EmailParser — roll_number, academic_year, subdomain from BITS email
-    ✅ Campus resolution from campuses table via subdomain
-    ✅ Real userProvider — fetches from Supabase, replaces hardcoded mock
+    ✅ Magic link auth via BITS college email
+    ✅ Onboarding → Supabase write
+    ✅ Real userProvider
     ✅ Subjects feature — full Clean Architecture
-    ✅ Handout upload per subject — Supabase Storage, chip UI, fire-and-forget plan trigger
-    ✅ study_plans table — AI-generated topic list + weekly schedule from handout PDF
-    ✅ GoRouter migration — auth guard, named routes, context.push()
-    ✅ RLS policies on users table and storage.objects
-    ✅ PYQ upload through app UI
-    ✅ Vote state persistence → Supabase write (post_votes table, optimistic UI)
-    ✅ Subject retrieval corrected, user-selected subjects wired end-to-end into mock tests
-    ✅ Null exam_type handled defensively in pipeline question filtering
+    ✅ Handout upload + study plan generation
+    ✅ GoRouter migration
+    ✅ RLS policies
+    ✅ Vote state persistence
+    ✅ Subject retrieval corrected end-to-end
+    ✅ test_attempts composite uniqueness fixed
+    ✅ Nova schema foundations — user_subject_exams, nova_capacity_log,
+       staleness_tracker, topics, standing_flags, situation_flags,
+       nova_history, career_units, topic_id on all affected tables
     ⬜ _triggerPlanExtraction wired to real FastAPI URL
     ⬜ Study plan display UI per subject
     ⬜ Compre Part A → published_tests pipeline + feed (deferred to post-Phase 5)
 
 Phase 5 — Personalisation
     Study plan display page per subject
+    Wire test_attempts / question_results / ai_evaluations into the app
+    academic_year filter across pipeline + exam prediction
+
+    Nova schema (remaining)
+        nova_conversations
+        nova_conversations_archive
+        nova_plan_log
+        nova_why_log (merged into nova_plan_log)
+        nova_trigger_log
+        nova_config
+        nova_unconfirmed_proposals
+        nova_industry_relevance_log
+        nova_one_off_overrides
+
+    Nova backend
+        nova_pipeline.py — facts fetch, trigger check, reasoning pass,
+            minor rerank, flag writes, conversation extraction, why-log writes
+        nova_router.py — all Nova endpoints
+        main.py — mount nova_router (one line)
+        pg_cron nightly retention job driven by nova_config
+
+    Nova Flutter
+        Decouple handout plan trigger from Nova plan trigger
+        capacity_today tap → POST /nova/student/capacity
+        Daily plan screen → reads from nova_plan_log
+        Nova conversation UI (chatbot-style)
+        Trigger check on app open, after test submission, after flag confirmation
+
     Personal learning goal mode
-    AI daily question plan (current_topic from study_plans → MMR anchor)
     Lives and streak system
-    Coin economy (earn by studying, spend to protect streaks)
+    Coin economy
     Daily college-wide brain puzzle
-    College leaderboard (resets each semester)
+    College leaderboard
     Dashboard integration with mock test scores
     Focus session history and streak tracking
-    academic_year filter across pipeline + exam prediction
-    Wire test_attempts / question_results / ai_evaluations into the app
 
 Phase 6 — ML Extension
     Full DICL: top-15 cosine retrieval → MMR over those 15 → pick 5
