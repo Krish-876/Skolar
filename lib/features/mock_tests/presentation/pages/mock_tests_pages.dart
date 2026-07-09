@@ -543,55 +543,6 @@ class _ExamTypeGrid extends StatelessWidget {
   }
 }
 
-// ── Loading screen ────────────────────────────────────────────────────────────
-
-class _LoadingScreen extends StatelessWidget {
-  final String subject;
-  final _ExamType examType;
-  const _LoadingScreen({required this.subject, required this.examType});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: _bg,
-      body: GlassBackground(
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(
-                width: 56,
-                height: 56,
-                child: CircularProgressIndicator(
-                  color: _accent,
-                  strokeWidth: 3,
-                ),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                'Generating ${examType.label}\n$subject practice…',
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: _textSec,
-                  fontSize: 15,
-                  height: 1.6,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                examType.mode == ExamMode.writtenPractice
-                    ? 'Generating questions + model answers'
-                    : 'Analysing PYQs with DICL pipeline',
-                style: const TextStyle(color: _textSec, fontSize: 12),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 // ── Error screen ──────────────────────────────────────────────────────────────
 
 class _ErrorScreen extends StatelessWidget {

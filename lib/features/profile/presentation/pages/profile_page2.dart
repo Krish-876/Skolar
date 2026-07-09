@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:Skolar/core/widgets/glass_background.dart';
 import 'package:Skolar/features/profile/presentation/widgets/left_painter.dart';
-import 'package:Skolar/features/profile/presentation/widgets/mascot.dart';
 import 'package:Skolar/features/profile/presentation/widgets/settings_glass.dart';
 
 // ─────────────────────────────────────────────
@@ -52,9 +51,7 @@ class AppColors {
 // ─────────────────────────────────────────────
 class _MockUser {
   static const String name = 'Krishna';
-  static const String college = 'BPHC';
   static const String email = 'f20240175@hyderabad.bits-pilani.ac.in';
-  static const String rollNumber = '2025AAPS1010H';
 }
 
 // ─────────────────────────────────────────────
@@ -180,132 +177,6 @@ class _ProfilePage2State extends State<ProfilePage2>
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────
-//  PROFILE HEADER  (only this stays in-page,
-//  everything else is imported from widgets/)
-// ─────────────────────────────────────────────
-class _ProfileHeader extends StatelessWidget {
-  final AnimationController pulseController;
-  const _ProfileHeader({required this.pulseController});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.cardSurface.withValues(alpha: 0.85),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.cardBorder, width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.nebulaViolet.withValues(alpha: 0.12),
-            blurRadius: 24,
-            spreadRadius: -4,
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      child: Row(
-        children: [
-          // ── MascotAvatar from widgets/mascot_avatar.dart ──
-          MascotAvatar(
-            assetPath: 'assets/images/mascot.jpeg',
-            size: 76,
-            animated: true,
-          ),
-          const SizedBox(width: 16),
-
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _MockUser.name,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 2,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.3,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  _MockUser.college,
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  _MockUser.rollNumber,
-                  style: const TextStyle(
-                    color: AppColors.softPurple,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: 0.8,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          GestureDetector(
-            onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Settings – coming soon')),
-            ),
-            child: Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: AppColors.cosmicNavy,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppColors.cardBorder),
-              ),
-              child: const Icon(
-                Icons.settings_outlined,
-                color: AppColors.textSecondary,
-                size: 18,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────
-//  COMMITMENT LINK
-// ─────────────────────────────────────────────
-class _CommitmentLink extends StatelessWidget {
-  final VoidCallback onTap;
-  const _CommitmentLink({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: const Row(
-        children: [
-          Text(
-            'Check your commitment here',
-            style: TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-
-          SizedBox(width: 4),
-          Icon(Icons.arrow_forward, color: AppColors.textSecondary, size: 14),
-        ],
       ),
     );
   }

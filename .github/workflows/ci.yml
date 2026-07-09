@@ -52,11 +52,9 @@ jobs:
           channel: 'stable'
           cache: true
       - run: flutter pub get
+      - name: Create placeholder .env for CI
+        run: echo "" > .env
       - name: Analyze
-        # NOTE: --fatal-infos disabled temporarily — pre-existing info-level lints
-        # (dangling_library_doc_comments, deprecated_member_use, package_names, etc.)
-        # Errors/warnings still fail the build. Re-enable --fatal-infos once cleaned
-        # up. Tracked in #<issue-number>.
         run: dart analyze
 
   test:
