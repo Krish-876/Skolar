@@ -1,0 +1,58 @@
+name: CI
+on:
+  pull_request:
+    branches: [master]
+  push:
+    branches: [master]
+
+jobs:
+  analyze-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history needed for the up-to-date-with-master check below
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0' # pin to whatever you're actually on locally
+          channel: 'stable'
+          cache: true
+
+      - name: Ensure branch is up to date with master
+        if: github.event_name == 'pull_request'
+        run: |
+          git fetch origin master
+          if ! git merge-base --is-ancestor origin/master HEAD; then
+            echo "Branch is behind master — rebase before pushing (git fetch origin && git rebase origin/master)."
+            exit 1
+          fi
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Check formatting
+        run: dart format --output=none --set-exit-if-changed .
+
+      - name: Generate code (freezed / json_serializable)
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Fail if codegen produced uncommitted changes
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "Generated files are out of date. Run build_runner locally and commit the output."
+            git status --porcelain
+            exit 1
+          fi
+
+      - name: Analyze
+        run: dart analyze --fatal-infos
+
+      - name: Run tests
+        run: flutter test --coverage
+
+      # Optional once coverage matters more:
+      # - name: Check coverage threshold
+      #   run: |
+      #     # e.g. use lcov + a coverage-gate script here
