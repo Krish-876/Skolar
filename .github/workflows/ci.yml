@@ -6,38 +6,33 @@ on:
     branches: [master]
 
 jobs:
-  analyze-and-test:
+  format:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 # full history needed for the up-to-date-with-master check below
-
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.44.0' # pin to whatever you're actually on locally
+          flutter-version: '3.44.0'
           channel: 'stable'
           cache: true
-
-      - name: Ensure branch is up to date with master
-        if: github.event_name == 'pull_request'
-        run: |
-          git fetch origin master
-          if ! git merge-base --is-ancestor origin/master HEAD; then
-            echo "Branch is behind master — rebase before pushing (git fetch origin && git rebase origin/master)."
-            exit 1
-          fi
-
-      - name: Install dependencies
-        run: flutter pub get
-
+      - run: flutter pub get
       - name: Check formatting
         run: dart format --output=none --set-exit-if-changed .
 
+  codegen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.0'
+          channel: 'stable'
+          cache: true
+      - run: flutter pub get
       - name: Generate code (freezed / json_serializable)
         run: dart run build_runner build --delete-conflicting-outputs
-
       - name: Fail if codegen produced uncommitted changes
         run: |
           if [ -n "$(git status --porcelain)" ]; then
@@ -46,17 +41,50 @@ jobs:
             exit 1
           fi
 
+  analyze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.0'
+          channel: 'stable'
+          cache: true
+      - run: flutter pub get
       - name: Analyze
-        # NOTE: --fatal-infos disabled temporarily — 260 pre-existing info-level
-        # lints as of 2026-07-09 (dangling_library_doc_comments, deprecated_member_use,
-        # use_super_parameters, package_names). Errors/warnings still fail the build.
-        # Re-enable --fatal-infos once these are cleaned up. Tracked in #<issue-number>.
+        # NOTE: --fatal-infos disabled temporarily — pre-existing info-level lints
+        # (dangling_library_doc_comments, deprecated_member_use, package_names, etc.)
+        # Errors/warnings still fail the build. Re-enable --fatal-infos once cleaned
+        # up. Tracked in #<issue-number>.
         run: dart analyze
 
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.0'
+          channel: 'stable'
+          cache: true
+      - run: flutter pub get
       - name: Run tests
         run: flutter test --coverage
 
-      # Optional once coverage matters more:
-      # - name: Check coverage threshold
-      #   run: |
-      #     # e.g. use lcov + a coverage-gate script here
+  branch-up-to-date:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Ensure branch is up to date with master
+        run: |
+          git fetch origin master
+          if ! git merge-base --is-ancestor origin/master HEAD; then
+            echo "Branch is behind master — rebase before pushing (git fetch origin && git rebase origin/master)."
+            exit 1
+          fi
