@@ -13,9 +13,20 @@ import 'package:go_router/go_router.dart';
 // ─────────────────────────────────────────────────────────────────────────────
 
 const _kBitsBranches = [
-  'CS', 'ECE', 'EEE', 'Mech', 'Civil',
-  'Chem', 'Bio', 'Pharma', 'ECON', 'MSc Physics',
-  'MSc Chem', 'MSc Bio', 'MSc Maths', 'MSc Econ',
+  'CS',
+  'ECE',
+  'EEE',
+  'Mech',
+  'Civil',
+  'Chem',
+  'Bio',
+  'Pharma',
+  'ECON',
+  'MSc Physics',
+  'MSc Chem',
+  'MSc Bio',
+  'MSc Maths',
+  'MSc Econ',
 ];
 
 const _kStudyGoals = [
@@ -67,8 +78,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage>
       duration: const Duration(milliseconds: 380),
       value: 1.0,
     );
-    _sectionFade =
-        CurvedAnimation(parent: _sectionCtrl, curve: Curves.easeOut);
+    _sectionFade = CurvedAnimation(parent: _sectionCtrl, curve: Curves.easeOut);
     // Rebuild on every keystroke so _ctaEnabled re-evaluates instantly.
     _nameCtrl.addListener(() => setState(() {}));
   }
@@ -176,113 +186,123 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage>
         },
         child: Scaffold(
           backgroundColor: Colors.transparent,
-          resizeToAvoidBottomInset: false,  
+          resizeToAvoidBottomInset: false,
           body: Column(
             children: [
-            // Progress bar (question steps only)
-            AnimatedOpacity(
-              opacity: _inQuestionSection ? 1.0 : 0.0,
-              duration: const Duration(milliseconds: 300),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(
-                    AppTheme.lg, AppTheme.sm, AppTheme.lg, 0),
-                child: Row(
-                  children: [
-                    GestureDetector(
-                      onTap: _back,
-                      child: const Icon(
-                        Icons.chevron_left_rounded,
-                        color: AppTheme.onBackground2,
-                        size: 28,
+              // Progress bar (question steps only)
+              AnimatedOpacity(
+                opacity: _inQuestionSection ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 300),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppTheme.lg,
+                    AppTheme.sm,
+                    AppTheme.lg,
+                    0,
+                  ),
+                  child: Row(
+                    children: [
+                      GestureDetector(
+                        onTap: _back,
+                        child: const Icon(
+                          Icons.chevron_left_rounded,
+                          color: AppTheme.onBackground2,
+                          size: 28,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: AppTheme.sm),
-                    Expanded(
-                      child: Row(
-                        children: List.generate(3, (i) {
-                          final active = i <= _questionIndex;
-                          return Expanded(
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 300),
-                              margin: const EdgeInsets.symmetric(horizontal: 3),
-                              height: 3,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(2),
-                                gradient: active ? AppTheme.primaryGradient : null,
-                                color: active
-                                    ? null
-                                    : Colors.white.withValues(alpha: 0.12),
+                      const SizedBox(width: AppTheme.sm),
+                      Expanded(
+                        child: Row(
+                          children: List.generate(3, (i) {
+                            final active = i <= _questionIndex;
+                            return Expanded(
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 300),
+                                margin: const EdgeInsets.symmetric(
+                                  horizontal: 3,
+                                ),
+                                height: 3,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(2),
+                                  gradient: active
+                                      ? AppTheme.primaryGradient
+                                      : null,
+                                  color: active
+                                      ? null
+                                      : Colors.white.withValues(alpha: 0.12),
+                                ),
                               ),
-                            ),
-                          );
-                        }),
+                            );
+                          }),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
-          
-            // Upper area
-            Expanded(
-              flex: 5,
-              child: _inQuestionSection
-                  ? _QuestionIllustration(index: _questionIndex)
-                  : PageView.builder(
-                      controller: _pageCtrl,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: _kIntroCount,
-                      itemBuilder: (_, i) => Container(
-                        padding: const EdgeInsets.all(AppTheme.lg),
-                        alignment: Alignment.center,
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(24),
-                          child: Image.asset(
-                            'assets/images/onboarding_${i + 1}.jpg',
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Container(
-                              width: 160,
-                              height: 160,
-                              decoration: BoxDecoration(
-                                gradient: AppTheme.primaryGradient,
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                _kIntroSteps[i].$3,
-                                size: 72,
-                                color: AppTheme.star,
+
+              // Upper area
+              Expanded(
+                flex: 5,
+                child: _inQuestionSection
+                    ? _QuestionIllustration(index: _questionIndex)
+                    : PageView.builder(
+                        controller: _pageCtrl,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: _kIntroCount,
+                        itemBuilder: (_, i) => Container(
+                          padding: const EdgeInsets.all(AppTheme.lg),
+                          alignment: Alignment.center,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(24),
+                            child: Image.asset(
+                              'assets/images/onboarding_${i + 1}.jpg',
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, _, _) => Container(
+                                width: 160,
+                                height: 160,
+                                decoration: BoxDecoration(
+                                  gradient: AppTheme.primaryGradient,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  _kIntroSteps[i].$3,
+                                  size: 72,
+                                  color: AppTheme.star,
+                                ),
                               ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-            ),
-          
-            // Lower card — wrapped so keyboard never causes overflow
-            AnimatedPadding(
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeOut,
-              padding: EdgeInsets.fromLTRB(
-                AppTheme.lg,
-                0,
-                AppTheme.lg,
-                MediaQuery.of(context).viewInsets.bottom + AppTheme.xl,
               ),
-              child: GlassCard(
-                borderRadius: 40,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: AppTheme.lg, vertical: 32),
-                  child: FadeTransition(
-                    opacity: _sectionFade,
-                    child: _inQuestionSection
-                        ? _buildQuestionCard()
-                        : _buildIntroCard(),
+
+              // Lower card — wrapped so keyboard never causes overflow
+              AnimatedPadding(
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeOut,
+                padding: EdgeInsets.fromLTRB(
+                  AppTheme.lg,
+                  0,
+                  AppTheme.lg,
+                  MediaQuery.of(context).viewInsets.bottom + AppTheme.xl,
+                ),
+                child: GlassCard(
+                  borderRadius: 40,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppTheme.lg,
+                      vertical: 32,
+                    ),
+                    child: FadeTransition(
+                      opacity: _sectionFade,
+                      child: _inQuestionSection
+                          ? _buildQuestionCard()
+                          : _buildIntroCard(),
+                    ),
                   ),
                 ),
               ),
-            ),
             ],
           ),
         ),
@@ -311,20 +331,20 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage>
                   title,
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                        fontSize: 26,
-                        color: AppTheme.onBackground,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    fontSize: 26,
+                    color: AppTheme.onBackground,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: AppTheme.sm),
                 Text(
                   sub,
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppTheme.onBackground2,
-                        fontSize: 15,
-                        height: 1.5,
-                      ),
+                    color: AppTheme.onBackground2,
+                    fontSize: 15,
+                    height: 1.5,
+                  ),
                 ),
               ],
             ),
@@ -341,7 +361,9 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage>
               height: 8,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(AppTheme.radiusSm),
-                color: _page == i ? AppTheme.onBackground : AppTheme.surfaceLight,
+                color: _page == i
+                    ? AppTheme.onBackground
+                    : AppTheme.surfaceLight,
               ),
             ),
           ),
@@ -484,10 +506,10 @@ class _QuestionIllustration extends StatelessWidget {
           Text(
             label,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppTheme.onBackground2,
-                  fontSize: 16,
-                  letterSpacing: 0.5,
-                ),
+              color: AppTheme.onBackground2,
+              fontSize: 16,
+              letterSpacing: 0.5,
+            ),
           ),
         ],
       ),
@@ -504,11 +526,7 @@ class _CtaButton extends StatelessWidget {
   final bool enabled;
   final VoidCallback? onTap;
 
-  const _CtaButton({
-    required this.label,
-    required this.enabled,
-    this.onTap,
-  });
+  const _CtaButton({required this.label, required this.enabled, this.onTap});
 
   @override
   Widget build(BuildContext context) {

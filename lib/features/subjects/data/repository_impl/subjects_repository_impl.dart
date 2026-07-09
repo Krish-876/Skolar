@@ -18,11 +18,11 @@ class SubjectsRepositoryImpl implements SubjectsRepository {
   }) async {
     try {
       final dtos = await _dataSource.getSubjectsForUser(
-        userId:        userId,
+        userId: userId,
         institutionId: institutionId,
-        campusId:      campusId,
-        academicYear:  academicYear,
-        semester:      semester,
+        campusId: campusId,
+        academicYear: academicYear,
+        semester: semester,
       );
       return Right(dtos.map((d) => d.toEntity()).toList());
     } catch (e) {
@@ -41,12 +41,12 @@ class SubjectsRepositoryImpl implements SubjectsRepository {
   }) async {
     try {
       final dto = await _dataSource.addCustomSubject(
-        userId:        userId,
+        userId: userId,
         institutionId: institutionId,
-        semester:      semester,
-        name:          name,
-        courseCode:    courseCode,
-        credits:       credits,
+        semester: semester,
+        name: name,
+        courseCode: courseCode,
+        credits: credits,
       );
       return Right(dto.toEntity());
     } catch (e) {
@@ -77,10 +77,10 @@ class SubjectsRepositoryImpl implements SubjectsRepository {
     try {
       final dto = await _dataSource.uploadHandout(
         userSubjectId: userSubjectId,
-        userId:        userId,
-        subjectName:   subjectName,
-        fileBytes:     fileBytes,
-        filename:      filename,
+        userId: userId,
+        subjectName: subjectName,
+        fileBytes: fileBytes,
+        filename: filename,
       );
       return Right(dto.toEntity());
     } catch (e) {

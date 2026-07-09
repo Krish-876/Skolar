@@ -18,14 +18,16 @@ class KnowledgeTreeBackground extends StatefulWidget {
   });
 
   @override
-  State<KnowledgeTreeBackground> createState() => _KnowledgeTreeBackgroundState();
+  State<KnowledgeTreeBackground> createState() =>
+      _KnowledgeTreeBackgroundState();
 }
 
 class _KnowledgeTreeBackgroundState extends State<KnowledgeTreeBackground> {
-  static const double _speed      = -4;    // deg/sec — change speed here
-  static const double _saturation = 80;   // change saturation here
+  static const double _speed = -4; // deg/sec — change speed here
+  static const double _saturation = 80; // change saturation here
 
-  String get _js => '''
+  String get _js =>
+      '''
     (function() {
       // Inject a global style that hides cursor on model-viewer + its shadow DOM
       // This survives hot restart because it targets the document, not the element
@@ -100,7 +102,7 @@ class _KnowledgeTreeBackgroundState extends State<KnowledgeTreeBackground> {
 
         // Auto-rotate
         autoRotate: true,
-        autoRotateDelay: 0,              // resume instantly after swipe
+        autoRotateDelay: 0, // resume instantly after swipe
         rotationPerSecond: '${_speed}deg',
 
         exposure: 1.4,

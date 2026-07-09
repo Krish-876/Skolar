@@ -24,13 +24,13 @@ class PresetChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
         decoration: BoxDecoration(
           color: isActive
-              ? AppTheme.primary.withOpacity(0.75)
-              : AppTheme.surface.withOpacity(0.45),
+              ? AppTheme.primary.withValues(alpha: 0.75)
+              : AppTheme.surface.withValues(alpha: 0.45),
           borderRadius: BorderRadius.circular(50),
           border: Border.all(
             color: isActive
-                ? AppTheme.primary.withOpacity(0.8)
-                : Colors.white.withOpacity(0.1),
+                ? AppTheme.primary.withValues(alpha: 0.8)
+                : Colors.white.withValues(alpha: 0.1),
             width: 1.5,
           ),
         ),

@@ -11,11 +11,7 @@ class FeedPostCard extends ConsumerStatefulWidget {
   final FeedPostEntity post;
   final int index;
 
-  const FeedPostCard({
-    super.key,
-    required this.post,
-    required this.index,
-  });
+  const FeedPostCard({super.key, required this.post, required this.index});
 
   @override
   ConsumerState<FeedPostCard> createState() => _FeedPostCardState();
@@ -75,10 +71,9 @@ class _FeedPostCardState extends ConsumerState<FeedPostCard>
         ? ExamMode.mcqBlitz
         : ExamMode.writtenPractice;
 
-    await ref.read(mockTestProvider.notifier).loadExistingTest(
-      questionIds: widget.post.questionIds,
-      mode: mode,
-    );
+    await ref
+        .read(mockTestProvider.notifier)
+        .loadExistingTest(questionIds: widget.post.questionIds, mode: mode);
 
     final state = ref.read(mockTestProvider);
     print('hasQuestions: ${state.hasQuestions}');
@@ -100,13 +95,15 @@ class _FeedPostCardState extends ConsumerState<FeedPostCard>
     final downvoted = ref.watch(
       downvotedPostsProvider.select((s) => s.contains(widget.post.id)),
     );
-    final currentPost = ref.watch(feedProvider).maybeWhen(
-      data: (posts) => posts.firstWhere(
-        (p) => p.id == widget.post.id,
-        orElse: () => widget.post,
-      ),
-      orElse: () => widget.post,
-    );
+    final currentPost = ref
+        .watch(feedProvider)
+        .maybeWhen(
+          data: (posts) => posts.firstWhere(
+            (p) => p.id == widget.post.id,
+            orElse: () => widget.post,
+          ),
+          orElse: () => widget.post,
+        );
     final upvoteCount = currentPost.upvotes;
 
     return Container(
@@ -218,9 +215,12 @@ class _DifficultyIndicator extends StatelessWidget {
 
   String get _label {
     switch (difficulty) {
-      case 'easy':  return 'Easy';
-      case 'hard':  return 'Hard';
-      default:      return 'Medium';
+      case 'easy':
+        return 'Easy';
+      case 'hard':
+        return 'Hard';
+      default:
+        return 'Medium';
     }
   }
 
@@ -356,8 +356,8 @@ class _CardFooter extends StatelessWidget {
             color: upvoted
                 ? FeedColors.upvoteOn
                 : downvoted
-                    ? FeedColors.downvoteOn
-                    : FeedColors.textMuted,
+                ? FeedColors.downvoteOn
+                : FeedColors.textMuted,
             fontFamily: 'DM Sans',
           ),
         ),
@@ -372,9 +372,7 @@ class _CardFooter extends StatelessWidget {
               child: Icon(
                 Icons.arrow_downward_rounded,
                 size: 26,
-                color: downvoted
-                    ? FeedColors.downvoteOn
-                    : FeedColors.textMuted,
+                color: downvoted ? FeedColors.downvoteOn : FeedColors.textMuted,
               ),
             ),
           ),
@@ -393,21 +391,21 @@ class _CardFooter extends StatelessWidget {
         ),
         const Spacer(),
         // Attempt button
-      GestureDetector(
-        onTap: onAttempt,
-        child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 4),
-          decoration: BoxDecoration(
-            color: Colors.transparent,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: FeedColors.attemptBorder, width: 0.5),
-          ),
-          child: const Text(
-            'Attempt',
-            style: TextStyle(
-              fontSize: 11,
-              color: FeedColors.attemptText,
-              fontFamily: 'DM Sans',
+        GestureDetector(
+          onTap: onAttempt,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: FeedColors.attemptBorder, width: 0.5),
+            ),
+            child: const Text(
+              'Attempt',
+              style: TextStyle(
+                fontSize: 11,
+                color: FeedColors.attemptText,
+                fontFamily: 'DM Sans',
               ),
             ),
           ),

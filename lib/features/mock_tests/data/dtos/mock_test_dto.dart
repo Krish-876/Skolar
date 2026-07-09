@@ -15,11 +15,11 @@ class QuizQuestionDto {
 
   factory QuizQuestionDto.fromJson(Map<String, dynamic> json) =>
       QuizQuestionDto(
-        question:     json['question']      as String,
-        options:      List<String>.from(json['options'] as List),
+        question: json['question'] as String,
+        options: List<String>.from(json['options'] as List),
         correctIndex: json['correct_index'] as int,
-        subject:      json['subject']       as String,
-        marks:        json['marks']         as int,
+        subject: json['subject'] as String,
+        marks: json['marks'] as int,
       );
 }
 
@@ -38,9 +38,9 @@ class OpenQuestionDto {
 
   factory OpenQuestionDto.fromJson(Map<String, dynamic> json) =>
       OpenQuestionDto(
-        question:    json['question']     as String,
-        subject:     json['subject']      as String,
-        marks:       json['marks']        as int,
+        question: json['question'] as String,
+        subject: json['subject'] as String,
+        marks: json['marks'] as int,
         modelAnswer: json['model_answer'] as String,
       );
 }

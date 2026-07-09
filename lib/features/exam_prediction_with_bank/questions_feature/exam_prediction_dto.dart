@@ -23,10 +23,10 @@ class GeneratedQuestionDto {
   Map<String, dynamic> toJson() => _$GeneratedQuestionDtoToJson(this);
 
   GeneratedQuestion toDomain() => GeneratedQuestion(
-        question: question,
-        subject: subject,
-        examplesUsed: examplesUsed,
-      );
+    question: question,
+    subject: subject,
+    examplesUsed: examplesUsed,
+  );
 }
 
 /// Matches UploadResponse
@@ -51,11 +51,11 @@ class UploadResultDto {
   Map<String, dynamic> toJson() => _$UploadResultDtoToJson(this);
 
   UploadResult toDomain() => UploadResult(
-        message: message,
-        added: added,
-        total: total,
-        preview: preview,
-      );
+    message: message,
+    added: added,
+    total: total,
+    preview: preview,
+  );
 }
 
 /// Matches StatsResponse
@@ -79,10 +79,10 @@ class QuestionBankStatsDto {
   Map<String, dynamic> toJson() => _$QuestionBankStatsDtoToJson(this);
 
   QuestionBankStats toDomain() => QuestionBankStats(
-        totalQuestions: totalQuestions,
-        subjects: subjects,
-        paperYears: paperYears,
-      );
+    totalQuestions: totalQuestions,
+    subjects: subjects,
+    paperYears: paperYears,
+  );
 }
 
 /// Matches QuestionItem
@@ -113,13 +113,13 @@ class QuestionItemDto {
   Map<String, dynamic> toJson() => _$QuestionItemDtoToJson(this);
 
   QuestionItem toDomain() => QuestionItem(
-        questionText: questionText,
-        marks: marks,
-        questionType: questionType,
-        subject: subject,
-        paperYear: paperYear,
-        examType: examType,
-      );
+    questionText: questionText,
+    marks: marks,
+    questionType: questionType,
+    subject: subject,
+    paperYear: paperYear,
+    examType: examType,
+  );
 }
 
 /// Matches QuestionsResponse
@@ -128,10 +128,7 @@ class QuestionsResponseDto {
   final int total;
   final List<QuestionItemDto> questions;
 
-  const QuestionsResponseDto({
-    required this.total,
-    required this.questions,
-  });
+  const QuestionsResponseDto({required this.total, required this.questions});
 
   factory QuestionsResponseDto.fromJson(Map<String, dynamic> json) =>
       _$QuestionsResponseDtoFromJson(json);
@@ -139,7 +136,7 @@ class QuestionsResponseDto {
   Map<String, dynamic> toJson() => _$QuestionsResponseDtoToJson(this);
 
   QuestionsResponse toDomain() => QuestionsResponse(
-        total: total,
-        questions: questions.map((q) => q.toDomain()).toList(),
-      );
+    total: total,
+    questions: questions.map((q) => q.toDomain()).toList(),
+  );
 }

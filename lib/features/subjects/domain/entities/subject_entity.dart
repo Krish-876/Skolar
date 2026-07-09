@@ -1,6 +1,6 @@
 class SubjectEntity {
   final String userSubjectId; // PK in user_subjects
-  final String? subjectId;    // null for custom subjects
+  final String? subjectId; // null for custom subjects
   final String name;
   final String? shortName;
   final int? academicYear;
@@ -25,21 +25,18 @@ class SubjectEntity {
     this.handoutFilename,
   });
 
-  SubjectEntity copyWith({
-    String? handoutUrl,
-    String? handoutFilename,
-  }) =>
+  SubjectEntity copyWith({String? handoutUrl, String? handoutFilename}) =>
       SubjectEntity(
         userSubjectId: userSubjectId,
-        subjectId:     subjectId,
-        name:          name,
-        shortName:     shortName,
-        academicYear:  academicYear,
-        semester:      semester,
-        credits:       credits,
+        subjectId: subjectId,
+        name: name,
+        shortName: shortName,
+        academicYear: academicYear,
+        semester: semester,
+        credits: credits,
         institutionId: institutionId,
-        isCustom:      isCustom,
-        handoutUrl:    handoutUrl    ?? this.handoutUrl,
+        isCustom: isCustom,
+        handoutUrl: handoutUrl ?? this.handoutUrl,
         handoutFilename: handoutFilename ?? this.handoutFilename,
       );
 }

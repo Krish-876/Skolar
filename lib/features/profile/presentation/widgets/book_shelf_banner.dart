@@ -41,9 +41,9 @@ class _BookShelfBannerState extends State<BookShelfBanner>
     if (widget.onTap != null) {
       widget.onTap!();
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('BookShelf – coming soon')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('BookShelf – coming soon')));
     }
   }
 
@@ -69,7 +69,7 @@ class _BookShelfBannerState extends State<BookShelfBanner>
             borderRadius: BorderRadius.circular(32),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFFAA8FFF).withOpacity(0.25),
+                color: const Color(0xFFAA8FFF).withValues(alpha: 0.25),
                 blurRadius: 18,
                 offset: const Offset(0, 6),
               ),
@@ -92,7 +92,7 @@ class _BookShelfBannerState extends State<BookShelfBanner>
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.35),
+                  color: Colors.white.withValues(alpha: 0.35),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(

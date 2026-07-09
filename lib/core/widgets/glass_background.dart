@@ -21,7 +21,7 @@ class GlassBackground extends StatelessWidget {
             left: -120,
             child: _GlowBlob(
               size: 450,
-              color: AppStaticMeshTheme.purple.withOpacity(0.55),
+              color: AppStaticMeshTheme.purple.withValues(alpha: 0.55),
             ),
           ),
 
@@ -31,7 +31,7 @@ class GlassBackground extends StatelessWidget {
             right: -300,
             child: _GlowBlob(
               size: 500,
-              color: AppStaticMeshTheme.deepBlue.withOpacity(0.4),
+              color: AppStaticMeshTheme.deepBlue.withValues(alpha: 0.4),
             ),
           ),
 
@@ -41,7 +41,7 @@ class GlassBackground extends StatelessWidget {
             left: -50,
             child: _GlowBlob(
               size: 400,
-              color: AppStaticMeshTheme.lightblue.withOpacity(0.3),
+              color: AppStaticMeshTheme.lightblue.withValues(alpha: 0.3),
             ),
           ),
 
@@ -67,12 +67,7 @@ class _GlowBlob extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        gradient: RadialGradient(
-          colors: [
-            color,
-            color.withOpacity(0.0),
-          ],
-        ),
+        gradient: RadialGradient(colors: [color, color.withValues(alpha: 0.0)]),
       ),
     );
   }
@@ -84,11 +79,7 @@ class GlassCard extends StatelessWidget {
   final Widget child;
   final double borderRadius;
 
-  const GlassCard({
-    super.key,
-    required this.child,
-    this.borderRadius = 32,
-  });
+  const GlassCard({super.key, required this.child, this.borderRadius = 32});
 
   @override
   Widget build(BuildContext context) {
@@ -98,10 +89,10 @@ class GlassCard extends StatelessWidget {
         filter: ImageFilter.blur(sigmaX: 25, sigmaY: 25),
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.03),
+            color: Colors.white.withValues(alpha: 0.03),
             borderRadius: BorderRadius.circular(borderRadius),
             border: Border.all(
-              color: Colors.white.withOpacity(0.08),
+              color: Colors.white.withValues(alpha: 0.08),
               width: 1.2,
             ),
           ),

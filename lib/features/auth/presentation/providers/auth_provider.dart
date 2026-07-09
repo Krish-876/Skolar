@@ -43,15 +43,12 @@ class AuthState {
   final AuthStatus status;
   final String? errorMessage;
 
-  const AuthState({
-    this.status = AuthStatus.initial,
-    this.errorMessage,
-  });
+  const AuthState({this.status = AuthStatus.initial, this.errorMessage});
 
   AuthState copyWith({AuthStatus? status, String? errorMessage}) => AuthState(
-        status: status ?? this.status,
-        errorMessage: errorMessage ?? this.errorMessage,
-      );
+    status: status ?? this.status,
+    errorMessage: errorMessage ?? this.errorMessage,
+  );
 }
 
 // ── Auth notifier ────────────────────────────────────────────────────────────
@@ -63,9 +60,7 @@ class AuthNotifier extends Notifier<AuthState> {
     state = state.copyWith(status: AuthStatus.loading);
 
     try {
-      final isValid = await ref
-          .read(validateEmailUseCaseProvider)
-          .call(email);
+      final isValid = await ref.read(validateEmailUseCaseProvider).call(email);
 
       if (!isValid) {
         state = state.copyWith(

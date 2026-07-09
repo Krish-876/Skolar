@@ -9,16 +9,16 @@ class EmailParser {
     final match = RegExp(_bitsPattern).firstMatch(email.toLowerCase().trim());
     if (match == null) return null;
 
-    final batchYear    = int.parse(match.group(1)!);
-    final rollNumber   = match.group(2)!;
-    final subdomain    = match.group(3)!;
-    final currentYear  = DateTime.now().year;
+    final batchYear = int.parse(match.group(1)!);
+    final rollNumber = match.group(2)!;
+    final subdomain = match.group(3)!;
+    final currentYear = DateTime.now().year;
     final academicYear = (currentYear - batchYear + 1).clamp(1, 4);
 
     return ParsedEmail(
-      batchYear:    batchYear,
-      rollNumber:   rollNumber,
-      subdomain:    subdomain,
+      batchYear: batchYear,
+      rollNumber: rollNumber,
+      subdomain: subdomain,
       academicYear: academicYear,
     );
   }
@@ -29,8 +29,8 @@ class EmailParser {
 class ParsedEmail {
   final int batchYear;
   final String rollNumber;
-  final String subdomain;   // 'hyderabad' → BPHC
-  final int academicYear;   // 1–4
+  final String subdomain; // 'hyderabad' → BPHC
+  final int academicYear; // 1–4
 
   const ParsedEmail({
     required this.batchYear,

@@ -21,13 +21,18 @@ class OnboardingNotifier extends Notifier<OnboardingEntity> {
   @override
   OnboardingEntity build() => const OnboardingEntity();
 
-  void setNickname(String value)   => state = state.copyWith(nickname: value.trim());
-  void setBranch(String value)     => state = state.copyWith(branch: value);
-  void setStudyGoal(String value)  => state = state.copyWith(studyGoal: value);
-  void setPlan(String value)       => state = state.copyWith(plan: value);
+  void setNickname(String value) =>
+      state = state.copyWith(nickname: value.trim());
+  void setBranch(String value) => state = state.copyWith(branch: value);
+  void setStudyGoal(String value) => state = state.copyWith(studyGoal: value);
+  void setPlan(String value) => state = state.copyWith(plan: value);
   void toggleSubject(String id) {
     final current = List<String>.from(state.selectedSubjectIds);
-    if (current.contains(id)) { current.remove(id); } else { current.add(id); }
+    if (current.contains(id)) {
+      current.remove(id);
+    } else {
+      current.add(id);
+    }
     state = state.copyWith(selectedSubjectIds: current);
   }
 
@@ -40,5 +45,5 @@ class OnboardingNotifier extends Notifier<OnboardingEntity> {
 
 final onboardingProvider =
     NotifierProvider<OnboardingNotifier, OnboardingEntity>(
-  OnboardingNotifier.new,
-);
+      OnboardingNotifier.new,
+    );

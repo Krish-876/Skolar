@@ -19,8 +19,8 @@ class LeftHighlightPainter extends CustomPainter {
         end: Alignment.centerRight,
         colors: [
           Colors.transparent,
-          const Color(0xFFB44FBF).withOpacity(0.9),
-          const Color(0xFFB44FBF).withOpacity(0.9),
+          const Color(0xFFB44FBF).withValues(alpha: 0.9),
+          const Color(0xFFB44FBF).withValues(alpha: 0.9),
           Colors.transparent,
         ],
         stops: const [0.05, 0.15, 0.2, 1.0],
@@ -64,8 +64,8 @@ class LeftHighlightPainter extends CustomPainter {
         end: Alignment.bottomCenter,
         colors: [
           Colors.transparent,
-          const Color(0xFF3416E2).withOpacity(0.5),
-          const Color(0xFF3416E2).withOpacity(0.5),
+          const Color(0xFF3416E2).withValues(alpha: 0.5),
+          const Color(0xFF3416E2).withValues(alpha: 0.5),
           Colors.transparent,
         ],
         stops: const [0.0, 0.5, 0.6, 1.0],

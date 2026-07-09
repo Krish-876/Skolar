@@ -18,7 +18,7 @@ class FeedPostEntity {
   final bool isPublished;
   final DateTime createdAt;
   final ExamType examType;
-  final List<String> questionIds;  // UUIDs from published_tests.question_ids
+  final List<String> questionIds; // UUIDs from published_tests.question_ids
 
   const FeedPostEntity({
     required this.id,

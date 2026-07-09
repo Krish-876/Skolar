@@ -7,6 +7,8 @@ abstract class CollegesDataSource {
 
 class CollegesRemoteDataSource implements CollegesDataSource {
   // TODO: inject HttpClient
-  @override Future<List<CollegesDto>> getAll() async => [];
-  @override Future<CollegesDto> getById(String id) => throw UnimplementedError();
+  @override
+  Future<List<CollegesDto>> getAll() async => [];
+  @override
+  Future<CollegesDto> getById(String id) => throw UnimplementedError();
 }

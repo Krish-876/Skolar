@@ -19,12 +19,14 @@ class FeedPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final feedAsync = ref.watch(feedProvider);
     final sortOption = ref.watch(feedSortProvider);
-    final sorted = ref.watch(sortedFeedProvider); // ← cached, no re-sort on rebuild
+    final sorted = ref.watch(
+      sortedFeedProvider,
+    ); // ← cached, no re-sort on rebuild
 
     return GlassBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
-         extendBody: true, 
+        extendBody: true,
         body: RefreshIndicator(
           color: FeedColors.purple,
           backgroundColor: FeedColors.surface,
@@ -37,16 +39,14 @@ class FeedPage extends ConsumerWidget {
               feedAsync.when(
                 loading: () =>
                     const SliverFillRemaining(child: _LoadingState()),
-                error: (e, _) =>
-                    SliverFillRemaining(child: _ErrorState(message: e.toString())),
+                error: (e, _) => SliverFillRemaining(
+                  child: _ErrorState(message: e.toString()),
+                ),
                 data: (_) => SliverList(
                   delegate: SliverChildBuilderDelegate(
                     (context, index) => _AnimatedCard(
                       index: index,
-                      child: FeedPostCard(
-                        post: sorted[index],
-                        index: index,
-                      ),
+                      child: FeedPostCard(post: sorted[index], index: index),
                     ),
                     childCount: sorted.length,
                   ),
@@ -62,7 +62,7 @@ class FeedPage extends ConsumerWidget {
 
 // ── Top bar ───────────────────────────────────────────────────────────────────
 
-class _TopBar extends ConsumerWidget  {
+class _TopBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final college = ref.watch(userProvider).college;
@@ -87,17 +87,23 @@ class _TopBar extends ConsumerWidget  {
                   college,
                   style: GoogleFonts.googleSans(
                     fontSize: 11,
-                    color: AppTheme.textGradBegin.withOpacity(0.4),
+                    color: AppTheme.textGradBegin.withValues(alpha: 0.4),
                   ),
                 ),
               ],
             ),
           ),
-          const Icon(Icons.notifications_outlined,
-              size: 21, color: FeedColors.textMuted),
+          const Icon(
+            Icons.notifications_outlined,
+            size: 21,
+            color: FeedColors.textMuted,
+          ),
           const SizedBox(width: 14),
-          const Icon(Icons.search_rounded,
-              size: 21, color: FeedColors.textMuted),
+          const Icon(
+            Icons.search_rounded,
+            size: 21,
+            color: FeedColors.textMuted,
+          ),
         ],
       ),
     );
@@ -129,8 +135,7 @@ class _SortBar extends StatelessWidget {
           GestureDetector(
             onTap: () => FeedSortSheet.show(context),
             child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: FeedColors.border, width: 0.5),
@@ -138,8 +143,11 @@ class _SortBar extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.sort_rounded,
-                      size: 13, color: FeedColors.textMuted),
+                  const Icon(
+                    Icons.sort_rounded,
+                    size: 13,
+                    color: FeedColors.textMuted,
+                  ),
                   const SizedBox(width: 5),
                   Text(
                     sortOption.label,
@@ -150,8 +158,11 @@ class _SortBar extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 4),
-                  const Icon(Icons.keyboard_arrow_down_rounded,
-                      size: 13, color: FeedColors.textMuted),
+                  const Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    size: 13,
+                    color: FeedColors.textMuted,
+                  ),
                 ],
               ),
             ),

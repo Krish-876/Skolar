@@ -1,4 +1,3 @@
-
 // ═════════════════════════════════════════════════════════════════════════════
 // SPACE BACKGROUND
 // ═════════════════════════════════════════════════════════════════════════════
@@ -91,8 +90,8 @@ class _SpaceBackgroundState extends State<SpaceBackground>
   late final AnimationController _ctrl;
   final _rng = Random();
 
-  static const int _farCount  = 80;
-  static const int _midCount  = 50;
+  static const int _farCount = 80;
+  static const int _midCount = 50;
   static const int _nearCount = 25;
   late final List<_Star> _stars;
 
@@ -110,50 +109,86 @@ class _SpaceBackgroundState extends State<SpaceBackground>
     super.initState();
 
     _stars = [
-      ..._makeStarLayer(_farCount,
-          depthMin: 0.0,  depthMax: 0.30,
-          sizeMin:  0.3,  sizeMax:  0.9,
-          opMin:    0.20, opMax:    0.55,
-          driftScale: 8),
-      ..._makeStarLayer(_midCount,
-          depthMin: 0.30, depthMax: 0.65,
-          sizeMin:  0.8,  sizeMax:  1.6,
-          opMin:    0.40, opMax:    0.75,
-          driftScale: 18),
-      ..._makeStarLayer(_nearCount,
-          depthMin: 0.65, depthMax: 1.0,
-          sizeMin:  1.5,  sizeMax:  2.8,
-          opMin:    0.65, opMax:    1.0,
-          driftScale: 34),
+      ..._makeStarLayer(
+        _farCount,
+        depthMin: 0.0,
+        depthMax: 0.30,
+        sizeMin: 0.3,
+        sizeMax: 0.9,
+        opMin: 0.20,
+        opMax: 0.55,
+        driftScale: 8,
+      ),
+      ..._makeStarLayer(
+        _midCount,
+        depthMin: 0.30,
+        depthMax: 0.65,
+        sizeMin: 0.8,
+        sizeMax: 1.6,
+        opMin: 0.40,
+        opMax: 0.75,
+        driftScale: 18,
+      ),
+      ..._makeStarLayer(
+        _nearCount,
+        depthMin: 0.65,
+        depthMax: 1.0,
+        sizeMin: 1.5,
+        sizeMax: 2.8,
+        opMin: 0.65,
+        opMax: 1.0,
+        driftScale: 34,
+      ),
     ];
 
     _pool = List.generate(_poolSize, (_) => _ShootingStar.inactive());
     _nextShoot = _rng.nextDouble() * 1.5 + 0.5;
 
     _nebulae = [
-      _NebulaPulse(center: const Offset(0.18, 0.14), radius: 0.58,
-          color: const Color(0xFF1A0A6E), phase: 0,   speed: 0.40),
-      _NebulaPulse(center: const Offset(0.78, 0.42), radius: 0.52,
-          color: const Color(0xFF3D0B70), phase: 1.0, speed: 0.28),
-      _NebulaPulse(center: const Offset(0.45, 0.88), radius: 0.48,
-          color: const Color(0xFF0B1A55), phase: 2.2, speed: 0.35),
-      _NebulaPulse(center: const Offset(0.88, 0.08), radius: 0.38,
-          color: const Color(0xFF062040), phase: 3.5, speed: 0.50),
+      _NebulaPulse(
+        center: const Offset(0.18, 0.14),
+        radius: 0.58,
+        color: const Color(0xFF1A0A6E),
+        phase: 0,
+        speed: 0.40,
+      ),
+      _NebulaPulse(
+        center: const Offset(0.78, 0.42),
+        radius: 0.52,
+        color: const Color(0xFF3D0B70),
+        phase: 1.0,
+        speed: 0.28,
+      ),
+      _NebulaPulse(
+        center: const Offset(0.45, 0.88),
+        radius: 0.48,
+        color: const Color(0xFF0B1A55),
+        phase: 2.2,
+        speed: 0.35,
+      ),
+      _NebulaPulse(
+        center: const Offset(0.88, 0.08),
+        radius: 0.38,
+        color: const Color(0xFF062040),
+        phase: 3.5,
+        speed: 0.50,
+      ),
     ];
 
-    _ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(days: 1),
-    )..repeat();
+    _ctrl = AnimationController(vsync: this, duration: const Duration(days: 1))
+      ..repeat();
 
     _ctrl.addListener(_onTick);
   }
 
   List<_Star> _makeStarLayer(
     int count, {
-    required double depthMin, required double depthMax,
-    required double sizeMin,  required double sizeMax,
-    required double opMin,    required double opMax,
+    required double depthMin,
+    required double depthMax,
+    required double sizeMin,
+    required double sizeMax,
+    required double opMin,
+    required double opMax,
     required double driftScale,
   }) {
     return List.generate(count, (_) {
@@ -182,7 +217,8 @@ class _SpaceBackgroundState extends State<SpaceBackground>
     _nextShoot -= dt;
     if (_nextShoot <= 0) {
       _spawnShooter();
-      _nextShoot = _minInterval + _rng.nextDouble() * (_maxInterval - _minInterval);
+      _nextShoot =
+          _minInterval + _rng.nextDouble() * (_maxInterval - _minInterval);
     }
 
     setState(() {
@@ -270,10 +306,7 @@ class _SpacePainter extends CustomPainter {
 
   void _drawBg(Canvas canvas, Size size) {
     // Paints the entire background rectangle with absolute transparency
-    canvas.drawRect(
-      Offset.zero & size,
-      Paint()..color = Colors.transparent,
-    );
+    canvas.drawRect(Offset.zero & size, Paint()..color = Colors.transparent);
   }
 
   void _drawNebulae(Canvas canvas, Size size) {
@@ -282,7 +315,10 @@ class _SpacePainter extends CustomPainter {
       final r = n.radius * size.width * (1.0 + breathe * 0.15);
       final baseAlpha = (n.color.a / 255.0);
       final alpha = (baseAlpha * (1.0 + breathe * 0.20)).clamp(0.0, 1.0);
-      final center = Offset(n.center.dx * size.width, n.center.dy * size.height);
+      final center = Offset(
+        n.center.dx * size.width,
+        n.center.dy * size.height,
+      );
 
       canvas.drawCircle(
         center,
@@ -332,15 +368,15 @@ class _SpacePainter extends CustomPainter {
       if (!s.active) continue;
 
       final dist = size.width * 1.5;
-      final hx = s.x * size.width  + cos(s.angle) * dist * s.progress;
+      final hx = s.x * size.width + cos(s.angle) * dist * s.progress;
       final hy = s.y * size.height + sin(s.angle) * dist * s.progress;
       final trailPx = size.width * s.trailLength;
       final tx = hx - cos(s.angle) * trailPx;
       final ty = hy - sin(s.angle) * trailPx;
 
-      final fadeIn  = (s.progress * 6).clamp(0.0, 1.0);
+      final fadeIn = (s.progress * 6).clamp(0.0, 1.0);
       final fadeOut = (1.0 - (s.progress - 0.75) * 4).clamp(0.0, 1.0);
-      final alpha   = fadeIn * fadeOut * s.opacity;
+      final alpha = fadeIn * fadeOut * s.opacity;
       if (alpha <= 0.01) continue;
 
       // Glow trail (soft, wide)
@@ -396,42 +432,3 @@ class _SpacePainter extends CustomPainter {
 // ═════════════════════════════════════════════════════════════════════════════
 // ONBOARDING PAGE
 // ═════════════════════════════════════════════════════════════════════════════
-
-class _StepData {
-  final String eyebrow;
-  final String title;
-  final String body;
-  final IconData icon;
-
-  const _StepData({
-    required this.eyebrow,
-    required this.title,
-    required this.body,
-    required this.icon,
-  });
-}
-
-const _steps = [
-  _StepData(
-    eyebrow: 'Welcome to Nova',
-    title: 'Learn better,\nRemember longer\nAchieve higher!',
-    body:
-        'Discover a next-gen platform that blends AI, gamification, and collaboration to make studying interactive, efficient, and fun.',
-    icon: Icons.auto_awesome_rounded,
-  ),
-  _StepData(
-    eyebrow: 'Our features',
-    title: 'Only platform u need to gear up your study game!',
-    body:
-        'Upload notes · AI summaries · Flashcards & quizzes · Chat with notes · Audio lessons · Real-time study battles · Leaderboards',
-    icon: Icons.rocket_launch_rounded,
-  ),
-  _StepData(
-    eyebrow: 'Community',
-    title: 'Making learning fun and competitive!',
-    body:
-        "Exes break your heart, Nova breaks down your notes… and actually shows up on time.",
-    icon: Icons.emoji_events_rounded,
-  ),
-];
-

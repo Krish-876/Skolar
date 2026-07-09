@@ -73,7 +73,8 @@ class QuickStatsRow extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 40, height: 4,
+              width: 40,
+              height: 4,
               decoration: BoxDecoration(
                 color: const Color(0xFF1F2D55),
                 borderRadius: BorderRadius.circular(2),
@@ -158,12 +159,12 @@ class _StatCircleState extends State<StatCircle>
           aspectRatio: 1,
           child: Container(
             decoration: BoxDecoration(
-              color: const Color(0xFF131B38).withOpacity(0.9),
+              color: const Color(0xFF131B38).withValues(alpha: 0.9),
               shape: BoxShape.circle,
               border: Border.all(color: const Color(0xFF1F2D55)),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF7B5EEF).withOpacity(0.07),
+                  color: const Color(0xFF7B5EEF).withValues(alpha: 0.07),
                   blurRadius: 12,
                 ),
               ],

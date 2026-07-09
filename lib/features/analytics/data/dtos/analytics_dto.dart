@@ -42,12 +42,12 @@ class RecentActivityDto {
   Map<String, dynamic> toJson() => _$RecentActivityDtoToJson(this);
 
   RecentActivity toDomain() => RecentActivity(
-        time: time,
-        title: title,
-        subtitle: subtitle,
-        dueDate: dueDate,
-        participantAvatars: participantAvatars,
-      );
+    time: time,
+    title: title,
+    subtitle: subtitle,
+    dueDate: dueDate,
+    participantAvatars: participantAvatars,
+  );
 }
 
 @JsonSerializable()
@@ -70,10 +70,10 @@ class TaskItemDto {
   Map<String, dynamic> toJson() => _$TaskItemDtoToJson(this);
 
   TaskItem toDomain() => TaskItem(
-        title: title,
-        dueDate: dueDate,
-        assigneeAvatars: assigneeAvatars,
-      );
+    title: title,
+    dueDate: dueDate,
+    assigneeAvatars: assigneeAvatars,
+  );
 }
 
 @JsonSerializable()
@@ -114,14 +114,14 @@ class AnalyticsDataDto {
   Map<String, dynamic> toJson() => _$AnalyticsDataDtoToJson(this);
 
   AnalyticsData toDomain() => AnalyticsData(
-        totalTasksCompleted: totalTasksCompleted,
-        todoPercent: todoPercent,
-        inProgressPercent: inProgressPercent,
-        completedPercent: completedPercent,
-        weeklyProgress: weeklyProgress.map((e) => e.toDomain()).toList(),
-        tasks: tasks.map((e) => e.toDomain()).toList(),
-        recentActivities: recentActivities.map((e) => e.toDomain()).toList(),
-        syllabusProgress: syllabusProgress,
-        accuracy: accuracy,
-      );
+    totalTasksCompleted: totalTasksCompleted,
+    todoPercent: todoPercent,
+    inProgressPercent: inProgressPercent,
+    completedPercent: completedPercent,
+    weeklyProgress: weeklyProgress.map((e) => e.toDomain()).toList(),
+    tasks: tasks.map((e) => e.toDomain()).toList(),
+    recentActivities: recentActivities.map((e) => e.toDomain()).toList(),
+    syllabusProgress: syllabusProgress,
+    accuracy: accuracy,
+  );
 }

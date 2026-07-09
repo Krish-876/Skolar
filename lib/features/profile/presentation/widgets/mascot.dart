@@ -53,7 +53,6 @@ class _MascotAvatarState extends State<MascotAvatar>
 
   @override
   Widget build(BuildContext context) {
-
     return AnimatedBuilder(
       animation: _ctrl,
       builder: (_, child) {
@@ -70,8 +69,9 @@ class _MascotAvatarState extends State<MascotAvatar>
             ),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF7B5EEF)
-                    .withOpacity(0.30 + glow * 0.25),
+                color: const Color(
+                  0xFF7B5EEF,
+                ).withValues(alpha: 0.30 + glow * 0.25),
                 blurRadius: 16 + glow * 10,
                 spreadRadius: glow * 2,
               ),
@@ -146,8 +146,11 @@ class _OwlPainter extends CustomPainter {
     final body = Paint()..color = const Color(0xFF7B5EEF);
     canvas.drawRRect(
       RRect.fromRectAndRadius(
-        Rect.fromCenter(center: Offset(cx, cy + size.height * 0.06),
-            width: size.width * 0.54, height: size.height * 0.56),
+        Rect.fromCenter(
+          center: Offset(cx, cy + size.height * 0.06),
+          width: size.width * 0.54,
+          height: size.height * 0.56,
+        ),
         Radius.circular(size.width * 0.23),
       ),
       body,
@@ -158,9 +161,10 @@ class _OwlPainter extends CustomPainter {
       canvas.drawRRect(
         RRect.fromRectAndRadius(
           Rect.fromCenter(
-              center: Offset(cx + dx * size.width, cy - size.height * 0.2),
-              width: size.width * 0.17,
-              height: size.height * 0.2),
+            center: Offset(cx + dx * size.width, cy - size.height * 0.2),
+            width: size.width * 0.17,
+            height: size.height * 0.2,
+          ),
           Radius.circular(size.width * 0.06),
         ),
         ear,
@@ -169,7 +173,7 @@ class _OwlPainter extends CustomPainter {
 
     final eyeWhite = Paint()..color = Colors.white;
     final pupil = Paint()..color = const Color(0xFF1A1040);
-    final shine = Paint()..color = Colors.white.withOpacity(0.9);
+    final shine = Paint()..color = Colors.white.withValues(alpha: 0.9);
 
     for (final dx in [-0.12, 0.12]) {
       final ex = cx + dx * size.width;
@@ -177,9 +181,10 @@ class _OwlPainter extends CustomPainter {
       canvas.drawCircle(Offset(ex, cy * ey * 2), size.width * 0.11, eyeWhite);
       canvas.drawCircle(Offset(ex, cy * ey * 2), size.width * 0.06, pupil);
       canvas.drawCircle(
-          Offset(ex + size.width * 0.025, cy * ey * 2 - size.height * 0.025),
-          size.width * 0.02,
-          shine);
+        Offset(ex + size.width * 0.025, cy * ey * 2 - size.height * 0.025),
+        size.width * 0.02,
+        shine,
+      );
     }
 
     final beak = Paint()..color = const Color(0xFFFFB74D);

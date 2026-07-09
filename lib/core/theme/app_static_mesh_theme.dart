@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 /// Design tokens for a static glassmorphism UI layout.
-/// 
-/// Contains pre-blended opacities perfectly balanced for layered static 
+///
+/// Contains pre-blended opacities perfectly balanced for layered static
 /// background blobs against a deep dark canvas.
 class AppStaticMeshTheme {
   AppStaticMeshTheme._();

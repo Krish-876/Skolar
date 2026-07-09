@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:Skolar/core/theme/app_theme.dart';
 import 'package:Skolar/features/analytics/domain/entities/analytics_entity.dart';
 
-
 /// Line chart showing weekly performance trends.
 /// Reads WeeklyDataPoint list from AnalyticsData.
 class WeeklyLineChart extends StatelessWidget {
@@ -27,10 +26,9 @@ class WeeklyLineChart extends StatelessWidget {
         children: [
           Text(
             'Weekly Progress',
-            style: Theme.of(context)
-                .textTheme
-                .titleMedium
-                ?.copyWith(color: AppTheme.textPrimary),
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(color: AppTheme.textPrimary),
           ),
           const SizedBox(height: 20),
           SizedBox(
@@ -41,10 +39,8 @@ class WeeklyLineChart extends StatelessWidget {
                   show: true,
                   drawVerticalLine: false,
                   horizontalInterval: 25,
-                  getDrawingHorizontalLine: (_) => FlLine(
-                    color: AppTheme.divider,
-                    strokeWidth: 1,
-                  ),
+                  getDrawingHorizontalLine: (_) =>
+                      FlLine(color: AppTheme.divider, strokeWidth: 1),
                 ),
                 borderData: FlBorderData(show: false),
                 titlesData: FlTitlesData(
@@ -105,7 +101,7 @@ class WeeklyLineChart extends StatelessWidget {
                     barWidth: 2.5,
                     dotData: FlDotData(
                       show: true,
-                      getDotPainter: (_, __, ___, ____) => FlDotCirclePainter(
+                      getDotPainter: (_, _, _, _) => FlDotCirclePainter(
                         radius: 4,
                         color: AppTheme.accent,
                         strokeWidth: 2,
@@ -118,8 +114,8 @@ class WeeklyLineChart extends StatelessWidget {
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          AppTheme.accent.withOpacity(0.3),
-                          AppTheme.accent.withOpacity(0.0),
+                          AppTheme.accent.withValues(alpha: 0.3),
+                          AppTheme.accent.withValues(alpha: 0.0),
                         ],
                       ),
                     ),

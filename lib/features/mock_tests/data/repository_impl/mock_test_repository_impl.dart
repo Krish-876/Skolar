@@ -20,23 +20,27 @@ class MockTestRepositoryImpl implements MockTestRepository {
   }) async {
     try {
       final dtos = await _dataSource.fetchMcqQuestions(
-        subject:   subject,
-        college:   college,
-        examType:  examType,
-        count:     count,
-        k:         k,
-        yearFrom:  yearFrom,
-        yearTo:    yearTo,
+        subject: subject,
+        college: college,
+        examType: examType,
+        count: count,
+        k: k,
+        yearFrom: yearFrom,
+        yearTo: yearTo,
       );
-      return Right(dtos
-          .map((d) => QuizQuestion(
-                question:     d.question,
-                options:      d.options,
+      return Right(
+        dtos
+            .map(
+              (d) => QuizQuestion(
+                question: d.question,
+                options: d.options,
                 correctIndex: d.correctIndex,
-                subject:      d.subject,
-                marks:        d.marks,
-              ))
-          .toList());
+                subject: d.subject,
+                marks: d.marks,
+              ),
+            )
+            .toList(),
+      );
     } catch (e) {
       return Left(ServerFailure(e.toString()));
     }
@@ -54,22 +58,26 @@ class MockTestRepositoryImpl implements MockTestRepository {
   }) async {
     try {
       final dtos = await _dataSource.fetchOpenQuestions(
-        subject:   subject,
-        college:   college,
-        examType:  examType,
-        count:     count,
-        k:         k,
-        yearFrom:  yearFrom,
-        yearTo:    yearTo,
+        subject: subject,
+        college: college,
+        examType: examType,
+        count: count,
+        k: k,
+        yearFrom: yearFrom,
+        yearTo: yearTo,
       );
-      return Right(dtos
-          .map((d) => OpenQuestion(
-                question:    d.question,
-                subject:     d.subject,
-                marks:       d.marks,
+      return Right(
+        dtos
+            .map(
+              (d) => OpenQuestion(
+                question: d.question,
+                subject: d.subject,
+                marks: d.marks,
                 modelAnswer: d.modelAnswer,
-              ))
-          .toList());
+              ),
+            )
+            .toList(),
+      );
     } catch (e) {
       return Left(ServerFailure(e.toString()));
     }
@@ -83,14 +91,18 @@ class MockTestRepositoryImpl implements MockTestRepository {
       final dtos = await _dataSource.fetchQuestionsByIds(
         questionIds: questionIds,
       );
-      return Right(dtos
-          .map((d) => OpenQuestion(
-                question:    d.question,
-                subject:     d.subject,
-                marks:       d.marks,
+      return Right(
+        dtos
+            .map(
+              (d) => OpenQuestion(
+                question: d.question,
+                subject: d.subject,
+                marks: d.marks,
                 modelAnswer: d.modelAnswer,
-              ))
-          .toList());
+              ),
+            )
+            .toList(),
+      );
     } catch (e) {
       return Left(ServerFailure(e.toString()));
     }

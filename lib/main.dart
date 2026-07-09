@@ -5,14 +5,16 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
+final RouteObserver<ModalRoute<void>> routeObserver =
+    RouteObserver<ModalRoute<void>>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Supabase.initialize(
     url: 'https://nohxpwqlqdwqwptuvzyf.supabase.co',
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5vaHhwd3FscWR3cXdwdHV2enlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk3Nzk2NTcsImV4cCI6MjA5NTM1NTY1N30.eKdk942COAvD7368xtGYN3I06H0TvX0-60s8p6lKHiw',
+    anonKey:
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5vaHhwd3FscWR3cXdwdHV2enlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk3Nzk2NTcsImV4cCI6MjA5NTM1NTY1N30.eKdk942COAvD7368xtGYN3I06H0TvX0-60s8p6lKHiw',
     authOptions: const FlutterAuthClientOptions(
       authFlowType: AuthFlowType.pkce,
     ),

@@ -8,11 +8,7 @@ class TaskListTile extends StatelessWidget {
   final TaskItem task;
   final bool showDivider; // Maintained for signature compatibility, unused here
 
-  const TaskListTile({
-    super.key,
-    required this.task,
-    this.showDivider = false,
-  });
+  const TaskListTile({super.key, required this.task, this.showDivider = false});
 
   @override
   Widget build(BuildContext context) {
@@ -22,10 +18,10 @@ class TaskListTile extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         // High-end subtle transparent tint to contrast against the parent card background
-        color: Colors.white.withOpacity(0.03),
+        color: Colors.white.withValues(alpha: 0.03),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: Colors.white.withOpacity(0.05),
+          color: Colors.white.withValues(alpha: 0.05),
           width: 1,
         ),
       ),
@@ -38,9 +34,9 @@ class TaskListTile extends StatelessWidget {
                 Text(
                   task.title,
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        color: AppTheme.textPrimary,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    color: AppTheme.textPrimary,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 const SizedBox(height: 10),
                 _AvatarStack(avatars: task.assigneeAvatars),
@@ -49,10 +45,9 @@ class TaskListTile extends StatelessWidget {
           ),
           Text(
             task.dueDate,
-            style: Theme.of(context)
-                .textTheme
-                .bodySmall
-                ?.copyWith(color: AppTheme.textSecondary),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: AppTheme.textSecondary),
           ),
         ],
       ),

@@ -40,9 +40,7 @@ abstract class SubjectsRepository {
 
   /// Reads the student's self-reported total credit load for the
   /// semester. Returns null if never set.
-  Future<Either<Failure, int?>> getCreditTarget({
-    required String userId,
-  });
+  Future<Either<Failure, int?>> getCreditTarget({required String userId});
 
   /// Persists the student's self-reported total credit load.
   Future<Either<Failure, Unit>> setCreditTarget({

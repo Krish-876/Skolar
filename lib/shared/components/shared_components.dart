@@ -7,23 +7,23 @@ class LoadingButton extends StatelessWidget {
   final bool isLoading;
 
   const LoadingButton({
-    Key? key,
+    super.key,
     required this.label,
     required this.onPressed,
     this.isLoading = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) => ElevatedButton(
-        onPressed: isLoading ? null : onPressed,
-        child: isLoading
-            ? const SizedBox(
-                height: 20,
-                width: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : Text(label),
-      );
+    onPressed: isLoading ? null : onPressed,
+    child: isLoading
+        ? const SizedBox(
+            height: 20,
+            width: 20,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          )
+        : Text(label),
+  );
 }
 
 class AppTextField extends StatelessWidget {
@@ -34,23 +34,23 @@ class AppTextField extends StatelessWidget {
   final String? Function(String?)? validator;
 
   const AppTextField({
-    Key? key,
+    super.key,
     required this.label,
     required this.controller,
     this.keyboardType = TextInputType.text,
     this.obscureText = false,
     this.validator,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) => TextFormField(
-        controller: controller,
-        keyboardType: keyboardType,
-        obscureText: obscureText,
-        decoration: InputDecoration(
-          labelText: label,
-          border: const OutlineInputBorder(),
-        ),
-        validator: validator,
-      );
+    controller: controller,
+    keyboardType: keyboardType,
+    obscureText: obscureText,
+    decoration: InputDecoration(
+      labelText: label,
+      border: const OutlineInputBorder(),
+    ),
+    validator: validator,
+  );
 }

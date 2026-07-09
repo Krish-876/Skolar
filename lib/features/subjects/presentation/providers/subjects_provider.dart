@@ -55,6 +55,7 @@ class SubjectsPageState {
   final bool editMode;
   final Set<String> pendingDelete;
   final int? creditTarget;
+
   /// True once getCreditTarget has returned successfully (value may
   /// still be null if the user has never set it). The credit sheet
   /// must only show when this is true AND creditTarget is null —
@@ -64,17 +65,16 @@ class SubjectsPageState {
   final Map<String, StagedHandout> stagedHandouts;
 
   const SubjectsPageState({
-    this.subjects            = const [],
-    this.editMode            = false,
-    this.pendingDelete       = const {},
+    this.subjects = const [],
+    this.editMode = false,
+    this.pendingDelete = const {},
     this.creditTarget,
-    this.creditTargetLoaded  = false,
-    this.uploadingHandout    = const {},
-    this.stagedHandouts      = const {},
+    this.creditTargetLoaded = false,
+    this.uploadingHandout = const {},
+    this.stagedHandouts = const {},
   });
 
-  int get totalCredits =>
-      subjects.fold(0, (sum, s) => sum + (s.credits ?? 0));
+  int get totalCredits => subjects.fold(0, (sum, s) => sum + (s.credits ?? 0));
 
   int? get remainingCredits =>
       creditTarget == null ? null : (creditTarget! - totalCredits);
@@ -87,24 +87,23 @@ class SubjectsPageState {
     bool? creditTargetLoaded,
     Map<String, bool>? uploadingHandout,
     Map<String, StagedHandout>? stagedHandouts,
-  }) =>
-      SubjectsPageState(
-        subjects:           subjects           ?? this.subjects,
-        editMode:           editMode           ?? this.editMode,
-        pendingDelete:      pendingDelete      ?? this.pendingDelete,
-        creditTarget:       creditTarget       ?? this.creditTarget,
-        creditTargetLoaded: creditTargetLoaded ?? this.creditTargetLoaded,
-        uploadingHandout:   uploadingHandout   ?? this.uploadingHandout,
-        stagedHandouts:     stagedHandouts     ?? this.stagedHandouts,
-      );
+  }) => SubjectsPageState(
+    subjects: subjects ?? this.subjects,
+    editMode: editMode ?? this.editMode,
+    pendingDelete: pendingDelete ?? this.pendingDelete,
+    creditTarget: creditTarget ?? this.creditTarget,
+    creditTargetLoaded: creditTargetLoaded ?? this.creditTargetLoaded,
+    uploadingHandout: uploadingHandout ?? this.uploadingHandout,
+    stagedHandouts: stagedHandouts ?? this.stagedHandouts,
+  );
 }
 
 // ── Notifier ──────────────────────────────────────────────────────────────
 
 final subjectsProvider =
     AsyncNotifierProvider.autoDispose<SubjectsNotifier, SubjectsPageState>(
-  SubjectsNotifier.new,
-);
+      SubjectsNotifier.new,
+    );
 
 class SubjectsNotifier extends AutoDisposeAsyncNotifier<SubjectsPageState> {
   late String _userId;
@@ -118,51 +117,55 @@ class SubjectsNotifier extends AutoDisposeAsyncNotifier<SubjectsPageState> {
   Future<SubjectsPageState> build() async {
     final user = ref.watch(userProvider);
 
-    _userId        = user.id;
+    _userId = user.id;
     _institutionId = user.institutionId ?? '';
-    _campusId      = user.campusId ?? '';
-    _academicYear  = user.academicYear;
-    _semester      = SemesterUtils.currentSemesterNumber();
+    _campusId = user.campusId ?? '';
+    _academicYear = user.academicYear;
+    _semester = SemesterUtils.currentSemesterNumber();
     _semesterLabel = SemesterUtils.currentSemesterLabel();
 
     int? creditTarget;
     bool creditTargetLoaded = false;
 
-    final creditResult =
-        await ref.read(getCreditTargetUseCaseProvider).call(userId: _userId);
+    final creditResult = await ref
+        .read(getCreditTargetUseCaseProvider)
+        .call(userId: _userId);
     creditResult.fold(
       (failure) {
         // Non-fatal — leave creditTargetLoaded = false so the sheet
         // does not fire on a network/RLS error.
         debugPrint(
-            '[SubjectsNotifier] getCreditTarget failed: ${failure.message}');
+          '[SubjectsNotifier] getCreditTarget failed: ${failure.message}',
+        );
       },
       (value) {
-        creditTarget       = value;
+        creditTarget = value;
         creditTargetLoaded = true;
       },
     );
 
     if (_campusId.isEmpty) {
       return SubjectsPageState(
-        creditTarget:       creditTarget,
+        creditTarget: creditTarget,
         creditTargetLoaded: creditTargetLoaded,
       );
     }
 
-    final result = await ref.read(getSubjectsForUserUseCaseProvider).call(
-          userId:        _userId,
+    final result = await ref
+        .read(getSubjectsForUserUseCaseProvider)
+        .call(
+          userId: _userId,
           institutionId: _institutionId,
-          campusId:      _campusId,
-          academicYear:  _academicYear,
-          semester:      _semester,
+          campusId: _campusId,
+          academicYear: _academicYear,
+          semester: _semester,
         );
 
     return result.fold(
       (failure) => throw Exception(failure.message),
       (subjects) => SubjectsPageState(
-        subjects:           subjects,
-        creditTarget:       creditTarget,
+        subjects: subjects,
+        creditTarget: creditTarget,
         creditTargetLoaded: creditTargetLoaded,
       ),
     );
@@ -172,10 +175,9 @@ class SubjectsNotifier extends AutoDisposeAsyncNotifier<SubjectsPageState> {
 
   Future<void> setCreditTarget(int value) async {
     final current = state.valueOrNull ?? const SubjectsPageState();
-    state = AsyncData(current.copyWith(
-      creditTarget:       value,
-      creditTargetLoaded: true,
-    ));
+    state = AsyncData(
+      current.copyWith(creditTarget: value, creditTargetLoaded: true),
+    );
     await ref
         .read(setCreditTargetUseCaseProvider)
         .call(userId: _userId, value: value);
@@ -221,12 +223,14 @@ class SubjectsNotifier extends AutoDisposeAsyncNotifier<SubjectsPageState> {
       final remaining = current.subjects
           .where((s) => !current.pendingDelete.contains(s.userSubjectId))
           .toList();
-      state = AsyncData(SubjectsPageState(
-        subjects:           remaining,
-        creditTarget:       current.creditTarget,
-        creditTargetLoaded: current.creditTargetLoaded,
-        stagedHandouts:     current.stagedHandouts,
-      ));
+      state = AsyncData(
+        SubjectsPageState(
+          subjects: remaining,
+          creditTarget: current.creditTarget,
+          creditTargetLoaded: current.creditTargetLoaded,
+          stagedHandouts: current.stagedHandouts,
+        ),
+      );
     } catch (e) {
       state = AsyncError(e, StackTrace.current);
     }
@@ -248,13 +252,15 @@ class SubjectsNotifier extends AutoDisposeAsyncNotifier<SubjectsPageState> {
     }
 
     state = const AsyncLoading();
-    final result = await ref.read(addCustomSubjectUseCaseProvider).call(
-          userId:        _userId,
+    final result = await ref
+        .read(addCustomSubjectUseCaseProvider)
+        .call(
+          userId: _userId,
           institutionId: _institutionId,
-          semester:      _semesterLabel,
-          name:          name,
-          courseCode:    courseCode,
-          credits:       credits,
+          semester: _semesterLabel,
+          name: name,
+          courseCode: courseCode,
+          credits: credits,
         );
 
     return result.fold(
@@ -265,12 +271,14 @@ class SubjectsNotifier extends AutoDisposeAsyncNotifier<SubjectsPageState> {
       (newSubject) {
         final updated = List<SubjectEntity>.from(current.subjects)
           ..add(newSubject);
-        state = AsyncData(SubjectsPageState(
-          subjects:           updated,
-          creditTarget:       current.creditTarget,
-          creditTargetLoaded: current.creditTargetLoaded,
-          stagedHandouts:     current.stagedHandouts,
-        ));
+        state = AsyncData(
+          SubjectsPageState(
+            subjects: updated,
+            creditTarget: current.creditTarget,
+            creditTargetLoaded: current.creditTargetLoaded,
+            stagedHandouts: current.stagedHandouts,
+          ),
+        );
         return null;
       },
     );
@@ -303,49 +311,48 @@ class SubjectsNotifier extends AutoDisposeAsyncNotifier<SubjectsPageState> {
     if (current == null || current.stagedHandouts.isEmpty) return null;
 
     final entries = Map<String, StagedHandout>.from(current.stagedHandouts);
-    state = AsyncData(current.copyWith(
-      uploadingHandout: {
-        for (final id in entries.keys) id: true,
-      },
-    ));
+    state = AsyncData(
+      current.copyWith(
+        uploadingHandout: {for (final id in entries.keys) id: true},
+      ),
+    );
 
     String? firstError;
     var latest = current;
 
     for (final entry in entries.entries) {
       final userSubjectId = entry.key;
-      final staged        = entry.value;
-      final subject = latest.subjects
-          .firstWhere((s) => s.userSubjectId == userSubjectId);
-
-      final result = await ref.read(uploadHandoutUseCaseProvider).call(
-            userSubjectId: userSubjectId,
-            userId:        _userId,
-            subjectName:   subject.name,
-            fileBytes:     staged.bytes,
-            filename:      staged.filename,
-          );
-
-      result.fold(
-        (failure) => firstError ??= failure.message,
-        (updatedSubject) {
-          final updatedList = latest.subjects
-              .map((s) =>
-                  s.userSubjectId == userSubjectId ? updatedSubject : s)
-              .toList();
-          latest = latest.copyWith(subjects: updatedList);
-        },
+      final staged = entry.value;
+      final subject = latest.subjects.firstWhere(
+        (s) => s.userSubjectId == userSubjectId,
       );
 
-      final nextUploading =
-          Map<String, bool>.from(latest.uploadingHandout)
-            ..remove(userSubjectId);
-      final nextStaged =
-          Map<String, StagedHandout>.from(latest.stagedHandouts)
-            ..remove(userSubjectId);
+      final result = await ref
+          .read(uploadHandoutUseCaseProvider)
+          .call(
+            userSubjectId: userSubjectId,
+            userId: _userId,
+            subjectName: subject.name,
+            fileBytes: staged.bytes,
+            filename: staged.filename,
+          );
+
+      result.fold((failure) => firstError ??= failure.message, (
+        updatedSubject,
+      ) {
+        final updatedList = latest.subjects
+            .map((s) => s.userSubjectId == userSubjectId ? updatedSubject : s)
+            .toList();
+        latest = latest.copyWith(subjects: updatedList);
+      });
+
+      final nextUploading = Map<String, bool>.from(latest.uploadingHandout)
+        ..remove(userSubjectId);
+      final nextStaged = Map<String, StagedHandout>.from(latest.stagedHandouts)
+        ..remove(userSubjectId);
       latest = latest.copyWith(
         uploadingHandout: nextUploading,
-        stagedHandouts:   nextStaged,
+        stagedHandouts: nextStaged,
       );
       state = AsyncData(latest);
     }

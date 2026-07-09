@@ -3,7 +3,11 @@ import '../dtos/feed_post_dto.dart';
 
 abstract class FeedRemoteDataSource {
   Future<List<FeedPostDto>> getPosts({required String college});
-  Future<void> castVote({required String postId, required String userId, required int vote});
+  Future<void> castVote({
+    required String postId,
+    required String userId,
+    required int vote,
+  });
   Future<Map<String, int>> fetchUserVotes({required String userId});
 }
 
@@ -45,11 +49,10 @@ class FeedRemoteDataSourceImpl implements FeedRemoteDataSource {
     required String userId,
     required int vote,
   }) async {
-    await _client.rpc('handle_vote', params: {
-      'p_post_id': postId,
-      'p_user_id': userId,
-      'p_vote':    vote,
-    });
+    await _client.rpc(
+      'handle_vote',
+      params: {'p_post_id': postId, 'p_user_id': userId, 'p_vote': vote},
+    );
   }
 
   // Returns map of postId -> vote (1 or -1) for all posts this user has voted on

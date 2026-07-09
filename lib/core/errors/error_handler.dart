@@ -42,7 +42,7 @@
 //       case DioExceptionType.badResponse:
 //         final statusCode = dioException.response?.statusCode;
 //         final message = dioException.response?.data['message'] ?? dioException.message;
-        
+
 //         if (statusCode == 401) {
 //           return AuthFailure(message ?? 'Unauthorized');
 //         } else if (statusCode == 403) {

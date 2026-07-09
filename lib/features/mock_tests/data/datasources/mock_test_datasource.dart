@@ -35,12 +35,15 @@ class MockTestRemoteDataSourceImpl implements MockTestRemoteDataSource {
   static const String _baseUrl = 'http://192.168.0.122:8000';
 
   MockTestRemoteDataSourceImpl({Dio? dio})
-      : _dio = dio ??
-            Dio(BaseOptions(
+    : _dio =
+          dio ??
+          Dio(
+            BaseOptions(
               baseUrl: _baseUrl,
               connectTimeout: const Duration(seconds: 30),
               receiveTimeout: const Duration(minutes: 3),
-            ));
+            ),
+          );
 
   @override
   Future<List<QuizQuestionDto>> fetchMcqQuestions({
@@ -56,13 +59,13 @@ class MockTestRemoteDataSourceImpl implements MockTestRemoteDataSource {
       final response = await _dio.post<Map<String, dynamic>>(
         '/generate-batch',
         data: {
-          'subject':   subject,
-          'college':   college,
+          'subject': subject,
+          'college': college,
           'exam_type': examType,
-          'count':     count,
-          'k':         k,
-          if (yearFrom != null) 'year_from': yearFrom,
-          if (yearTo   != null) 'year_to':   yearTo,
+          'count': count,
+          'k': k,
+          'year_from': ?yearFrom,
+          'year_to': ?yearTo,
         },
       );
       final rawList = response.data!['questions'] as List<dynamic>;
@@ -88,14 +91,14 @@ class MockTestRemoteDataSourceImpl implements MockTestRemoteDataSource {
       final response = await _dio.post<Map<String, dynamic>>(
         '/generate-open-batch',
         data: {
-          'subject':      subject,
-          'college':      college,
-          'exam_type':    examType,
-          'count':        count,
-          'k':            k,
+          'subject': subject,
+          'college': college,
+          'exam_type': examType,
+          'count': count,
+          'k': k,
           'with_answers': true,
-          if (yearFrom != null) 'year_from': yearFrom,
-          if (yearTo   != null) 'year_to':   yearTo,
+          'year_from': ?yearFrom,
+          'year_to': ?yearTo,
         },
       );
       final rawList = response.data!['questions'] as List<dynamic>;
@@ -118,12 +121,15 @@ class MockTestRemoteDataSourceImpl implements MockTestRemoteDataSource {
           .inFilter('id', questionIds);
 
       return (response as List<dynamic>)
-          .map((row) => OpenQuestionDto(
-                question:    row['question_text'] as String,
-                subject:     row['subject']       as String,
-                marks:       row['marks']         as int,
-                modelAnswer: '',  // not stored — shown as "No model answer available"
-              ))
+          .map(
+            (row) => OpenQuestionDto(
+              question: row['question_text'] as String,
+              subject: row['subject'] as String,
+              marks: row['marks'] as int,
+              modelAnswer:
+                  '', // not stored — shown as "No model answer available"
+            ),
+          )
           .toList();
     } catch (e) {
       throw Exception('Failed to fetch questions by ids: $e');

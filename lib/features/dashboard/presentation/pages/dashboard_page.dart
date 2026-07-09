@@ -31,9 +31,7 @@ class DashboardPage extends ConsumerWidget {
         // ── Scaffold is transparent so the background shows through ──────────
         Scaffold(
           backgroundColor: Colors.transparent,
-          body: SafeArea(
-            child: _buildBody(context, ref, state),
-          ),
+          body: SafeArea(child: _buildBody(context, ref, state)),
         ),
       ],
     );
@@ -69,12 +67,12 @@ class DashboardPage extends ConsumerWidget {
         child: CustomScrollView(
           physics: const BouncingScrollPhysics(),
           slivers: [
-
             // ── App Bar ────────────────────────────────────────────────────
             SliverAppBar(
               floating: true,
               snap: true,
-              backgroundColor: Colors.transparent, // transparent — bg shows through
+              backgroundColor:
+                  Colors.transparent, // transparent — bg shows through
               elevation: 0,
               title: Text(
                 'Dashboard',
@@ -109,43 +107,49 @@ class DashboardPage extends ConsumerWidget {
 
             // ── Tasks Section Header ───────────────────────────────────────
             SliverToBoxAdapter(
-              child: DashboardSectionHeader(
-                title: 'Tasks',
-                showRefresh: true,
-              ),
+              child: DashboardSectionHeader(title: 'Tasks', showRefresh: true),
             ),
 
             // ── Tasks List — SliverList for large lists ────────────────────
             SliverPadding(
-  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-  sliver: SliverToBoxAdapter(
-    child: Container(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 10), // Reduced bottom padding slightly
-      decoration: BoxDecoration(
-        gradient: AppTheme.surfaceGradient,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            height: 300, // Adjust this number based on how many sub-boxes you want visible at once
-            child: ListView.builder(
-              padding: EdgeInsets.zero, // Clears default list view padding
-              shrinkWrap: false,         // No longer needed to shrink since height is explicit
-              physics: const BouncingScrollPhysics(), // 2. Restores smooth scrolling mechanics inside the card
-              itemCount: analytics.tasks.length,
-              itemBuilder: (context, i) => TaskListTile(
-                task: analytics.tasks[i],
-                showDivider: false,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              sliver: SliverToBoxAdapter(
+                child: Container(
+                  padding: const EdgeInsets.fromLTRB(
+                    20,
+                    20,
+                    20,
+                    10,
+                  ), // Reduced bottom padding slightly
+                  decoration: BoxDecoration(
+                    gradient: AppTheme.surfaceGradient,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        height:
+                            300, // Adjust this number based on how many sub-boxes you want visible at once
+                        child: ListView.builder(
+                          padding: EdgeInsets
+                              .zero, // Clears default list view padding
+                          shrinkWrap:
+                              false, // No longer needed to shrink since height is explicit
+                          physics:
+                              const BouncingScrollPhysics(), // 2. Restores smooth scrolling mechanics inside the card
+                          itemCount: analytics.tasks.length,
+                          itemBuilder: (context, i) => TaskListTile(
+                            task: analytics.tasks[i],
+                            showDivider: false,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
-          ),
-        ],
-      ),
-    ),
-  ),
-),
 
             // ── Recent Activity Section Header ─────────────────────────────
             SliverToBoxAdapter(
@@ -160,10 +164,8 @@ class DashboardPage extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
               sliver: SliverList.separated(
                 itemCount: analytics.recentActivities.length,
-                separatorBuilder: (_, __) => const Divider(
-                  height: 1,
-                  color: AppTheme.dividerColor,
-                ),
+                separatorBuilder: (_, _) =>
+                    const Divider(height: 1, color: AppTheme.dividerColor),
                 itemBuilder: (context, i) => RecentActivityTile(
                   activity: analytics.recentActivities[i],
                   showDivider: false,
@@ -180,20 +182,47 @@ class DashboardPage extends ConsumerWidget {
                   children: [
                     const Padding(
                       padding: EdgeInsets.only(bottom: 8),
-                      child: Text('Dev Nav', style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+                      child: Text(
+                        'Dev Nav',
+                        style: TextStyle(
+                          color: AppTheme.textSecondary,
+                          fontSize: 12,
+                        ),
+                      ),
                     ),
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
                       children: [
-                        _DevButton('Mock Tests',     () => context.go(AppRoutes.mockTests)),
-                        _DevButton('Feed',           () => context.go(AppRoutes.feed)),
-                        _DevButton('Focus',          () => context.go(AppRoutes.focusSession)),
-                        _DevButton('Exam Predict',   () => context.go(AppRoutes.examPrediction)),
-                        _DevButton('Profile',        () => context.go(AppRoutes.profile)),
-                        _DevButton('PYQ Upload',     () => context.go(AppRoutes.pyqUpload)),
-                        _DevButton('Colleges',       () => context.go(AppRoutes.colleges)),
-                        _DevButton('Onboarding',     () => context.go(AppRoutes.onboarding)),
+                        _DevButton(
+                          'Mock Tests',
+                          () => context.go(AppRoutes.mockTests),
+                        ),
+                        _DevButton('Feed', () => context.go(AppRoutes.feed)),
+                        _DevButton(
+                          'Focus',
+                          () => context.go(AppRoutes.focusSession),
+                        ),
+                        _DevButton(
+                          'Exam Predict',
+                          () => context.go(AppRoutes.examPrediction),
+                        ),
+                        _DevButton(
+                          'Profile',
+                          () => context.go(AppRoutes.profile),
+                        ),
+                        _DevButton(
+                          'PYQ Upload',
+                          () => context.go(AppRoutes.pyqUpload),
+                        ),
+                        _DevButton(
+                          'Colleges',
+                          () => context.go(AppRoutes.colleges),
+                        ),
+                        _DevButton(
+                          'Onboarding',
+                          () => context.go(AppRoutes.onboarding),
+                        ),
                       ],
                     ),
                   ],
@@ -218,6 +247,7 @@ class DashboardPage extends ConsumerWidget {
     );
   }
 }
+
 // This should be at the very bottom of the file, outside everything else
 class _DevButton extends StatelessWidget {
   final String label;

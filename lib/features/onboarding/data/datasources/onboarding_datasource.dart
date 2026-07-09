@@ -15,14 +15,14 @@ class OnboardingRemoteDataSource implements OnboardingDataSource {
     final authUser = _client.auth.currentUser;
     if (authUser == null) throw Exception('No authenticated user');
 
-    final email   = authUser.email ?? '';
-    final parsed  = EmailParser.parse(email);
+    final email = authUser.email ?? '';
+    final parsed = EmailParser.parse(email);
 
     // Resolve campus from subdomain
     String? campusId;
-    String  college = 'BPHC';
+    String college = 'BPHC';
     String? institutionId;
-    int     academicYear = 1;
+    int academicYear = 1;
 
     if (parsed != null) {
       academicYear = parsed.academicYear;
@@ -34,34 +34,38 @@ class OnboardingRemoteDataSource implements OnboardingDataSource {
           .maybeSingle();
 
       if (campusResponse != null) {
-        campusId      = campusResponse['id']             as String;
-        college       = campusResponse['short_name']     as String;
+        campusId = campusResponse['id'] as String;
+        college = campusResponse['short_name'] as String;
         institutionId = campusResponse['institution_id'] as String;
       }
     }
 
     // Upsert user row
     await _client.from('users').upsert({
-      'id':             authUser.id,
-      'email':          email,
-      'full_name':      dto.nickname,
-      'roll_number':    parsed?.rollNumber ?? '',
-      'college':        college,
-      'campus_id':      campusId,
+      'id': authUser.id,
+      'email': email,
+      'full_name': dto.nickname,
+      'roll_number': parsed?.rollNumber ?? '',
+      'college': college,
+      'campus_id': campusId,
       'institution_id': institutionId,
-      'academic_year':  academicYear,
-      'branch':         dto.branch,
-      'plan':           dto.plan,
+      'academic_year': academicYear,
+      'branch': dto.branch,
+      'plan': dto.plan,
     });
 
     // Save selected subjects
     if (dto.selectedSubjectIds.isNotEmpty) {
       final semester = SemesterUtils.currentSemesterLabel();
-      final rows = dto.selectedSubjectIds.map((subjectId) => {
-        'user_id':    authUser.id,
-        'subject_id': subjectId,
-        'semester':   semester,
-      }).toList();
+      final rows = dto.selectedSubjectIds
+          .map(
+            (subjectId) => {
+              'user_id': authUser.id,
+              'subject_id': subjectId,
+              'semester': semester,
+            },
+          )
+          .toList();
 
       await _client
           .from('user_subjects')

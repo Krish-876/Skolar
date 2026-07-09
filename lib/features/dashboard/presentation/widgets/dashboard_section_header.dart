@@ -22,10 +22,9 @@ class DashboardSectionHeader extends ConsumerWidget {
         children: [
           Text(
             title,
-            style: Theme.of(context)
-                .textTheme
-                .titleMedium
-                ?.copyWith(color: AppTheme.textPrimary),
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(color: AppTheme.textPrimary),
           ),
           Row(
             children: [
@@ -35,8 +34,10 @@ class DashboardSectionHeader extends ConsumerWidget {
               ),
               if (showRefresh)
                 IconButton(
-                  icon: Icon(Icons.refresh_rounded,
-                      color: AppTheme.textSecondary),
+                  icon: Icon(
+                    Icons.refresh_rounded,
+                    color: AppTheme.textSecondary,
+                  ),
                   onPressed: () =>
                       ref.read(dashboardProvider.notifier).refresh(),
                 ),

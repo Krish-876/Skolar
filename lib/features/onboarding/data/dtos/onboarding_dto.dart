@@ -16,10 +16,10 @@ class OnboardingDto {
   });
 
   factory OnboardingDto.fromEntity(OnboardingEntity e) => OnboardingDto(
-    nickname:           e.nickname   ?? '',
-    branch:             e.branch     ?? '',
-    studyGoal:          e.studyGoal  ?? '',
-    plan:               e.plan,
+    nickname: e.nickname ?? '',
+    branch: e.branch ?? '',
+    studyGoal: e.studyGoal ?? '',
+    plan: e.plan,
     selectedSubjectIds: e.selectedSubjectIds,
   );
 }

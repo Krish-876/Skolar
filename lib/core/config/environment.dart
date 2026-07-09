@@ -39,8 +39,11 @@ class Environment {
 
   /// Get current environment based on flavor
   factory Environment.currentEnvironment() {
-    const environment = String.fromEnvironment('ENVIRONMENT', defaultValue: 'development');
-    
+    const environment = String.fromEnvironment(
+      'ENVIRONMENT',
+      defaultValue: 'development',
+    );
+
     switch (environment) {
       case 'staging':
         return Environment.staging;

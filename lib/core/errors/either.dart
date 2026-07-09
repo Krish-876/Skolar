@@ -1,9 +1,6 @@
 /// Functional Either type for error handling
 abstract class Either<L, R> {
-  T fold<T>(
-    T Function(L) onLeft,
-    T Function(R) onRight,
-  );
+  T fold<T>(T Function(L) onLeft, T Function(R) onRight);
 
   Either<L, T> map<T>(T Function(R) f);
   Either<L2, R> mapLeft<L2>(L2 Function(L) f);

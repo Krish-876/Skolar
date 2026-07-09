@@ -1,115 +1,73 @@
 /// Custom exception classes for error handling throughout the app
+library;
 
 class AppException implements Exception {
   final String message;
   final String? code;
   final dynamic originalException;
 
-  AppException({
-    required this.message,
-    this.code,
-    this.originalException,
-  });
+  AppException({required this.message, this.code, this.originalException});
 
   @override
-  String toString() => 'AppException: $message${code != null ? ' (Code: $code)' : ''}';
+  String toString() =>
+      'AppException: $message${code != null ? ' (Code: $code)' : ''}';
 }
 
 class ServerException extends AppException {
   final int? statusCode;
 
   ServerException({
-    required String message,
+    required super.message,
     this.statusCode,
     String? code,
-    dynamic originalException,
-  }) : super(
-    message: message,
-    code: code ?? statusCode.toString(),
-    originalException: originalException,
-  );
+    super.originalException,
+  }) : super(code: code ?? statusCode.toString());
 }
 
 class NetworkException extends AppException {
   NetworkException({
-    required String message,
-    String? code,
-    dynamic originalException,
-  }) : super(
-    message: message,
-    code: code,
-    originalException: originalException,
-  );
+    required super.message,
+    super.code,
+    super.originalException,
+  });
 }
 
 class CacheException extends AppException {
-  CacheException({
-    required String message,
-    String? code,
-    dynamic originalException,
-  }) : super(
-    message: message,
-    code: code,
-    originalException: originalException,
-  );
+  CacheException({required super.message, super.code, super.originalException});
 }
 
 class ValidationException extends AppException {
   ValidationException({
-    required String message,
-    String? code,
-    dynamic originalException,
-  }) : super(
-    message: message,
-    code: code,
-    originalException: originalException,
-  );
+    required super.message,
+    super.code,
+    super.originalException,
+  });
 }
 
 class AuthException extends AppException {
-  AuthException({
-    required String message,
-    String? code,
-    dynamic originalException,
-  }) : super(
-    message: message,
-    code: code,
-    originalException: originalException,
-  );
+  AuthException({required super.message, super.code, super.originalException});
 }
 
 class PermissionException extends AppException {
   PermissionException({
-    required String message,
-    String? code,
-    dynamic originalException,
-  }) : super(
-    message: message,
-    code: code,
-    originalException: originalException,
-  );
+    required super.message,
+    super.code,
+    super.originalException,
+  });
 }
 
 class DataParseException extends AppException {
   DataParseException({
-    required String message,
-    String? code,
-    dynamic originalException,
-  }) : super(
-    message: message,
-    code: code,
-    originalException: originalException,
-  );
+    required super.message,
+    super.code,
+    super.originalException,
+  });
 }
 
 class NotFoundException extends AppException {
   NotFoundException({
-    required String message,
-    String? code,
-    dynamic originalException,
-  }) : super(
-    message: message,
-    code: code,
-    originalException: originalException,
-  );
+    required super.message,
+    super.code,
+    super.originalException,
+  });
 }

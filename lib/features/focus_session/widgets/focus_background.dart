@@ -37,8 +37,8 @@ class _FocusBackgroundPainter extends CustomPainter {
       Paint()
         ..shader = RadialGradient(
           colors: [
-            AppTheme.primary.withOpacity(0.35),
-            AppTheme.primary.withOpacity(0.08),
+            AppTheme.primary.withValues(alpha: 0.35),
+            AppTheme.primary.withValues(alpha: 0.08),
             Colors.transparent,
           ],
           stops: const [0.0, 0.5, 1.0],
@@ -88,7 +88,7 @@ class _FocusBackgroundPainter extends CustomPainter {
     // endAngle   ≈ π/2 - small angle (pointing down-right)
     // The arc from startAngle to endAngle CLOCKWISE passes through the bottom (the dip).
     final double startAngle = _angle(cx, cy, 0, cornerY);
-    final double endAngle   = _angle(cx, cy, w, cornerY);
+    final double endAngle = _angle(cx, cy, w, cornerY);
 
     // Clockwise sweep from left corner → through dip bottom → right corner
     double sweepAngle = endAngle - startAngle;
@@ -105,14 +105,9 @@ class _FocusBackgroundPainter extends CustomPainter {
       ..shader = LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
-        colors: const [
-          AppTheme.surfaceGrad2Begin, 
-          AppTheme.bgGradEnd,
-        ],
+        colors: const [AppTheme.surfaceGrad2Begin, AppTheme.bgGradEnd],
         stops: const [0.0, 0.85],
-      ).createShader(
-        Rect.fromLTWH(0, cornerY, w, h - cornerY),
-      );
+      ).createShader(Rect.fromLTWH(0, cornerY, w, h - cornerY));
 
     // Path: start at top-left corner, arc across the dipped top edge, straight sides + bottom
     final path = Path()
@@ -135,9 +130,9 @@ class _FocusBackgroundPainter extends CustomPainter {
           begin: Alignment.centerLeft,
           end: Alignment.centerRight,
           colors: [
-            Colors.white.withOpacity(0.0),
-            Colors.white.withOpacity(0.22),
-            Colors.white.withOpacity(0.0),
+            Colors.white.withValues(alpha: 0.0),
+            Colors.white.withValues(alpha: 0.22),
+            Colors.white.withValues(alpha: 0.0),
           ],
           stops: const [0.0, 0.5, 1.0],
         ).createShader(Rect.fromLTWH(0, cornerY - 4, w, dip + 8))

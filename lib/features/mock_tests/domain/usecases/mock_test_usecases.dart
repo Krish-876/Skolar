@@ -53,13 +53,13 @@ class FetchOpenQuestionsUseCase {
   }
 }
 
-  class FetchQuestionsByIdsUseCase {
-    final MockTestRepository _repository;
-    FetchQuestionsByIdsUseCase(this._repository);
+class FetchQuestionsByIdsUseCase {
+  final MockTestRepository _repository;
+  FetchQuestionsByIdsUseCase(this._repository);
 
-    Future<Either<Failure, List<OpenQuestion>>> call({
-      required List<String> questionIds,
-    }) {
-      return _repository.fetchQuestionsByIds(questionIds: questionIds);
-    }
+  Future<Either<Failure, List<OpenQuestion>>> call({
+    required List<String> questionIds,
+  }) {
+    return _repository.fetchQuestionsByIds(questionIds: questionIds);
   }
+}

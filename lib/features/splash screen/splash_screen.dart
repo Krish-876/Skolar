@@ -12,7 +12,9 @@ class SnapScrollPhysics extends ScrollPhysics {
   // After a drag ends, snap to nearest boundary
   @override
   Simulation? createBallisticSimulation(
-      ScrollMetrics position, double velocity) {
+    ScrollMetrics position,
+    double velocity,
+  ) {
     final max = position.maxScrollExtent;
     if (max <= 0) return null;
 
@@ -22,13 +24,13 @@ class SnapScrollPhysics extends ScrollPhysics {
     // Decide target: fling velocity overrides threshold
     double target;
     if (velocity < -500) {
-      target = 0.0;       // fast fling upward → snap to top
+      target = 0.0; // fast fling upward → snap to top
     } else if (velocity > 500) {
-      target = max;       // fast fling downward → snap to bottom
+      target = max; // fast fling downward → snap to bottom
     } else if (progress >= 0.5) {
-      target = max;       // past halfway → snap to bottom
+      target = max; // past halfway → snap to bottom
     } else {
-      target = 0.0;       // before halfway → snap back to top
+      target = 0.0; // before halfway → snap back to top
     }
 
     if ((current - target).abs() < 0.5) return null; // already there
@@ -166,12 +168,14 @@ class _SplashScreenState extends State<SplashScreen>
 
                               Container(
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 14, vertical: 8),
+                                  horizontal: 14,
+                                  vertical: 8,
+                                ),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.07),
+                                  color: Colors.white.withValues(alpha: 0.07),
                                   borderRadius: BorderRadius.circular(100),
                                   border: Border.all(
-                                    color: Colors.white.withOpacity(0.15),
+                                    color: Colors.white.withValues(alpha: 0.15),
                                     width: 1,
                                   ),
                                 ),
@@ -213,7 +217,7 @@ class _SplashScreenState extends State<SplashScreen>
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   fontFamily: 'GoogleSans',
-                                  color: Colors.white.withOpacity(0.48),
+                                  color: Colors.white.withValues(alpha: 0.48),
                                   fontSize: 36,
                                   fontWeight: FontWeight.w400,
                                   letterSpacing: -0.5,
@@ -240,7 +244,7 @@ class _SplashScreenState extends State<SplashScreen>
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   fontFamily: 'GoogleSans',
-                                  color: Colors.white.withOpacity(0.42),
+                                  color: Colors.white.withValues(alpha: 0.42),
                                   fontSize: 15,
                                   fontWeight: FontWeight.w400,
                                   height: 1.65,
@@ -254,12 +258,16 @@ class _SplashScreenState extends State<SplashScreen>
                                 onTap: _snapToBottom,
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(
-                                      horizontal: 32, vertical: 14),
+                                    horizontal: 32,
+                                    vertical: 14,
+                                  ),
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.10),
+                                    color: Colors.white.withValues(alpha: 0.10),
                                     borderRadius: BorderRadius.circular(100),
                                     border: Border.all(
-                                      color: Colors.white.withOpacity(0.20),
+                                      color: Colors.white.withValues(
+                                        alpha: 0.20,
+                                      ),
                                       width: 1,
                                     ),
                                   ),
@@ -324,9 +332,9 @@ class ArcGlowPainter extends CustomPainter {
     (80.0, 40.0, Color(0xFF1A3BFF), 0.18),
     (48.0, 24.0, Color(0xFF3060FF), 0.35),
     (28.0, 14.0, Color(0xFF5585FF), 0.55),
-    (12.0,  6.0, Color(0xFF88AAFF), 0.75),
-    ( 4.0,  2.0, Color(0xFFCCDDFF), 0.90),
-    ( 1.5,  0.0, Color(0xFFFFFFFF), 0.60),
+    (12.0, 6.0, Color(0xFF88AAFF), 0.75),
+    (4.0, 2.0, Color(0xFFCCDDFF), 0.90),
+    (1.5, 0.0, Color(0xFFFFFFFF), 0.60),
   ];
 
   // ── Arc path (open curve, not filled) ────────────────────────────────────
@@ -342,12 +350,40 @@ class ArcGlowPainter extends CustomPainter {
     final Path path = Path();
     if (!flipped) {
       path.moveTo(-ax, peakY + edgeDrop);
-      path.cubicTo(-ax + pull, peakY + edgeDrop, cx - pull * 0.28, peakY, cx, peakY);
-      path.cubicTo(cx + pull * 0.28, peakY, ax + w - pull, peakY + edgeDrop, ax + w, peakY + edgeDrop);
+      path.cubicTo(
+        -ax + pull,
+        peakY + edgeDrop,
+        cx - pull * 0.28,
+        peakY,
+        cx,
+        peakY,
+      );
+      path.cubicTo(
+        cx + pull * 0.28,
+        peakY,
+        ax + w - pull,
+        peakY + edgeDrop,
+        ax + w,
+        peakY + edgeDrop,
+      );
     } else {
       path.moveTo(-ax, peakY - edgeDrop);
-      path.cubicTo(-ax + pull, peakY - edgeDrop, cx - pull * 0.28, peakY, cx, peakY);
-      path.cubicTo(cx + pull * 0.28, peakY, ax + w - pull, peakY - edgeDrop, ax + w, peakY - edgeDrop);
+      path.cubicTo(
+        -ax + pull,
+        peakY - edgeDrop,
+        cx - pull * 0.28,
+        peakY,
+        cx,
+        peakY,
+      );
+      path.cubicTo(
+        cx + pull * 0.28,
+        peakY,
+        ax + w - pull,
+        peakY - edgeDrop,
+        ax + w,
+        peakY - edgeDrop,
+      );
     }
     return path;
   }
@@ -357,10 +393,7 @@ class ArcGlowPainter extends CustomPainter {
     final double w = screenSize.width;
 
     final recorder = ui.PictureRecorder();
-    final canvas = Canvas(
-      recorder,
-      Rect.fromLTWH(0, 0, w, _bitmapHeight),
-    );
+    final canvas = Canvas(recorder, Rect.fromLTWH(0, 0, w, _bitmapHeight));
 
     final arcPath = _buildArcPath(w, screenSize.height, flipped);
     const double peakY = _peakInBitmap;
@@ -371,10 +404,10 @@ class ArcGlowPainter extends CustomPainter {
         begin: Alignment.centerLeft,
         end: Alignment.centerRight,
         colors: [
-          color.withOpacity(0.0),
-          color.withOpacity(colOpacity),
-          color.withOpacity(colOpacity),
-          color.withOpacity(0.0),
+          color.withValues(alpha: 0.0),
+          color.withValues(alpha: colOpacity),
+          color.withValues(alpha: colOpacity),
+          color.withValues(alpha: 0.0),
         ],
         stops: const [0.0, 0.18, 0.82, 1.0],
       ).createShader(Rect.fromLTWH(0, peakY - 80, w, 160));
@@ -397,8 +430,8 @@ class ArcGlowPainter extends CustomPainter {
     final hotspotPaint = Paint()
       ..shader = RadialGradient(
         colors: [
-          Colors.white.withOpacity(0.25),
-          const Color(0xFF5585FF).withOpacity(0.15),
+          Colors.white.withValues(alpha: 0.25),
+          const Color(0xFF5585FF).withValues(alpha: 0.15),
           Colors.transparent,
         ],
         stops: const [0.0, 0.4, 1.0],
@@ -419,12 +452,12 @@ class ArcGlowPainter extends CustomPainter {
 
     Future.wait([
       _rasterizeArc(size, false), // bottom (normal)
-      _rasterizeArc(size, true),  // top (flipped)
+      _rasterizeArc(size, true), // top (flipped)
     ]).then((images) {
       _bottomBitmap = images[0];
-      _topBitmap    = images[1];
-      _bitmapSize   = size;
-      _rasterizing  = false;
+      _topBitmap = images[1];
+      _bitmapSize = size;
+      _rasterizing = false;
       onReady();
     });
   }
@@ -441,26 +474,28 @@ class ArcGlowPainter extends CustomPainter {
     if (_bottomBitmap == null || _topBitmap == null) return;
 
     final double h = size.height;
-    final double meetY  = h * 0.30;
+    final double meetY = h * 0.30;
     final double travel = h * 0.1;
     const double restGap = 0.1;
-    final double bottomPeakY = (meetY + travel) - travel * arcMove + restGap - scrollOffset;
-    final double topPeakY    = (meetY - travel) + travel * arcMove - restGap - scrollOffset;
-    final double topOpacity  = (1.0 - scrollProgress * 5.0).clamp(0.0, 1.0);
+    final double bottomPeakY =
+        (meetY + travel) - travel * arcMove + restGap - scrollOffset;
+    final double topPeakY =
+        (meetY - travel) + travel * arcMove - restGap - scrollOffset;
+    final double topOpacity = (1.0 - scrollProgress * 5.0).clamp(0.0, 1.0);
 
     // Single GPU blit per arc — offset so bitmap's _peakInBitmap aligns with
     // the desired on-screen peakY. No blur, no shader, zero per-frame cost.
     canvas.drawImage(
       _bottomBitmap!,
       Offset(0, bottomPeakY - _peakInBitmap),
-      Paint()..color = Colors.white.withOpacity(arcFade),
+      Paint()..color = Colors.white.withValues(alpha: arcFade),
     );
 
     if (topOpacity > 0) {
       canvas.drawImage(
         _topBitmap!,
         Offset(0, topPeakY - _peakInBitmap),
-        Paint()..color = Colors.white.withOpacity(arcFade * topOpacity),
+        Paint()..color = Colors.white.withValues(alpha: arcFade * topOpacity),
       );
     }
 
@@ -473,16 +508,21 @@ class ArcGlowPainter extends CustomPainter {
       // Grow the rect height so it always fills to the bottom of the screen
       final double glowHeight = h * 0.45 + scrollOffset;
       // Extend rect well past both edges to guarantee true edge-to-edge fill
-      final bottomGlowRect = Rect.fromLTWH(-size.width, glowTop, size.width * 3, glowHeight);
+      final bottomGlowRect = Rect.fromLTWH(
+        -size.width,
+        glowTop,
+        size.width * 3,
+        glowHeight,
+      );
       final bottomGlowPaint = Paint()
         ..shader = LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
             Colors.transparent,
-            const Color(0xFF1A3BFF).withOpacity(0.14 * bottomGlowOpacity),
-            const Color(0xFF3060FF).withOpacity(0.28 * bottomGlowOpacity),
-            const Color(0xFF5585FF).withOpacity(0.42 * bottomGlowOpacity),
+            const Color(0xFF1A3BFF).withValues(alpha: 0.14 * bottomGlowOpacity),
+            const Color(0xFF3060FF).withValues(alpha: 0.28 * bottomGlowOpacity),
+            const Color(0xFF5585FF).withValues(alpha: 0.42 * bottomGlowOpacity),
           ],
           stops: const [0.0, 0.35, 0.70, 1.0],
         ).createShader(bottomGlowRect);
@@ -492,8 +532,8 @@ class ArcGlowPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(ArcGlowPainter old) =>
-      old.arcMove        != arcMove        ||
-      old.arcFade        != arcFade        ||
+      old.arcMove != arcMove ||
+      old.arcFade != arcFade ||
       old.scrollProgress != scrollProgress ||
-      old.scrollOffset   != scrollOffset;
+      old.scrollOffset != scrollOffset;
 }
