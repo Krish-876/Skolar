@@ -92,14 +92,18 @@ class LoggingInterceptor extends Interceptor {
 
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) {
-    debugPrint('🟢 [HTTP RESPONSE] ${response.statusCode} ${response.requestOptions.path}');
+    debugPrint(
+      '🟢 [HTTP RESPONSE] ${response.statusCode} ${response.requestOptions.path}',
+    );
     debugPrint('Response: ${response.data}');
     super.onResponse(response, handler);
   }
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
-    debugPrint('🔴 [HTTP ERROR] ${err.response?.statusCode} ${err.requestOptions.path}');
+    debugPrint(
+      '🔴 [HTTP ERROR] ${err.response?.statusCode} ${err.requestOptions.path}',
+    );
     debugPrint('Error: ${err.message}');
     super.onError(err, handler);
   }

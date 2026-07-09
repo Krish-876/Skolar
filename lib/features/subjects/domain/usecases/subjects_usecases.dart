@@ -15,11 +15,11 @@ class GetSubjectsForUserUseCase {
     required int semester,
   }) {
     return _repository.getSubjectsForUser(
-      userId:        userId,
+      userId: userId,
       institutionId: institutionId,
-      campusId:      campusId,
-      academicYear:  academicYear,
-      semester:      semester,
+      campusId: campusId,
+      academicYear: academicYear,
+      semester: semester,
     );
   }
 }
@@ -37,12 +37,12 @@ class AddCustomSubjectUseCase {
     int? credits,
   }) {
     return _repository.addCustomSubject(
-      userId:        userId,
+      userId: userId,
       institutionId: institutionId,
-      semester:      semester,
-      name:          name,
-      courseCode:    courseCode,
-      credits:       credits,
+      semester: semester,
+      name: name,
+      courseCode: courseCode,
+      credits: credits,
     );
   }
 }
@@ -69,10 +69,10 @@ class UploadHandoutUseCase {
   }) {
     return _repository.uploadHandout(
       userSubjectId: userSubjectId,
-      userId:        userId,
-      subjectName:   subjectName,
-      fileBytes:     fileBytes,
-      filename:      filename,
+      userId: userId,
+      subjectName: subjectName,
+      fileBytes: fileBytes,
+      filename: filename,
     );
   }
 }

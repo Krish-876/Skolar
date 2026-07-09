@@ -11,29 +11,30 @@ class LoadingOverlay extends ConsumerStatefulWidget {
   ConsumerState<LoadingOverlay> createState() => _LoadingOverlayState();
 }
 
-class _LoadingOverlayState extends ConsumerState<LoadingOverlay> with TickerProviderStateMixin {
+class _LoadingOverlayState extends ConsumerState<LoadingOverlay>
+    with TickerProviderStateMixin {
   late GifController _gifController;
 
   @override
-void initState() {
-  super.initState();
-  _gifController = GifController(vsync: this);
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    _startLoop();
-  });
-}
+  void initState() {
+    super.initState();
+    _gifController = GifController(vsync: this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _startLoop();
+    });
+  }
 
-void _startLoop() async {
-  if (!mounted) return;
-  _gifController.reset();
-  _gifController.forward(from: 0);
-  _gifController.addStatusListener((status) {
-    if (status == AnimationStatus.completed && mounted) {
-      _gifController.reset();
-      _gifController.forward(from: 0);
-    }
-  });
-}
+  void _startLoop() async {
+    if (!mounted) return;
+    _gifController.reset();
+    _gifController.forward(from: 0);
+    _gifController.addStatusListener((status) {
+      if (status == AnimationStatus.completed && mounted) {
+        _gifController.reset();
+        _gifController.forward(from: 0);
+      }
+    });
+  }
 
   @override
   void dispose() {
@@ -57,7 +58,9 @@ void _startLoop() async {
                 color: const Color(0xAA000000),
                 child: Center(
                   child: Gif(
-                    image: const AssetImage('assets/animations/icon_animation.gif'),
+                    image: const AssetImage(
+                      'assets/animations/icon_animation.gif',
+                    ),
                     controller: _gifController,
                     width: 160,
                     height: 160,

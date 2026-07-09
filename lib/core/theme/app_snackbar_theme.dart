@@ -18,24 +18,24 @@ class AppSnackbarTheme {
   AppSnackbarTheme._();
 
   static SnackBarThemeData get standard => SnackBarThemeData(
-        backgroundColor: AppTheme.surfaceLight,
-        contentTextStyle: const TextStyle(
-          fontFamily: 'Poppins',
-          fontSize: 14,
-          fontWeight: FontWeight.w400,
-          color: AppTheme.onBackground,
-        ),
-        actionTextColor: AppTheme.onBackground2,
-        elevation: 0,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-        ),
-        insetPadding: const EdgeInsets.symmetric(
-          horizontal: AppTheme.md,
-          vertical: AppTheme.sm,
-        ),
-      );
+    backgroundColor: AppTheme.surfaceLight,
+    contentTextStyle: const TextStyle(
+      fontFamily: 'Poppins',
+      fontSize: 14,
+      fontWeight: FontWeight.w400,
+      color: AppTheme.onBackground,
+    ),
+    actionTextColor: AppTheme.onBackground2,
+    elevation: 0,
+    behavior: SnackBarBehavior.floating,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+    ),
+    insetPadding: const EdgeInsets.symmetric(
+      horizontal: AppTheme.md,
+      vertical: AppTheme.sm,
+    ),
+  );
 
   // ── Convenience helpers ────────────────────────────────────────────────────
 

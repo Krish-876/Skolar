@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:Skolar/core/theme/app_theme.dart';
 import 'package:Skolar/features/analytics/domain/entities/analytics_entity.dart';
 
-
 /// Line chart showing weekly performance trends.
 /// Reads WeeklyDataPoint list from AnalyticsData.
 class WeeklyLineChart extends StatelessWidget {
@@ -27,10 +26,9 @@ class WeeklyLineChart extends StatelessWidget {
         children: [
           Text(
             'Weekly Progress',
-            style: Theme.of(context)
-                .textTheme
-                .titleMedium
-                ?.copyWith(color: AppTheme.textPrimary),
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(color: AppTheme.textPrimary),
           ),
           const SizedBox(height: 20),
           SizedBox(
@@ -41,10 +39,8 @@ class WeeklyLineChart extends StatelessWidget {
                   show: true,
                   drawVerticalLine: false,
                   horizontalInterval: 25,
-                  getDrawingHorizontalLine: (_) => FlLine(
-                    color: AppTheme.divider,
-                    strokeWidth: 1,
-                  ),
+                  getDrawingHorizontalLine: (_) =>
+                      FlLine(color: AppTheme.divider, strokeWidth: 1),
                 ),
                 borderData: FlBorderData(show: false),
                 titlesData: FlTitlesData(

@@ -93,7 +93,11 @@ class _GenerateSheetState extends State<GenerateSheet> {
             padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 4),
             child: Row(
               children: [
-                const Icon(Icons.edit_outlined, size: 15, color: FeedColors.textHint),
+                const Icon(
+                  Icons.edit_outlined,
+                  size: 15,
+                  color: FeedColors.textHint,
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: TextField(
@@ -121,7 +125,10 @@ class _GenerateSheetState extends State<GenerateSheet> {
                 GestureDetector(
                   onTap: _generate,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
                     decoration: BoxDecoration(
                       color: FeedColors.purpleDark,
                       borderRadius: BorderRadius.circular(7),
@@ -129,7 +136,11 @@ class _GenerateSheetState extends State<GenerateSheet> {
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.send_rounded, size: 13, color: FeedColors.textPrimary),
+                        Icon(
+                          Icons.send_rounded,
+                          size: 13,
+                          color: FeedColors.textPrimary,
+                        ),
                         SizedBox(width: 4),
                         Text(
                           'Go',
@@ -154,7 +165,10 @@ class _GenerateSheetState extends State<GenerateSheet> {
               return GestureDetector(
                 onTap: () => _controller.text = chip,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: FeedColors.tagBg,
                     borderRadius: BorderRadius.circular(20),

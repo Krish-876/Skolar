@@ -8,8 +8,7 @@ class ExamPredictionPage extends ConsumerStatefulWidget {
   const ExamPredictionPage({super.key});
 
   @override
-  ConsumerState<ExamPredictionPage> createState() =>
-      _ExamPredictionPageState();
+  ConsumerState<ExamPredictionPage> createState() => _ExamPredictionPageState();
 }
 
 class _ExamPredictionPageState extends ConsumerState<ExamPredictionPage>
@@ -49,11 +48,7 @@ class _ExamPredictionPageState extends ConsumerState<ExamPredictionPage>
       ),
       body: TabBarView(
         controller: _tabController,
-        children: const [
-          _GenerateTab(),
-          _UploadTab(),
-          _QuestionBankTab(),
-        ],
+        children: const [_GenerateTab(), _UploadTab(), _QuestionBankTab()],
       ),
     );
   }
@@ -102,9 +97,8 @@ class _GenerateTabState extends ConsumerState<_GenerateTab> {
         statsAsync.when(
           loading: () => const StatsLoadingCard(),
           error: (e, _) => ErrorCard(message: e.toString()),
-          data: (stats) => stats != null
-              ? StatsCard(stats: stats)
-              : const SizedBox.shrink(),
+          data: (stats) =>
+              stats != null ? StatsCard(stats: stats) : const SizedBox.shrink(),
         ),
         const SizedBox(height: 20),
         DropdownButtonFormField<String>(
@@ -148,8 +142,10 @@ class _GenerateTabState extends ConsumerState<_GenerateTab> {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Examples to use (k = $_k)',
-                style: Theme.of(context).textTheme.bodyMedium),
+            Text(
+              'Examples to use (k = $_k)',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
             Slider(
               value: _k.toDouble(),
               min: 1,
@@ -169,7 +165,9 @@ class _GenerateTabState extends ConsumerState<_GenerateTab> {
               : () {
                   final yearFrom = int.tryParse(_yearFromController.text);
                   final yearTo = int.tryParse(_yearToController.text);
-                  ref.read(generateQuestionProvider.notifier).generate(
+                  ref
+                      .read(generateQuestionProvider.notifier)
+                      .generate(
                         subject: _selectedSubject,
                         k: _k,
                         yearFrom: yearFrom,
@@ -236,11 +234,14 @@ class _UploadTabState extends ConsumerState<_UploadTab> {
         year == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text('Please fill all fields and select a PDF.')),
+          content: Text('Please fill all fields and select a PDF.'),
+        ),
       );
       return;
     }
-    ref.read(uploadPyqProvider.notifier).upload(
+    ref
+        .read(uploadPyqProvider.notifier)
+        .upload(
           filePath: _pickedFilePath!,
           subject: _subjectController.text.trim(),
           paperYear: year,
@@ -326,16 +327,19 @@ class _QuestionBankTabState extends ConsumerState<_QuestionBankTab> {
     'mcq',
     'short_answer',
     'long_answer',
-    'numerical'
+    'numerical',
   ];
   String _selectedExamType = 'All';
   String _selectedQuestionType = 'All';
 
   void _applyFilters() {
-    ref.read(questionsProvider.notifier).filter(
+    ref
+        .read(questionsProvider.notifier)
+        .filter(
           examType: _selectedExamType == 'All' ? null : _selectedExamType,
-          questionType:
-              _selectedQuestionType == 'All' ? null : _selectedQuestionType,
+          questionType: _selectedQuestionType == 'All'
+              ? null
+              : _selectedQuestionType,
         );
   }
 
@@ -356,8 +360,10 @@ class _QuestionBankTabState extends ConsumerState<_QuestionBankTab> {
                   decoration: const InputDecoration(
                     labelText: 'Exam Type',
                     border: OutlineInputBorder(),
-                    contentPadding:
-                        EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                   ),
                   items: _examTypes
                       .map((t) => DropdownMenuItem(value: t, child: Text(t)))
@@ -375,8 +381,10 @@ class _QuestionBankTabState extends ConsumerState<_QuestionBankTab> {
                   decoration: const InputDecoration(
                     labelText: 'Type',
                     border: OutlineInputBorder(),
-                    contentPadding:
-                        EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                   ),
                   items: _questionTypes
                       .map((t) => DropdownMenuItem(value: t, child: Text(t)))
@@ -394,21 +402,19 @@ class _QuestionBankTabState extends ConsumerState<_QuestionBankTab> {
         // Question list
         Expanded(
           child: questionsAsync.when(
-            loading: () =>
-                const Center(child: CircularProgressIndicator()),
-            error: (e, _) =>
-                Center(child: ErrorCard(message: e.toString())),
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, _) => Center(child: ErrorCard(message: e.toString())),
             data: (response) {
               if (response == null || response.questions.isEmpty) {
-                return const Center(
-                  child: Text('No questions found.'),
-                );
+                return const Center(child: Text('No questions found.'));
               }
               return Column(
                 children: [
                   Padding(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 4),
+                      horizontal: 16,
+                      vertical: 4,
+                    ),
                     child: Align(
                       alignment: Alignment.centerLeft,
                       child: Text(
@@ -421,8 +427,7 @@ class _QuestionBankTabState extends ConsumerState<_QuestionBankTab> {
                     child: ListView.separated(
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                       itemCount: response.questions.length,
-                      separatorBuilder: (_, __) =>
-                          const SizedBox(height: 8),
+                      separatorBuilder: (_, __) => const SizedBox(height: 8),
                       itemBuilder: (context, index) {
                         final q = response.questions[index];
                         return QuestionBankCard(question: q);

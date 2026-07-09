@@ -14,8 +14,8 @@ final getAnalyticsUseCaseProvider = Provider(
 
 final dashboardProvider =
     AsyncNotifierProvider<DashboardNotifier, AnalyticsData>(
-  DashboardNotifier.new,
-);
+      DashboardNotifier.new,
+    );
 
 class DashboardNotifier extends AsyncNotifier<AnalyticsData> {
   @override

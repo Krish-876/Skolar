@@ -26,20 +26,20 @@ class AppConfig {
   bool get isStaging => environment == AppEnvironment.staging;
 
   factory AppConfig.development() => const AppConfig(
-        environment: AppEnvironment.dev,
-        apiBaseUrl: 'https://api-dev.nova.com',
-        enableLogging: true,
-      );
+    environment: AppEnvironment.dev,
+    apiBaseUrl: 'https://api-dev.nova.com',
+    enableLogging: true,
+  );
 
   factory AppConfig.staging() => const AppConfig(
-        environment: AppEnvironment.staging,
-        apiBaseUrl: 'https://api-staging.nova.com',
-        enableLogging: true,
-      );
+    environment: AppEnvironment.staging,
+    apiBaseUrl: 'https://api-staging.nova.com',
+    enableLogging: true,
+  );
 
   factory AppConfig.production() => const AppConfig(
-        environment: AppEnvironment.prod,
-        apiBaseUrl: 'https://api.nova.com',
-        enableLogging: false,
-      );
+    environment: AppEnvironment.prod,
+    apiBaseUrl: 'https://api.nova.com',
+    enableLogging: false,
+  );
 }

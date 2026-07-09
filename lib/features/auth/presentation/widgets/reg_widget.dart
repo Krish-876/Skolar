@@ -123,9 +123,9 @@ class _RegistrationFormState extends ConsumerState<RegistrationForm>
   }
 
   Widget _animated(int i, Widget child) => FadeTransition(
-        opacity: _fades[i],
-        child: SlideTransition(position: _slides[i], child: child),
-      );
+    opacity: _fades[i],
+    child: SlideTransition(position: _slides[i], child: child),
+  );
 
   void _handleSignUp() {
     final email = _emailController.text.trim();
@@ -251,8 +251,7 @@ class _RegistrationFormState extends ConsumerState<RegistrationForm>
             children: [
               Checkbox(
                 value: _isTermsChecked,
-                onChanged: (v) =>
-                    setState(() => _isTermsChecked = v ?? false),
+                onChanged: (v) => setState(() => _isTermsChecked = v ?? false),
                 activeColor: AppTheme.primary,
                 fillColor: WidgetStateProperty.resolveWith((states) {
                   if (states.contains(WidgetState.selected)) {
@@ -311,8 +310,9 @@ class _RegistrationFormState extends ConsumerState<RegistrationForm>
               onPressed: _isLoading ? null : _handleSignUp,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.primary,
-                disabledBackgroundColor:
-                    AppTheme.primary.withValues(alpha: 0.5),
+                disabledBackgroundColor: AppTheme.primary.withValues(
+                  alpha: 0.5,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(AppTheme.radiusLg),
                 ),
@@ -327,7 +327,8 @@ class _RegistrationFormState extends ConsumerState<RegistrationForm>
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
                           valueColor: AlwaysStoppedAnimation<Color>(
-                              AppTheme.onPrimary),
+                            AppTheme.onPrimary,
+                          ),
                         ),
                       )
                     : const Text(
@@ -351,8 +352,7 @@ class _RegistrationFormState extends ConsumerState<RegistrationForm>
           children: [
             Text(
               'Already have an account? ',
-              style:
-                  TextStyle(color: AppTheme.onBackground2, fontSize: 14),
+              style: TextStyle(color: AppTheme.onBackground2, fontSize: 14),
             ),
             TextButton(
               onPressed: widget.toggleForm,
@@ -404,9 +404,7 @@ class _RegistrationFormState extends ConsumerState<RegistrationForm>
           onChanged: (_) {
             if (!focusNode.hasFocus) return;
             widget.onMascotStateChanged(
-              isPassword
-                  ? MascotState.lookingAway
-                  : MascotState.watchingEmail,
+              isPassword ? MascotState.lookingAway : MascotState.watchingEmail,
             );
           },
           style: const TextStyle(color: AppTheme.onSurface, fontSize: 14),
@@ -422,17 +420,12 @@ class _RegistrationFormState extends ConsumerState<RegistrationForm>
                     onPressed: onToggleVisibility,
                     icon: AnimatedSwitcher(
                       duration: const Duration(milliseconds: 200),
-                      transitionBuilder: (child, anim) =>
-                          RotationTransition(
-                        turns:
-                            Tween(begin: 0.75, end: 1.0).animate(anim),
-                        child:
-                            FadeTransition(opacity: anim, child: child),
+                      transitionBuilder: (child, anim) => RotationTransition(
+                        turns: Tween(begin: 0.75, end: 1.0).animate(anim),
+                        child: FadeTransition(opacity: anim, child: child),
                       ),
                       child: Icon(
-                        obscureText
-                            ? Icons.visibility_off
-                            : Icons.visibility,
+                        obscureText ? Icons.visibility_off : Icons.visibility,
                         key: ValueKey(obscureText),
                         color: AppTheme.onBackground2,
                         size: 20,
@@ -456,8 +449,7 @@ class _RegistrationFormState extends ConsumerState<RegistrationForm>
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-              borderSide:
-                  const BorderSide(color: AppTheme.primary, width: 2),
+              borderSide: const BorderSide(color: AppTheme.primary, width: 2),
             ),
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 16,

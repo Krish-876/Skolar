@@ -67,12 +67,7 @@ class _GlowBlob extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        gradient: RadialGradient(
-          colors: [
-            color,
-            color.withOpacity(0.0),
-          ],
-        ),
+        gradient: RadialGradient(colors: [color, color.withOpacity(0.0)]),
       ),
     );
   }
@@ -84,11 +79,7 @@ class GlassCard extends StatelessWidget {
   final Widget child;
   final double borderRadius;
 
-  const GlassCard({
-    super.key,
-    required this.child,
-    this.borderRadius = 32,
-  });
+  const GlassCard({super.key, required this.child, this.borderRadius = 32});
 
   @override
   Widget build(BuildContext context) {

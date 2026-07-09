@@ -24,28 +24,25 @@ class CacheException extends AppException {
 
 class AuthenticationException extends AppException {
   AuthenticationException({String message = 'Authentication Failed'})
-      : super(message);
+    : super(message);
 }
 
 class AuthorizationException extends AppException {
   AuthorizationException({String message = 'Authorization Failed'})
-      : super(message);
+    : super(message);
 }
 
 class ValidationException extends AppException {
   final Map<String, String>? fieldErrors;
 
   ValidationException({required String message, this.fieldErrors})
-      : super(message);
+    : super(message);
 }
 
 class AIException extends AppException {
   final String? provider;
   final String? retryMessage;
 
-  AIException({
-    required String message,
-    this.provider,
-    this.retryMessage,
-  }) : super(message);
+  AIException({required String message, this.provider, this.retryMessage})
+    : super(message);
 }

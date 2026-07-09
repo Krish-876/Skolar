@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:Skolar/core/theme/app_theme.dart';
 import 'package:Skolar/features/analytics/domain/entities/analytics_entity.dart';
 
-
 /// Renders a single row in the "Recent Activity" section.
 /// Matches: [time] [title + subtitle] [due date] layout from the mockup.
 class RecentActivityTile extends StatelessWidget {
@@ -30,9 +29,9 @@ class RecentActivityTile extends StatelessWidget {
                 child: Text(
                   activity.time,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppTheme.textSecondary,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    color: AppTheme.textSecondary,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -44,16 +43,16 @@ class RecentActivityTile extends StatelessWidget {
                     Text(
                       activity.title,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: AppTheme.textPrimary,
-                            fontWeight: FontWeight.w600,
-                          ),
+                        color: AppTheme.textPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       activity.subtitle,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppTheme.textSecondary,
-                          ),
+                        color: AppTheme.textSecondary,
+                      ),
                     ),
                   ],
                 ),
@@ -61,10 +60,9 @@ class RecentActivityTile extends StatelessWidget {
               // Due date
               Text(
                 activity.dueDate,
-                style: Theme.of(context)
-                    .textTheme
-                    .bodySmall
-                    ?.copyWith(color: AppTheme.textSecondary),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: AppTheme.textSecondary),
               ),
             ],
           ),

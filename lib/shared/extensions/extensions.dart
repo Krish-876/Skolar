@@ -6,7 +6,8 @@ extension StringExtension on String {
   bool get isEmptyOrWhitespace => trim().isEmpty;
 
   /// Capitalize first letter
-  String capitalize() => isEmpty ? '' : '${this[0].toUpperCase()}${substring(1)}';
+  String capitalize() =>
+      isEmpty ? '' : '${this[0].toUpperCase()}${substring(1)}';
 
   /// Check if valid email
   bool get isValidEmail {

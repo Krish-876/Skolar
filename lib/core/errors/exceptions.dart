@@ -5,14 +5,11 @@ class AppException implements Exception {
   final String? code;
   final dynamic originalException;
 
-  AppException({
-    required this.message,
-    this.code,
-    this.originalException,
-  });
+  AppException({required this.message, this.code, this.originalException});
 
   @override
-  String toString() => 'AppException: $message${code != null ? ' (Code: $code)' : ''}';
+  String toString() =>
+      'AppException: $message${code != null ? ' (Code: $code)' : ''}';
 }
 
 class ServerException extends AppException {
@@ -24,10 +21,10 @@ class ServerException extends AppException {
     String? code,
     dynamic originalException,
   }) : super(
-    message: message,
-    code: code ?? statusCode.toString(),
-    originalException: originalException,
-  );
+         message: message,
+         code: code ?? statusCode.toString(),
+         originalException: originalException,
+       );
 }
 
 class NetworkException extends AppException {
@@ -36,10 +33,10 @@ class NetworkException extends AppException {
     String? code,
     dynamic originalException,
   }) : super(
-    message: message,
-    code: code,
-    originalException: originalException,
-  );
+         message: message,
+         code: code,
+         originalException: originalException,
+       );
 }
 
 class CacheException extends AppException {
@@ -48,10 +45,10 @@ class CacheException extends AppException {
     String? code,
     dynamic originalException,
   }) : super(
-    message: message,
-    code: code,
-    originalException: originalException,
-  );
+         message: message,
+         code: code,
+         originalException: originalException,
+       );
 }
 
 class ValidationException extends AppException {
@@ -60,10 +57,10 @@ class ValidationException extends AppException {
     String? code,
     dynamic originalException,
   }) : super(
-    message: message,
-    code: code,
-    originalException: originalException,
-  );
+         message: message,
+         code: code,
+         originalException: originalException,
+       );
 }
 
 class AuthException extends AppException {
@@ -72,10 +69,10 @@ class AuthException extends AppException {
     String? code,
     dynamic originalException,
   }) : super(
-    message: message,
-    code: code,
-    originalException: originalException,
-  );
+         message: message,
+         code: code,
+         originalException: originalException,
+       );
 }
 
 class PermissionException extends AppException {
@@ -84,10 +81,10 @@ class PermissionException extends AppException {
     String? code,
     dynamic originalException,
   }) : super(
-    message: message,
-    code: code,
-    originalException: originalException,
-  );
+         message: message,
+         code: code,
+         originalException: originalException,
+       );
 }
 
 class DataParseException extends AppException {
@@ -96,10 +93,10 @@ class DataParseException extends AppException {
     String? code,
     dynamic originalException,
   }) : super(
-    message: message,
-    code: code,
-    originalException: originalException,
-  );
+         message: message,
+         code: code,
+         originalException: originalException,
+       );
 }
 
 class NotFoundException extends AppException {
@@ -108,8 +105,8 @@ class NotFoundException extends AppException {
     String? code,
     dynamic originalException,
   }) : super(
-    message: message,
-    code: code,
-    originalException: originalException,
-  );
+         message: message,
+         code: code,
+         originalException: originalException,
+       );
 }

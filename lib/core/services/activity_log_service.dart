@@ -8,8 +8,12 @@ abstract class ActivityLogService {
 }
 
 class ActivityLogServiceStub implements ActivityLogService {
-  @override Future<void> logFocusComplete(String userId)  async {}
-  @override Future<void> logTestComplete(String userId)   async {}
-  @override Future<void> logPuzzleSolved(String userId)   async {}
-  @override Future<void> logDoubtAnswered(String userId)  async {}
+  @override
+  Future<void> logFocusComplete(String userId) async {}
+  @override
+  Future<void> logTestComplete(String userId) async {}
+  @override
+  Future<void> logPuzzleSolved(String userId) async {}
+  @override
+  Future<void> logDoubtAnswered(String userId) async {}
 }

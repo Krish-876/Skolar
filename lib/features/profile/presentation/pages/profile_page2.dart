@@ -39,25 +39,25 @@ class SkolarDashboardApp extends StatelessWidget {
 //  COLORS
 // ─────────────────────────────────────────────
 class AppColors {
-  static const Color deepSpace          = Color(0xFF080B1A);
-  static const Color cosmicNavy         = Color(0xFF0D1230);
-  static const Color cardSurface        = Color(0xFF131B38);
-  static const Color cardBorder         = Color(0xFF1F2D55);
-  static const Color nebulaViolet       = Color(0xFF7B5EEF);
-  static const Color softPurple         = Color(0xFFAA8FFF);
-  static const Color accentPink         = Color(0xFFE05ECC);
-  static const Color textPrimary        = Color(0xFFEEF0FF);
-  static const Color textSecondary      = Color(0xFF7A84AA);
+  static const Color deepSpace = Color(0xFF080B1A);
+  static const Color cosmicNavy = Color(0xFF0D1230);
+  static const Color cardSurface = Color(0xFF131B38);
+  static const Color cardBorder = Color(0xFF1F2D55);
+  static const Color nebulaViolet = Color(0xFF7B5EEF);
+  static const Color softPurple = Color(0xFFAA8FFF);
+  static const Color accentPink = Color(0xFFE05ECC);
+  static const Color textPrimary = Color(0xFFEEF0FF);
+  static const Color textSecondary = Color(0xFF7A84AA);
 }
 
 // ─────────────────────────────────────────────
 //  MOCK DATA  (replace with Riverpod providers)
 // ─────────────────────────────────────────────
 class _MockUser {
-  static const String name         = 'Krishna';
-  static const String college      = 'BPHC';
-  static const String email      = 'f20240175@hyderabad.bits-pilani.ac.in';
-  static const String rollNumber   = '2025AAPS1010H';
+  static const String name = 'Krishna';
+  static const String college = 'BPHC';
+  static const String email = 'f20240175@hyderabad.bits-pilani.ac.in';
+  static const String rollNumber = '2025AAPS1010H';
 }
 
 // ─────────────────────────────────────────────
@@ -94,8 +94,11 @@ class _ProfilePage2State extends State<ProfilePage2>
       duration: const Duration(milliseconds: 900),
     );
 
-    _slideAnim = CurvedAnimation(parent: _slideController, curve: Curves.easeOutCubic);
-    _fadeAnim  = CurvedAnimation(parent: _slideController, curve: Curves.easeIn);
+    _slideAnim = CurvedAnimation(
+      parent: _slideController,
+      curve: Curves.easeOutCubic,
+    );
+    _fadeAnim = CurvedAnimation(parent: _slideController, curve: Curves.easeIn);
 
     _slideController.forward();
   }
@@ -110,82 +113,78 @@ class _ProfilePage2State extends State<ProfilePage2>
   @override
   Widget build(BuildContext context) {
     return GlassBackground(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 60),
-          child: Center(
-            child: GlassCard(
-              child: Stack(
-                children: [
-                  SafeArea(
-                    child: FadeTransition(
-                      opacity: _fadeAnim,
-                      child: SlideTransition(
-                        position: Tween<Offset>(
-                          begin: const Offset(0, 0.04),
-                          end: Offset.zero,
-                        ).animate(_slideAnim),
-                        child: CustomScrollView(
-                          physics: const BouncingScrollPhysics(),
-                          slivers: [
-                            SliverToBoxAdapter(
-                              child: Padding(
-                                padding: const EdgeInsets.fromLTRB(1, 60, 1, 0),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
- Center(
-  child: Column(
-    children: [
-      CircleAvatar(
-        radius: 50,
-        backgroundImage: const AssetImage(
-          'assets/images/profile_placeholder.png',
-        ),
-        onBackgroundImageError: (_, __) {},
-      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 60),
+        child: Center(
+          child: GlassCard(
+            child: Stack(
+              children: [
+                SafeArea(
+                  child: FadeTransition(
+                    opacity: _fadeAnim,
+                    child: SlideTransition(
+                      position: Tween<Offset>(
+                        begin: const Offset(0, 0.04),
+                        end: Offset.zero,
+                      ).animate(_slideAnim),
+                      child: CustomScrollView(
+                        physics: const BouncingScrollPhysics(),
+                        slivers: [
+                          SliverToBoxAdapter(
+                            child: Padding(
+                              padding: const EdgeInsets.fromLTRB(1, 60, 1, 0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Center(
+                                    child: Column(
+                                      children: [
+                                        CircleAvatar(
+                                          radius: 50,
+                                          backgroundImage: const AssetImage(
+                                            'assets/images/profile_placeholder.png',
+                                          ),
+                                          onBackgroundImageError: (_, __) {},
+                                        ),
 
-      const SizedBox(height: 20),
+                                        const SizedBox(height: 20),
 
-      const Text(
-        _MockUser.name,
-        style: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-      SizedBox(height: 10,),
-      const Text(
-        _MockUser.email,
-        style: TextStyle(
-          fontSize: 12,
-        ),
-      ),
-      SizedBox(height: 50,),
-      CustomPaint(
-        foregroundPainter: LeftHighlightPainter(),
-        child: const SettingsGlassMenu()),
-    ],
-  ),
-),
-                                    
-                                    
-                                                                      ],
-                                ),
+                                        const Text(
+                                          _MockUser.name,
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        SizedBox(height: 10),
+                                        const Text(
+                                          _MockUser.email,
+                                          style: TextStyle(fontSize: 12),
+                                        ),
+                                        SizedBox(height: 50),
+                                        CustomPaint(
+                                          foregroundPainter:
+                                              LeftHighlightPainter(),
+                                          child: const SettingsGlassMenu(),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                               ),
-                              
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                  
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
-      );
+      ),
+    );
   }
 }
 
@@ -306,10 +305,9 @@ class _CommitmentLink extends StatelessWidget {
               fontWeight: FontWeight.w500,
             ),
           ),
-          
+
           SizedBox(width: 4),
           Icon(Icons.arrow_forward, color: AppColors.textSecondary, size: 14),
-          
         ],
       ),
     );

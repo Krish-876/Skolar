@@ -29,8 +29,6 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<bool> isValidCollegeEmail(String email) async {
     final patterns = await _dataSource.fetchEmailPatterns();
-    return patterns.any(
-      (pattern) => RegExp(pattern).hasMatch(email),
-    );
+    return patterns.any((pattern) => RegExp(pattern).hasMatch(email));
   }
 }

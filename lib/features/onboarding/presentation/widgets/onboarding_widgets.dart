@@ -62,20 +62,20 @@ class _QuestionStepState extends State<QuestionStep>
             Text(
               widget.question,
               style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                    fontSize: 26,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.onBackground,
-                    height: 1.3,
-                  ),
+                fontSize: 26,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.onBackground,
+                height: 1.3,
+              ),
             ),
             if (widget.hint != null) ...[
               const SizedBox(height: AppTheme.xs),
               Text(
                 widget.hint!,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppTheme.onBackground2,
-                      fontSize: 14,
-                    ),
+                  color: AppTheme.onBackground2,
+                  fontSize: 14,
+                ),
               ),
             ],
             const SizedBox(height: AppTheme.xl),

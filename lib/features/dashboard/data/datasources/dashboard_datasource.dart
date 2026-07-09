@@ -7,6 +7,8 @@ abstract class DashboardDataSource {
 
 class DashboardRemoteDataSource implements DashboardDataSource {
   // TODO: inject HttpClient
-  @override Future<List<DashboardDto>> getAll() async => [];
-  @override Future<DashboardDto> getById(String id) => throw UnimplementedError();
+  @override
+  Future<List<DashboardDto>> getAll() async => [];
+  @override
+  Future<DashboardDto> getById(String id) => throw UnimplementedError();
 }

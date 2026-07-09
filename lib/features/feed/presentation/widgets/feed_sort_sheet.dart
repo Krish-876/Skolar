@@ -113,13 +113,19 @@ class _SortOptionTile extends StatelessWidget {
               option.label,
               style: TextStyle(
                 fontSize: 13,
-                color: selected ? FeedColors.sortSelText : FeedColors.textSecondary,
+                color: selected
+                    ? FeedColors.sortSelText
+                    : FeedColors.textSecondary,
                 fontFamily: 'DM Sans',
               ),
             ),
             const Spacer(),
             if (selected)
-              const Icon(Icons.check_rounded, size: 14, color: FeedColors.sortSelText),
+              const Icon(
+                Icons.check_rounded,
+                size: 14,
+                color: FeedColors.sortSelText,
+              ),
           ],
         ),
       ),

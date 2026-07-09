@@ -16,11 +16,11 @@ class SkolarBottomNavBar extends StatelessWidget {
   });
 
   static const _items = [
-    _NavItem(icon: Icons.home_rounded,              label: 'Home'),
-    _NavItem(icon: Icons.grid_view_rounded,         label: 'Explore'),
-    _NavItem(icon: Icons.add_circle_outline,        label: 'Add',    isCenter: true),
-    _NavItem(icon: Icons.chat_bubble_outline_rounded,label: 'Chat'),
-    _NavItem(icon: Icons.person_outline_rounded,    label: 'Profile'),
+    _NavItem(icon: Icons.home_rounded, label: 'Home'),
+    _NavItem(icon: Icons.grid_view_rounded, label: 'Explore'),
+    _NavItem(icon: Icons.add_circle_outline, label: 'Add', isCenter: true),
+    _NavItem(icon: Icons.chat_bubble_outline_rounded, label: 'Chat'),
+    _NavItem(icon: Icons.person_outline_rounded, label: 'Profile'),
   ];
 
   @override
@@ -61,7 +61,11 @@ class _NavButton extends StatefulWidget {
   final _NavItem item;
   final bool selected;
   final VoidCallback onTap;
-  const _NavButton({required this.item, required this.selected, required this.onTap});
+  const _NavButton({
+    required this.item,
+    required this.selected,
+    required this.onTap,
+  });
 
   @override
   State<_NavButton> createState() => _NavButtonState();
@@ -79,9 +83,10 @@ class _NavButtonState extends State<_NavButton>
       vsync: this,
       duration: const Duration(milliseconds: 180),
     );
-    _scale = Tween<double>(begin: 1, end: 0.88).animate(
-      CurvedAnimation(parent: _anim, curve: Curves.easeOut),
-    );
+    _scale = Tween<double>(
+      begin: 1,
+      end: 0.88,
+    ).animate(CurvedAnimation(parent: _anim, curve: Curves.easeOut));
   }
 
   @override
@@ -168,8 +173,9 @@ class _CenterButtonState extends State<_CenterButton>
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF7B5EEF)
-                    .withOpacity(0.3 + _pulse.value * 0.3),
+                color: const Color(
+                  0xFF7B5EEF,
+                ).withOpacity(0.3 + _pulse.value * 0.3),
                 blurRadius: 10 + _pulse.value * 8,
                 spreadRadius: _pulse.value * 2,
               ),

@@ -4,7 +4,8 @@ import 'package:Skolar/features/exam_prediction_with_bank/questions_feature/exam
 import 'package:Skolar/features/exam_prediction_with_bank/questions_feature/exam_prediction_repository_impl.dart';
 import 'package:Skolar/features/exam_prediction_with_bank/questions_feature/exam_prediction_usecases.dart';
 
-import 'package:Skolar/shared/providers/global_providers.dart' show userProvider;
+import 'package:Skolar/shared/providers/global_providers.dart'
+    show userProvider;
 
 // ---------------------------------------------------------------------------
 // Infrastructure providers
@@ -12,14 +13,12 @@ import 'package:Skolar/shared/providers/global_providers.dart' show userProvider
 
 final examPredictionDataSourceProvider =
     Provider<ExamPredictionRemoteDataSource>(
-  (_) => ExamPredictionRemoteDataSourceImpl(),
-);
+      (_) => ExamPredictionRemoteDataSourceImpl(),
+    );
 
-final examPredictionRepositoryProvider =
-    Provider<ExamPredictionRepositoryImpl>(
-  (ref) => ExamPredictionRepositoryImpl(
-    ref.read(examPredictionDataSourceProvider),
-  ),
+final examPredictionRepositoryProvider = Provider<ExamPredictionRepositoryImpl>(
+  (ref) =>
+      ExamPredictionRepositoryImpl(ref.read(examPredictionDataSourceProvider)),
 );
 
 // ---------------------------------------------------------------------------
@@ -27,8 +26,7 @@ final examPredictionRepositoryProvider =
 // ---------------------------------------------------------------------------
 
 final generateQuestionUseCaseProvider = Provider<GenerateQuestionUseCase>(
-  (ref) =>
-      GenerateQuestionUseCase(ref.read(examPredictionRepositoryProvider)),
+  (ref) => GenerateQuestionUseCase(ref.read(examPredictionRepositoryProvider)),
 );
 
 final uploadPyqUseCaseProvider = Provider<UploadPyqUseCase>(
@@ -51,16 +49,18 @@ class StatsNotifier extends AsyncNotifier<QuestionBankStats?> {
   @override
   Future<QuestionBankStats?> build() async {
     final college = ref.read(userProvider).college;
-    final result =
-        await ref.read(getStatsUseCaseProvider).call(college: college);
+    final result = await ref
+        .read(getStatsUseCaseProvider)
+        .call(college: college);
     return result.fold((_) => null, (s) => s);
   }
 
   Future<void> refresh() async {
     state = const AsyncLoading();
     final college = ref.read(userProvider).college;
-    final result =
-        await ref.read(getStatsUseCaseProvider).call(college: college);
+    final result = await ref
+        .read(getStatsUseCaseProvider)
+        .call(college: college);
     state = result.fold(
       (f) => AsyncError(f, StackTrace.current),
       (s) => AsyncData(s),
@@ -68,8 +68,7 @@ class StatsNotifier extends AsyncNotifier<QuestionBankStats?> {
   }
 }
 
-final statsProvider =
-    AsyncNotifierProvider<StatsNotifier, QuestionBankStats?>(
+final statsProvider = AsyncNotifierProvider<StatsNotifier, QuestionBankStats?>(
   StatsNotifier.new,
 );
 
@@ -89,7 +88,9 @@ class GenerateQuestionNotifier extends AsyncNotifier<GeneratedQuestion?> {
   }) async {
     state = const AsyncLoading();
     final college = ref.read(userProvider).college;
-    final result = await ref.read(generateQuestionUseCaseProvider).call(
+    final result = await ref
+        .read(generateQuestionUseCaseProvider)
+        .call(
           subject: subject,
           college: college,
           k: k,
@@ -105,8 +106,8 @@ class GenerateQuestionNotifier extends AsyncNotifier<GeneratedQuestion?> {
 
 final generateQuestionProvider =
     AsyncNotifierProvider<GenerateQuestionNotifier, GeneratedQuestion?>(
-  GenerateQuestionNotifier.new,
-);
+      GenerateQuestionNotifier.new,
+    );
 
 // ---------------------------------------------------------------------------
 // Upload PYQ notifier
@@ -130,19 +131,21 @@ class UploadPyqNotifier extends AsyncNotifier<UploadResult?> {
     String? docType,
   }) async {
     state = const AsyncLoading();
-    final user    = ref.read(userProvider);
+    final user = ref.read(userProvider);
     final college = user.college;
 
-    final result = await ref.read(uploadPyqUseCaseProvider).call(
-          filePath:   filePath,
-          subject:    subject,
-          year:       paperYear,
-          examType:   examType,
-          college:    college,
-          subjectId:  subjectId,
-          campusId:   campusId  ?? user.campusId,
+    final result = await ref
+        .read(uploadPyqUseCaseProvider)
+        .call(
+          filePath: filePath,
+          subject: subject,
+          year: paperYear,
+          examType: examType,
+          college: college,
+          subjectId: subjectId,
+          campusId: campusId ?? user.campusId,
           uploadedBy: user.id,
-          docType:    docType   ?? 'pyq',
+          docType: docType ?? 'pyq',
         );
     state = result.fold(
       (f) => AsyncError(f, StackTrace.current),
@@ -153,8 +156,8 @@ class UploadPyqNotifier extends AsyncNotifier<UploadResult?> {
 
 final uploadPyqProvider =
     AsyncNotifierProvider<UploadPyqNotifier, UploadResult?>(
-  UploadPyqNotifier.new,
-);
+      UploadPyqNotifier.new,
+    );
 
 // ---------------------------------------------------------------------------
 // Questions bank notifier
@@ -178,11 +181,13 @@ class QuestionsNotifier extends AsyncNotifier<QuestionsResponse?> {
   }) async {
     state = const AsyncLoading();
     final college = ref.read(userProvider).college;
-    final result = await ref.read(getQuestionsUseCaseProvider).call(
-          college:      college,
-          subject:      subject,
-          year:         paperYear,
-          examType:     examType,
+    final result = await ref
+        .read(getQuestionsUseCaseProvider)
+        .call(
+          college: college,
+          subject: subject,
+          year: paperYear,
+          examType: examType,
           questionType: questionType,
         );
     state = result.fold(
@@ -194,5 +199,5 @@ class QuestionsNotifier extends AsyncNotifier<QuestionsResponse?> {
 
 final questionsProvider =
     AsyncNotifierProvider<QuestionsNotifier, QuestionsResponse?>(
-  QuestionsNotifier.new,
-);
+      QuestionsNotifier.new,
+    );

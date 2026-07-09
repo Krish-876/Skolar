@@ -14,7 +14,7 @@ class DashboardRepositoryImpl implements DashboardRepository {
       final dtos = await dataSource.getAll();
       return Right(dtos.map((d) => d.toEntity()).toList());
     } catch (e) {
-      return  Left(ServerFailure());
+      return Left(ServerFailure());
     }
   }
 

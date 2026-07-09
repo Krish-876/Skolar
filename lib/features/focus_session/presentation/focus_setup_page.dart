@@ -79,7 +79,9 @@ class _FocusSetupPageState extends State<FocusSetupPage> {
                 _buildAppBar(context),
                 Expanded(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: AppTheme.lg),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppTheme.lg,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -155,7 +157,8 @@ class _FocusSetupPageState extends State<FocusSetupPage> {
       child: Column(
         children: [
           ShaderMask(
-            shaderCallback: (bounds) => AppTheme.textGradient.createShader(bounds),
+            shaderCallback: (bounds) =>
+                AppTheme.textGradient.createShader(bounds),
             child: Text(
               _formatDuration(_selectedSeconds),
               style: const TextStyle(

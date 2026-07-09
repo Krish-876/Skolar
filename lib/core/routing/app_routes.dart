@@ -20,46 +20,40 @@ import 'package:Skolar/core/loading/test_page.dart';
 import '../../features/profile/presentation/pages/profile_pages1.dart';
 
 class AppRoutes {
-  static const String auth            = '/auth';
-  static const String onboarding      = '/onboarding';
-  static const String dashboard       = '/dashboard';
-  static const String mockTests       = '/mock-tests';
-  static const String feed            = '/feed';
-  static const String focusSession    = '/focus-session';
-  static const String examPrediction  = '/exam-prediction';
-  static const String profile         = '/profile';
-  static const String pyqUpload       = '/pyq-upload';
-  static const String colleges        = '/colleges';
-  static const String analytics       = '/analytics';
-  static const String syllabus        = '/syllabus';
-  static const String subjects        = '/subjects';
-  static const String test            = '/test';
+  static const String auth = '/auth';
+  static const String onboarding = '/onboarding';
+  static const String dashboard = '/dashboard';
+  static const String mockTests = '/mock-tests';
+  static const String feed = '/feed';
+  static const String focusSession = '/focus-session';
+  static const String examPrediction = '/exam-prediction';
+  static const String profile = '/profile';
+  static const String pyqUpload = '/pyq-upload';
+  static const String colleges = '/colleges';
+  static const String analytics = '/analytics';
+  static const String syllabus = '/syllabus';
+  static const String subjects = '/subjects';
+  static const String test = '/test';
   static const String knowledgeTree = '/knowledge-tree';
 }
 
 final goRouterProvider = GoRouter(
   initialLocation: AppRoutes.auth,
   redirect: (context, state) {
-    final session  = Supabase.instance.client.auth.currentSession;
+    final session = Supabase.instance.client.auth.currentSession;
     final location = state.matchedLocation;
-    final onAuth   = location == AppRoutes.auth;
+    final onAuth = location == AppRoutes.auth;
 
     if (session == null && !onAuth) return AppRoutes.auth;
-    if (session != null && onAuth)  return '/';
+    if (session != null && onAuth) return '/';
 
     return null;
   },
   routes: [
     // And add this route at the top of routes list:
-    GoRoute(
-      path: '/',
-      builder: (_, __) => const _DevMenu(),
-    ),
-        
-    GoRoute(
-      path: AppRoutes.auth,
-      builder: (_, __) => const AuthScreen(),
-    ),
+    GoRoute(path: '/', builder: (_, __) => const _DevMenu()),
+
+    GoRoute(path: AppRoutes.auth, builder: (_, __) => const AuthScreen()),
     GoRoute(
       path: AppRoutes.onboarding,
       builder: (_, __) => const OnboardingPage(),
@@ -76,10 +70,7 @@ final goRouterProvider = GoRouter(
       path: AppRoutes.mockTests,
       builder: (_, __) => const MockTestPage(),
     ),
-    GoRoute(
-      path: AppRoutes.feed,
-      builder: (_, __) => const FeedPage(),
-    ),
+    GoRoute(path: AppRoutes.feed, builder: (_, __) => const FeedPage()),
     GoRoute(
       path: AppRoutes.focusSession,
       builder: (_, __) => const FocusTimerPage(),
@@ -88,30 +79,15 @@ final goRouterProvider = GoRouter(
       path: AppRoutes.examPrediction,
       builder: (_, __) => const ExamPredictionPage(),
     ),
-    GoRoute(
-      path: AppRoutes.profile,
-      builder: (_, __) => const ProfilePage(),
-    ),
+    GoRoute(path: AppRoutes.profile, builder: (_, __) => const ProfilePage()),
     GoRoute(
       path: AppRoutes.pyqUpload,
       builder: (_, __) => const PyqUploadPage(),
     ),
-    GoRoute(
-      path: AppRoutes.colleges,
-      builder: (_, __) => const CollegesPage(),
-    ),
-    GoRoute(
-      path: AppRoutes.subjects,
-      builder: (_, __) => const SubjectsPage(),
-    ),
-    GoRoute(
-      path: AppRoutes.syllabus,
-      builder: (_, __) => const SplashScreen(),
-    ),
-    GoRoute(
-      path: AppRoutes.test,
-      builder: (_, __) => const TestLoadingPage(),
-    ),
+    GoRoute(path: AppRoutes.colleges, builder: (_, __) => const CollegesPage()),
+    GoRoute(path: AppRoutes.subjects, builder: (_, __) => const SubjectsPage()),
+    GoRoute(path: AppRoutes.syllabus, builder: (_, __) => const SplashScreen()),
+    GoRoute(path: AppRoutes.test, builder: (_, __) => const TestLoadingPage()),
 
     GoRoute(
       path: AppRoutes.knowledgeTree,

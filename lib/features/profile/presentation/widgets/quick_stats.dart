@@ -73,7 +73,8 @@ class QuickStatsRow extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 40, height: 4,
+              width: 40,
+              height: 4,
               decoration: BoxDecoration(
                 color: const Color(0xFF1F2D55),
                 borderRadius: BorderRadius.circular(2),

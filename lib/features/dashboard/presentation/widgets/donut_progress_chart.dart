@@ -24,20 +24,17 @@ class _DonutProgressChartState extends State<DonutProgressChart>
       vsync: this,
       duration: const Duration(milliseconds: 1400),
     );
-    _reveal = CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeOutCubic,
-    );
+    _reveal = CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _controller.forward();
     });
   }
 
   @override
-void didUpdateWidget(DonutProgressChart oldWidget) {
-  super.didUpdateWidget(oldWidget);
-  _controller.forward(from: 0);
-}
+  void didUpdateWidget(DonutProgressChart oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _controller.forward(from: 0);
+  }
 
   @override
   void dispose() {
@@ -63,10 +60,9 @@ void didUpdateWidget(DonutProgressChart oldWidget) {
             children: [
               Text(
                 'Task Progress',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleMedium
-                    ?.copyWith(color: AppTheme.textPrimary),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(color: AppTheme.textPrimary),
               ),
               Icon(Icons.more_horiz, color: AppTheme.textSecondary),
             ],
@@ -108,9 +104,7 @@ void didUpdateWidget(DonutProgressChart oldWidget) {
                         children: [
                           Text(
                             '${widget.data.totalTasksCompleted}',
-                            style: Theme.of(context)
-                                .textTheme
-                                .displaySmall
+                            style: Theme.of(context).textTheme.displaySmall
                                 ?.copyWith(
                                   color: AppTheme.textPrimary,
                                   fontWeight: FontWeight.bold,
@@ -118,9 +112,7 @@ void didUpdateWidget(DonutProgressChart oldWidget) {
                           ),
                           Text(
                             'Tasks Completed',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodySmall
+                            style: Theme.of(context).textTheme.bodySmall
                                 ?.copyWith(color: AppTheme.textSecondary),
                           ),
                         ],
@@ -147,7 +139,7 @@ void didUpdateWidget(DonutProgressChart oldWidget) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _ConcentricRingsPainter extends CustomPainter {
-  final double progress;       // 0.0 → 1.0 (animation value)
+  final double progress; // 0.0 → 1.0 (animation value)
   final double todoPercent;
   final double inProgressPercent;
   final double completedPercent;
@@ -177,12 +169,12 @@ class _ConcentricRingsPainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     // Outermost ring = todoPercent, middle = inProgress, inner = completed
     final double outerRadius = size.width / 2 - 4;
-    final double midRadius   = outerRadius - _strokeWidth - _gap;
-    final double innerRadius = midRadius   - _strokeWidth - _gap;
+    final double midRadius = outerRadius - _strokeWidth - _gap;
+    final double innerRadius = midRadius - _strokeWidth - _gap;
 
-    _drawRing(canvas, center, outerRadius, todoPercent,       todoColor);
-    _drawRing(canvas, center, midRadius,   inProgressPercent, inProgressColor);
-    _drawRing(canvas, center, innerRadius, completedPercent,  completedColor);
+    _drawRing(canvas, center, outerRadius, todoPercent, todoColor);
+    _drawRing(canvas, center, midRadius, inProgressPercent, inProgressColor);
+    _drawRing(canvas, center, innerRadius, completedPercent, completedColor);
   }
 
   void _drawRing(
@@ -237,17 +229,20 @@ class _LegendRow extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
         _LegendItem(
-            color: AppTheme.chartTodo,
-            label: 'To Do',
-            percent: data.todoPercent),
+          color: AppTheme.chartTodo,
+          label: 'To Do',
+          percent: data.todoPercent,
+        ),
         _LegendItem(
-            color: AppTheme.chartInProgress,
-            label: 'In Progress',
-            percent: data.inProgressPercent),
+          color: AppTheme.chartInProgress,
+          label: 'In Progress',
+          percent: data.inProgressPercent,
+        ),
         _LegendItem(
-            color: AppTheme.chartCompleted,
-            label: 'Completed',
-            percent: data.completedPercent),
+          color: AppTheme.chartCompleted,
+          label: 'Completed',
+          percent: data.completedPercent,
+        ),
       ],
     );
   }
@@ -280,19 +275,18 @@ class _LegendItem extends StatelessWidget {
             Text(
               '${(percent * 100).toStringAsFixed(0)}%',
               style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: AppTheme.textPrimary,
-                    fontWeight: FontWeight.w600,
-                  ),
+                color: AppTheme.textPrimary,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ],
         ),
         const SizedBox(height: 4),
         Text(
           label,
-          style: Theme.of(context)
-              .textTheme
-              .bodySmall
-              ?.copyWith(color: AppTheme.textSecondary),
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: AppTheme.textSecondary),
         ),
       ],
     );

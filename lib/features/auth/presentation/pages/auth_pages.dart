@@ -56,7 +56,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
       next.whenData((session) async {
         if (session == null || !mounted || !_justLoggedIn) return;
         _justLoggedIn = false;
-        final router = GoRouter.of(context);  // capture before async gap
+        final router = GoRouter.of(context); // capture before async gap
         final isNew = await _isNewUser(session.user.id);
         if (!mounted) return;
         if (isNew) {
@@ -68,7 +68,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     });
 
     final isLoading = authState.status == AuthStatus.loading;
-    final isSent    = authState.status == AuthStatus.magicLinkSent;
+    final isSent = authState.status == AuthStatus.magicLinkSent;
 
     return Scaffold(
       body: SafeArea(
@@ -80,7 +80,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
               Text('Skolar', style: Theme.of(context).textTheme.headlineLarge),
               const SizedBox(height: 8),
               Text(
-                isSent ? 'Check your college inbox' : 'Enter your college email',
+                isSent
+                    ? 'Check your college inbox'
+                    : 'Enter your college email',
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
               const SizedBox(height: 32),

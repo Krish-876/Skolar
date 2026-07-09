@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-final loadingProvider = NotifierProvider<LoadingNotifier, bool>(LoadingNotifier.new);
+final loadingProvider = NotifierProvider<LoadingNotifier, bool>(
+  LoadingNotifier.new,
+);
 
 class LoadingNotifier extends Notifier<bool> {
   @override

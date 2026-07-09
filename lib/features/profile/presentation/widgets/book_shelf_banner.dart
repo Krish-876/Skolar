@@ -41,9 +41,9 @@ class _BookShelfBannerState extends State<BookShelfBanner>
     if (widget.onTap != null) {
       widget.onTap!();
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('BookShelf – coming soon')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('BookShelf – coming soon')));
     }
   }
 

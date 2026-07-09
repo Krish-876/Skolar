@@ -27,9 +27,7 @@ abstract class SubjectsDataSource {
     int? credits,
   });
 
-  Future<void> deleteUserSubject({
-    required String userSubjectId,
-  });
+  Future<void> deleteUserSubject({required String userSubjectId});
 
   Future<SubjectDto> uploadHandout({
     required String userSubjectId,
@@ -41,10 +39,7 @@ abstract class SubjectsDataSource {
 
   Future<int?> getCreditTarget({required String userId});
 
-  Future<void> setCreditTarget({
-    required String userId,
-    required int value,
-  });
+  Future<void> setCreditTarget({required String userId, required int value});
 }
 
 class SubjectsRemoteDataSource implements SubjectsDataSource {
@@ -68,8 +63,7 @@ class SubjectsRemoteDataSource implements SubjectsDataSource {
     // Only skip seeding if the user already has at least one CDC
     // catalog subject (subject_id non-null). A custom-subjects-only
     // account must not suppress the seed.
-    final hasCatalogSubject =
-        existingRows.any((r) => r['subject_id'] != null);
+    final hasCatalogSubject = existingRows.any((r) => r['subject_id'] != null);
 
     if (hasCatalogSubject) {
       return existingRows
@@ -83,7 +77,8 @@ class SubjectsRemoteDataSource implements SubjectsDataSource {
     final catalog = await _client
         .from('subjects')
         .select(
-            'id, name, short_name, academic_year, semester, credits, institution_id')
+          'id, name, short_name, academic_year, semester, credits, institution_id',
+        )
         .eq('campus_id', campusId)
         .eq('academic_year', academicYear)
         .eq('semester', semester)
@@ -105,11 +100,13 @@ class SubjectsRemoteDataSource implements SubjectsDataSource {
         .from('user_subjects')
         .insert(
           catalogRows
-              .map((row) => {
-                    'user_id':    userId,
-                    'subject_id': row['id'],
-                    'semester':   semesterLabel,
-                  })
+              .map(
+                (row) => {
+                  'user_id': userId,
+                  'subject_id': row['id'],
+                  'semester': semesterLabel,
+                },
+              )
               .toList(),
         )
         .select(_userSubjectSelect);
@@ -139,9 +136,9 @@ class SubjectsRemoteDataSource implements SubjectsDataSource {
         .upsert(
           {
             'institution_id': institutionId,
-            'course_code':    courseCode,
-            'name':           name,
-            'credits':        credits,
+            'course_code': courseCode,
+            'name': name,
+            'credits': credits,
           },
           onConflict: 'institution_id, course_code',
           ignoreDuplicates: false,
@@ -154,9 +151,9 @@ class SubjectsRemoteDataSource implements SubjectsDataSource {
     final response = await _client
         .from('user_subjects')
         .insert({
-          'user_id':           userId,
-          'subject_id':        null,
-          'semester':          semester,
+          'user_id': userId,
+          'subject_id': null,
+          'semester': semester,
           'custom_subject_id': customSubjectId,
         })
         .select(_userSubjectSelect)
@@ -179,33 +176,33 @@ class SubjectsRemoteDataSource implements SubjectsDataSource {
     required String filename,
   }) async {
     final storagePath = 'handouts/$userId/$userSubjectId/$filename';
-    await _client.storage.from('handouts').uploadBinary(
-      storagePath,
-      Uint8List.fromList(fileBytes),
-      fileOptions: const FileOptions(
-        contentType: 'application/pdf',
-        upsert: true,
-      ),
-    );
+    await _client.storage
+        .from('handouts')
+        .uploadBinary(
+          storagePath,
+          Uint8List.fromList(fileBytes),
+          fileOptions: const FileOptions(
+            contentType: 'application/pdf',
+            upsert: true,
+          ),
+        );
 
-    final publicUrl =
-        _client.storage.from('handouts').getPublicUrl(storagePath);
+    final publicUrl = _client.storage
+        .from('handouts')
+        .getPublicUrl(storagePath);
 
     final updated = await _client
         .from('user_subjects')
-        .update({
-          'handout_url':      publicUrl,
-          'handout_filename': filename,
-        })
+        .update({'handout_url': publicUrl, 'handout_filename': filename})
         .eq('id', userSubjectId)
         .select(_userSubjectSelect)
         .single();
 
     _triggerPlanExtraction(
       userSubjectId: userSubjectId,
-      userId:        userId,
-      subjectName:   subjectName,
-      handoutUrl:    publicUrl,
+      userId: userId,
+      subjectName: subjectName,
+      handoutUrl: publicUrl,
     );
 
     return SubjectDto.fromUserSubjectJson(updated);
@@ -244,9 +241,9 @@ class SubjectsRemoteDataSource implements SubjectsDataSource {
           'extract-plan-proxy',
           body: {
             'user_subject_id': userSubjectId,
-            'user_id':         userId,
-            'subject_name':    subjectName,
-            'handout_url':     handoutUrl,
+            'user_id': userId,
+            'subject_name': subjectName,
+            'handout_url': handoutUrl,
           },
         );
       } catch (e) {

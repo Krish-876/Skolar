@@ -29,9 +29,8 @@ class SettingsGlassMenu extends StatelessWidget {
             margin: const EdgeInsets.symmetric(horizontal: 24),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(40),
-          
+
               // subtle outer glow
-              
             ),
             child: Stack(
               children: [
@@ -39,64 +38,61 @@ class SettingsGlassMenu extends StatelessWidget {
                 GlassCard(
                   borderRadius: 40,
                   child: ShaderMask(
-              shaderCallback: (Rect rect) {
-          return const LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Colors.white,
-              Colors.white,
-              Colors.transparent,
-            ],
-            stops: [0.0, 0.85, 0.8],
-          ).createShader(rect);
-              },
-              blendMode: BlendMode.dstIn,
-              child: ShaderMask(
-              shaderCallback: (Rect rect) {
-          return const LinearGradient(
-            begin: Alignment.bottomCenter,
-            end: Alignment.topCenter,
-            colors: [
-              Colors.white,
-              Colors.white,
-              Colors.transparent,
-            ],
-            stops: [0.0, 0.85, 0.6],
-          ).createShader(rect);
-              },
-              blendMode: BlendMode.dstIn,
-            
-                  child: SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    child: Padding(
-                      padding: const EdgeInsets.only(
-                        left: 40,
-                        right: 40,
-                        top: 30,
-                        bottom: 40,
-                      ),
-                      
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: List.generate(
-                          items.length,
-                          (index) => _SettingsTile(
-                            title: items[index],
-                            showDivider: index != items.length - 1,
+                    shaderCallback: (Rect rect) {
+                      return const LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.white,
+                          Colors.white,
+                          Colors.transparent,
+                        ],
+                        stops: [0.0, 0.85, 0.8],
+                      ).createShader(rect);
+                    },
+                    blendMode: BlendMode.dstIn,
+                    child: ShaderMask(
+                      shaderCallback: (Rect rect) {
+                        return const LinearGradient(
+                          begin: Alignment.bottomCenter,
+                          end: Alignment.topCenter,
+                          colors: [
+                            Colors.white,
+                            Colors.white,
+                            Colors.transparent,
+                          ],
+                          stops: [0.0, 0.85, 0.6],
+                        ).createShader(rect);
+                      },
+                      blendMode: BlendMode.dstIn,
+
+                      child: SingleChildScrollView(
+                        physics: const BouncingScrollPhysics(),
+                        child: Padding(
+                          padding: const EdgeInsets.only(
+                            left: 40,
+                            right: 40,
+                            top: 30,
+                            bottom: 40,
+                          ),
+
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: List.generate(
+                              items.length,
+                              (index) => _SettingsTile(
+                                title: items[index],
+                                showDivider: index != items.length - 1,
+                              ),
+                            ),
                           ),
                         ),
                       ),
                     ),
                   ),
                 ),
-                ),
-                )
-          
-                
-          
+
                 /// Right edge highlight
-                
               ],
             ),
           ),
@@ -110,10 +106,7 @@ class _SettingsTile extends StatelessWidget {
   final String title;
   final bool showDivider;
 
-  const _SettingsTile({
-    required this.title,
-    this.showDivider = true,
-  });
+  const _SettingsTile({required this.title, this.showDivider = true});
 
   @override
   Widget build(BuildContext context) {

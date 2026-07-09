@@ -88,7 +88,7 @@ class _FocusBackgroundPainter extends CustomPainter {
     // endAngle   ≈ π/2 - small angle (pointing down-right)
     // The arc from startAngle to endAngle CLOCKWISE passes through the bottom (the dip).
     final double startAngle = _angle(cx, cy, 0, cornerY);
-    final double endAngle   = _angle(cx, cy, w, cornerY);
+    final double endAngle = _angle(cx, cy, w, cornerY);
 
     // Clockwise sweep from left corner → through dip bottom → right corner
     double sweepAngle = endAngle - startAngle;
@@ -105,14 +105,9 @@ class _FocusBackgroundPainter extends CustomPainter {
       ..shader = LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
-        colors: const [
-          AppTheme.surfaceGrad2Begin, 
-          AppTheme.bgGradEnd,
-        ],
+        colors: const [AppTheme.surfaceGrad2Begin, AppTheme.bgGradEnd],
         stops: const [0.0, 0.85],
-      ).createShader(
-        Rect.fromLTWH(0, cornerY, w, h - cornerY),
-      );
+      ).createShader(Rect.fromLTWH(0, cornerY, w, h - cornerY));
 
     // Path: start at top-left corner, arc across the dipped top edge, straight sides + bottom
     final path = Path()

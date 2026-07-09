@@ -17,10 +17,7 @@ class AuthHeroWrapper extends StatelessWidget {
       children: [
         // ── GIF background (same as onboarding, continuous playback) ──
         GlassBackground(
-          child: Image.asset(
-            'assets/images/space_bg.gif',
-            fit: BoxFit.cover,
-          ),
+          child: Image.asset('assets/images/space_bg.gif', fit: BoxFit.cover),
         ),
 
         // ── Hero card: expands from the onboarding card to full screen ──
@@ -64,10 +61,7 @@ class AuthHeroWrapper extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppTheme.surfaceLight,
           borderRadius: radiusTween.evaluate(
-            CurvedAnimation(
-              parent: animation,
-              curve: Curves.easeInOutCubic,
-            ),
+            CurvedAnimation(parent: animation, curve: Curves.easeInOutCubic),
           ),
         ),
       ),

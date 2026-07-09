@@ -15,11 +15,11 @@ class GenerateQuestionUseCase {
     int? yearTo,
   }) {
     return _repository.generateQuestion(
-      subject:  subject,
-      college:  college,
-      k:        k,
+      subject: subject,
+      college: college,
+      k: k,
       yearFrom: yearFrom,
-      yearTo:   yearTo,
+      yearTo: yearTo,
     );
   }
 }
@@ -40,15 +40,15 @@ class UploadPyqUseCase {
     String? docType,
   }) {
     return _repository.uploadPyq(
-      filePath:   filePath,
-      subject:    subject,
-      paperYear:  year,
-      examType:   examType,
-      college:    college,
-      subjectId:  subjectId,
-      campusId:   campusId,
+      filePath: filePath,
+      subject: subject,
+      paperYear: year,
+      examType: examType,
+      college: college,
+      subjectId: subjectId,
+      campusId: campusId,
       uploadedBy: uploadedBy,
-      docType:    docType,
+      docType: docType,
     );
   }
 }
@@ -57,9 +57,7 @@ class GetStatsUseCase {
   final ExamPredictionRepository _repository;
   GetStatsUseCase(this._repository);
 
-  Future<Either<Failure, QuestionBankStats>> call({
-    required String college,
-  }) {
+  Future<Either<Failure, QuestionBankStats>> call({required String college}) {
     return _repository.getStats(college: college);
   }
 }
@@ -76,10 +74,10 @@ class GetQuestionsUseCase {
     String? questionType,
   }) {
     return _repository.getQuestions(
-      college:      college,
-      subject:      subject,
-      paperYear:    year,
-      examType:     examType,
+      college: college,
+      subject: subject,
+      paperYear: year,
+      examType: examType,
       questionType: questionType,
     );
   }

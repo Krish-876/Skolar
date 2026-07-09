@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 /// Design tokens for an animated glassmorphism canvas.
-/// 
+///
 /// Provides pure, fully saturated solid colors and duration constants
 /// meant to feed into an animation loop, CustomPainter, or fragment shader.
 class AppAnimatedMeshTheme {
@@ -33,5 +33,4 @@ class AppAnimatedMeshTheme {
 
   /// Secondary animation cycle duration for independent scale pulsing.
   static const Duration pulseDuration = Duration(seconds: 7);
-
 }

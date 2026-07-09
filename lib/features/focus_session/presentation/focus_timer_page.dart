@@ -40,26 +40,24 @@ class FocusTimerPageState extends State<FocusTimerPage>
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);  // ← add this
+    WidgetsBinding.instance.removeObserver(this); // ← add this
     _controller.dispose();
     super.dispose();
   }
 
   @override
-void didChangeAppLifecycleState(AppLifecycleState state) {
-  if (state == AppLifecycleState.paused || 
-      state == AppLifecycleState.detached) {
-    if (_controller.status == FocusTimerStatus.running) {
-      _controller.reset();
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      if (_controller.status == FocusTimerStatus.running) {
+        _controller.reset();
+      }
     }
   }
-}
+
   void _onTimerComplete() {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      FlutterRingtonePlayer().playAlarm(
-        looping: true,
-        asAlarm: true,
-      );
+      FlutterRingtonePlayer().playAlarm(looping: true, asAlarm: true);
       // Explicit vibration pattern alongside — works on all Android versions
       Vibration.vibrate(
         pattern: [0, 800, 400, 800, 400, 800],
@@ -111,7 +109,8 @@ void didChangeAppLifecycleState(AppLifecycleState state) {
   @override
   Widget build(BuildContext context) {
     final isRunning = _controller.status == FocusTimerStatus.running;
-    final canPop = _controller.status == FocusTimerStatus.idle ||
+    final canPop =
+        _controller.status == FocusTimerStatus.idle ||
         _controller.status == FocusTimerStatus.complete;
 
     return PopScope(
@@ -126,17 +125,16 @@ void didChangeAppLifecycleState(AppLifecycleState state) {
             AnimatedBuilder(
               animation: _controller.waveAnimationController,
               builder: (context, _) {
-                return FocusBackground(slideProgress: _controller.slideProgress);
+                return FocusBackground(
+                  slideProgress: _controller.slideProgress,
+                );
               },
             ),
 
             SafeArea(
               child: Column(
                 children: [
-                  Expanded(
-                    flex: 46,
-                    child: _buildBonsaiHero(isRunning),
-                  ),
+                  Expanded(flex: 46, child: _buildBonsaiHero(isRunning)),
                   Expanded(
                     flex: 54,
                     child: Padding(
@@ -323,6 +321,7 @@ void didChangeAppLifecycleState(AppLifecycleState state) {
       ),
     );
   }
+
   Widget _buildSliderTrackBar(BoxConstraints constraints) {
     final isRunning = _controller.status == FocusTimerStatus.running;
     final maxOffset = _maxKnobOffset(constraints);
@@ -364,7 +363,8 @@ void didChangeAppLifecycleState(AppLifecycleState state) {
       },
       child: ClipRRect(
         borderRadius: BorderRadius.circular(_trackHeight / 2),
-        clipBehavior: Clip.antiAlias, // Forces the static capsule layout to be perfectly smooth
+        clipBehavior: Clip
+            .antiAlias, // Forces the static capsule layout to be perfectly smooth
         child: SizedBox(
           height: _trackHeight,
           width: double.infinity,
@@ -379,12 +379,18 @@ void didChangeAppLifecycleState(AppLifecycleState state) {
                         ? const LinearGradient(
                             begin: Alignment.centerLeft,
                             end: Alignment.centerRight,
-                            colors: [AppTheme.primaryGradEnd, AppTheme.bgGradEnd],
+                            colors: [
+                              AppTheme.primaryGradEnd,
+                              AppTheme.bgGradEnd,
+                            ],
                           )
                         : const LinearGradient(
                             begin: Alignment.centerLeft,
                             end: Alignment.centerRight,
-                            colors: [Color(0xCCFFFFFF), AppTheme.surfaceGrad2End],
+                            colors: [
+                              Color(0xCCFFFFFF),
+                              AppTheme.surfaceGrad2End,
+                            ],
                             stops: [0.0, 0.81],
                           ),
                   ),
@@ -406,13 +412,19 @@ void didChangeAppLifecycleState(AppLifecycleState state) {
                           ? const LinearGradient(
                               begin: Alignment.centerLeft,
                               end: Alignment.centerRight,
-                              colors: [Color(0xCCFFFFFF), AppTheme.surfaceGrad2End],
+                              colors: [
+                                Color(0xCCFFFFFF),
+                                AppTheme.surfaceGrad2End,
+                              ],
                               stops: [0.0, 0.81],
                             )
                           : const LinearGradient(
                               begin: Alignment.centerLeft,
                               end: Alignment.centerRight,
-                              colors: [AppTheme.primaryGradEnd, AppTheme.bgGradEnd],
+                              colors: [
+                                AppTheme.primaryGradEnd,
+                                AppTheme.bgGradEnd,
+                              ],
                             ),
                     ),
                   ),
@@ -426,7 +438,10 @@ void didChangeAppLifecycleState(AppLifecycleState state) {
                   child: Container(
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(_trackHeight / 2),
-                      border: Border.all(color: AppTheme.background, width: 1.0),
+                      border: Border.all(
+                        color: AppTheme.background,
+                        width: 1.0,
+                      ),
                     ),
                   ),
                 ),
@@ -446,14 +461,18 @@ void didChangeAppLifecycleState(AppLifecycleState state) {
 
               // Layer 3: The physical slider button thumb
               AnimatedPositioned(
-                duration: _dragging ? Duration.zero : const Duration(milliseconds: 200),
+                duration: _dragging
+                    ? Duration.zero
+                    : const Duration(milliseconds: 200),
                 curve: Curves.easeOutCubic,
                 left: _trackHorizontalPadding + _knobOffset,
                 child: Container(
                   width: _knobSize,
                   height: _knobSize,
                   decoration: BoxDecoration(
-                    color: isRunning ? AppTheme.onBackground : AppTheme.background,
+                    color: isRunning
+                        ? AppTheme.onBackground
+                        : AppTheme.background,
                     shape: BoxShape.circle,
                     boxShadow: const [
                       BoxShadow(
@@ -465,7 +484,9 @@ void didChangeAppLifecycleState(AppLifecycleState state) {
                   ),
                   child: Icon(
                     Icons.arrow_forward_ios_rounded,
-                    color: isRunning ? AppTheme.background : AppTheme.onBackground,
+                    color: isRunning
+                        ? AppTheme.background
+                        : AppTheme.onBackground,
                     size: 16,
                   ),
                 ),
@@ -476,6 +497,7 @@ void didChangeAppLifecycleState(AppLifecycleState state) {
       ),
     );
   }
+
   Widget _buildGiveUpOverlay() {
     return Stack(
       children: [
@@ -527,7 +549,7 @@ class _KnobWipeClipper extends CustomClipper<Path> {
 
     path.moveTo(0, 0);
     path.lineTo(knobCentreX, 0);
-    
+
     path.arcToPoint(
       Offset(knobCentreX, size.height),
       radius: Radius.circular(radius),

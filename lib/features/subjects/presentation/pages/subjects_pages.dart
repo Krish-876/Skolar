@@ -39,8 +39,11 @@ class _SubjectsPageViewState extends ConsumerState<SubjectsPage> {
         backgroundColor: AppTheme.background,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded,
-              color: AppTheme.onBackground, size: 20),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: AppTheme.onBackground,
+            size: 20,
+          ),
           onPressed: () => Navigator.of(context).maybePop(),
         ),
         title: const Text(
@@ -106,19 +109,15 @@ class _SubjectsPageViewState extends ConsumerState<SubjectsPage> {
           onAdd: () => _showAddSheet(context),
           onPickHandout: (userSubjectId) =>
               _pickHandout(context, userSubjectId),
-          onUnstageHandout: (userSubjectId) => ref
-              .read(subjectsProvider.notifier)
-              .unstageHandout(userSubjectId),
+          onUnstageHandout: (userSubjectId) =>
+              ref.read(subjectsProvider.notifier).unstageHandout(userSubjectId),
           onSubmitStaged: () => _submitStaged(context),
         ),
       ),
     );
   }
 
-  Future<void> _pickHandout(
-    BuildContext context,
-    String userSubjectId,
-  ) async {
+  Future<void> _pickHandout(BuildContext context, String userSubjectId) async {
     final result = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf'],
@@ -129,16 +128,19 @@ class _SubjectsPageViewState extends ConsumerState<SubjectsPage> {
     final file = result.files.first;
     if (file.bytes == null) return;
 
-    ref.read(subjectsProvider.notifier).stageHandout(
+    ref
+        .read(subjectsProvider.notifier)
+        .stageHandout(
           userSubjectId: userSubjectId,
-          fileBytes:     file.bytes!,
-          filename:      file.name,
+          fileBytes: file.bytes!,
+          filename: file.name,
         );
   }
 
   Future<void> _submitStaged(BuildContext context) async {
-    final error =
-        await ref.read(subjectsProvider.notifier).submitStagedHandouts();
+    final error = await ref
+        .read(subjectsProvider.notifier)
+        .submitStagedHandouts();
 
     if (!context.mounted) return;
     if (error != null) {
@@ -181,12 +183,13 @@ class _SubjectsPageViewState extends ConsumerState<SubjectsPage> {
       backgroundColor: Colors.transparent,
       builder: (_) => AddSubjectSheet(
         remainingCredits: remaining,
-        onConfirm: (name, courseCode, credits) =>
-            ref.read(subjectsProvider.notifier).addCustomSubject(
-                  name:       name,
-                  courseCode: courseCode,
-                  credits:    credits,
-                ),
+        onConfirm: (name, courseCode, credits) => ref
+            .read(subjectsProvider.notifier)
+            .addCustomSubject(
+              name: name,
+              courseCode: courseCode,
+              credits: credits,
+            ),
       ),
     );
   }
@@ -215,18 +218,15 @@ class _SubjectsBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final atCap = state.creditTarget != null &&
-        state.totalCredits >= state.creditTarget!;
+    final atCap =
+        state.creditTarget != null && state.totalCredits >= state.creditTarget!;
     final hasStaged = state.stagedHandouts.isNotEmpty;
 
     return Column(
       children: [
         const SizedBox(height: AppTheme.lg),
 
-        CreditRing(
-          earned: state.totalCredits,
-          target: state.creditTarget ?? 0,
-        ),
+        CreditRing(earned: state.totalCredits, target: state.creditTarget ?? 0),
 
         const SizedBox(height: AppTheme.sm),
 
@@ -271,30 +271,29 @@ class _SubjectsBody extends StatelessWidget {
                   ),
                 )
               : ListView.separated(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: AppTheme.lg),
+                  padding: const EdgeInsets.symmetric(horizontal: AppTheme.lg),
                   itemCount: state.subjects.length,
                   separatorBuilder: (_, __) =>
                       const SizedBox(height: AppTheme.sm),
                   itemBuilder: (_, i) {
                     final s = state.subjects[i];
-                    final marked =
-                        state.pendingDelete.contains(s.userSubjectId);
+                    final marked = state.pendingDelete.contains(
+                      s.userSubjectId,
+                    );
                     final uploading =
                         state.uploadingHandout[s.userSubjectId] == true;
-                    final staged =
-                        state.stagedHandouts[s.userSubjectId];
+                    final staged = state.stagedHandouts[s.userSubjectId];
                     return SubjectRow(
-                      subject:          s,
-                      editMode:         state.editMode,
-                      marked:           marked,
-                      uploading:        uploading,
-                      stagedFilename:   staged?.filename,
-                      onTap:            state.editMode
+                      subject: s,
+                      editMode: state.editMode,
+                      marked: marked,
+                      uploading: uploading,
+                      stagedFilename: staged?.filename,
+                      onTap: state.editMode
                           ? () => onTap(s.userSubjectId)
                           : null,
-                      onLongPress:      () => onLongPress(s.userSubjectId),
-                      onPickHandout:    state.editMode
+                      onLongPress: () => onLongPress(s.userSubjectId),
+                      onPickHandout: state.editMode
                           ? null
                           : () => onPickHandout(s.userSubjectId),
                       onUnstageHandout: state.editMode
@@ -308,7 +307,11 @@ class _SubjectsBody extends StatelessWidget {
         if (hasStaged && !state.editMode)
           Padding(
             padding: const EdgeInsets.fromLTRB(
-                AppTheme.lg, 0, AppTheme.lg, AppTheme.sm),
+              AppTheme.lg,
+              0,
+              AppTheme.lg,
+              AppTheme.sm,
+            ),
             child: GestureDetector(
               onTap: onSubmitStaged,
               child: Container(
@@ -316,14 +319,16 @@ class _SubjectsBody extends StatelessWidget {
                 height: 52,
                 decoration: BoxDecoration(
                   gradient: AppTheme.primaryGradient,
-                  borderRadius:
-                      BorderRadius.circular(AppTheme.radiusXxl),
+                  borderRadius: BorderRadius.circular(AppTheme.radiusXxl),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.cloud_upload_rounded,
-                        color: AppTheme.onPrimary, size: 18),
+                    const Icon(
+                      Icons.cloud_upload_rounded,
+                      color: AppTheme.onPrimary,
+                      size: 18,
+                    ),
                     const SizedBox(width: AppTheme.xs),
                     Text(
                       'Generate plans for ${state.stagedHandouts.length} '
@@ -342,7 +347,11 @@ class _SubjectsBody extends StatelessWidget {
 
         Padding(
           padding: const EdgeInsets.fromLTRB(
-              AppTheme.lg, AppTheme.md, AppTheme.lg, AppTheme.xl),
+            AppTheme.lg,
+            AppTheme.md,
+            AppTheme.lg,
+            AppTheme.xl,
+          ),
           child: IgnorePointer(
             ignoring: atCap,
             child: AnimatedOpacity(
@@ -355,8 +364,7 @@ class _SubjectsBody extends StatelessWidget {
                   height: 52,
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.04),
-                    borderRadius:
-                        BorderRadius.circular(AppTheme.radiusXxl),
+                    borderRadius: BorderRadius.circular(AppTheme.radiusXxl),
                     border: Border.all(
                       color: AppTheme.onBackground2.withValues(alpha: 0.25),
                       width: 1.2,
@@ -365,8 +373,11 @@ class _SubjectsBody extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.add_rounded,
-                          color: AppTheme.onBackground2, size: 20),
+                      const Icon(
+                        Icons.add_rounded,
+                        color: AppTheme.onBackground2,
+                        size: 20,
+                      ),
                       const SizedBox(width: AppTheme.xs),
                       Text(
                         atCap ? 'Credit limit reached' : 'Add Subject',

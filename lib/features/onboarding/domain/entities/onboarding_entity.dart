@@ -20,10 +20,10 @@ class OnboardingEntity {
     String? plan,
     List<String>? selectedSubjectIds,
   }) => OnboardingEntity(
-    nickname:           nickname           ?? this.nickname,
-    branch:             branch             ?? this.branch,
-    studyGoal:          studyGoal          ?? this.studyGoal,
-    plan:               plan               ?? this.plan,
+    nickname: nickname ?? this.nickname,
+    branch: branch ?? this.branch,
+    studyGoal: studyGoal ?? this.studyGoal,
+    plan: plan ?? this.plan,
     selectedSubjectIds: selectedSubjectIds ?? this.selectedSubjectIds,
   );
 

@@ -17,8 +17,10 @@ class StatsCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Question Bank',
-                style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              'Question Bank',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: 12),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -46,10 +48,12 @@ class StatsCard extends StatelessWidget {
                 spacing: 8,
                 runSpacing: 4,
                 children: stats.subjects.entries
-                    .map((e) => Chip(
-                          label: Text('${e.key}: ${e.value}'),
-                          visualDensity: VisualDensity.compact,
-                        ))
+                    .map(
+                      (e) => Chip(
+                        label: Text('${e.key}: ${e.value}'),
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    )
                     .toList(),
               ),
             ],
@@ -64,8 +68,11 @@ class _StatChip extends StatelessWidget {
   final IconData icon;
   final String label;
   final String sublabel;
-  const _StatChip(
-      {required this.icon, required this.label, required this.sublabel});
+  const _StatChip({
+    required this.icon,
+    required this.label,
+    required this.sublabel,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -132,11 +139,15 @@ class GeneratedQuestionCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(Icons.lightbulb,
-                    color: Theme.of(context).colorScheme.primary),
+                Icon(
+                  Icons.lightbulb,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
                 const SizedBox(width: 8),
-                Text('Generated Question',
-                    style: Theme.of(context).textTheme.titleMedium),
+                Text(
+                  'Generated Question',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
                 const Spacer(),
                 Chip(
                   label: Text(question.subject),
@@ -145,15 +156,16 @@ class GeneratedQuestionCard extends StatelessWidget {
               ],
             ),
             const Divider(height: 20),
-            Text(question.question,
-                style: Theme.of(context).textTheme.bodyLarge),
+            Text(
+              question.question,
+              style: Theme.of(context).textTheme.bodyLarge,
+            ),
             const SizedBox(height: 12),
             Text(
               'Based on ${question.examplesUsed} past questions',
-              style: Theme.of(context)
-                  .textTheme
-                  .bodySmall
-                  ?.copyWith(fontStyle: FontStyle.italic),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic),
             ),
           ],
         ),
@@ -213,8 +225,7 @@ class UploadResultCard extends StatelessWidget {
             ),
             if (result.preview.isNotEmpty) ...[
               const Divider(height: 16),
-              Text('Preview',
-                  style: Theme.of(context).textTheme.labelMedium),
+              Text('Preview', style: Theme.of(context).textTheme.labelMedium),
               const SizedBox(height: 4),
               ...result.preview.map(
                 (q) => Padding(
@@ -224,8 +235,11 @@ class UploadResultCard extends StatelessWidget {
                     children: [
                       const Text('• '),
                       Expanded(
-                          child: Text(q,
-                              style: Theme.of(context).textTheme.bodySmall)),
+                        child: Text(
+                          q,
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -269,16 +283,16 @@ class QuestionBankCard extends StatelessWidget {
               spacing: 6,
               children: [
                 _Tag(label: question.subject, color: Colors.indigo.shade100),
-                _Tag(label: '${question.paperYear}', color: Colors.grey.shade200),
                 _Tag(
-                    label: question.examType,
-                    color: Colors.teal.shade100),
+                  label: '${question.paperYear}',
+                  color: Colors.grey.shade200,
+                ),
+                _Tag(label: question.examType, color: Colors.teal.shade100),
                 _Tag(
-                    label: question.questionType,
-                    color: _typeColor(context, question.questionType)),
-                _Tag(
-                    label: '${question.marks}M',
-                    color: Colors.amber.shade100),
+                  label: question.questionType,
+                  color: _typeColor(context, question.questionType),
+                ),
+                _Tag(label: '${question.marks}M', color: Colors.amber.shade100),
               ],
             ),
             const SizedBox(height: 8),
@@ -327,14 +341,17 @@ class ErrorCard extends StatelessWidget {
         padding: const EdgeInsets.all(12),
         child: Row(
           children: [
-            Icon(Icons.error_outline,
-                color: Theme.of(context).colorScheme.error),
+            Icon(
+              Icons.error_outline,
+              color: Theme.of(context).colorScheme.error,
+            ),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
                 message,
                 style: TextStyle(
-                    color: Theme.of(context).colorScheme.onErrorContainer),
+                  color: Theme.of(context).colorScheme.onErrorContainer,
+                ),
               ),
             ),
           ],

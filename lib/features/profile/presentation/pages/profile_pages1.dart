@@ -39,32 +39,48 @@ class SkolarDashboardApp extends StatelessWidget {
 //  COLORS
 // ─────────────────────────────────────────────
 class AppColors {
-  static const Color deepSpace          = Color(0xFF080B1A);
-  static const Color cosmicNavy         = Color(0xFF0D1230);
-  static const Color cardSurface        = Color(0xFF131B38);
-  static const Color cardBorder         = Color(0xFF1F2D55);
-  static const Color nebulaViolet       = Color(0xFF7B5EEF);
-  static const Color softPurple         = Color(0xFFAA8FFF);
-  static const Color accentPink         = Color(0xFFE05ECC);
-  static const Color textPrimary        = Color(0xFFEEF0FF);
-  static const Color textSecondary      = Color(0xFF7A84AA);
+  static const Color deepSpace = Color(0xFF080B1A);
+  static const Color cosmicNavy = Color(0xFF0D1230);
+  static const Color cardSurface = Color(0xFF131B38);
+  static const Color cardBorder = Color(0xFF1F2D55);
+  static const Color nebulaViolet = Color(0xFF7B5EEF);
+  static const Color softPurple = Color(0xFFAA8FFF);
+  static const Color accentPink = Color(0xFFE05ECC);
+  static const Color textPrimary = Color(0xFFEEF0FF);
+  static const Color textSecondary = Color(0xFF7A84AA);
 }
 
 // ─────────────────────────────────────────────
 //  MOCK DATA  (replace with Riverpod providers)
 // ─────────────────────────────────────────────
 class _MockUser {
-  static const String name         = 'Emily';
-  static const String college      = 'BPHC';
-  static const String rollNumber   = '2025AAPS1010H';
-  static const int    streakDays   = 15;
-  static const int    targetDays   = 90;
-  static const String totalWatch   = '24h 30m';
-  static const int    totalUploads = 8;
-  static const int    friendCount  = 12;
+  static const String name = 'Emily';
+  static const String college = 'BPHC';
+  static const String rollNumber = '2025AAPS1010H';
+  static const int streakDays = 15;
+  static const int targetDays = 90;
+  static const String totalWatch = '24h 30m';
+  static const int totalUploads = 8;
+  static const int friendCount = 12;
 
-  static const List<bool?> weekProgress = [true, true, true, false, null, null, null];
-  static const List<String> weekLabels  = ['Mon', 'Tue', 'Wed', 'Thurs', 'Fri', 'Sat', 'Sun'];
+  static const List<bool?> weekProgress = [
+    true,
+    true,
+    true,
+    false,
+    null,
+    null,
+    null,
+  ];
+  static const List<String> weekLabels = [
+    'Mon',
+    'Tue',
+    'Wed',
+    'Thurs',
+    'Fri',
+    'Sat',
+    'Sun',
+  ];
 }
 
 // ─────────────────────────────────────────────
@@ -100,8 +116,11 @@ class _ProfilePageState extends State<ProfilePage>
       duration: const Duration(milliseconds: 900),
     );
 
-    _slideAnim = CurvedAnimation(parent: _slideController, curve: Curves.easeOutCubic);
-    _fadeAnim  = CurvedAnimation(parent: _slideController, curve: Curves.easeIn);
+    _slideAnim = CurvedAnimation(
+      parent: _slideController,
+      curve: Curves.easeOutCubic,
+    );
+    _fadeAnim = CurvedAnimation(parent: _slideController, curve: Curves.easeIn);
 
     _slideController.forward();
   }
@@ -117,69 +136,73 @@ class _ProfilePageState extends State<ProfilePage>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.deepSpace,
-        body: Stack(
-          children: [
-            SafeArea(
-              child: FadeTransition(
-                opacity: _fadeAnim,
-                child: SlideTransition(
-                  position: Tween<Offset>(
-                    begin: const Offset(0, 0.04),
-                    end: Offset.zero,
-                  ).animate(_slideAnim),
-                  child: CustomScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    slivers: [
-                      SliverToBoxAdapter(
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(30, 60, 30, 0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _ProfileHeader(pulseController: _pulseController),
-                              const SizedBox(height: 24),
-        
-                              StreakCard(
-                                streakDays: _MockUser.streakDays,
-                                targetDays: _MockUser.targetDays,
-                                weekProgress: _MockUser.weekProgress,
-                                weekLabels: _MockUser.weekLabels,
-                              ),
-                              const SizedBox(height: 20),
-        
-                              QuickStatsRow(
-                                totalWatchTime: _MockUser.totalWatch,
-                                totalUploads: _MockUser.totalUploads,
-                                friendCount: _MockUser.friendCount,
-                              ),
-                              const SizedBox(height: 20),
-        
-                              const BookShelfBanner(),
-                              const SizedBox(height: 12),
-        
-                              _CommitmentLink(onTap: () {
+      body: Stack(
+        children: [
+          SafeArea(
+            child: FadeTransition(
+              opacity: _fadeAnim,
+              child: SlideTransition(
+                position: Tween<Offset>(
+                  begin: const Offset(0, 0.04),
+                  end: Offset.zero,
+                ).animate(_slideAnim),
+                child: CustomScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(30, 60, 30, 0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _ProfileHeader(pulseController: _pulseController),
+                            const SizedBox(height: 24),
+
+                            StreakCard(
+                              streakDays: _MockUser.streakDays,
+                              targetDays: _MockUser.targetDays,
+                              weekProgress: _MockUser.weekProgress,
+                              weekLabels: _MockUser.weekLabels,
+                            ),
+                            const SizedBox(height: 20),
+
+                            QuickStatsRow(
+                              totalWatchTime: _MockUser.totalWatch,
+                              totalUploads: _MockUser.totalUploads,
+                              friendCount: _MockUser.friendCount,
+                            ),
+                            const SizedBox(height: 20),
+
+                            const BookShelfBanner(),
+                            const SizedBox(height: 12),
+
+                            _CommitmentLink(
+                              onTap: () {
                                 // TODO: navigate to commitment page
-                              }),
-                              const SizedBox(height: 100),
-                            ],
-                          ),
+                              },
+                            ),
+                            const SizedBox(height: 100),
+                          ],
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ),
-            Positioned(
-            left: 0, right: 0, bottom: 0,
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
             child: SkolarBottomNavBar(
               currentIndex: _currentNav,
               onTap: (i) => setState(() => _currentNav = i),
             ),
-            ),
-          ],
-        ),
-      );
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -258,9 +281,7 @@ class _ProfileHeader extends StatelessWidget {
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => const ProfilePage2(),
-                ),
+                MaterialPageRoute(builder: (context) => const ProfilePage2()),
               );
             },
             child: Container(

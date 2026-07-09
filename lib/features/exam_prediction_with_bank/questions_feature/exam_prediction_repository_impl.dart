@@ -18,11 +18,11 @@ class ExamPredictionRepositoryImpl implements ExamPredictionRepository {
   }) async {
     try {
       final dto = await _dataSource.generateQuestion(
-        subject:  subject,
-        college:  college,
-        k:        k,
+        subject: subject,
+        college: college,
+        k: k,
         yearFrom: yearFrom,
-        yearTo:   yearTo,
+        yearTo: yearTo,
       );
       return Right(dto.toDomain());
     } catch (e) {
@@ -44,15 +44,15 @@ class ExamPredictionRepositoryImpl implements ExamPredictionRepository {
   }) async {
     try {
       final dto = await _dataSource.uploadPyq(
-        filePath:   filePath,
-        subject:    subject,
-        paperYear:  paperYear,
-        examType:   examType,
-        college:    college,
-        subjectId:  subjectId,
-        campusId:   campusId,
+        filePath: filePath,
+        subject: subject,
+        paperYear: paperYear,
+        examType: examType,
+        college: college,
+        subjectId: subjectId,
+        campusId: campusId,
         uploadedBy: uploadedBy,
-        docType:    docType,
+        docType: docType,
       );
       return Right(dto.toDomain());
     } catch (e) {
@@ -82,10 +82,10 @@ class ExamPredictionRepositoryImpl implements ExamPredictionRepository {
   }) async {
     try {
       final dto = await _dataSource.getQuestions(
-        college:      college,
-        subject:      subject,
-        paperYear:    paperYear,
-        examType:     examType,
+        college: college,
+        subject: subject,
+        paperYear: paperYear,
+        examType: examType,
         questionType: questionType,
       );
       return Right(dto.toDomain());

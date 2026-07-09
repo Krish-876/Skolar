@@ -58,14 +58,13 @@ class MockTestState {
     bool? isLoading,
     String? error,
     bool clearError = false,
-  }) =>
-      MockTestState(
-        mcqQuestions: mcqQuestions ?? this.mcqQuestions,
-        openQuestions: openQuestions ?? this.openQuestions,
-        mode: mode ?? this.mode,
-        isLoading: isLoading ?? this.isLoading,
-        error: clearError ? null : (error ?? this.error),
-      );
+  }) => MockTestState(
+    mcqQuestions: mcqQuestions ?? this.mcqQuestions,
+    openQuestions: openQuestions ?? this.openQuestions,
+    mode: mode ?? this.mode,
+    isLoading: isLoading ?? this.isLoading,
+    error: clearError ? null : (error ?? this.error),
+  );
 }
 
 // ── Infrastructure providers ──────────────────────────────────────────────────
@@ -98,42 +97,48 @@ class MockTestNotifier extends Notifier<MockTestState> {
     final college = ref.read(userProvider).college;
 
     if (request.mode == ExamMode.mcqBlitz) {
-      final result = await ref.read(_fetchMcqUseCaseProvider).call(
-            subject:  request.subject,
-            college:  college,
+      final result = await ref
+          .read(_fetchMcqUseCaseProvider)
+          .call(
+            subject: request.subject,
+            college: college,
             examType: request.examType.apiValue,
-            count:    request.count,
-            k:        request.k,
+            count: request.count,
+            k: request.k,
             yearFrom: request.yearFrom,
-            yearTo:   request.yearTo,
+            yearTo: request.yearTo,
           );
       result.fold(
-        (failure) => state = state.copyWith(
-            isLoading: false, error: failure.message),
+        (failure) =>
+            state = state.copyWith(isLoading: false, error: failure.message),
         (questions) => state = state.copyWith(
-            mcqQuestions: questions,
-            openQuestions: [],
-            mode: ExamMode.mcqBlitz,
-            isLoading: false),
+          mcqQuestions: questions,
+          openQuestions: [],
+          mode: ExamMode.mcqBlitz,
+          isLoading: false,
+        ),
       );
     } else {
-      final result = await ref.read(_fetchOpenUseCaseProvider).call(
-            subject:  request.subject,
-            college:  college,
+      final result = await ref
+          .read(_fetchOpenUseCaseProvider)
+          .call(
+            subject: request.subject,
+            college: college,
             examType: request.examType.apiValue,
-            count:    request.count,
-            k:        request.k,
+            count: request.count,
+            k: request.k,
             yearFrom: request.yearFrom,
-            yearTo:   request.yearTo,
+            yearTo: request.yearTo,
           );
       result.fold(
-        (failure) => state = state.copyWith(
-            isLoading: false, error: failure.message),
+        (failure) =>
+            state = state.copyWith(isLoading: false, error: failure.message),
         (questions) => state = state.copyWith(
-            openQuestions: questions,
-            mcqQuestions: [],
-            mode: ExamMode.writtenPractice,
-            isLoading: false),
+          openQuestions: questions,
+          mcqQuestions: [],
+          mode: ExamMode.writtenPractice,
+          isLoading: false,
+        ),
       );
     }
   }
@@ -144,18 +149,19 @@ class MockTestNotifier extends Notifier<MockTestState> {
   }) async {
     state = state.copyWith(isLoading: true, clearError: true);
 
-    final result = await ref.read(_fetchByIdsUseCaseProvider).call(
-      questionIds: questionIds,
-    );
+    final result = await ref
+        .read(_fetchByIdsUseCaseProvider)
+        .call(questionIds: questionIds);
 
     result.fold(
-      (failure) => state = state.copyWith(
-          isLoading: false, error: failure.message),
+      (failure) =>
+          state = state.copyWith(isLoading: false, error: failure.message),
       (questions) => state = state.copyWith(
-          openQuestions: questions,
-          mcqQuestions: [],
-          mode: mode,
-          isLoading: false),
+        openQuestions: questions,
+        mcqQuestions: [],
+        mode: mode,
+        isLoading: false,
+      ),
     );
   }
 

@@ -34,31 +34,31 @@ class AppBottomNavTheme {
 
   /// NavigationBar (Material 3) variant — same visual tokens.
   static NavigationBarThemeData get navigationBar => NavigationBarThemeData(
-        backgroundColor: AppTheme.surface,
-        indicatorColor: AppTheme.primary.withOpacity(0.25),
-        iconTheme: MaterialStateProperty.resolveWith((states) {
-          if (states.contains(MaterialState.selected)) {
-            return const IconThemeData(color: AppTheme.onBackground, size: 24);
-          }
-          return const IconThemeData(color: AppTheme.onBackground2, size: 22);
-        }),
-        labelTextStyle: MaterialStateProperty.resolveWith((states) {
-          if (states.contains(MaterialState.selected)) {
-            return const TextStyle(
-              fontFamily: 'Poppins',
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: AppTheme.onBackground,
-            );
-          }
-          return const TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: 11,
-            color: AppTheme.onBackground2,
-          );
-        }),
-        elevation: 0,
-        height: 64,
-        labelBehavior: NavigationDestinationLabelBehavior.alwaysHide,
+    backgroundColor: AppTheme.surface,
+    indicatorColor: AppTheme.primary.withOpacity(0.25),
+    iconTheme: MaterialStateProperty.resolveWith((states) {
+      if (states.contains(MaterialState.selected)) {
+        return const IconThemeData(color: AppTheme.onBackground, size: 24);
+      }
+      return const IconThemeData(color: AppTheme.onBackground2, size: 22);
+    }),
+    labelTextStyle: MaterialStateProperty.resolveWith((states) {
+      if (states.contains(MaterialState.selected)) {
+        return const TextStyle(
+          fontFamily: 'Poppins',
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: AppTheme.onBackground,
+        );
+      }
+      return const TextStyle(
+        fontFamily: 'Poppins',
+        fontSize: 11,
+        color: AppTheme.onBackground2,
       );
+    }),
+    elevation: 0,
+    height: 64,
+    labelBehavior: NavigationDestinationLabelBehavior.alwaysHide,
+  );
 }

@@ -1,12 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 
-enum FocusTimerStatus {
-  idle,
-  running,
-  paused,
-  complete,
-}
+enum FocusTimerStatus { idle, running, paused, complete }
 
 class FocusTimerController extends ChangeNotifier {
   FocusTimerController({required TickerProvider vsync}) {
@@ -36,7 +31,10 @@ class FocusTimerController extends ChangeNotifier {
   VoidCallback? onComplete;
 
   void setDuration(int seconds) {
-    assert(_status == FocusTimerStatus.idle, 'Cannot change duration while running');
+    assert(
+      _status == FocusTimerStatus.idle,
+      'Cannot change duration while running',
+    );
     _totalSeconds = seconds;
     _secondsLeft = seconds;
     notifyListeners();

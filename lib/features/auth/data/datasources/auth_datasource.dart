@@ -13,10 +13,7 @@ class AuthRemoteDataSource implements AuthDataSource {
 
   @override
   Future<void> sendMagicLink(String email) async {
-    await _client.auth.signInWithOtp(
-      email: email,
-      shouldCreateUser: true,
-    );
+    await _client.auth.signInWithOtp(email: email, shouldCreateUser: true);
   }
 
   @override
@@ -30,7 +27,7 @@ class AuthRemoteDataSource implements AuthDataSource {
     final response = await _client
         .from('institutions')
         .select('email_patterns');
-    
+
     final patterns = <String>[];
     for (final row in response) {
       final list = row['email_patterns'] as List<dynamic>;
