@@ -70,6 +70,8 @@ jobs:
           channel: 'stable'
           cache: true
       - run: flutter pub get
+      - name: Create placeholder .env for CI
+        run: echo "" > .env
       - name: Run tests
         run: flutter test --coverage
 
