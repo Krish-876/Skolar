@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import '../../domain/entities/colleges_entity.dart';
 
 class CollegesProvider extends ChangeNotifier {
-  List<CollegesEntity> _items = [];
+  final List<CollegesEntity> _items = [];
   bool _loading = false;
   String? _error;
 

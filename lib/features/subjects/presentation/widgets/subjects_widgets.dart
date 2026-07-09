@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:Skolar/core/theme/app_theme.dart';
 import 'package:Skolar/features/subjects/domain/entities/subject_entity.dart';
-import 'package:Skolar/features/subjects/presentation/providers/subjects_provider.dart';
 
 // ── Credit ring ───────────────────────────────────────────────────────────
 

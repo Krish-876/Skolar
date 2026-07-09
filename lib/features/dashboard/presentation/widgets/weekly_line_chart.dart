@@ -101,7 +101,7 @@ class WeeklyLineChart extends StatelessWidget {
                     barWidth: 2.5,
                     dotData: FlDotData(
                       show: true,
-                      getDotPainter: (_, __, ___, ____) => FlDotCirclePainter(
+                      getDotPainter: (_, _, _, _) => FlDotCirclePainter(
                         radius: 4,
                         color: AppTheme.accent,
                         strokeWidth: 2,
@@ -114,8 +114,8 @@ class WeeklyLineChart extends StatelessWidget {
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          AppTheme.accent.withOpacity(0.3),
-                          AppTheme.accent.withOpacity(0.0),
+                          AppTheme.accent.withValues(alpha: 0.3),
+                          AppTheme.accent.withValues(alpha: 0.0),
                         ],
                       ),
                     ),

@@ -126,9 +126,9 @@ class _FocusSetupPageState extends State<FocusSetupPage> {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: AppTheme.surface.withOpacity(0.5),
+                color: AppTheme.surface.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-                border: Border.all(color: Colors.white.withOpacity(0.08)),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
               ),
               child: const Icon(
                 Icons.arrow_back_ios_new_rounded,
@@ -174,7 +174,7 @@ class _FocusSetupPageState extends State<FocusSetupPage> {
           Text(
             'focus session',
             style: TextStyle(
-              color: AppTheme.onBackground2.withOpacity(0.7),
+              color: AppTheme.onBackground2.withValues(alpha: 0.7),
               fontSize: 15,
               letterSpacing: 0.5,
             ),
@@ -239,14 +239,14 @@ class _FocusSetupPageState extends State<FocusSetupPage> {
             Text(
               '${_minMinutes}m',
               style: TextStyle(
-                color: AppTheme.onBackground2.withOpacity(0.5),
+                color: AppTheme.onBackground2.withValues(alpha: 0.5),
                 fontSize: 11,
               ),
             ),
             Text(
               '${_maxMinutes ~/ 60}h',
               style: TextStyle(
-                color: AppTheme.onBackground2.withOpacity(0.5),
+                color: AppTheme.onBackground2.withValues(alpha: 0.5),
                 fontSize: 11,
               ),
             ),
@@ -270,7 +270,7 @@ class _FocusSetupPageState extends State<FocusSetupPage> {
           colors: [Color(0xFF0D1B3E), Color(0xFF05061A)],
         ),
         borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-        border: Border.all(color: AppTheme.primary.withOpacity(0.25)),
+        border: Border.all(color: AppTheme.primary.withValues(alpha: 0.25)),
       ),
       child: Row(
         children: [
@@ -278,7 +278,7 @@ class _FocusSetupPageState extends State<FocusSetupPage> {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: AppTheme.primary.withOpacity(0.18),
+              color: AppTheme.primary.withValues(alpha: 0.18),
               borderRadius: BorderRadius.circular(AppTheme.radiusMd),
             ),
             child: const Icon(
@@ -338,7 +338,7 @@ class _FocusSetupPageState extends State<FocusSetupPage> {
           borderRadius: BorderRadius.circular(AppTheme.radiusXxl),
           boxShadow: [
             BoxShadow(
-              color: AppTheme.primary.withOpacity(0.35),
+              color: AppTheme.primary.withValues(alpha: 0.35),
               blurRadius: 20,
               offset: const Offset(0, 8),
             ),

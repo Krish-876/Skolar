@@ -7,11 +7,11 @@ class LoadingButton extends StatelessWidget {
   final bool isLoading;
 
   const LoadingButton({
-    Key? key,
+    super.key,
     required this.label,
     required this.onPressed,
     this.isLoading = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) => ElevatedButton(
@@ -34,13 +34,13 @@ class AppTextField extends StatelessWidget {
   final String? Function(String?)? validator;
 
   const AppTextField({
-    Key? key,
+    super.key,
     required this.label,
     required this.controller,
     this.keyboardType = TextInputType.text,
     this.obscureText = false,
     this.validator,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) => TextFormField(

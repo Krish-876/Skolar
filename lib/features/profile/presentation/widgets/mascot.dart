@@ -69,7 +69,7 @@ class _MascotAvatarState extends State<MascotAvatar>
             ),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF7B5EEF).withOpacity(0.30 + glow * 0.25),
+                color: const Color(0xFF7B5EEF).withValues(alpha: 0.30 + glow * 0.25),
                 blurRadius: 16 + glow * 10,
                 spreadRadius: glow * 2,
               ),
@@ -171,7 +171,7 @@ class _OwlPainter extends CustomPainter {
 
     final eyeWhite = Paint()..color = Colors.white;
     final pupil = Paint()..color = const Color(0xFF1A1040);
-    final shine = Paint()..color = Colors.white.withOpacity(0.9);
+    final shine = Paint()..color = Colors.white.withValues(alpha: 0.9);
 
     for (final dx in [-0.12, 0.12]) {
       final ex = cx + dx * size.width;

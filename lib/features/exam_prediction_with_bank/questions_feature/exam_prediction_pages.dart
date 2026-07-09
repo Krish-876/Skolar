@@ -102,7 +102,7 @@ class _GenerateTabState extends ConsumerState<_GenerateTab> {
         ),
         const SizedBox(height: 20),
         DropdownButtonFormField<String>(
-          value: _selectedSubject,
+          initialValue: _selectedSubject,
           decoration: const InputDecoration(
             labelText: 'Subject',
             border: OutlineInputBorder(),
@@ -280,7 +280,7 @@ class _UploadTabState extends ConsumerState<_UploadTab> {
         ),
         const SizedBox(height: 16),
         DropdownButtonFormField<String>(
-          value: _selectedExamType,
+          initialValue: _selectedExamType,
           decoration: const InputDecoration(
             labelText: 'Exam Type',
             border: OutlineInputBorder(),
@@ -356,7 +356,7 @@ class _QuestionBankTabState extends ConsumerState<_QuestionBankTab> {
             children: [
               Expanded(
                 child: DropdownButtonFormField<String>(
-                  value: _selectedExamType,
+                  initialValue: _selectedExamType,
                   decoration: const InputDecoration(
                     labelText: 'Exam Type',
                     border: OutlineInputBorder(),
@@ -377,7 +377,7 @@ class _QuestionBankTabState extends ConsumerState<_QuestionBankTab> {
               const SizedBox(width: 12),
               Expanded(
                 child: DropdownButtonFormField<String>(
-                  value: _selectedQuestionType,
+                  initialValue: _selectedQuestionType,
                   decoration: const InputDecoration(
                     labelText: 'Type',
                     border: OutlineInputBorder(),
@@ -427,7 +427,7 @@ class _QuestionBankTabState extends ConsumerState<_QuestionBankTab> {
                     child: ListView.separated(
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                       itemCount: response.questions.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 8),
+                      separatorBuilder: (_, _) => const SizedBox(height: 8),
                       itemBuilder: (context, index) {
                         final q = response.questions[index];
                         return QuestionBankCard(question: q);

@@ -33,12 +33,12 @@ class StreakCard extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF131B38).withOpacity(0.9),
+        color: const Color(0xFF131B38).withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: const Color(0xFF1F2D55), width: 1),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFFF6B35).withOpacity(0.08),
+            color: const Color(0xFFFF6B35).withValues(alpha: 0.08),
             blurRadius: 20,
             spreadRadius: -2,
           ),
@@ -98,7 +98,7 @@ class _FlameBoxState extends State<_FlameBox>
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: _ctrl,
-      builder: (_, __) => Transform.scale(
+      builder: (_, _) => Transform.scale(
         scale: 1.0 + _ctrl.value * 0.04,
         child: Container(
           width: 72,
@@ -108,7 +108,7 @@ class _FlameBoxState extends State<_FlameBox>
               colors: [Color(0xFF3D1F1A), Color(0xFF1A0D0D)],
             ),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFE53935).withOpacity(0.3)),
+            border: Border.all(color: const Color(0xFFE53935).withValues(alpha: 0.3)),
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,

@@ -95,11 +95,11 @@ class _MeshPainter extends CustomPainter {
         ..blendMode = BlendMode.screen
         ..shader = RadialGradient(
           colors: [
-            color.withOpacity(0.30), // center
-            color.withOpacity(0.20),
-            color.withOpacity(0.10),
-            color.withOpacity(0.03),
-            color.withOpacity(0.00), // edge
+            color.withValues(alpha: 0.30), // center
+            color.withValues(alpha: 0.20),
+            color.withValues(alpha: 0.10),
+            color.withValues(alpha: 0.03),
+            color.withValues(alpha: 0.00), // edge
           ],
           stops: const [0.00, 0.25, 0.55, 0.85, 1.00],
         ).createShader(Rect.fromCircle(center: Offset(cx, cy), radius: r));

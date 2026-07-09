@@ -87,7 +87,7 @@ class _TopBar extends ConsumerWidget {
                   college,
                   style: GoogleFonts.googleSans(
                     fontSize: 11,
-                    color: AppTheme.textGradBegin.withOpacity(0.4),
+                    color: AppTheme.textGradBegin.withValues(alpha: 0.4),
                   ),
                 ),
               ],

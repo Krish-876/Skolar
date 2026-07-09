@@ -921,8 +921,9 @@ class _MarkdownWithAccentHeadings extends StatelessWidget {
         buffer.writeln(line);
       }
     }
-    if (buffer.isNotEmpty)
+    if (buffer.isNotEmpty) {
       segments.add((text: buffer.toString().trim(), isHeading: false));
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -998,10 +999,11 @@ class _McqQuizFlowState extends ConsumerState<_McqQuizFlow> {
     });
     Future.delayed(const Duration(milliseconds: 900), () {
       if (!mounted) return;
-      if (_current < widget.questions.length - 1)
+      if (_current < widget.questions.length - 1) {
         setState(() => _current++);
-      else
+      } else {
         setState(() => _done = true);
+      }
     });
   }
 
@@ -1084,10 +1086,11 @@ class _McqQuestionScreenState extends State<_McqQuestionScreen>
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted) return;
       setState(() {
-        if (_seconds > 0)
+        if (_seconds > 0) {
           _seconds--;
-        else
+        } else {
           _timer.cancel();
+        }
       });
     });
   }
@@ -1172,7 +1175,7 @@ class _McqQuestionScreenState extends State<_McqQuestionScreen>
         const SizedBox(height: 20),
         AnimatedBuilder(
           animation: _pulseCtrl,
-          builder: (_, __) => Transform.scale(
+          builder: (_, _) => Transform.scale(
             scale: _seconds <= 7 ? 1.0 + _pulseCtrl.value * 0.15 : 1.0,
             child: _GlassContainer(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -1209,7 +1212,7 @@ class _McqQuestionScreenState extends State<_McqQuestionScreen>
           child: ListView.separated(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
             itemCount: q.options.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            separatorBuilder: (_, _) => const SizedBox(height: 12),
             itemBuilder: (_, i) => _OptionTile(
               label: String.fromCharCode(65 + i),
               text: q.options[i],
@@ -1427,13 +1430,15 @@ class _WrittenPracticeFlowState extends ConsumerState<_WrittenPracticeFlow> {
   bool? _viewMode;
   @override
   Widget build(BuildContext context) {
-    if (_viewMode == null)
+    if (_viewMode == null) {
       return _ViewModeChooser(onChoose: (v) => setState(() => _viewMode = v));
-    if (_viewMode == true)
+    }
+    if (_viewMode == true) {
       return _PaperView(
         questions: widget.questions,
         onDone: () => ref.read(mockTestProvider.notifier).reset(),
       );
+    }
     return _FlashcardView(
       questions: widget.questions,
       onDone: () => ref.read(mockTestProvider.notifier).reset(),
@@ -1571,23 +1576,25 @@ class _FlashcardViewState extends State<_FlashcardView> {
   bool _revealed = false;
 
   void _next() {
-    if (_current < widget.questions.length - 1)
+    if (_current < widget.questions.length - 1) {
       setState(() {
         _current++;
         _revealed = false;
       });
-    else
+    } else {
       widget.onDone();
+    }
   }
 
   void _onBackPressed(BuildContext context) {
-    if (_current > 0)
+    if (_current > 0) {
       setState(() {
         _current--;
         _revealed = false;
       });
-    else
+    } else {
       Navigator.maybePop(context);
+    }
   }
 
   @override

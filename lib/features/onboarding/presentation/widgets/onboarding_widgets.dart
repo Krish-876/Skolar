@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:Skolar/core/theme/app_theme.dart';
 
@@ -116,18 +115,18 @@ class SelectableChip extends StatelessWidget {
         ),
         decoration: BoxDecoration(
           gradient: selected ? AppTheme.primaryGradient : null,
-          color: selected ? null : Colors.white.withOpacity(0.05),
+          color: selected ? null : Colors.white.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(AppTheme.radiusXxl),
           border: Border.all(
             color: selected
                 ? Colors.transparent
-                : Colors.white.withOpacity(0.12),
+                : Colors.white.withValues(alpha: 0.12),
             width: 1.2,
           ),
           boxShadow: selected
               ? [
                   BoxShadow(
-                    color: AppTheme.primaryGradBegin.withOpacity(0.5),
+                    color: AppTheme.primaryGradBegin.withValues(alpha: 0.5),
                     blurRadius: 16,
                     offset: const Offset(0, 4),
                   ),

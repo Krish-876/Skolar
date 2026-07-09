@@ -111,7 +111,7 @@ class _NavButtonState extends State<_NavButton>
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
             color: widget.selected
-                ? const Color(0xFF7B5EEF).withOpacity(0.15)
+                ? const Color(0xFF7B5EEF).withValues(alpha: 0.15)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
           ),
@@ -175,7 +175,7 @@ class _CenterButtonState extends State<_CenterButton>
               BoxShadow(
                 color: const Color(
                   0xFF7B5EEF,
-                ).withOpacity(0.3 + _pulse.value * 0.3),
+                ).withValues(alpha: 0.3 + _pulse.value * 0.3),
                 blurRadius: 10 + _pulse.value * 8,
                 spreadRadius: _pulse.value * 2,
               ),

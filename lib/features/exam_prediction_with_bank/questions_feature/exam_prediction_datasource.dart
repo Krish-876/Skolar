@@ -66,8 +66,8 @@ class ExamPredictionRemoteDataSourceImpl
         'subject': subject,
         'college': college,
         'k': k,
-        if (yearFrom != null) 'year_from': yearFrom,
-        if (yearTo != null) 'year_to': yearTo,
+        'year_from': ?yearFrom,
+        'year_to': ?yearTo,
       };
       final response = await _dio.post<Map<String, dynamic>>(
         '/generate',
@@ -99,13 +99,13 @@ class ExamPredictionRemoteDataSourceImpl
         ),
         'subject': subject,
         'paper_year': paperYear,
-        if (examType != null) 'exam_type': examType,
+        'exam_type': ?examType,
         'college': college,
         // Only include new fields if provided — backend treats them as optional
-        if (subjectId != null) 'subject_id': subjectId,
-        if (campusId != null) 'campus_id': campusId,
-        if (uploadedBy != null) 'uploaded_by': uploadedBy,
-        if (docType != null) 'doc_type': docType,
+        'subject_id': ?subjectId,
+        'campus_id': ?campusId,
+        'uploaded_by': ?uploadedBy,
+        'doc_type': ?docType,
       });
       final response = await _dio.post<Map<String, dynamic>>(
         '/upload-pyq',
@@ -141,10 +141,10 @@ class ExamPredictionRemoteDataSourceImpl
     try {
       final queryParams = <String, dynamic>{
         'college': college,
-        if (subject != null) 'subject': subject,
-        if (paperYear != null) 'paper_year': paperYear,
-        if (examType != null) 'exam_type': examType,
-        if (questionType != null) 'question_type': questionType,
+        'subject': ?subject,
+        'paper_year': ?paperYear,
+        'exam_type': ?examType,
+        'question_type': ?questionType,
       };
       final response = await _dio.get<Map<String, dynamic>>(
         '/questions',

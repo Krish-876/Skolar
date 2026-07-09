@@ -4,17 +4,17 @@ abstract class Failure {
 }
 
 class ServerFailure extends Failure {
-  const ServerFailure([String m = 'Server error']) : super(m);
+  const ServerFailure([super.m = 'Server error']);
 }
 
 class NetworkFailure extends Failure {
-  const NetworkFailure([String m = 'Network error']) : super(m);
+  const NetworkFailure([super.m = 'Network error']);
 }
 
 class CacheFailure extends Failure {
-  const CacheFailure([String m = 'Cache error']) : super(m);
+  const CacheFailure([super.m = 'Cache error']);
 }
 
 class UnknownFailure extends Failure {
-  const UnknownFailure([String m = 'Unknown error']) : super(m);
+  const UnknownFailure([super.m = 'Unknown error']);
 }

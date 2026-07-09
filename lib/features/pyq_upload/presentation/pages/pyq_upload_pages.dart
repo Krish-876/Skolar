@@ -372,10 +372,10 @@ class _PyqUploadPageState extends ConsumerState<PyqUploadPage> {
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: AppTheme.error.withOpacity(0.12),
+                          color: AppTheme.error.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                            color: AppTheme.error.withOpacity(0.3),
+                            color: AppTheme.error.withValues(alpha: 0.3),
                           ),
                         ),
                         child: const Row(
@@ -572,7 +572,7 @@ class _LabelledDropdown extends StatelessWidget {
                 fontWeight: FontWeight.w600,
               ),
               iconEnabledColor: _textSec,
-              iconDisabledColor: _textSec.withOpacity(0.3),
+              iconDisabledColor: _textSec.withValues(alpha: 0.3),
               onChanged: enabled ? onChanged : null,
               items: items
                   .map(
@@ -632,7 +632,7 @@ class _SubjectDropdown extends StatelessWidget {
             const SizedBox(width: 10),
             Text(
               'Loading subjects…',
-              style: TextStyle(color: _textSec.withOpacity(0.7), fontSize: 13),
+              style: TextStyle(color: _textSec.withValues(alpha: 0.7), fontSize: 13),
             ),
           ],
         ),
@@ -650,7 +650,7 @@ class _SubjectDropdown extends StatelessWidget {
               child: Text(
                 'Could not load subjects',
                 style: TextStyle(
-                  color: AppTheme.error.withOpacity(0.8),
+                  color: AppTheme.error.withValues(alpha: 0.8),
                   fontSize: 13,
                 ),
               ),
@@ -699,7 +699,7 @@ class _SubjectDropdown extends StatelessWidget {
                 fontWeight: FontWeight.w600,
               ),
               iconEnabledColor: _textSec,
-              iconDisabledColor: _textSec.withOpacity(0.3),
+              iconDisabledColor: _textSec.withValues(alpha: 0.3),
               hint: const Text(
                 'Select subject',
                 style: TextStyle(color: _textSec, fontSize: 13),
@@ -739,7 +739,7 @@ class _CollegeChip extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(7),
             decoration: BoxDecoration(
-              color: AppTheme.accent.withOpacity(0.12),
+              color: AppTheme.accent.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(8),
             ),
             child: const Icon(
@@ -776,7 +776,7 @@ class _CollegeChip extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
-              color: _correct.withOpacity(0.12),
+              color: _correct.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(10),
             ),
             child: const Text(
@@ -836,7 +836,7 @@ class _GlassField extends StatelessWidget {
                 hintText: hint,
                 labelStyle: const TextStyle(color: _textSec, fontSize: 12),
                 hintStyle: TextStyle(
-                  color: _textSec.withOpacity(0.5),
+                  color: _textSec.withValues(alpha: 0.5),
                   fontSize: 13,
                 ),
                 border: InputBorder.none,
@@ -873,25 +873,25 @@ class _PickFilesButton extends StatelessWidget {
         decoration: BoxDecoration(
           border: Border.all(
             color: disabled
-                ? _textSec.withOpacity(0.15)
-                : AppTheme.accent.withOpacity(0.5),
+                ? _textSec.withValues(alpha: 0.15)
+                : AppTheme.accent.withValues(alpha: 0.5),
             width: 1.5,
           ),
           borderRadius: BorderRadius.circular(16),
-          color: AppTheme.accent.withOpacity(disabled ? 0.02 : 0.05),
+          color: AppTheme.accent.withValues(alpha: disabled ? 0.02 : 0.05),
         ),
         child: Column(
           children: [
             Icon(
               isEmpty ? Icons.upload_file_rounded : Icons.add_rounded,
-              color: disabled ? _textSec.withOpacity(0.3) : AppTheme.accent,
+              color: disabled ? _textSec.withValues(alpha: 0.3) : AppTheme.accent,
               size: 28,
             ),
             const SizedBox(height: 8),
             Text(
               isEmpty ? 'Select PDF files' : 'Add more PDFs',
               style: TextStyle(
-                color: disabled ? _textSec.withOpacity(0.3) : AppTheme.accent,
+                color: disabled ? _textSec.withValues(alpha: 0.3) : AppTheme.accent,
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
               ),
@@ -899,7 +899,7 @@ class _PickFilesButton extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               'Tap to browse your device',
-              style: TextStyle(color: _textSec.withOpacity(0.5), fontSize: 11),
+              style: TextStyle(color: _textSec.withValues(alpha: 0.5), fontSize: 11),
             ),
           ],
         ),
@@ -984,7 +984,7 @@ class _ProgressHeaderState extends State<_ProgressHeader>
               ),
               AnimatedBuilder(
                 animation: _anim,
-                builder: (_, __) => Text(
+                builder: (_, _) => Text(
                   '${(_anim.value * 100).round()}%',
                   style: const TextStyle(
                     color: _textPrim,
@@ -1000,7 +1000,7 @@ class _ProgressHeaderState extends State<_ProgressHeader>
             borderRadius: BorderRadius.circular(6),
             child: AnimatedBuilder(
               animation: _anim,
-              builder: (_, __) => LinearProgressIndicator(
+              builder: (_, _) => LinearProgressIndicator(
                 value: _anim.value,
                 minHeight: 6,
                 backgroundColor: _surface,
@@ -1123,9 +1123,9 @@ class _FileCardState extends State<_FileCard>
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       decoration: BoxDecoration(
-        color: sc.withOpacity(0.05),
+        color: sc.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: sc.withOpacity(0.25), width: 1),
+        border: Border.all(color: sc.withValues(alpha: 0.25), width: 1),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(14),
@@ -1135,7 +1135,7 @@ class _FileCardState extends State<_FileCard>
               Positioned.fill(
                 child: AnimatedBuilder(
                   animation: _shimmerCtrl,
-                  builder: (_, __) =>
+                  builder: (_, _) =>
                       CustomPaint(painter: _ShimmerPainter(_shimmerCtrl.value)),
                 ),
               ),
@@ -1147,7 +1147,7 @@ class _FileCardState extends State<_FileCard>
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.12),
+                      color: Colors.white.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: const Center(
@@ -1212,7 +1212,7 @@ class _FileCardState extends State<_FileCard>
                       child: Container(
                         padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
-                          color: _textSec.withOpacity(0.08),
+                          color: _textSec.withValues(alpha: 0.08),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: const Icon(
@@ -1229,7 +1229,7 @@ class _FileCardState extends State<_FileCard>
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: _correct.withOpacity(0.12),
+                        color: _correct.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
@@ -1278,13 +1278,13 @@ class _UploadButton extends StatelessWidget {
               : const LinearGradient(
                   colors: [AppTheme.primaryGradBegin, AppTheme.primaryGradEnd],
                 ),
-          color: disabled ? _surface.withOpacity(0.5) : null,
+          color: disabled ? _surface.withValues(alpha: 0.5) : null,
           borderRadius: BorderRadius.circular(16),
           boxShadow: disabled
               ? []
               : [
                   BoxShadow(
-                    color: AppTheme.dropShadow.withOpacity(0.4),
+                    color: AppTheme.dropShadow.withValues(alpha: 0.4),
                     blurRadius: 20,
                     offset: const Offset(0, 6),
                   ),
@@ -1345,9 +1345,9 @@ class _SummaryCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
             decoration: BoxDecoration(
-              color: headerColor.withOpacity(0.08),
+              color: headerColor.withValues(alpha: 0.08),
               border: Border(
-                bottom: BorderSide(color: headerColor.withOpacity(0.2)),
+                bottom: BorderSide(color: headerColor.withValues(alpha: 0.2)),
               ),
               borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(16),
@@ -1358,7 +1358,7 @@ class _SummaryCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: headerColor.withOpacity(0.15),
+                    color: headerColor.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(
@@ -1435,9 +1435,9 @@ class _StatPill extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.08),
+          color: color.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.2)),
+          border: Border.all(color: color.withValues(alpha: 0.2)),
         ),
         child: Column(
           children: [
@@ -1456,7 +1456,7 @@ class _StatPill extends StatelessWidget {
               label,
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: color.withOpacity(0.7),
+                color: color.withValues(alpha: 0.7),
                 fontSize: 10,
                 fontWeight: FontWeight.w500,
               ),
@@ -1484,10 +1484,10 @@ class _GlassContainer extends StatelessWidget {
         child: Container(
           padding: padding,
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.04),
+            color: Colors.white.withValues(alpha: 0.04),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: Colors.white.withOpacity(0.08),
+              color: Colors.white.withValues(alpha: 0.08),
               width: 1.2,
             ),
           ),

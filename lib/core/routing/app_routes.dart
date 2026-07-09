@@ -51,47 +51,47 @@ final goRouterProvider = GoRouter(
   },
   routes: [
     // And add this route at the top of routes list:
-    GoRoute(path: '/', builder: (_, __) => const _DevMenu()),
+    GoRoute(path: '/', builder: (_, _) => const _DevMenu()),
 
-    GoRoute(path: AppRoutes.auth, builder: (_, __) => const AuthScreen()),
+    GoRoute(path: AppRoutes.auth, builder: (_, _) => const AuthScreen()),
     GoRoute(
       path: AppRoutes.onboarding,
-      builder: (_, __) => const OnboardingPage(),
+      builder: (_, _) => const OnboardingPage(),
     ),
     GoRoute(
       path: AppRoutes.dashboard,
-      builder: (_, __) => const DashboardPage(),
+      builder: (_, _) => const DashboardPage(),
     ),
     GoRoute(
       path: AppRoutes.analytics,
-      builder: (_, __) => const AnalyticsPage(),
+      builder: (_, _) => const AnalyticsPage(),
     ),
     GoRoute(
       path: AppRoutes.mockTests,
-      builder: (_, __) => const MockTestPage(),
+      builder: (_, _) => const MockTestPage(),
     ),
-    GoRoute(path: AppRoutes.feed, builder: (_, __) => const FeedPage()),
+    GoRoute(path: AppRoutes.feed, builder: (_, _) => const FeedPage()),
     GoRoute(
       path: AppRoutes.focusSession,
-      builder: (_, __) => const FocusTimerPage(),
+      builder: (_, _) => const FocusTimerPage(),
     ),
     GoRoute(
       path: AppRoutes.examPrediction,
-      builder: (_, __) => const ExamPredictionPage(),
+      builder: (_, _) => const ExamPredictionPage(),
     ),
-    GoRoute(path: AppRoutes.profile, builder: (_, __) => const ProfilePage()),
+    GoRoute(path: AppRoutes.profile, builder: (_, _) => const ProfilePage()),
     GoRoute(
       path: AppRoutes.pyqUpload,
-      builder: (_, __) => const PyqUploadPage(),
+      builder: (_, _) => const PyqUploadPage(),
     ),
-    GoRoute(path: AppRoutes.colleges, builder: (_, __) => const CollegesPage()),
-    GoRoute(path: AppRoutes.subjects, builder: (_, __) => const SubjectsPage()),
-    GoRoute(path: AppRoutes.syllabus, builder: (_, __) => const SplashScreen()),
-    GoRoute(path: AppRoutes.test, builder: (_, __) => const TestLoadingPage()),
+    GoRoute(path: AppRoutes.colleges, builder: (_, _) => const CollegesPage()),
+    GoRoute(path: AppRoutes.subjects, builder: (_, _) => const SubjectsPage()),
+    GoRoute(path: AppRoutes.syllabus, builder: (_, _) => const SplashScreen()),
+    GoRoute(path: AppRoutes.test, builder: (_, _) => const TestLoadingPage()),
 
     GoRoute(
       path: AppRoutes.knowledgeTree,
-      builder: (_, __) => const KnowledgeTreeBackground(
+      builder: (_, _) => const KnowledgeTreeBackground(
         modelPath: 'assets/models/knowledge_tree.glb',
       ),
     ),
@@ -129,7 +129,7 @@ class _DevMenu extends StatelessWidget {
       body: ListView.separated(
         padding: const EdgeInsets.all(16),
         itemCount: _pages.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 8),
+        separatorBuilder: (_, _) => const SizedBox(height: 8),
         itemBuilder: (context, i) {
           final (label, route) = _pages[i];
           return ListTile(

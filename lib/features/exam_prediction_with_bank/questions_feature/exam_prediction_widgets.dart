@@ -266,7 +266,7 @@ class QuestionBankCard extends StatelessWidget {
       'long_answer' => Colors.orange.shade100,
       'short_answer' => Colors.green.shade100,
       'numerical' => Colors.purple.shade100,
-      _ => Theme.of(context).colorScheme.surfaceVariant,
+      _ => Theme.of(context).colorScheme.surfaceContainerHighest,
     };
   }
 

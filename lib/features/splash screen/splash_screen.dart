@@ -172,10 +172,10 @@ class _SplashScreenState extends State<SplashScreen>
                                   vertical: 8,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.07),
+                                  color: Colors.white.withValues(alpha: 0.07),
                                   borderRadius: BorderRadius.circular(100),
                                   border: Border.all(
-                                    color: Colors.white.withOpacity(0.15),
+                                    color: Colors.white.withValues(alpha: 0.15),
                                     width: 1,
                                   ),
                                 ),
@@ -217,7 +217,7 @@ class _SplashScreenState extends State<SplashScreen>
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   fontFamily: 'GoogleSans',
-                                  color: Colors.white.withOpacity(0.48),
+                                  color: Colors.white.withValues(alpha: 0.48),
                                   fontSize: 36,
                                   fontWeight: FontWeight.w400,
                                   letterSpacing: -0.5,
@@ -244,7 +244,7 @@ class _SplashScreenState extends State<SplashScreen>
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   fontFamily: 'GoogleSans',
-                                  color: Colors.white.withOpacity(0.42),
+                                  color: Colors.white.withValues(alpha: 0.42),
                                   fontSize: 15,
                                   fontWeight: FontWeight.w400,
                                   height: 1.65,
@@ -262,10 +262,10 @@ class _SplashScreenState extends State<SplashScreen>
                                     vertical: 14,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.10),
+                                    color: Colors.white.withValues(alpha: 0.10),
                                     borderRadius: BorderRadius.circular(100),
                                     border: Border.all(
-                                      color: Colors.white.withOpacity(0.20),
+                                      color: Colors.white.withValues(alpha: 0.20),
                                       width: 1,
                                     ),
                                   ),
@@ -402,10 +402,10 @@ class ArcGlowPainter extends CustomPainter {
         begin: Alignment.centerLeft,
         end: Alignment.centerRight,
         colors: [
-          color.withOpacity(0.0),
-          color.withOpacity(colOpacity),
-          color.withOpacity(colOpacity),
-          color.withOpacity(0.0),
+          color.withValues(alpha: 0.0),
+          color.withValues(alpha: colOpacity),
+          color.withValues(alpha: colOpacity),
+          color.withValues(alpha: 0.0),
         ],
         stops: const [0.0, 0.18, 0.82, 1.0],
       ).createShader(Rect.fromLTWH(0, peakY - 80, w, 160));
@@ -428,8 +428,8 @@ class ArcGlowPainter extends CustomPainter {
     final hotspotPaint = Paint()
       ..shader = RadialGradient(
         colors: [
-          Colors.white.withOpacity(0.25),
-          const Color(0xFF5585FF).withOpacity(0.15),
+          Colors.white.withValues(alpha: 0.25),
+          const Color(0xFF5585FF).withValues(alpha: 0.15),
           Colors.transparent,
         ],
         stops: const [0.0, 0.4, 1.0],
@@ -486,14 +486,14 @@ class ArcGlowPainter extends CustomPainter {
     canvas.drawImage(
       _bottomBitmap!,
       Offset(0, bottomPeakY - _peakInBitmap),
-      Paint()..color = Colors.white.withOpacity(arcFade),
+      Paint()..color = Colors.white.withValues(alpha: arcFade),
     );
 
     if (topOpacity > 0) {
       canvas.drawImage(
         _topBitmap!,
         Offset(0, topPeakY - _peakInBitmap),
-        Paint()..color = Colors.white.withOpacity(arcFade * topOpacity),
+        Paint()..color = Colors.white.withValues(alpha: arcFade * topOpacity),
       );
     }
 
@@ -518,9 +518,9 @@ class ArcGlowPainter extends CustomPainter {
           end: Alignment.bottomCenter,
           colors: [
             Colors.transparent,
-            const Color(0xFF1A3BFF).withOpacity(0.14 * bottomGlowOpacity),
-            const Color(0xFF3060FF).withOpacity(0.28 * bottomGlowOpacity),
-            const Color(0xFF5585FF).withOpacity(0.42 * bottomGlowOpacity),
+            const Color(0xFF1A3BFF).withValues(alpha: 0.14 * bottomGlowOpacity),
+            const Color(0xFF3060FF).withValues(alpha: 0.28 * bottomGlowOpacity),
+            const Color(0xFF5585FF).withValues(alpha: 0.42 * bottomGlowOpacity),
           ],
           stops: const [0.0, 0.35, 0.70, 1.0],
         ).createShader(bottomGlowRect);

@@ -133,7 +133,7 @@ class _SettingsTile extends StatelessWidget {
 
                 Icon(
                   Icons.chevron_right,
-                  color: Colors.white.withOpacity(0.9),
+                  color: Colors.white.withValues(alpha: 0.9),
                   size: 28,
                 ),
               ],
@@ -143,7 +143,7 @@ class _SettingsTile extends StatelessWidget {
 
         if (showDivider)
           Divider(
-            color: Colors.white.withOpacity(0.08),
+            color: Colors.white.withValues(alpha: 0.08),
             thickness: 1,
             height: 0,
           ),

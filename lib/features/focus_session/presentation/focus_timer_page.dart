@@ -180,7 +180,7 @@ class FocusTimerPageState extends State<FocusTimerPage>
                 width: 260,
                 height: 240,
                 fit: BoxFit.contain,
-                errorBuilder: (_, __, ___) => const Icon(
+                errorBuilder: (_, _, _) => const Icon(
                   Icons.spa_rounded,
                   size: 80,
                   color: Color.fromARGB(255, 77, 168, 59),
@@ -191,7 +191,7 @@ class FocusTimerPageState extends State<FocusTimerPage>
             Text(
               'Focus time',
               style: TextStyle(
-                color: Colors.white.withOpacity(isRunning ? 0.5 : 0.9),
+                color: Colors.white.withValues(alpha: isRunning ? 0.5 : 0.9),
                 fontSize: 20,
                 fontWeight: FontWeight.w600,
                 letterSpacing: 0.2,
@@ -452,7 +452,7 @@ class FocusTimerPageState extends State<FocusTimerPage>
                 child: Text(
                   isRunning ? 'Slide to give up' : 'Slide to lock in',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(isRunning ? 0.6 : 0.4),
+                    color: Colors.white.withValues(alpha: isRunning ? 0.6 : 0.4),
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
                   ),
@@ -503,7 +503,7 @@ class FocusTimerPageState extends State<FocusTimerPage>
       children: [
         GestureDetector(
           onTap: () => setState(() => _showGiveUpSheet = false),
-          child: Container(color: Colors.black.withOpacity(0.6)),
+          child: Container(color: Colors.black.withValues(alpha: 0.6)),
         ),
         Align(
           alignment: Alignment.bottomCenter,

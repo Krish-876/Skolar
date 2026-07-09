@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:Skolar/features/auth/presentation/widgets/space_background.dart';
 import 'package:Skolar/features/profile/presentation/pages/profile_page2.dart';
 import 'package:Skolar/features/profile/presentation/widgets/book_shelf_banner.dart';
 import 'package:Skolar/features/profile/presentation/widgets/bottom_nav.dart';
@@ -218,12 +217,12 @@ class _ProfileHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.cardSurface.withOpacity(0.85),
+        color: AppColors.cardSurface.withValues(alpha: 0.85),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: AppColors.cardBorder, width: 1),
         boxShadow: [
           BoxShadow(
-            color: AppColors.nebulaViolet.withOpacity(0.12),
+            color: AppColors.nebulaViolet.withValues(alpha: 0.12),
             blurRadius: 24,
             spreadRadius: -4,
           ),

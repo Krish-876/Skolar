@@ -64,8 +64,8 @@ class MockTestRemoteDataSourceImpl implements MockTestRemoteDataSource {
           'exam_type': examType,
           'count': count,
           'k': k,
-          if (yearFrom != null) 'year_from': yearFrom,
-          if (yearTo != null) 'year_to': yearTo,
+          'year_from': ?yearFrom,
+          'year_to': ?yearTo,
         },
       );
       final rawList = response.data!['questions'] as List<dynamic>;
@@ -97,8 +97,8 @@ class MockTestRemoteDataSourceImpl implements MockTestRemoteDataSource {
           'count': count,
           'k': k,
           'with_answers': true,
-          if (yearFrom != null) 'year_from': yearFrom,
-          if (yearTo != null) 'year_to': yearTo,
+          'year_from': ?yearFrom,
+          'year_to': ?yearTo,
         },
       );
       final rawList = response.data!['questions'] as List<dynamic>;

@@ -37,8 +37,8 @@ class _FocusBackgroundPainter extends CustomPainter {
       Paint()
         ..shader = RadialGradient(
           colors: [
-            AppTheme.primary.withOpacity(0.35),
-            AppTheme.primary.withOpacity(0.08),
+            AppTheme.primary.withValues(alpha: 0.35),
+            AppTheme.primary.withValues(alpha: 0.08),
             Colors.transparent,
           ],
           stops: const [0.0, 0.5, 1.0],
@@ -130,9 +130,9 @@ class _FocusBackgroundPainter extends CustomPainter {
           begin: Alignment.centerLeft,
           end: Alignment.centerRight,
           colors: [
-            Colors.white.withOpacity(0.0),
-            Colors.white.withOpacity(0.22),
-            Colors.white.withOpacity(0.0),
+            Colors.white.withValues(alpha: 0.0),
+            Colors.white.withValues(alpha: 0.22),
+            Colors.white.withValues(alpha: 0.0),
           ],
           stops: const [0.0, 0.5, 1.0],
         ).createShader(Rect.fromLTWH(0, cornerY - 4, w, dip + 8))

@@ -258,7 +258,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage>
                             child: Image.asset(
                               'assets/images/onboarding_${i + 1}.jpg',
                               fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => Container(
+                              errorBuilder: (_, _, _) => Container(
                                 width: 160,
                                 height: 160,
                                 decoration: BoxDecoration(

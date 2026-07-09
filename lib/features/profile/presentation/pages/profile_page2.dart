@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:Skolar/core/widgets/glass_background.dart';
-import 'package:Skolar/features/profile/presentation/widgets/book_shelf_banner.dart';
 import 'package:Skolar/features/profile/presentation/widgets/left_painter.dart';
 import 'package:Skolar/features/profile/presentation/widgets/mascot.dart';
-import 'package:Skolar/features/profile/presentation/widgets/quick_stats.dart';
 import 'package:Skolar/features/profile/presentation/widgets/settings_glass.dart';
-import 'package:Skolar/features/profile/presentation/widgets/streak_card.dart';
 
 // ─────────────────────────────────────────────
 //  ENTRY POINT – run directly to test
@@ -144,7 +141,7 @@ class _ProfilePage2State extends State<ProfilePage2>
                                           backgroundImage: const AssetImage(
                                             'assets/images/profile_placeholder.png',
                                           ),
-                                          onBackgroundImageError: (_, __) {},
+                                          onBackgroundImageError: (_, _) {},
                                         ),
 
                                         const SizedBox(height: 20),
@@ -200,12 +197,12 @@ class _ProfileHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.cardSurface.withOpacity(0.85),
+        color: AppColors.cardSurface.withValues(alpha: 0.85),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: AppColors.cardBorder, width: 1),
         boxShadow: [
           BoxShadow(
-            color: AppColors.nebulaViolet.withOpacity(0.12),
+            color: AppColors.nebulaViolet.withValues(alpha: 0.12),
             blurRadius: 24,
             spreadRadius: -4,
           ),

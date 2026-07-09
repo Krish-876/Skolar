@@ -3,7 +3,7 @@
 /// ```dart
 /// import 'package:your_app/core/theme/theme.dart';
 /// ```
-library theme;
+library;
 
 export 'app_theme.dart';
 export 'app_bar_theme.dart';

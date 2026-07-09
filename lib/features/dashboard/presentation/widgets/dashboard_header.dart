@@ -69,7 +69,7 @@ class DashboardHeader extends ConsumerWidget {
             height: 44,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: AppTheme.surface.withOpacity(0.6),
+              color: AppTheme.surface.withValues(alpha: 0.6),
             ),
             child: IconButton(
               icon: const Icon(

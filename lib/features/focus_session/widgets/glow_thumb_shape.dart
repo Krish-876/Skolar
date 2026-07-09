@@ -32,7 +32,7 @@ class GlowThumbShape extends SliderComponentShape {
       center,
       _glowRadius,
       Paint()
-        ..color = AppTheme.primary.withOpacity(0.25)
+        ..color = AppTheme.primary.withValues(alpha: 0.25)
         ..style = PaintingStyle.fill,
     );
 

@@ -322,7 +322,7 @@ class _MascotPainter extends CustomPainter {
         height: h * 0.06,
       ),
       Paint()
-        ..color = Colors.black.withOpacity(0.2)
+        ..color = Colors.black.withValues(alpha: 0.2)
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
     );
 
@@ -457,7 +457,7 @@ class _MascotPainter extends CustomPainter {
         Paint()
           ..color = const Color(
             0xFF8B5ED4,
-          ).withOpacity(0.25), // Subtle violet glow
+          ).withValues(alpha: 0.25), // Subtle violet glow
       );
 
       // 2. Primary Sharp Shine
@@ -471,7 +471,7 @@ class _MascotPainter extends CustomPainter {
       canvas.drawCircle(
         pupilCenter + Offset(-pupilRadius * 0.25, pupilRadius * 0.3),
         pupilRadius * 0.1,
-        Paint()..color = Colors.white.withOpacity(0.4),
+        Paint()..color = Colors.white.withValues(alpha: 0.4),
       );
       canvas.restore();
     }

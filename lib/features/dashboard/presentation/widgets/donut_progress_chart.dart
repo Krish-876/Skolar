@@ -88,7 +88,7 @@ class _DonutProgressChartState extends State<DonutProgressChart>
                           todoPercent: widget.data.todoPercent,
                           inProgressPercent: widget.data.inProgressPercent,
                           completedPercent: widget.data.completedPercent,
-                          trackColor: AppTheme.surface.withOpacity(0.4),
+                          trackColor: AppTheme.surface.withValues(alpha: 0.4),
                           todoColor: AppTheme.chartTodo,
                           inProgressColor: AppTheme.chartInProgress,
                           completedColor: AppTheme.chartCompleted,

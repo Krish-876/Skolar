@@ -273,7 +273,7 @@ class _SubjectsBody extends StatelessWidget {
               : ListView.separated(
                   padding: const EdgeInsets.symmetric(horizontal: AppTheme.lg),
                   itemCount: state.subjects.length,
-                  separatorBuilder: (_, __) =>
+                  separatorBuilder: (_, _) =>
                       const SizedBox(height: AppTheme.sm),
                   itemBuilder: (_, i) {
                     final s = state.subjects[i];

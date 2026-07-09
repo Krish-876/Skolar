@@ -57,7 +57,7 @@ class AuthHeroWrapper extends StatelessWidget {
     );
     return AnimatedBuilder(
       animation: animation,
-      builder: (_, __) => Container(
+      builder: (_, _) => Container(
         decoration: BoxDecoration(
           color: AppTheme.surfaceLight,
           borderRadius: radiusTween.evaluate(

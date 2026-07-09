@@ -164,7 +164,7 @@ class DashboardPage extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
               sliver: SliverList.separated(
                 itemCount: analytics.recentActivities.length,
-                separatorBuilder: (_, __) =>
+                separatorBuilder: (_, _) =>
                     const Divider(height: 1, color: AppTheme.dividerColor),
                 itemBuilder: (context, i) => RecentActivityTile(
                   activity: analytics.recentActivities[i],
