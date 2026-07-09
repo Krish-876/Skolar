@@ -16,7 +16,7 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.0' # pin to whatever you're actually on locally
+          flutter-version: '3.44.0' # pin to whatever you're actually on locally
           channel: 'stable'
           cache: true
 
