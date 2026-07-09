@@ -265,7 +265,9 @@ class _SplashScreenState extends State<SplashScreen>
                                     color: Colors.white.withValues(alpha: 0.10),
                                     borderRadius: BorderRadius.circular(100),
                                     border: Border.all(
-                                      color: Colors.white.withValues(alpha: 0.20),
+                                      color: Colors.white.withValues(
+                                        alpha: 0.20,
+                                      ),
                                       width: 1,
                                     ),
                                   ),

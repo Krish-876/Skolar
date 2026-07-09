@@ -21,9 +21,7 @@ class ServerException extends AppException {
     this.statusCode,
     String? code,
     super.originalException,
-  }) : super(
-         code: code ?? statusCode.toString(),
-       );
+  }) : super(code: code ?? statusCode.toString());
 }
 
 class NetworkException extends AppException {
@@ -35,11 +33,7 @@ class NetworkException extends AppException {
 }
 
 class CacheException extends AppException {
-  CacheException({
-    required super.message,
-    super.code,
-    super.originalException,
-  });
+  CacheException({required super.message, super.code, super.originalException});
 }
 
 class ValidationException extends AppException {
@@ -51,11 +45,7 @@ class ValidationException extends AppException {
 }
 
 class AuthException extends AppException {
-  AuthException({
-    required super.message,
-    super.code,
-    super.originalException,
-  });
+  AuthException({required super.message, super.code, super.originalException});
 }
 
 class PermissionException extends AppException {

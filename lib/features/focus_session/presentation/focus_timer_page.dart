@@ -452,7 +452,9 @@ class FocusTimerPageState extends State<FocusTimerPage>
                 child: Text(
                   isRunning ? 'Slide to give up' : 'Slide to lock in',
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: isRunning ? 0.6 : 0.4),
+                    color: Colors.white.withValues(
+                      alpha: isRunning ? 0.6 : 0.4,
+                    ),
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
                   ),

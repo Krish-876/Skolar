@@ -632,7 +632,10 @@ class _SubjectDropdown extends StatelessWidget {
             const SizedBox(width: 10),
             Text(
               'Loading subjects…',
-              style: TextStyle(color: _textSec.withValues(alpha: 0.7), fontSize: 13),
+              style: TextStyle(
+                color: _textSec.withValues(alpha: 0.7),
+                fontSize: 13,
+              ),
             ),
           ],
         ),
@@ -884,14 +887,18 @@ class _PickFilesButton extends StatelessWidget {
           children: [
             Icon(
               isEmpty ? Icons.upload_file_rounded : Icons.add_rounded,
-              color: disabled ? _textSec.withValues(alpha: 0.3) : AppTheme.accent,
+              color: disabled
+                  ? _textSec.withValues(alpha: 0.3)
+                  : AppTheme.accent,
               size: 28,
             ),
             const SizedBox(height: 8),
             Text(
               isEmpty ? 'Select PDF files' : 'Add more PDFs',
               style: TextStyle(
-                color: disabled ? _textSec.withValues(alpha: 0.3) : AppTheme.accent,
+                color: disabled
+                    ? _textSec.withValues(alpha: 0.3)
+                    : AppTheme.accent,
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
               ),
@@ -899,7 +906,10 @@ class _PickFilesButton extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               'Tap to browse your device',
-              style: TextStyle(color: _textSec.withValues(alpha: 0.5), fontSize: 11),
+              style: TextStyle(
+                color: _textSec.withValues(alpha: 0.5),
+                fontSize: 11,
+              ),
             ),
           ],
         ),

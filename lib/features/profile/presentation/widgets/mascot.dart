@@ -69,7 +69,9 @@ class _MascotAvatarState extends State<MascotAvatar>
             ),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF7B5EEF).withValues(alpha: 0.30 + glow * 0.25),
+                color: const Color(
+                  0xFF7B5EEF,
+                ).withValues(alpha: 0.30 + glow * 0.25),
                 blurRadius: 16 + glow * 10,
                 spreadRadius: glow * 2,
               ),

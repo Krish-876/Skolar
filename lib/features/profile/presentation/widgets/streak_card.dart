@@ -108,7 +108,9 @@ class _FlameBoxState extends State<_FlameBox>
               colors: [Color(0xFF3D1F1A), Color(0xFF1A0D0D)],
             ),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFE53935).withValues(alpha: 0.3)),
+            border: Border.all(
+              color: const Color(0xFFE53935).withValues(alpha: 0.3),
+            ),
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,

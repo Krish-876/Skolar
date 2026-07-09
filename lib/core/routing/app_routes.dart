@@ -66,10 +66,7 @@ final goRouterProvider = GoRouter(
       path: AppRoutes.analytics,
       builder: (_, _) => const AnalyticsPage(),
     ),
-    GoRoute(
-      path: AppRoutes.mockTests,
-      builder: (_, _) => const MockTestPage(),
-    ),
+    GoRoute(path: AppRoutes.mockTests, builder: (_, _) => const MockTestPage()),
     GoRoute(path: AppRoutes.feed, builder: (_, _) => const FeedPage()),
     GoRoute(
       path: AppRoutes.focusSession,
