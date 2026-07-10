@@ -2,7 +2,6 @@
 -- PostgreSQL database dump
 --
 
-\restrict coU7xtAVNUP5zrj1UMv8ocERjDVeQn2JBAWx4a1Cz8JgbHkwqAD78ZCDm6GLo5a
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 18.4
@@ -23,14 +22,12 @@ SET row_security = off;
 -- Name: public; Type: SCHEMA; Schema: -; Owner: -
 --
 
-CREATE SCHEMA public;
 
 
 --
 -- Name: SCHEMA public; Type: COMMENT; Schema: -; Owner: -
 --
 
-COMMENT ON SCHEMA public IS 'standard public schema';
 
 
 --
@@ -1832,5 +1829,4 @@ CREATE POLICY users_update_own ON public.users FOR UPDATE USING ((auth.uid() = i
 -- PostgreSQL database dump complete
 --
 
-\unrestrict coU7xtAVNUP5zrj1UMv8ocERjDVeQn2JBAWx4a1Cz8JgbHkwqAD78ZCDm6GLo5a
 
