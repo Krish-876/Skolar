@@ -2,26 +2,25 @@
 
 **Rules:**
 
-- **Migration Requirement**
-  - Schema changes go through `supabase/migrations/` only — never edit live in the Supabase SQL editor.
-  - If relevant, reference the spec section: `Spec: #7`
+- Schema changes go through `supabase/migrations/` only — never edit live in the Supabase SQL editor.
+- **Commit message** (PR title, since we squash-merge) must match one of:
 
-- **Commit message** must match one of:
-  ^schema: .*$
-  ^fix: .*$
-  ^feat: .*$
-  ^chore: .*$
-  ^docs: .*$
-  ^test: .*$
+```
+^feat: .*$
+^fix: .*$
+^schema: .*$
+^refactor: .*$
+^test: .*$
+^docs: .*$
+^style: .*$
+^chore: .*$
+^perf: .*$
+^ci: .*$
+```
 
-  - Single line only, no trailing period/space, ≤100 characters
-
-- **Post-merge**
-  - If this PR includes a migration, run `supabase db push` after merge — auto-deploy is not active on our plan.
+  Single line, no trailing period/space, ≤100 characters. Individual commits on your branch don't need to match — only the squashed PR title does.
 
 See [CONTRIBUTING.md](../CONTRIBUTING.md) for details.
-
-**ATTENTION:** No preview database on our plan — migrations go straight to production on push. Review carefully.
 
 ---
 
@@ -33,9 +32,18 @@ See [CONTRIBUTING.md](../CONTRIBUTING.md) for details.
 - [ ] Code
 - [ ] Docs/chore
 
-## If migration: ran `supabase db push` after merge?
-- [ ] Yes
-- [ ] N/A
+<details>
+<summary>Schema migration checklist (expand if this PR touches supabase/migrations/)</summary>
+
+**No preview database on our plan — migrations go straight to production on push. Review carefully.**
+
+- [ ] Reference the spec section if relevant: `Spec: #`
+- [ ] RLS enabled on any new user-owned table
+- [ ] Policy written in this same PR
+- [ ] Tested against a non-owner session (service role bypasses RLS and hides bugs)
+- [ ] Ran `supabase db push` after merge, OR noted as pending in PR thread
+
+</details>
 
 ---
 Feel free to remove everything above this line and describe your change below.
