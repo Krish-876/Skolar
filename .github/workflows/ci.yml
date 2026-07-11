@@ -20,6 +20,36 @@ jobs:
       - name: Check formatting
         run: dart format --output=none --set-exit-if-changed .
 
+  pr-title:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    timeout-minutes: 5
+    steps:
+      - name: Validate PR title
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          echo "PR title: $TITLE"
+
+          if [ ${#TITLE} -gt 100 ]; then
+            echo "PR title exceeds 100 characters."
+            exit 1
+          fi
+
+          if [[ "$TITLE" =~ [[:space:]]$ ]] || [[ "$TITLE" =~ \.$ ]]; then
+            echo "PR title must not end with a period, space, or tab."
+            exit 1
+          fi
+
+          PATTERN='^(feat|fix|schema|refactor|test|docs|style|chore|perf|ci): .+$'
+          if ! [[ "$TITLE" =~ $PATTERN ]]; then
+            echo "PR title must match: <type>: <summary>"
+            echo "Valid types: feat, fix, schema, refactor, test, docs, style, chore, perf, ci"
+            exit 1
+          fi
+
+          echo "PR title is valid."
+
   codegen:
     runs-on: ubuntu-latest
     timeout-minutes: 10
