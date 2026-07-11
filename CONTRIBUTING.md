@@ -343,10 +343,12 @@ class MockTestNotifier extends Notifier<MockTestState> {
 
 - Table names: `snake_case`, plural (`feed_posts`, `study_sessions`)
 - Every table with user-owned rows must have RLS enabled — no exceptions, even for "internal" tables.
-- RLS policy naming: `<table>_<action>_<role>` e.g. `feed_posts_select_authenticated`
+- RLS policy naming: `own_<resource>_only` for simple owner-scoped policies, or a descriptive verb phrase for anything more complex (`users_read_own_row`). Consistency within a table matters more than a rigid global pattern.
 - Write the RLS policy in the same migration/PR that creates the table — don't ship a table without one, even temporarily.
 - DTOs map Supabase JSON responses 1:1 with `@JsonSerializable`; conversion to domain entities happens via `.toDomain()`, same as any other data source.
 - Migrations live under `supabase/migrations/`, timestamped and never edited after being merged to `master` — write a new migration to fix a previous one.
+- Merging a migration PR does NOT auto-apply it — auto-deploy requires Supabase Pro. Whoever merges must run `supabase db push` immediately after, or note in the PR thread that it's pending.
+- Before proposing a new Nova-related table or field, check it against `Spec.md` — several fields are intentionally computed live rather than stored (see spec #2).
 - Test RLS changes against a non-owner-authenticated session before merging, not just as the table owner (service role bypasses RLS and will hide bugs).
 
 ---
@@ -370,6 +372,7 @@ What it runs, in order:
 2. `dart run build_runner build --delete-conflicting-outputs` — regenerates `.freezed.dart`/`.g.dart`; if generated files are committed, the run fails if this produces uncommitted diffs (i.e. someone forgot to regenerate before pushing)
 3. `dart analyze --fatal-infos` — fails on any lint issue
 4. `flutter test --coverage` — runs the full test suite
+5. Supabase check — validates migration SQL syntax only. This does NOT deploy to production; see Supabase Conventions above for the required manual `db push` step.
 
 Not yet covered by CI (tracked as gaps, not silently assumed): FastAPI backend tests, Supabase RLS policy tests against non-owner sessions, and any integration test that needs a live/staged backend. These require either a hosted staging Supabase project or a dockerized backend, and aren't set up yet — don't assume CI is catching backend bugs.
 
@@ -550,7 +553,7 @@ final upvoted = ref.watch(
 <footer>
 ```
 
-Types: `feat`, `fix`, `refactor`, `test`, `docs`, `style`, `chore`, `perf`, `ci`
+Types: `feat`, `fix`, `schema`, `refactor`, `test`, `docs`, `style`, `chore`, `perf`, `ci`
 
 Example:
 
