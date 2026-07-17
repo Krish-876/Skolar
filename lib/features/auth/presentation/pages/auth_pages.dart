@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:Skolar/features/auth/presentation/providers/auth_provider.dart';
+import 'package:Skolar/core/theme/app_theme.dart';
 
 class AuthScreen extends ConsumerStatefulWidget {
   const AuthScreen({super.key});
@@ -71,53 +72,306 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     final isSent = authState.status == AuthStatus.magicLinkSent;
 
     return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text('Skolar', style: Theme.of(context).textTheme.headlineLarge),
-              const SizedBox(height: 8),
-              Text(
-                isSent
-                    ? 'Check your college inbox'
-                    : 'Enter your college email',
-                style: Theme.of(context).textTheme.bodyMedium,
+      body: Container(
+        decoration: const BoxDecoration(gradient: AppTheme.backgroundGradient),
+        child: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Mascot image
+                  Center(
+                    child: Hero(
+                      tag: 'mascot_hero',
+                      child: Container(
+                        width: 100,
+                        height: 100,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppTheme.accentPurple.withOpacity(0.3),
+                              blurRadius: 40,
+                              spreadRadius: 10,
+                            ),
+                          ],
+                        ),
+                        child: ClipOval(
+                          child: Image.asset(
+                            'assets/images/mascot.jpeg',
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+
+                  // Title
+                  Center(
+                    child: RichText(
+                      textAlign: TextAlign.center,
+                      text: const TextSpan(
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                        children: [
+                          TextSpan(text: 'Welcome to '),
+                          TextSpan(
+                            text: 'Skolar',
+                            style: TextStyle(color: AppTheme.accentPurple),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Subtitle
+                  const Text(
+                    'Your AI-powered study companion for\nBITS Hyderabad.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: AppTheme.onBackground2,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 40),
+
+                  if (!isSent) ...[
+                    // INSTITUTIONAL EMAIL label
+                    const Text(
+                      'INSTITUTIONAL EMAIL',
+                      style: TextStyle(
+                        color: AppTheme.onBackground2,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Email Field
+                    TextField(
+                      controller: _emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      onSubmitted: (_) => _onSubmit(),
+                      style: const TextStyle(color: Colors.white),
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: AppTheme.surfaceLight.withOpacity(0.5),
+                        hintText: 'name@campusname.bits-pilani.ac.in',
+                        hintStyle: TextStyle(
+                          color: AppTheme.onBackground2.withOpacity(0.5),
+                        ),
+                        prefixIcon: const Icon(
+                          Icons.mail_outline,
+                          color: AppTheme.onBackground2,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: 16,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Send Magic Link Button
+                    SizedBox(
+                      height: 56,
+                      child: ElevatedButton(
+                        onPressed: isLoading ? null : _onSubmit,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.accentPurple,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: isLoading
+                            ? const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    'Send Magic Link',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  SizedBox(width: 8),
+                                  Icon(Icons.arrow_forward, size: 20),
+                                ],
+                              ),
+                      ),
+                    ),
+                  ] else ...[
+                    const Icon(
+                      Icons.mark_email_read_outlined,
+                      size: 64,
+                      color: AppTheme.accentPurple,
+                    ),
+                    const SizedBox(height: 16),
+                    TextButton(
+                      onPressed: () =>
+                          ref.read(authNotifierProvider.notifier).reset(),
+                      child: const Text(
+                        'Use a different email',
+                        style: TextStyle(color: AppTheme.accentPurple),
+                      ),
+                    ),
+                  ],
+
+                  const SizedBox(height: 40),
+
+                  // Divider
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Divider(
+                          color: AppTheme.onBackground2.withOpacity(0.2),
+                          thickness: 1,
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Text(
+                          'OR CONTINUE WITH',
+                          style: TextStyle(
+                            color: AppTheme.onBackground2.withOpacity(0.5),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: Divider(
+                          color: AppTheme.onBackground2.withOpacity(0.2),
+                          thickness: 1,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 32),
+
+                  // Google Workspace Button
+                  SizedBox(
+                    height: 56,
+                    child: OutlinedButton(
+                      onPressed: () {
+                        // TODO: Implement Google Workspace auth logic
+                      },
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(
+                          color: AppTheme.onBackground2.withOpacity(0.2),
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.g_mobiledata,
+                            size: 32,
+                            color: Colors.white,
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            'Google Workspace',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 40),
+
+                  // Info Box
+                  const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        color: AppTheme.onBackground2,
+                        size: 14,
+                      ),
+                      SizedBox(width: 6),
+                      Flexible(
+                        child: Text(
+                          'Use your bits-pilani.ac.in email',
+                          style: TextStyle(
+                            color: AppTheme.onBackground2,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w400,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+
+                  // Footer
+                  Center(
+                    child: RichText(
+                      textAlign: TextAlign.center,
+                      text: const TextSpan(
+                        style: TextStyle(
+                          color: AppTheme.onBackground2,
+                          fontSize: 12,
+                          height: 1.5,
+                        ),
+                        children: [
+                          TextSpan(
+                            text: 'By continuing, you agree to Skolar\'s ',
+                          ),
+                          TextSpan(
+                            text: 'Terms of Service',
+                            style: TextStyle(
+                              color: Colors.white,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                          TextSpan(text: '\nand '),
+                          TextSpan(
+                            text: 'Privacy Policy',
+                            style: TextStyle(
+                              color: Colors.white,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                          TextSpan(text: '.'),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 32),
-              if (!isSent) ...[
-                TextField(
-                  controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
-                  onSubmitted: (_) => _onSubmit(),
-                  decoration: const InputDecoration(
-                    labelText: 'College Email',
-                    hintText: 'f20240175@hyderabad.bits-pilani.ac.in',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: ElevatedButton(
-                    onPressed: isLoading ? null : _onSubmit,
-                    child: isLoading
-                        ? const CircularProgressIndicator(strokeWidth: 2)
-                        : const Text('Send Magic Link'),
-                  ),
-                ),
-              ] else ...[
-                const Icon(Icons.mark_email_read_outlined, size: 64),
-                const SizedBox(height: 16),
-                TextButton(
-                  onPressed: () =>
-                      ref.read(authNotifierProvider.notifier).reset(),
-                  child: const Text('Use a different email'),
-                ),
-              ],
-            ],
+            ),
           ),
         ),
       ),

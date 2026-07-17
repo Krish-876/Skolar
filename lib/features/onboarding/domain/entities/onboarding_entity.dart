@@ -1,32 +1,41 @@
 class OnboardingEntity {
-  final String? nickname;
-  final String? branch;
-  final String? studyGoal;
-  final String plan;
-  final List<String> selectedSubjectIds;
+  final String? endgame;
+  final List<String> careerInterests;
+  final String? prepStyle;
+  final String? derailer;
+  final String? bufferPref;
+  final String? dailyCapacity;
 
   const OnboardingEntity({
-    this.nickname,
-    this.branch,
-    this.studyGoal,
-    this.plan = 'free',
-    this.selectedSubjectIds = const [],
+    this.endgame,
+    this.careerInterests = const [],
+    this.prepStyle,
+    this.derailer,
+    this.bufferPref,
+    this.dailyCapacity,
   });
 
   OnboardingEntity copyWith({
-    String? nickname,
-    String? branch,
-    String? studyGoal,
-    String? plan,
-    List<String>? selectedSubjectIds,
+    String? endgame,
+    List<String>? careerInterests,
+    String? prepStyle,
+    String? derailer,
+    String? bufferPref,
+    String? dailyCapacity,
   }) => OnboardingEntity(
-    nickname: nickname ?? this.nickname,
-    branch: branch ?? this.branch,
-    studyGoal: studyGoal ?? this.studyGoal,
-    plan: plan ?? this.plan,
-    selectedSubjectIds: selectedSubjectIds ?? this.selectedSubjectIds,
+    endgame: endgame ?? this.endgame,
+    careerInterests: careerInterests ?? this.careerInterests,
+    prepStyle: prepStyle ?? this.prepStyle,
+    derailer: derailer ?? this.derailer,
+    bufferPref: bufferPref ?? this.bufferPref,
+    dailyCapacity: dailyCapacity ?? this.dailyCapacity,
   );
 
   bool get isComplete =>
-      nickname != null && nickname!.trim().isNotEmpty && branch != null;
+      endgame != null &&
+      careerInterests.isNotEmpty &&
+      prepStyle != null &&
+      derailer != null &&
+      bufferPref != null &&
+      dailyCapacity != null;
 }

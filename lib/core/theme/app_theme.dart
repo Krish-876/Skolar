@@ -8,6 +8,7 @@ class AppTheme {
   static const Color secondary = Color(0xFF050610); // Secondary (near-black)
   static const Color star = Color(0xFFF5C518); // Star / highlight yellow
   static const Color wishlist = Color(0xFFD0021B); // Wishlist / danger red
+  static const Color accentPurple = Color(0xFFB388FF); // Skolar brand purple
 
   // ── Surface & Overlay ─────────────────────────────────────────────────────
   static const Color surface = Color(0xFF2E2B3E); // Surface (purple-gray)
