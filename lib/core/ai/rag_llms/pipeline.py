@@ -997,7 +997,7 @@ def run_upload_pyq(
                 status = "succeeded" if result["unmatched"] == 0 else "partial"
                 _update_pdf_record(sb, pdf_id, status, result["matched"], result["unmatched"])
             return {**result, "pdf_id": pdf_id}
-        except Exception as e:
+        except Exception:
             if pdf_id:
                 _update_pdf_record(sb, pdf_id, "failed", 0, 0)
             raise

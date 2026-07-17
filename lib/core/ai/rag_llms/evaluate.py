@@ -147,7 +147,7 @@ def test_mcq_diversity():
     })
 
     if r.status_code != 200:
-        print(f"  ❌  Request failed")
+        print("  ❌  Request failed")
         return False
 
     questions = r.json().get("questions", [])
@@ -223,7 +223,7 @@ def test_open_diversity():
     }, timeout=120)
 
     if r.status_code != 200:
-        print(f"  ❌  Request failed")
+        print("  ❌  Request failed")
         return False
 
     questions = r.json().get("questions", [])
