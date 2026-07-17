@@ -16,7 +16,6 @@ import traceback
 
 import logging
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Query
-logger = logging.getLogger(__name__)
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
@@ -30,6 +29,9 @@ from pipeline import (
     load_bank_and_embeddings,
     save_generated_test,
 )
+
+logger = logging.getLogger(__name__)
+
 
 # ── App setup ─────────────────────────────────────────────────────────────────
 

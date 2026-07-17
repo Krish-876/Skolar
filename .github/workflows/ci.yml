@@ -5,8 +5,39 @@ on:
   push:
     branches: [master]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      flutter: ${{ steps.filter.outputs.flutter }}
+      python: ${{ steps.filter.outputs.python }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            flutter:
+              - 'lib/**'
+              - '!lib/core/ai/rag_llms/**'
+              - '!lib/core/ai/nova/**'
+              - 'pubspec.yaml'
+              - 'pubspec.lock'
+            python:
+              - 'lib/core/ai/rag_llms/**'
+              - 'lib/core/ai/nova/**'
+
   format:
+    needs: changes
+    if: needs.changes.outputs.flutter == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -51,6 +82,8 @@ jobs:
           echo "PR title is valid."
 
   codegen:
+    needs: changes
+    if: needs.changes.outputs.flutter == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -72,6 +105,8 @@ jobs:
           fi
 
   analyze:
+    needs: changes
+    if: needs.changes.outputs.flutter == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -88,6 +123,8 @@ jobs:
         run: dart analyze
 
   test:
+    needs: changes
+    if: needs.changes.outputs.flutter == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -102,6 +139,30 @@ jobs:
         run: echo "" > .env
       - name: Run tests
         run: flutter test --coverage
+
+  python-lint:
+    needs: changes
+    if: needs.changes.outputs.python == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+          cache: 'pip'
+          cache-dependency-path: 'lib/core/ai/rag_llms/requirements*.txt'
+      - name: Install dependencies
+        run: |
+          pip install -r lib/core/ai/rag_llms/requirements.txt
+          pip install -r lib/core/ai/rag_llms/requirements-dev.txt
+      - name: Lint
+        run: ruff check lib/core/ai/
+      - name: Type check
+        run: |
+          if [ -d "lib/core/ai/nova" ]; then
+            mypy lib/core/ai/nova --ignore-missing-imports
+          fi
 
   branch-up-to-date:
     runs-on: ubuntu-latest
