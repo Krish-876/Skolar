@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:Skolar/core/config/environment.dart';
+import 'package:flutter/foundation.dart';
 
 /// Dio HTTP client configuration and setup
 /// Handles base URL, headers, interceptors, and timeout configuration
@@ -136,5 +137,7 @@ class AuthInterceptor extends Interceptor {
 void debugPrint(String message) {
   // Use this instead of print() to avoid logs in production
   // In production, you'd use a proper logging service
-  print(message);
+  if (kDebugMode) {
+    print(message);
+  }
 }

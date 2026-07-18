@@ -21,19 +21,21 @@ class OnboardingNotifier extends Notifier<OnboardingEntity> {
   @override
   OnboardingEntity build() => const OnboardingEntity();
 
-  void setNickname(String value) =>
-      state = state.copyWith(nickname: value.trim());
-  void setBranch(String value) => state = state.copyWith(branch: value);
-  void setStudyGoal(String value) => state = state.copyWith(studyGoal: value);
-  void setPlan(String value) => state = state.copyWith(plan: value);
-  void toggleSubject(String id) {
-    final current = List<String>.from(state.selectedSubjectIds);
-    if (current.contains(id)) {
-      current.remove(id);
+  void setEndgame(String value) => state = state.copyWith(endgame: value);
+  void setPrepStyle(String value) => state = state.copyWith(prepStyle: value);
+  void setDerailer(String value) => state = state.copyWith(derailer: value);
+  void setBufferPref(String value) => state = state.copyWith(bufferPref: value);
+  void setDailyCapacity(String value) =>
+      state = state.copyWith(dailyCapacity: value);
+
+  void toggleCareerInterest(String interest) {
+    final current = List<String>.from(state.careerInterests);
+    if (current.contains(interest)) {
+      current.remove(interest);
     } else {
-      current.add(id);
+      current.add(interest);
     }
-    state = state.copyWith(selectedSubjectIds: current);
+    state = state.copyWith(careerInterests: current);
   }
 
   Future<void> complete() async {

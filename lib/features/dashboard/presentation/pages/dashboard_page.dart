@@ -74,12 +74,14 @@ class DashboardPage extends ConsumerWidget {
               backgroundColor:
                   Colors.transparent, // transparent — bg shows through
               elevation: 0,
-              title: Text(
-                'Dashboard',
-                style: GoogleFonts.googleSans(
-                  color: AppTheme.textPrimary,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 22,
+              title: _DevMenuTrigger(
+                child: Text(
+                  'Dashboard',
+                  style: GoogleFonts.googleSans(
+                    color: AppTheme.textPrimary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 22,
+                  ),
                 ),
               ),
             ),
@@ -267,5 +269,38 @@ class _DevButton extends StatelessWidget {
       ),
       child: Text(label, style: const TextStyle(fontSize: 12)),
     );
+  }
+}
+
+class _DevMenuTrigger extends StatefulWidget {
+  final Widget child;
+  const _DevMenuTrigger({required this.child});
+
+  @override
+  State<_DevMenuTrigger> createState() => _DevMenuTriggerState();
+}
+
+class _DevMenuTriggerState extends State<_DevMenuTrigger> {
+  int _tapCount = 0;
+  DateTime? _lastTap;
+
+  void _handleTap() {
+    final now = DateTime.now();
+    if (_lastTap != null &&
+        now.difference(_lastTap!) > const Duration(milliseconds: 500)) {
+      _tapCount = 0;
+    }
+    _tapCount++;
+    _lastTap = now;
+
+    if (_tapCount >= 3) {
+      _tapCount = 0;
+      context.push('/');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(onTap: _handleTap, child: widget.child);
   }
 }
