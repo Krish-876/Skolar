@@ -580,6 +580,9 @@ uvicorn main:app --reload --port 8000
 - `/nova/trigger/check` is called on app open, after test submission, and after flag confirmation
 - `/nova/conversation` never writes silently — all fact writes go through `/nova/proposals/{id}/confirm`
 - Minor re-ranks (no LLM call) and full reasoning passes both go through `/nova/plan/generate` — trigger severity decided beforehand by `/nova/trigger/check`
+
+> These `/nova/*` endpoints describe the planned Phase 5 backend (`nova_router.py`, not yet built). The Nova CLI prototype that exists today (see [Nova CLI (Q&A Prototype)](#nova-cli-qa-prototype)) does not go through FastAPI at all — it talks to Supabase and Groq directly from a local script.
+
 #### `POST /extract-plan` — Request body
 
 ```json
@@ -866,16 +869,18 @@ updated_at                timestamptz, not null, default now()
 
 #### `standing_flags` table
 
-Durable instructions from the student that persist until explicitly removed or superseded. Example: "always buffer DBMS practicals."
+Durable instructions from the student that persist until explicitly removed or superseded. Example: "always buffer DBMS practicals." Can attach to either an academic subject or a career unit — not academic-only.
 
 ```
 id                uuid, primary key, default gen_random_uuid()
 user_id           uuid, not null, references users.id
 user_subject_id   uuid, nullable, references user_subjects.id
+career_unit_id    uuid, nullable, references career_units.id
 instruction_text  text, not null
 confirmed_at      timestamptz, nullable — null = pending confirmation, inert until confirmed
 superseded_at     timestamptz, nullable — set when a newer statement replaces this one
 supersedes_id     uuid, nullable, references standing_flags.id — links to the flag this replaced
+source            text, not null, default 'conversation'
 created_at        timestamptz, not null, default now()
 ```
 
@@ -883,12 +888,13 @@ Active flags: `WHERE superseded_at IS NULL AND confirmed_at IS NOT NULL`.
 
 #### `situation_flags` table
 
-Temporary context the student tells Nova. Example: "I'm sick this week," "I have a family event Saturday."
+Temporary context the student tells Nova. Example: "I'm sick this week," "I have a family event Saturday." Can attach to either an academic subject or a career unit.
 
 ```
 id                uuid, primary key, default gen_random_uuid()
 user_id           uuid, not null, references users.id
 user_subject_id   uuid, nullable, references user_subjects.id
+career_unit_id    uuid, nullable, references career_units.id
 flag_text         text, not null
 confirmed_at      timestamptz, nullable
 superseded_at     timestamptz, nullable
@@ -900,18 +906,22 @@ created_at        timestamptz, not null, default now()
 
 **Constraint:** `expires_at IS NULL OR expires_at > starts_at`.
 
+> Unlike `standing_flags` and `nova_history`, this table has no `source` column — unconfirmed whether that's intentional (situation flags are conversation-only by design) or a gap. Worth confirming before assuming either way.
+
 #### `nova_history` table
 
-What has worked for this student before, conversation-fed only. Not auto-inferred from scores (v2 deferral).
+What has worked for this student before, conversation-fed only. Not auto-inferred from scores (v2 deferral). Can attach to either an academic subject or a career unit.
 
 ```
 id                uuid, primary key, default gen_random_uuid()
 user_id           uuid, not null, references users.id
 user_subject_id   uuid, nullable, references user_subjects.id
+career_unit_id    uuid, nullable, references career_units.id
 content           text, not null — free text, preserves full nuance
 confirmed_at      timestamptz, nullable
 superseded_at     timestamptz, nullable
 supersedes_id     uuid, nullable, references nova_history.id
+source            text, not null, default 'conversation'
 created_at        timestamptz, not null, default now()
 ```
 
@@ -931,11 +941,43 @@ industry_relevance_score        numeric, nullable, check (0–1) — machine-rea
 industry_relevance_updated_at   timestamptz, nullable — when relevance was last refreshed
 confirmed_at                    timestamptz, nullable
 paused_at                       timestamptz, nullable — null = active, set = paused
+source                          text, not null, default 'conversation'
 created_at                      timestamptz, not null, default now()
 updated_at                      timestamptz, not null, default now()
 ```
 
 Active units: `WHERE paused_at IS NULL AND confirmed_at IS NOT NULL`. Career units use pause/resume rather than supersession — pausing a skill is not the same shape as contradicting a stated preference.
+
+#### `nova_why_log` table
+
+Audit trail for every plan change — full facts snapshot, resulting plan, and a reasoning summary, per §7/§9 of the Nova spec. `entry_type` distinguishes the three shapes a log entry can take: a full reasoning pass, a no-LLM-call minor arithmetic re-rank, or a logged one-off override that never touched the schema.
+
+```
+id                  uuid, primary key, default gen_random_uuid()
+user_id             uuid, not null, references users.id
+entry_type          text, not null, check (full_pass|minor_trigger|one_off_override)
+user_subject_id     uuid, nullable, references user_subjects.id
+topic_id            uuid, nullable, references topics.id
+career_unit_id      uuid, nullable, references career_units.id
+facts_snapshot      jsonb, nullable — full snapshot the model reasoned over; null for lighter entry types
+plan_output         jsonb, nullable — the resulting ranked plan
+reasoning_summary   text, not null
+superseded_at       timestamptz, nullable — set when a later pass supersedes this entry (concurrency rule, §6)
+supersedes_id       uuid, nullable, references nova_why_log.id
+created_at          timestamptz, not null, default now()
+```
+
+#### `nova_config` table
+
+Generic key/value config store — not fixed columns. `user_id` is nullable, which allows global/default config rows (e.g. default staleness thresholds) alongside per-student overrides.
+
+```
+id            uuid, primary key, default gen_random_uuid()
+user_id       uuid, nullable, references users.id — null = global/default config, not per-student
+key           text, not null
+value         jsonb, not null
+updated_at    timestamptz, not null, default now()
+```
 
 ### Nova Facts Snapshot (not a table)
 
@@ -952,6 +994,25 @@ Nova's facts snapshot is derived live at reasoning time by `nova_pipeline.py`, n
 
 The snapshot is logged as jsonb inside `nova_why_log` for auditability. A pre-materialized table is not used because it would create a sync problem and violate the spec's atomic-fetch requirement.
 
+### Nova CLI (Q&A Prototype)
+
+A working, dev-only prototype exists today, ahead of the full pipeline described above. It's a local CLI (`lib/core/ai/nova/nova_agent.py`) that fetches a student's live facts snapshot from Supabase and lets you ask Nova questions about it in a terminal chat loop, answered by Groq (`llama-3.3-70b-versatile`).
+
+```
+python nova_agent.py <user_id>
+```
+
+**What it is:** a read-only conversational surface over real data — a way to sanity-check what a "facts snapshot" looks like and how naturally an LLM can talk about it, before the rest of the pipeline is built.
+
+**What it is *not*:** it does not implement the trigger layer, the reasoning/ranking pass, structured plan output, or why-log writes described elsewhere in this section. There's no daily plan, no confirmation-gated writes, no audit trail — it's purely "fetch facts, answer a question, forget everything when the process exits."
+
+**Known limitations** (tracked in [#15](https://github.com/Krish-876/Skolar/issues/15)):
+- `user_id` is taken as a raw CLI argument with no auth check against the caller's identity — dev-only, local use, service-role key
+- No error handling around the Groq/Supabase calls — an API failure crashes the whole session
+- The facts snapshot is fetched once at startup and held for the entire session, so it can go stale mid-conversation if underlying data changes
+
+See [Tech Debt](#tech-debt) for the full writeup and fix conditions.
+
 ### Nova Tables Still To Build
 
 | Table | Purpose |
@@ -959,12 +1020,12 @@ The snapshot is logged as jsonb inside `nova_why_log` for auditability. A pre-ma
 | `nova_conversations` | Conversation turn history with Nova |
 | `nova_conversations_archive` | Older conversations moved out for performance |
 | `nova_plan_outputs` | Ranked plan the student sees — subjects, time budgets, one-line reasons per item |
-| `nova_why_log` | Audit trail — full facts snapshot + reasoning summary, linked to plan output |
 | `nova_trigger_log` | What fired each reasoning pass and why |
-| `nova_config` | Per-student configuration, staleness thresholds, preferences |
 | `nova_unconfirmed_proposals` | Conversation-proposed changes inert until student confirms |
 | `nova_industry_relevance_log` | Web lookup history for career unit relevance signals |
 | `nova_one_off_overrides` | Today-only overrides, never persisted to schema |
+
+> `nova_why_log` and `nova_config` were previously listed here but are already live in Supabase — see [Nova Schema Tables](#nova-schema-tables) above.
 
 ---
 
@@ -975,11 +1036,17 @@ lib/
 ├── core/
 │   ├── ai/
 │   │   ├── data/                    # PYQ PDF files
-│   │   └── rag_llms/                # Python backend
-│   │       ├── main.py              # FastAPI app (all endpoints)
-│   │       ├── pipeline.py          # DICL pipeline + study plan extraction
-│   │       ├── evaluate.py          # Pipeline evaluation
-│   │       └── .env                 # GROQ_API_KEY, SUPABASE_URL, SUPABASE_KEY (not committed)
+│   │   ├── rag_llms/                # Python backend
+│   │   │   ├── main.py              # FastAPI app (all endpoints)
+│   │   │   ├── pipeline.py          # DICL pipeline + study plan extraction
+│   │   │   ├── evaluate.py          # Pipeline evaluation
+│   │   │   └── .env                 # GROQ_API_KEY, SUPABASE_URL, SUPABASE_KEY (not committed)
+│   │   └── nova/                    # Nova CLI Q&A prototype (dev-only, read-only — see Nova section)
+│   │       ├── nova_agent.py        # CLI entrypoint — python nova_agent.py <user_id>
+│   │       └── nova/
+│   │           ├── prompts/         # nova_system_prompt.py
+│   │           ├── schemas/         # chat.py, facts_snapshot.py
+│   │           └── services/        # clients.py, facts_service.py, chat_service.py
 │   ├── config/
 │   ├── di/
 │   ├── errors/
@@ -1077,6 +1144,7 @@ lib/
 - **Exam prediction** / question bank browser
 - **Focus session timer**
 - **Community feed** — live from Supabase, vote persistence
+- **Nova CLI Q&A prototype** — dev-only, read-only chat over a live facts snapshot (see [Nova CLI (Q&A Prototype)](#nova-cli-qa-prototype))
 
 ### Schema Live, No UI/Code Yet
 
@@ -1169,6 +1237,15 @@ uvicorn main:app --reload --port 8000
 ```
 
 Interactive API docs at `http://localhost:8000/docs`.
+
+### Running the Nova CLI Prototype
+
+```bash
+cd lib/core/ai/nova
+python nova_agent.py <user_id>
+```
+
+Reads `SUPABASE_URL`, `SUPABASE_KEY`, and `GROQ_API_KEY` from `lib/core/ai/rag_llms/.env`. Service-role key, local dev only — see [Nova CLI (Q&A Prototype)](#nova-cli-qa-prototype) and [Tech Debt](#tech-debt) before using this with real student data.
 
 ---
 
@@ -1271,6 +1348,14 @@ RLS is enabled on `topics` with read-only access for authenticated users. Write 
 
 ---
 
+### Nova CLI — no auth, no error handling, snapshot goes stale mid-session
+
+`nova_agent.py` currently trusts any `user_id` passed via argv with no check against the caller's identity — it runs against a service-role key locally, so anyone running it could pull any student's exam/weakness/career data just by changing the ID. API failures (Groq overloaded, Supabase down) crash the whole CLI and dump a raw stack trace, killing the session and losing all conversation history built up so far. The facts snapshot is also fetched once at CLI startup and held for the whole session — if underlying data changes mid-session (new test score, capacity update), Nova keeps answering from the stale startup snapshot. Fine for local dev/testing; tracked in [#15](https://github.com/Krish-876/Skolar/issues/15).
+
+**When to fix:** Auth before this touches any real user's data; error handling before it's used for real QA testing; snapshot staleness before this pattern carries over into the real triggered Nova pipeline (Phase 5).
+
+---
+
 ## Roadmap
 
 ```
@@ -1311,7 +1396,9 @@ Phase 4 — Auth and Backend (complete)
     ✅ test_attempts composite uniqueness fixed
     ✅ Nova schema foundations — user_subject_exams, nova_capacity_log,
        staleness_tracker, topics, standing_flags, situation_flags,
-       nova_history, career_units, topic_id on all affected tables
+       nova_history, career_units, nova_why_log, nova_config,
+       topic_id and career_unit_id on all affected tables
+    ✅ Nova CLI Q&A prototype — dev-only, read-only (see Tech Debt)
     ⬜ _triggerPlanExtraction wired to real FastAPI URL
     ⬜ Study plan display UI per subject
     ⬜ Compre Part A → published_tests pipeline + feed (deferred to post-Phase 5)
@@ -1324,13 +1411,12 @@ Phase 5 — Personalisation
     Nova schema (remaining)
         nova_conversations
         nova_conversations_archive
-        nova_plan_log
-        nova_why_log (merged into nova_plan_log)
+        nova_plan_outputs
         nova_trigger_log
-        nova_config
         nova_unconfirmed_proposals
         nova_industry_relevance_log
         nova_one_off_overrides
+        (nova_why_log and nova_config already live — see Nova Schema Tables)
 
     Nova backend
         nova_pipeline.py — facts fetch, trigger check, reasoning pass,
@@ -1338,6 +1424,8 @@ Phase 5 — Personalisation
         nova_router.py — all Nova endpoints
         main.py — mount nova_router (one line)
         pg_cron nightly retention job driven by nova_config
+        Harden Nova CLI prototype into the real pipeline — auth, error
+            handling, and live (non-stale) facts fetch (closes #15)
 
     Nova Flutter
         Decouple handout plan trigger from Nova plan trigger
