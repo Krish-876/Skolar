@@ -6,33 +6,11 @@ import 'package:Skolar/core/theme/app_theme.dart';
 import 'package:Skolar/features/subjects/presentation/providers/subjects_provider.dart';
 import 'package:Skolar/features/subjects/presentation/widgets/subjects_widgets.dart';
 
-class SubjectsPage extends ConsumerStatefulWidget {
+class SubjectsPage extends StatelessWidget {
   const SubjectsPage({super.key});
 
   @override
-  ConsumerState<SubjectsPage> createState() => _SubjectsPageViewState();
-}
-
-class _SubjectsPageViewState extends ConsumerState<SubjectsPage> {
-  bool _creditSheetShown = false;
-
-  @override
   Widget build(BuildContext context) {
-    final asyncState = ref.watch(subjectsProvider);
-
-    asyncState.whenData((s) {
-      // Only show the sheet when we have a confirmed successful fetch
-      // that returned null — not when the fetch itself failed.
-      if (!_creditSheetShown &&
-          s.creditTargetLoaded &&
-          s.creditTarget == null) {
-        _creditSheetShown = true;
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _showCreditTargetSheet(context);
-        });
-      }
-    });
-
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(
@@ -56,63 +34,108 @@ class _SubjectsPageViewState extends ConsumerState<SubjectsPage> {
           ),
         ),
         actions: [
-          asyncState.whenOrNull(
-                data: (s) => s.editMode
-                    ? TextButton(
-                        onPressed: () => ref
-                            .read(subjectsProvider.notifier)
-                            .commitDeletions(),
-                        child: const Text(
-                          'Done',
-                          style: TextStyle(
-                            color: AppTheme.wishlist,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 15,
+          Consumer(
+            builder: (context, ref, _) {
+              final asyncState = ref.watch(subjectsProvider);
+              return asyncState.whenOrNull(
+                    data: (s) => s.editMode
+                        ? TextButton(
+                            onPressed: () => ref
+                                .read(subjectsProvider.notifier)
+                                .commitDeletions(),
+                            child: const Text(
+                              'Done',
+                              style: TextStyle(
+                                color: AppTheme.wishlist,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 15,
+                              ),
+                            ),
+                          )
+                        : TextButton(
+                            onPressed: () {
+                              showModalBottomSheet(
+                                context: context,
+                                isScrollControlled: true,
+                                backgroundColor: Colors.transparent,
+                                builder: (_) => CreditTargetSheet(
+                                  onConfirm: (value) {
+                                    ref.read(subjectsProvider.notifier).setCreditTarget(value);
+                                  },
+                                ),
+                              );
+                            },
+                            child: const Text(
+                              'Edit credits',
+                              style: TextStyle(
+                                color: AppTheme.onBackground2,
+                                fontWeight: FontWeight.w500,
+                                fontSize: 13,
+                              ),
+                            ),
                           ),
-                        ),
-                      )
-                    : TextButton(
-                        onPressed: () => _showCreditTargetSheet(context),
-                        child: const Text(
-                          'Edit credits',
-                          style: TextStyle(
-                            color: AppTheme.onBackground2,
-                            fontWeight: FontWeight.w500,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ),
-              ) ??
-              const SizedBox.shrink(),
+                  ) ??
+                  const SizedBox.shrink();
+            }
+          ),
         ],
       ),
-      body: asyncState.when(
-        loading: () => const Center(
-          child: CircularProgressIndicator(color: AppTheme.onBackground2),
+      body: const SubjectsPageContent(),
+    );
+  }
+}
+
+class SubjectsPageContent extends ConsumerStatefulWidget {
+  const SubjectsPageContent({super.key});
+
+  @override
+  ConsumerState<SubjectsPageContent> createState() => _SubjectsPageContentState();
+}
+
+class _SubjectsPageContentState extends ConsumerState<SubjectsPageContent> {
+  bool _creditSheetShown = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final asyncState = ref.watch(subjectsProvider);
+
+    asyncState.whenData((s) {
+      if (!_creditSheetShown &&
+          s.creditTargetLoaded &&
+          s.creditTarget == null) {
+        _creditSheetShown = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _showCreditTargetSheet(context);
+        });
+      }
+    });
+
+    return asyncState.when(
+      loading: () => const Center(
+        child: CircularProgressIndicator(color: AppTheme.onBackground2),
+      ),
+      error: (e, _) => Center(
+        child: Text(
+          'Something went wrong.\n$e',
+          textAlign: TextAlign.center,
+          style: const TextStyle(color: AppTheme.onBackground2),
         ),
-        error: (e, _) => Center(
-          child: Text(
-            'Something went wrong.\n$e',
-            textAlign: TextAlign.center,
-            style: const TextStyle(color: AppTheme.onBackground2),
-          ),
-        ),
-        data: (s) => _SubjectsBody(
-          state: s,
-          onLongPress: (id) {
-            HapticFeedback.mediumImpact();
-            ref.read(subjectsProvider.notifier).enterEditMode();
-            ref.read(subjectsProvider.notifier).togglePendingDelete(id);
-          },
-          onTap: (id) =>
-              ref.read(subjectsProvider.notifier).togglePendingDelete(id),
-          onAdd: () => _showAddSheet(context),
-          onPickHandout: (userSubjectId) =>
-              _pickHandout(context, userSubjectId),
-          onUnstageHandout: (userSubjectId) =>
-              ref.read(subjectsProvider.notifier).unstageHandout(userSubjectId),
-          onSubmitStaged: () => _submitStaged(context),
-        ),
+      ),
+      data: (s) => SubjectsBody(
+        state: s,
+        onLongPress: (id) {
+          HapticFeedback.mediumImpact();
+          ref.read(subjectsProvider.notifier).enterEditMode();
+          ref.read(subjectsProvider.notifier).togglePendingDelete(id);
+        },
+        onTap: (id) =>
+            ref.read(subjectsProvider.notifier).togglePendingDelete(id),
+        onAdd: () => _showAddSheet(context),
+        onPickHandout: (userSubjectId) =>
+            _pickHandout(context, userSubjectId),
+        onUnstageHandout: (userSubjectId) =>
+            ref.read(subjectsProvider.notifier).unstageHandout(userSubjectId),
+        onSubmitStaged: () => _submitStaged(context),
       ),
     );
   }
@@ -197,7 +220,7 @@ class _SubjectsPageViewState extends ConsumerState<SubjectsPage> {
 
 // ── Body ──────────────────────────────────────────────────────────────────
 
-class _SubjectsBody extends StatelessWidget {
+class SubjectsBody extends StatelessWidget {
   final SubjectsPageState state;
   final void Function(String id) onLongPress;
   final void Function(String id) onTap;
@@ -206,7 +229,7 @@ class _SubjectsBody extends StatelessWidget {
   final void Function(String userSubjectId) onUnstageHandout;
   final VoidCallback onSubmitStaged;
 
-  const _SubjectsBody({
+  const SubjectsBody({
     required this.state,
     required this.onLongPress,
     required this.onTap,

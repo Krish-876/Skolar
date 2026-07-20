@@ -123,20 +123,29 @@ class SubjectRow extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(
-          horizontal: AppTheme.md,
-          vertical: 12,
+          horizontal: 20,
+          vertical: 20,
         ),
         decoration: BoxDecoration(
           color: marked
               ? AppTheme.wishlist.withValues(alpha: 0.12)
-              : AppTheme.surfaceGradBegin.withValues(alpha: 0.6),
-          borderRadius: BorderRadius.circular(AppTheme.radiusXxl),
+              : const Color(0xFF1C1C1E),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: marked
                 ? AppTheme.wishlist.withValues(alpha: 0.5)
-                : AppTheme.onBackground2.withValues(alpha: 0.1),
-            width: 1.0,
+                : Colors.white.withValues(alpha: 0.09),
+            width: marked ? 1.5 : 1.0,
           ),
+          boxShadow: marked
+              ? [
+                  BoxShadow(
+                    color: AppTheme.wishlist.withValues(alpha: 0.14),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : [],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -314,12 +323,12 @@ class HandoutChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
           color: hasHandout
-              ? AppTheme.primary.withValues(alpha: 0.15)
+              ? const Color(0xFFD4A5FF).withValues(alpha: 0.15)
               : Colors.white.withValues(alpha: 0.04),
           borderRadius: BorderRadius.circular(AppTheme.radiusXxl),
           border: Border.all(
             color: hasHandout
-                ? AppTheme.primary.withValues(alpha: 0.4)
+                ? const Color(0xFFD4A5FF).withValues(alpha: 0.4)
                 : AppTheme.onBackground2.withValues(alpha: 0.2),
             width: 1.0,
           ),
@@ -333,7 +342,7 @@ class HandoutChip extends StatelessWidget {
                   : Icons.upload_file_rounded,
               size: 13,
               color: hasHandout
-                  ? AppTheme.primary
+                  ? const Color(0xFFD4A5FF)
                   : AppTheme.onBackground2.withValues(alpha: 0.6),
             ),
             const SizedBox(width: 5),
@@ -345,7 +354,7 @@ class HandoutChip extends StatelessWidget {
                 fontSize: 11,
                 fontWeight: FontWeight.w500,
                 color: hasHandout
-                    ? AppTheme.primary
+                    ? const Color(0xFFD4A5FF)
                     : AppTheme.onBackground2.withValues(alpha: 0.6),
               ),
             ),

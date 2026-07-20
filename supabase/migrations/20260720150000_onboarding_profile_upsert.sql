@@ -1,19 +1,3 @@
--- Add onboarding fields to users table
-
--- 1. Relax academic_year check to allow up to 5 for dual degree students
-ALTER TABLE public.users DROP CONSTRAINT IF EXISTS users_academic_year_check;
-ALTER TABLE public.users ADD CONSTRAINT users_academic_year_check CHECK (((academic_year >= 1) AND (academic_year <= 5)));
-
--- 2. Add new columns
-ALTER TABLE public.users ADD COLUMN IF NOT EXISTS avatar_data text;
-ALTER TABLE public.users ADD COLUMN IF NOT EXISTS dual_branch text;
-ALTER TABLE public.users ADD COLUMN IF NOT EXISTS current_semester smallint;
-ALTER TABLE public.users ADD COLUMN IF NOT EXISTS study_capacity text;
-
-ALTER TABLE public.users DROP CONSTRAINT IF EXISTS current_semester_check;
-ALTER TABLE public.users ADD CONSTRAINT current_semester_check CHECK (((current_semester = 1) OR (current_semester = 2)));
-
--- 3. Update the RPC to accept all fields and update the user record
 CREATE OR REPLACE FUNCTION public.save_onboarding_seed_context(
   p_endgame text,
   p_derailer text,
@@ -32,29 +16,48 @@ CREATE OR REPLACE FUNCTION public.save_onboarding_seed_context(
   p_current_semester smallint DEFAULT NULL,
   p_study_capacity text DEFAULT NULL
 ) RETURNS void
-SECURITY INVOKER
+SECURITY DEFINER
+SET search_path = public, pg_temp
 AS $$
 DECLARE
   v_user_id uuid := auth.uid();
+  v_user_email text;
 BEGIN
   IF v_user_id IS NULL THEN
     RAISE EXCEPTION 'Not authenticated';
   END IF;
 
-  -- Update users table with profile / academic details
-  UPDATE public.users 
-  SET 
-    avatar_data = COALESCE(p_avatar_data, avatar_data),
-    full_name = COALESCE(p_full_name, full_name),
-    roll_number = COALESCE(p_roll_number, roll_number),
-    college = COALESCE(p_college, college),
-    branch = COALESCE(p_branch, branch),
-    dual_branch = COALESCE(p_dual_branch, dual_branch),
-    academic_year = COALESCE(p_academic_year, academic_year),
-    current_semester = COALESCE(p_current_semester, current_semester),
-    study_capacity = COALESCE(p_study_capacity, study_capacity),
-    updated_at = now()
-  WHERE id = v_user_id;
+  -- Fetch user email from auth.users (requires SECURITY DEFINER)
+  SELECT email INTO v_user_email FROM auth.users WHERE id = v_user_id;
+
+  -- Upsert users table with profile / academic details
+  INSERT INTO public.users (
+    id, email, avatar_data, full_name, roll_number, college, branch, dual_branch, academic_year, current_semester, study_capacity
+  )
+  VALUES (
+    v_user_id,
+    COALESCE(v_user_email, 'unknown@domain.com'),
+    p_avatar_data,
+    p_full_name,
+    p_roll_number,
+    p_college,
+    p_branch,
+    p_dual_branch,
+    p_academic_year,
+    p_current_semester,
+    p_study_capacity
+  )
+  ON CONFLICT (id) DO UPDATE SET 
+    avatar_data = COALESCE(EXCLUDED.avatar_data, public.users.avatar_data),
+    full_name = COALESCE(EXCLUDED.full_name, public.users.full_name),
+    roll_number = COALESCE(EXCLUDED.roll_number, public.users.roll_number),
+    college = COALESCE(EXCLUDED.college, public.users.college),
+    branch = COALESCE(EXCLUDED.branch, public.users.branch),
+    dual_branch = COALESCE(EXCLUDED.dual_branch, public.users.dual_branch),
+    academic_year = COALESCE(EXCLUDED.academic_year, public.users.academic_year),
+    current_semester = COALESCE(EXCLUDED.current_semester, public.users.current_semester),
+    study_capacity = COALESCE(EXCLUDED.study_capacity, public.users.study_capacity),
+    updated_at = now();
 
   -- Existing logic for questionnaire fields
   IF p_endgame IS NOT NULL THEN
