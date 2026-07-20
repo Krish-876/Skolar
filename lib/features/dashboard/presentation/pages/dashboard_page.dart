@@ -223,7 +223,7 @@ class DashboardPage extends ConsumerWidget {
                         ),
                         _DevButton(
                           'Onboarding',
-                          () => context.go(AppRoutes.onboarding),
+                          () => context.go(AppRoutes.onboardingProfile),
                         ),
                       ],
                     ),

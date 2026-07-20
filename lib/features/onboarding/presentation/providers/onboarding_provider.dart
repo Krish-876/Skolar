@@ -21,6 +21,19 @@ class OnboardingNotifier extends Notifier<OnboardingEntity> {
   @override
   OnboardingEntity build() => const OnboardingEntity();
 
+  void setAvatarData(String value) => state = state.copyWith(avatarData: value);
+  void setName(String value) => state = state.copyWith(name: value);
+  void setId(String value) => state = state.copyWith(id: value);
+  void setCampus(String value) => state = state.copyWith(campus: value);
+  void setBranch(String value) => state = state.copyWith(branch: value);
+  void setDualBranch(String? value) =>
+      state = state.copyWith(dualBranch: value);
+  void setCurrentYear(int value) => state = state.copyWith(currentYear: value);
+  void setCurrentSemester(int value) =>
+      state = state.copyWith(currentSemester: value);
+  void setStudyCapacity(String value) =>
+      state = state.copyWith(studyCapacity: value);
+
   void setEndgame(String value) => state = state.copyWith(endgame: value);
   void setPrepStyle(String value) => state = state.copyWith(prepStyle: value);
   void setDerailer(String value) => state = state.copyWith(derailer: value);

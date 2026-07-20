@@ -1,0 +1,119 @@
+
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8" />
+        <title>LottieFiles - free animation files built for Lottie</title>
+        <link
+          rel="alternate"
+          type="application/json+oembed"
+          href="https://embed.lottiefiles.com/oembed?url=https://lottie.host/embed/f35a38c5-c434-4dee-9979-6144e32d6446/ixzaLS3V22.lottie"
+        />
+
+        <link
+          rel="icon"
+          type="image/png"
+          sizes="192x192"
+          href="https://lottie.host/favicons/android-icon-192x192.png"
+        />
+        <link rel="icon" type="image/png" sizes="32x32" href="https://lottie.host/favicons/favicon-32x32.png" />
+        <link rel="icon" type="image/png" sizes="96x96" href="https://lottie.host/favicons/favicon-96x96.png" />
+        <link rel="icon" type="image/png" sizes="16x16" href="https://lottie.host/favicons/favicon-16x16.png" />
+
+        <meta property="og:image" content="https://lottie.host/https://lottie.host/og/default.png" />
+
+        <style>
+          html,
+          body {
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            background-color: transparent;
+            font-family: arial, sans-serif;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+          }
+
+          #container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            overflow: hidden;
+          }
+
+          #container:hover .attribution {
+            bottom: 20px;
+            opacity: 1;
+          }
+
+          .center {
+            width: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+          }
+
+          iframe {
+            border: 0;
+            overflow: hidden;
+            position: absolute;
+          }
+
+          .attribution {
+            display: block;
+            transition: all 0.8s ease 0s;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            padding: 7px 9px;
+            position: absolute;
+            bottom: -30px;
+            left: 10px;
+            text-decoration: none;
+            z-index: 10;
+            background: rgba(34, 41, 47, 0.04);
+            opacity: 0.4;
+          }
+
+          span {
+            display: inline-block;
+            margin-left: 5px;
+            font-size: 8pt;
+            color: rgba(43, 52, 59, 0.8);
+          }
+
+          .attribution.dark {
+            background: rgba(255, 255, 255, 0.04);
+            opacity: 0.8;
+          }
+
+          .attribution.dark span {
+            color: #ffffff;
+            opacity: 0.8;
+          }
+
+          #dotLottie-canvas {
+            width: 100%;
+            height: 100%;
+          }
+        </style>
+      </head>
+      <body>
+        <div id="container">
+  <script src="https://cdn.jsdelivr.net/npm/@dotlottie/player-component@v1.3.0/dist/dotlottie-player.js"></script>
+  <dotlottie-player
+    src="https://lottie.host/f35a38c5-c434-4dee-9979-6144e32d6446/ixzaLS3V22.lottie"
+    background="transparent"
+    speed="1"
+    loop
+    autoplay
+  ></dotlottie-player>
+</div>
+      </body>
+    </html>
+  
