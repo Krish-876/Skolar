@@ -12,14 +12,14 @@ class SubjectsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.background,
+      backgroundColor: const Color(0xFF16161A), // Onboarding bg color
       appBar: AppBar(
-        backgroundColor: AppTheme.background,
+        backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(
             Icons.arrow_back_ios_new_rounded,
-            color: AppTheme.onBackground,
+            color: Colors.white,
             size: 20,
           ),
           onPressed: () => Navigator.of(context).maybePop(),
@@ -29,7 +29,7 @@ class SubjectsPage extends StatelessWidget {
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w700,
-            color: AppTheme.onBackground,
+            color: Colors.white,
             letterSpacing: 0.3,
           ),
         ),
@@ -46,7 +46,7 @@ class SubjectsPage extends StatelessWidget {
                             child: const Text(
                               'Done',
                               style: TextStyle(
-                                color: AppTheme.wishlist,
+                                color: Color(0xFF8C38E5), // Onboarding primary
                                 fontWeight: FontWeight.w600,
                                 fontSize: 15,
                               ),
@@ -68,7 +68,7 @@ class SubjectsPage extends StatelessWidget {
                             child: const Text(
                               'Edit credits',
                               style: TextStyle(
-                                color: AppTheme.onBackground2,
+                                color: Colors.white70,
                                 fontWeight: FontWeight.w500,
                                 fontSize: 13,
                               ),
@@ -80,7 +80,20 @@ class SubjectsPage extends StatelessWidget {
           ),
         ],
       ),
-      body: const SubjectsPageContent(),
+      extendBodyBehindAppBar: true,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Onboarding background image
+          Image.asset(
+            'assets/images/background.png',
+            fit: BoxFit.cover,
+          ),
+          const SafeArea(
+            child: SubjectsPageContent(),
+          ),
+        ],
+      ),
     );
   }
 }

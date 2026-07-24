@@ -27,7 +27,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 // Constants
 // ─────────────────────────────────────────────────────────────────────────────
 
-const _kTotalSteps = 8;
+const _kTotalSteps = 7;
 
 const _kPrimary = Color(0xFF8C38E5);
 const _kSurface = Color(0xFF1C1C1E);
@@ -214,19 +214,13 @@ class _OnboardingProfilePageState extends ConsumerState<OnboardingProfilePage>
     _persistCurrentStep();
 
     if (_step < _kTotalSteps - 1) {
-      if (_step == 6) {
-        await ref.read(onboardingProvider.notifier).complete();
-      }
       setState(() => _step++);
       _playStepEntrance();
     } else {
-      if (_step == 6) {
-        // Fallback in case kTotalSteps changes, shouldn't hit here.
-        await ref.read(onboardingProvider.notifier).complete();
-      }
+      await ref.read(onboardingProvider.notifier).complete();
       setState(() => _showSuccess = true);
       Future.delayed(const Duration(milliseconds: 3200), () {
-        if (mounted) context.go(AppRoutes.dashboard);
+        if (mounted) context.go(AppRoutes.subjects);
       });
     }
   }
@@ -291,8 +285,6 @@ class _OnboardingProfilePageState extends ConsumerState<OnboardingProfilePage>
         return s.careerInterests.isNotEmpty;
       case 6:
         return s.prepStyle != null;
-      case 7:
-        return true;
       default:
         return false;
     }
@@ -323,8 +315,6 @@ class _OnboardingProfilePageState extends ConsumerState<OnboardingProfilePage>
         return "Select all the areas that interest you — I'll weight resources accordingly.";
       case 6:
         return "How do you usually prep for exams? This helps Nova understand your study patterns.";
-      case 7:
-        return "Lastly, let's set up your subjects and handouts so Nova can generate your study plans!";
       default:
         return '';
     }
@@ -490,8 +480,6 @@ class _OnboardingProfilePageState extends ConsumerState<OnboardingProfilePage>
             Future.delayed(const Duration(milliseconds: 280), _advance);
           },
         );
-      case 7:
-        return _SubjectsStep(mascotMessage: _mascotMessage());
       default:
         return const SizedBox.shrink();
     }
