@@ -122,10 +122,7 @@ class SubjectRow extends StatelessWidget {
       onLongPress: onLongPress,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(
-          horizontal: 20,
-          vertical: 20,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
         decoration: BoxDecoration(
           color: marked
               ? AppTheme.wishlist.withValues(alpha: 0.12)
@@ -646,6 +643,7 @@ class _AddSubjectSheetState extends State<AddSubjectSheet> {
               label: 'Subject Name',
               hint: 'e.g. Artificial Intelligence',
               onChanged: (_) => setState(() {}),
+              textCapitalization: TextCapitalization.words,
             ),
             const SizedBox(height: AppTheme.md),
             SheetField(
@@ -653,6 +651,7 @@ class _AddSubjectSheetState extends State<AddSubjectSheet> {
               label: 'Course Code',
               hint: 'e.g. CS F441',
               onChanged: (_) => setState(() {}),
+              textCapitalization: TextCapitalization.characters,
             ),
             const SizedBox(height: AppTheme.md),
             SheetField(
@@ -662,6 +661,7 @@ class _AddSubjectSheetState extends State<AddSubjectSheet> {
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               onChanged: (_) => setState(() {}),
+              textCapitalization: TextCapitalization.none,
             ),
             if (_error != null) ...[
               const SizedBox(height: AppTheme.sm),
@@ -732,6 +732,7 @@ class SheetField extends StatelessWidget {
   final TextInputType keyboardType;
   final List<TextInputFormatter> inputFormatters;
   final ValueChanged<String> onChanged;
+  final TextCapitalization textCapitalization;
 
   const SheetField({
     super.key,
@@ -741,6 +742,7 @@ class SheetField extends StatelessWidget {
     required this.onChanged,
     this.keyboardType = TextInputType.text,
     this.inputFormatters = const [],
+    required this.textCapitalization,
   });
 
   @override

@@ -121,7 +121,6 @@ class _OnboardingProfilePageState extends ConsumerState<OnboardingProfilePage>
     with TickerProviderStateMixin {
   // ── Step management ────────────────────────────────────────────────────────
   int _step = 0;
-  bool _showSuccess = false;
 
   // ── Progress bar fill animation ───────────────────────────────────────────
   late AnimationController _progressCtrl;
@@ -218,10 +217,7 @@ class _OnboardingProfilePageState extends ConsumerState<OnboardingProfilePage>
       _playStepEntrance();
     } else {
       await ref.read(onboardingProvider.notifier).complete();
-      setState(() => _showSuccess = true);
-      Future.delayed(const Duration(milliseconds: 3200), () {
-        if (mounted) context.go(AppRoutes.subjects);
-      });
+      if (mounted) context.go(AppRoutes.subjects);
     }
   }
 
@@ -326,43 +322,6 @@ class _OnboardingProfilePageState extends ConsumerState<OnboardingProfilePage>
 
   @override
   Widget build(BuildContext context) {
-    if (_showSuccess) {
-      return Scaffold(
-        backgroundColor: _kBg,
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Lottie.network(
-                'https://lottie.host/f35a38c5-c434-4dee-9979-6144e32d6446/ixzaLS3V22.json',
-                width: 300,
-                height: 300,
-                repeat: false,
-                fit: BoxFit.contain,
-              ),
-              const SizedBox(height: 24),
-              Text(
-                "You're all set!",
-                style: GoogleFonts.googleSans(
-                  color: Colors.white,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                "Taking you to your dashboard...",
-                style: GoogleFonts.googleSans(
-                  color: Colors.white54,
-                  fontSize: 14,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
     final canAdvance = _canAdvance();
     return Scaffold(
       backgroundColor: _kBg,
@@ -962,6 +921,7 @@ class _ProfileStep extends StatelessWidget {
                               label: 'Full Name',
                               hint: 'e.g. Arjun Sharma',
                               onChanged: (_) => onTextChanged(),
+                              textCapitalization: TextCapitalization.words,
                             ),
                             const SizedBox(height: 16),
                             _OnboardingTextField(
@@ -969,6 +929,7 @@ class _ProfileStep extends StatelessWidget {
                               label: 'BITS ID',
                               hint: 'e.g. 2023A7PSXXXXH',
                               onChanged: (_) => onTextChanged(),
+                              textCapitalization: TextCapitalization.none,
                             ),
                           ],
                         ),
@@ -1766,27 +1727,7 @@ class _QuestionCard extends StatelessWidget {
   }
 }
 
-// ── Step 7: Subjects ──────────────────────────────────────────────────────────
 
-class _SubjectsStep extends StatelessWidget {
-  final String mascotMessage;
-
-  const _SubjectsStep({required this.mascotMessage});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _MascotHeader(message: mascotMessage),
-        const SizedBox(height: 16),
-        const Expanded(
-          child: SubjectsPageContent(),
-        ),
-      ],
-    );
-  }
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared Form Widgets
@@ -1797,12 +1738,14 @@ class _OnboardingTextField extends StatelessWidget {
   final String label;
   final String hint;
   final ValueChanged<String>? onChanged;
+  final TextCapitalization textCapitalization;
 
   const _OnboardingTextField({
     required this.controller,
     required this.label,
     required this.hint,
     this.onChanged,
+    required this.textCapitalization,
   });
 
   @override
@@ -1817,6 +1760,7 @@ class _OnboardingTextField extends StatelessWidget {
         const SizedBox(height: 8),
         TextField(
           controller: controller,
+          textCapitalization: textCapitalization,
           onChanged: onChanged,
           style: GoogleFonts.googleSans(color: Colors.white),
           decoration: InputDecoration(

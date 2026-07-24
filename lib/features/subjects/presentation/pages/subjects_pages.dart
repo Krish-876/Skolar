@@ -2,28 +2,76 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:lottie/lottie.dart';
+import 'package:Skolar/core/routing/app_routes.dart';
 import 'package:Skolar/core/theme/app_theme.dart';
 import 'package:Skolar/features/subjects/presentation/providers/subjects_provider.dart';
 import 'package:Skolar/features/subjects/presentation/widgets/subjects_widgets.dart';
 
-class SubjectsPage extends StatelessWidget {
+class SubjectsPage extends StatefulWidget {
   const SubjectsPage({super.key});
 
   @override
+  State<SubjectsPage> createState() => _SubjectsPageState();
+}
+
+class _SubjectsPageState extends State<SubjectsPage> {
+  bool _showSuccess = false;
+
+  void _onNext() {
+    setState(() => _showSuccess = true);
+    Future.delayed(const Duration(milliseconds: 3200), () {
+      if (mounted) context.go(AppRoutes.dashboard);
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_showSuccess) {
+      return Scaffold(
+        backgroundColor: const Color(0xFF16161A),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Lottie.network(
+                'https://lottie.host/f35a38c5-c434-4dee-9979-6144e32d6446/ixzaLS3V22.json',
+                width: 300,
+                height: 300,
+                repeat: false,
+                fit: BoxFit.contain,
+              ),
+              const SizedBox(height: 24),
+              Text(
+                "You're all set!",
+                style: GoogleFonts.googleSans(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                "Taking you to your dashboard...",
+                style: GoogleFonts.googleSans(
+                  color: Colors.white54,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFF16161A), // Onboarding bg color
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: Colors.white,
-            size: 20,
-          ),
-          onPressed: () => Navigator.of(context).maybePop(),
-        ),
+        automaticallyImplyLeading: false,
         title: const Text(
           'My Subjects',
           style: TextStyle(
@@ -60,7 +108,9 @@ class SubjectsPage extends StatelessWidget {
                                 backgroundColor: Colors.transparent,
                                 builder: (_) => CreditTargetSheet(
                                   onConfirm: (value) {
-                                    ref.read(subjectsProvider.notifier).setCreditTarget(value);
+                                    ref
+                                        .read(subjectsProvider.notifier)
+                                        .setCreditTarget(value);
                                   },
                                 ),
                               );
@@ -76,23 +126,55 @@ class SubjectsPage extends StatelessWidget {
                           ),
                   ) ??
                   const SizedBox.shrink();
-            }
+            },
           ),
         ],
       ),
       extendBodyBehindAppBar: true,
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          // Onboarding background image
-          Image.asset(
-            'assets/images/background.png',
-            fit: BoxFit.cover,
+      body: const SafeArea(child: SubjectsPageContent()),
+      bottomNavigationBar: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        decoration: BoxDecoration(
+          color: const Color(0xFF16161A),
+          border: Border(
+            top: BorderSide(
+              color: Colors.white.withValues(alpha: 0.08),
+              width: 1,
+            ),
           ),
-          const SafeArea(
-            child: SubjectsPageContent(),
+        ),
+        child: SafeArea(
+          child: SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: ElevatedButton(
+              onPressed: _onNext,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF8C38E5),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                elevation: 0,
+              ),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'Next',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  SizedBox(width: 8),
+                  Icon(Icons.arrow_forward_rounded, size: 20),
+                ],
+              ),
+            ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -102,7 +184,8 @@ class SubjectsPageContent extends ConsumerStatefulWidget {
   const SubjectsPageContent({super.key});
 
   @override
-  ConsumerState<SubjectsPageContent> createState() => _SubjectsPageContentState();
+  ConsumerState<SubjectsPageContent> createState() =>
+      _SubjectsPageContentState();
 }
 
 class _SubjectsPageContentState extends ConsumerState<SubjectsPageContent> {
@@ -144,8 +227,7 @@ class _SubjectsPageContentState extends ConsumerState<SubjectsPageContent> {
         onTap: (id) =>
             ref.read(subjectsProvider.notifier).togglePendingDelete(id),
         onAdd: () => _showAddSheet(context),
-        onPickHandout: (userSubjectId) =>
-            _pickHandout(context, userSubjectId),
+        onPickHandout: (userSubjectId) => _pickHandout(context, userSubjectId),
         onUnstageHandout: (userSubjectId) =>
             ref.read(subjectsProvider.notifier).unstageHandout(userSubjectId),
         onSubmitStaged: () => _submitStaged(context),
@@ -243,6 +325,7 @@ class SubjectsBody extends StatelessWidget {
   final VoidCallback onSubmitStaged;
 
   const SubjectsBody({
+    super.key,
     required this.state,
     required this.onLongPress,
     required this.onTap,
