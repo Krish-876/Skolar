@@ -85,7 +85,7 @@ jobs:
             exit 1
           fi
 
-          PATTERN='^(feat|fix|schema|refactor|test|docs|style|chore|perf|ci): .+$'
+          PATTERN='^(feat|fix|schema|refactor|test|docs|style|chore|perf|ci)(\([a-z0-9_-]+\))?: .+$'
           if ! [[ "$TITLE" =~ $PATTERN ]]; then
             echo "PR title must match: <type>: <summary>"
             echo "Valid types: feat, fix, schema, refactor, test, docs, style, chore, perf, ci"
