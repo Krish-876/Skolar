@@ -61,7 +61,7 @@ def print_result(label: str, passed: bool, detail: str = ""):
 
 def test_health():
     print_section("HEALTH CHECK")
-    r = requests.get(f"{BASE_URL}/health")
+    r = requests.get(f"{BASE_URL}/health", timeout=10)
     ok = r.status_code == 200 and r.json().get("status") == "ok"
     print_result("Server is up", ok, r.json().get("status", "failed"))
     return ok
@@ -70,7 +70,7 @@ def test_health():
 
 def test_stats():
     print_section("QUESTION BANK STATS")
-    r = requests.get(f"{BASE_URL}/stats", params={"college": COLLEGE})
+    r = requests.get(f"{BASE_URL}/stats", params={"college": COLLEGE}, timeout=10)
     data = r.json()
     total = data.get("total_questions", 0)
     print_result("Bank has questions", total > 0, f"{total} questions")
@@ -90,7 +90,7 @@ def test_mcq_accuracy():
         "count":   MCQ_COUNT,
         "exam_type": "midsem",
         "k": 5,
-    })
+    }, timeout=60)
 
     if r.status_code != 200:
         print(f"  ❌  Request failed: {r.status_code} {r.text}")
@@ -144,7 +144,7 @@ def test_mcq_diversity():
         "count":   MCQ_COUNT,
         "exam_type": "midsem",
         "k": 5,
-    })
+    }, timeout=60)
 
     if r.status_code != 200:
         print("  ❌  Request failed")
