@@ -35,6 +35,19 @@ jobs:
               - 'lib/core/ai/rag_llms/**'
               - 'lib/core/ai/nova/**'
 
+  # NEW: runs on every push/PR regardless of what changed — cheap, and a
+  # leaked key doesn't care whether it's Dart or Python that leaked it.
+  gitleaks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # gitleaks needs full history, not just the diff
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   format:
     needs: changes
     if: needs.changes.outputs.flutter == 'true'
@@ -158,6 +171,12 @@ jobs:
           pip install -r lib/core/ai/rag_llms/requirements-dev.txt
       - name: Lint
         run: ruff check lib/core/ai/
+      - name: Security lint
+        # Bandit-derived rules ported into ruff: hardcoded secrets, unsafe
+        # eval/exec, weak crypto, SQL string concatenation, etc.
+        # Kept as a separate step (not merged into --select above) so a new
+        # security finding fails with an unambiguous step name in the UI.
+        run: ruff check --select S lib/core/ai/
       - name: Type check
         run: |
           if [ -d "lib/core/ai/nova" ]; then

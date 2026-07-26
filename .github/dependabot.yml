@@ -1,0 +1,31 @@
+version: 2
+updates:
+  # --- Python (RAG/LLM pipeline + Nova), lives inside the Flutter repo ---
+  - package-ecosystem: "pip"
+    directory: "/lib/core/ai/rag_llms"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      python-patch-minor:
+        update-types:
+          - "minor"
+          - "patch"
+
+  # --- Flutter/Dart (pubspec.yaml lives at repo root) ---
+  - package-ecosystem: "pub"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      dart-patch-minor:
+        update-types:
+          - "minor"
+          - "patch"
+
+  # --- Your own GitHub Actions workflow files ---
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"

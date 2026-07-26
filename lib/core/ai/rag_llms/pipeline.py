@@ -429,7 +429,7 @@ def mmr(
     alpha: float = 0.7,
     seed: int | None = None,
 ) -> list[dict]:
-    rng = random.Random(seed)
+    rng = random.Random(seed)  # noqa: S311 -- not used for cryptographic purposes
     indices = list(range(len(candidate_questions)))
     if seed is not None:
         rng.shuffle(indices)
