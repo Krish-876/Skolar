@@ -1,4 +1,5 @@
 import os
+import logging
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from supabase import create_client, Client
@@ -17,14 +18,14 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 # HTTPBearer extracts the Authorization header automatically
 security = HTTPBearer()
 
-async def get_current_user_id(credentials: HTTPAuthorizationCredentials = Depends(security)) -> str:
+def get_current_user_id(credentials: HTTPAuthorizationCredentials = Depends(security)) -> str:
     """
-    Reads the Authorization header, verifies it with Supabase,
+    Reads the Authorization header, verifies it synchronously with Supabase,
     and returns the authenticated user's ID.
     """
     token = credentials.credentials
     try:
-        # Verify token with Supabase Auth
+        # Synchronous token verification with Supabase Auth
         response = supabase.auth.get_user(token)
         user = response.user
         
@@ -34,8 +35,12 @@ async def get_current_user_id(credentials: HTTPAuthorizationCredentials = Depend
                 detail="Invalid or expired authentication token."
             )
         return user.id
+    except HTTPException:
+        raise
     except Exception as e:
+        # Log internal error on server side without exposing error details to client
+        logging.error(f"Authentication failed: {e}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Authentication failed: {str(e)}"
+            detail="Invalid or expired authentication token."
         )

@@ -1,3 +1,4 @@
+import logging
 from fastapi import FastAPI, Depends, HTTPException, status
 from pydantic import BaseModel
 from typing import List, Dict, Any
@@ -34,8 +35,12 @@ def check_nova_trigger(user_id: str = Depends(get_current_user_id)):
                 triggers=[]
             )
 
+    except HTTPException:
+        raise
     except Exception as e:
+        # Log internal error details on server side without exposing them to client
+        logging.error(f"Failed to check Nova triggers: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Database execution failed: {str(e)}"
+            detail="Failed to check Nova triggers."
         )
