@@ -2,18 +2,193 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:lottie/lottie.dart';
+import 'package:Skolar/core/routing/app_routes.dart';
 import 'package:Skolar/core/theme/app_theme.dart';
 import 'package:Skolar/features/subjects/presentation/providers/subjects_provider.dart';
 import 'package:Skolar/features/subjects/presentation/widgets/subjects_widgets.dart';
 
-class SubjectsPage extends ConsumerStatefulWidget {
+class SubjectsPage extends StatefulWidget {
   const SubjectsPage({super.key});
 
   @override
-  ConsumerState<SubjectsPage> createState() => _SubjectsPageViewState();
+  State<SubjectsPage> createState() => _SubjectsPageState();
 }
 
-class _SubjectsPageViewState extends ConsumerState<SubjectsPage> {
+class _SubjectsPageState extends State<SubjectsPage> {
+  bool _showSuccess = false;
+
+  void _onNext() {
+    setState(() => _showSuccess = true);
+    Future.delayed(const Duration(milliseconds: 3200), () {
+      if (mounted) context.go(AppRoutes.dashboard);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_showSuccess) {
+      return Scaffold(
+        backgroundColor: const Color(0xFF16161A),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Lottie.network(
+                'https://lottie.host/f35a38c5-c434-4dee-9979-6144e32d6446/ixzaLS3V22.json',
+                width: 300,
+                height: 300,
+                repeat: false,
+                fit: BoxFit.contain,
+              ),
+              const SizedBox(height: 24),
+              Text(
+                "You're all set!",
+                style: GoogleFonts.googleSans(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                "Taking you to your dashboard...",
+                style: GoogleFonts.googleSans(
+                  color: Colors.white54,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Scaffold(
+      backgroundColor: const Color(0xFF16161A), // Onboarding bg color
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        automaticallyImplyLeading: false,
+        title: const Text(
+          'My Subjects',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
+            letterSpacing: 0.3,
+          ),
+        ),
+        actions: [
+          Consumer(
+            builder: (context, ref, _) {
+              final asyncState = ref.watch(subjectsProvider);
+              return asyncState.whenOrNull(
+                    data: (s) => s.editMode
+                        ? TextButton(
+                            onPressed: () => ref
+                                .read(subjectsProvider.notifier)
+                                .commitDeletions(),
+                            child: const Text(
+                              'Done',
+                              style: TextStyle(
+                                color: Color(0xFF8C38E5), // Onboarding primary
+                                fontWeight: FontWeight.w600,
+                                fontSize: 15,
+                              ),
+                            ),
+                          )
+                        : TextButton(
+                            onPressed: () {
+                              showModalBottomSheet(
+                                context: context,
+                                isScrollControlled: true,
+                                backgroundColor: Colors.transparent,
+                                builder: (_) => CreditTargetSheet(
+                                  onConfirm: (value) {
+                                    ref
+                                        .read(subjectsProvider.notifier)
+                                        .setCreditTarget(value);
+                                  },
+                                ),
+                              );
+                            },
+                            child: const Text(
+                              'Edit credits',
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontWeight: FontWeight.w500,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                  ) ??
+                  const SizedBox.shrink();
+            },
+          ),
+        ],
+      ),
+      extendBodyBehindAppBar: true,
+      body: const SafeArea(child: SubjectsPageContent()),
+      bottomNavigationBar: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        decoration: BoxDecoration(
+          color: const Color(0xFF16161A),
+          border: Border(
+            top: BorderSide(
+              color: Colors.white.withValues(alpha: 0.08),
+              width: 1,
+            ),
+          ),
+        ),
+        child: SafeArea(
+          child: SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: ElevatedButton(
+              onPressed: _onNext,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF8C38E5),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                elevation: 0,
+              ),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'Next',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  SizedBox(width: 8),
+                  Icon(Icons.arrow_forward_rounded, size: 20),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class SubjectsPageContent extends ConsumerStatefulWidget {
+  const SubjectsPageContent({super.key});
+
+  @override
+  ConsumerState<SubjectsPageContent> createState() =>
+      _SubjectsPageContentState();
+}
+
+class _SubjectsPageContentState extends ConsumerState<SubjectsPageContent> {
   bool _creditSheetShown = false;
 
   @override
@@ -21,8 +196,6 @@ class _SubjectsPageViewState extends ConsumerState<SubjectsPage> {
     final asyncState = ref.watch(subjectsProvider);
 
     asyncState.whenData((s) {
-      // Only show the sheet when we have a confirmed successful fetch
-      // that returned null — not when the fetch itself failed.
       if (!_creditSheetShown &&
           s.creditTargetLoaded &&
           s.creditTarget == null) {
@@ -33,86 +206,31 @@ class _SubjectsPageViewState extends ConsumerState<SubjectsPage> {
       }
     });
 
-    return Scaffold(
-      backgroundColor: AppTheme.background,
-      appBar: AppBar(
-        backgroundColor: AppTheme.background,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: AppTheme.onBackground,
-            size: 20,
-          ),
-          onPressed: () => Navigator.of(context).maybePop(),
-        ),
-        title: const Text(
-          'My Subjects',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: AppTheme.onBackground,
-            letterSpacing: 0.3,
-          ),
-        ),
-        actions: [
-          asyncState.whenOrNull(
-                data: (s) => s.editMode
-                    ? TextButton(
-                        onPressed: () => ref
-                            .read(subjectsProvider.notifier)
-                            .commitDeletions(),
-                        child: const Text(
-                          'Done',
-                          style: TextStyle(
-                            color: AppTheme.wishlist,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 15,
-                          ),
-                        ),
-                      )
-                    : TextButton(
-                        onPressed: () => _showCreditTargetSheet(context),
-                        child: const Text(
-                          'Edit credits',
-                          style: TextStyle(
-                            color: AppTheme.onBackground2,
-                            fontWeight: FontWeight.w500,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ),
-              ) ??
-              const SizedBox.shrink(),
-        ],
+    return asyncState.when(
+      loading: () => const Center(
+        child: CircularProgressIndicator(color: AppTheme.onBackground2),
       ),
-      body: asyncState.when(
-        loading: () => const Center(
-          child: CircularProgressIndicator(color: AppTheme.onBackground2),
+      error: (e, _) => Center(
+        child: Text(
+          'Something went wrong.\n$e',
+          textAlign: TextAlign.center,
+          style: const TextStyle(color: AppTheme.onBackground2),
         ),
-        error: (e, _) => Center(
-          child: Text(
-            'Something went wrong.\n$e',
-            textAlign: TextAlign.center,
-            style: const TextStyle(color: AppTheme.onBackground2),
-          ),
-        ),
-        data: (s) => _SubjectsBody(
-          state: s,
-          onLongPress: (id) {
-            HapticFeedback.mediumImpact();
-            ref.read(subjectsProvider.notifier).enterEditMode();
-            ref.read(subjectsProvider.notifier).togglePendingDelete(id);
-          },
-          onTap: (id) =>
-              ref.read(subjectsProvider.notifier).togglePendingDelete(id),
-          onAdd: () => _showAddSheet(context),
-          onPickHandout: (userSubjectId) =>
-              _pickHandout(context, userSubjectId),
-          onUnstageHandout: (userSubjectId) =>
-              ref.read(subjectsProvider.notifier).unstageHandout(userSubjectId),
-          onSubmitStaged: () => _submitStaged(context),
-        ),
+      ),
+      data: (s) => SubjectsBody(
+        state: s,
+        onLongPress: (id) {
+          HapticFeedback.mediumImpact();
+          ref.read(subjectsProvider.notifier).enterEditMode();
+          ref.read(subjectsProvider.notifier).togglePendingDelete(id);
+        },
+        onTap: (id) =>
+            ref.read(subjectsProvider.notifier).togglePendingDelete(id),
+        onAdd: () => _showAddSheet(context),
+        onPickHandout: (userSubjectId) => _pickHandout(context, userSubjectId),
+        onUnstageHandout: (userSubjectId) =>
+            ref.read(subjectsProvider.notifier).unstageHandout(userSubjectId),
+        onSubmitStaged: () => _submitStaged(context),
       ),
     );
   }
@@ -197,7 +315,7 @@ class _SubjectsPageViewState extends ConsumerState<SubjectsPage> {
 
 // ── Body ──────────────────────────────────────────────────────────────────
 
-class _SubjectsBody extends StatelessWidget {
+class SubjectsBody extends StatelessWidget {
   final SubjectsPageState state;
   final void Function(String id) onLongPress;
   final void Function(String id) onTap;
@@ -206,7 +324,8 @@ class _SubjectsBody extends StatelessWidget {
   final void Function(String userSubjectId) onUnstageHandout;
   final VoidCallback onSubmitStaged;
 
-  const _SubjectsBody({
+  const SubjectsBody({
+    super.key,
     required this.state,
     required this.onLongPress,
     required this.onTap,

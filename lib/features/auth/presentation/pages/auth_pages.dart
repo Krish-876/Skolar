@@ -61,7 +61,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
         final isNew = await _isNewUser(session.user.id);
         if (!mounted) return;
         if (isNew) {
-          router.go(AppRoutes.onboarding);
+          router.go(AppRoutes.onboardingProfile);
         } else {
           router.go('/');
         }
@@ -93,7 +93,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: AppTheme.accentPurple.withOpacity(0.3),
+                              color: AppTheme.accentPurple.withValues(
+                                alpha: 0.3,
+                              ),
                               blurRadius: 40,
                               spreadRadius: 10,
                             ),
@@ -164,10 +166,10 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                       style: const TextStyle(color: Colors.white),
                       decoration: InputDecoration(
                         filled: true,
-                        fillColor: AppTheme.surfaceLight.withOpacity(0.5),
+                        fillColor: AppTheme.surfaceLight.withValues(alpha: 0.5),
                         hintText: 'name@campusname.bits-pilani.ac.in',
                         hintStyle: TextStyle(
-                          color: AppTheme.onBackground2.withOpacity(0.5),
+                          color: AppTheme.onBackground2.withValues(alpha: 0.5),
                         ),
                         prefixIcon: const Icon(
                           Icons.mail_outline,
@@ -246,7 +248,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                     children: [
                       Expanded(
                         child: Divider(
-                          color: AppTheme.onBackground2.withOpacity(0.2),
+                          color: AppTheme.onBackground2.withValues(alpha: 0.2),
                           thickness: 1,
                         ),
                       ),
@@ -255,7 +257,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                         child: Text(
                           'OR CONTINUE WITH',
                           style: TextStyle(
-                            color: AppTheme.onBackground2.withOpacity(0.5),
+                            color: AppTheme.onBackground2.withValues(
+                              alpha: 0.5,
+                            ),
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                             letterSpacing: 1.2,
@@ -264,7 +268,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                       ),
                       Expanded(
                         child: Divider(
-                          color: AppTheme.onBackground2.withOpacity(0.2),
+                          color: AppTheme.onBackground2.withValues(alpha: 0.2),
                           thickness: 1,
                         ),
                       ),
@@ -281,7 +285,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                       },
                       style: OutlinedButton.styleFrom(
                         side: BorderSide(
-                          color: AppTheme.onBackground2.withOpacity(0.2),
+                          color: AppTheme.onBackground2.withValues(alpha: 0.2),
                         ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),

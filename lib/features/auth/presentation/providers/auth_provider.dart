@@ -75,7 +75,7 @@ class AuthNotifier extends Notifier<AuthState> {
     } catch (e) {
       state = state.copyWith(
         status: AuthStatus.error,
-        errorMessage: 'Something went wrong. Please try again.',
+        errorMessage: 'Something went wrong. Please try again. ${e.toString()}',
       );
     }
   }

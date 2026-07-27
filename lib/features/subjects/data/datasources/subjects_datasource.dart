@@ -131,11 +131,59 @@ class SubjectsRemoteDataSource implements SubjectsDataSource {
     required String courseCode,
     int? credits,
   }) async {
+    String resolvedInstitutionId = institutionId.trim();
+
+    if (resolvedInstitutionId.isEmpty) {
+      final userRow = await _client
+          .from('users')
+          .select('institution_id')
+          .eq('id', userId)
+          .maybeSingle();
+
+      if (userRow != null && userRow['institution_id'] != null) {
+        resolvedInstitutionId = userRow['institution_id'] as String;
+      }
+    }
+
+    if (resolvedInstitutionId.isEmpty) {
+      final subjectRow = await _client
+          .from('subjects')
+          .select('institution_id')
+          .not('institution_id', 'is', null)
+          .limit(1)
+          .maybeSingle();
+
+      if (subjectRow != null && subjectRow['institution_id'] != null) {
+        resolvedInstitutionId = subjectRow['institution_id'] as String;
+      }
+    }
+
+    if (resolvedInstitutionId.isEmpty) {
+      final instRow = await _client
+          .from('institutions')
+          .select('id')
+          .limit(1)
+          .maybeSingle();
+
+      if (instRow != null && instRow['id'] != null) {
+        resolvedInstitutionId = instRow['id'] as String;
+      }
+    }
+
+    if (institutionId.isEmpty && resolvedInstitutionId.isNotEmpty) {
+      _client
+          .from('users')
+          .update({'institution_id': resolvedInstitutionId})
+          .eq('id', userId)
+          .then((_) {})
+          .catchError((_) {});
+    }
+
     final catalogRow = await _client
         .from('custom_subjects')
         .upsert(
           {
-            'institution_id': institutionId,
+            'institution_id': resolvedInstitutionId,
             'course_code': courseCode,
             'name': name,
             'credits': credits,
