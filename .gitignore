@@ -60,3 +60,7 @@ question_bank.jsons
 
 # Supabase CLI
 supabase/.temp/
+
+# Environment variables
+.env
+*.env
