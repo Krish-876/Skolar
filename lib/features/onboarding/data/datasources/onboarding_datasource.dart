@@ -12,7 +12,6 @@ class OnboardingRemoteDataSource implements OnboardingDataSource {
   Future<void> save(OnboardingDto dto) async {
     final authUser = _client.auth.currentUser;
     if (authUser == null) throw Exception('No authenticated user');
-
     await _client.rpc(
       'save_onboarding_seed_context',
       params: {
@@ -22,6 +21,15 @@ class OnboardingRemoteDataSource implements OnboardingDataSource {
         'p_prep_style': dto.prepStyle,
         'p_career_interests': dto.careerInterests,
         'p_daily_capacity': {'hours': dto.dailyCapacity},
+        'p_avatar_data': dto.avatarData,
+        'p_full_name': dto.name,
+        'p_roll_number': dto.id,
+        'p_college': dto.campus,
+        'p_branch': dto.branch,
+        'p_dual_branch': dto.dualBranch,
+        'p_academic_year': dto.currentYear,
+        'p_current_semester': dto.currentSemester,
+        'p_study_capacity': dto.studyCapacity,
       },
     );
   }
