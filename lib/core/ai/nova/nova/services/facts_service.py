@@ -13,6 +13,24 @@ from supabase import Client
 from nova.schemas.facts_snapshot import FactsSnapshot
 
 
+def _fetch_own_profile(supabase: Client, user_id: str) -> dict:
+    """Manually scoped to a single row: id == user_id. We're on an admin key
+    here (bypasses RLS), so this filter is the only thing stopping Nova from
+    seeing any student other than the one it was invoked for."""
+    rows = cast(
+        list[dict[str, Any]],
+        (
+            supabase.table("users")
+            .select("full_name, academic_year, branch, current_semester")
+            .eq("id", user_id)
+            .limit(1)
+            .execute()
+            .data
+        ),
+    )
+    return rows[0] if rows else {}
+
+
 def _user_subject_ids(supabase: Client, user_id: str) -> list[str]:
     rows = cast(
         list[dict[str, Any]],
@@ -187,6 +205,7 @@ def _fetch_topics(supabase: Client, topic_ids: list[str]) -> list[dict]:
 
 
 def get_facts_snapshot(supabase: Client, user_id: str) -> FactsSnapshot:
+    profile = _fetch_own_profile(supabase, user_id)
     user_subject_ids = _user_subject_ids(supabase, user_id)
     test_attempt_ids = _test_attempt_ids(supabase, user_id)
 
@@ -200,6 +219,10 @@ def get_facts_snapshot(supabase: Client, user_id: str) -> FactsSnapshot:
 
     return FactsSnapshot(
         snapshot_taken_at=datetime.now(timezone.utc),
+        full_name=profile.get("full_name"),
+        academic_year=profile.get("academic_year"),
+        branch=profile.get("branch"),
+        current_semester=profile.get("current_semester"),
         user_subject_exams=_fetch_exams(supabase, user_subject_ids),
         capacity_today=_fetch_capacity_today(supabase, user_id),
         staleness_tracker=staleness_tracker,
