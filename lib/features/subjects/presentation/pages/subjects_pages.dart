@@ -1,10 +1,10 @@
+import 'package:Skolar/core/widgets/frame_sequence_player.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:lottie/lottie.dart';
 import 'package:Skolar/core/routing/app_routes.dart';
 import 'package:Skolar/core/theme/app_theme.dart';
 import 'package:Skolar/features/subjects/presentation/providers/subjects_provider.dart';
@@ -22,9 +22,6 @@ class _SubjectsPageState extends State<SubjectsPage> {
 
   void _onNext() {
     setState(() => _showSuccess = true);
-    Future.delayed(const Duration(milliseconds: 3200), () {
-      if (mounted) context.go(AppRoutes.dashboard);
-    });
   }
 
   @override
@@ -36,12 +33,14 @@ class _SubjectsPageState extends State<SubjectsPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Lottie.network(
-                'https://lottie.host/f35a38c5-c434-4dee-9979-6144e32d6446/ixzaLS3V22.json',
-                width: 300,
-                height: 300,
-                repeat: false,
-                fit: BoxFit.contain,
+              FrameSequencePlayer(
+                folder: 'assets/animations/tick_frames',
+                frameCount: 90,
+                frameDuration: const Duration(milliseconds: 33),
+                loop: false,
+                onComplete: () {
+                  if (mounted) context.go(AppRoutes.dashboard);
+                },
               ),
               const SizedBox(height: 24),
               Text(
