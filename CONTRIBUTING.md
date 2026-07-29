@@ -1,4 +1,4 @@
-## Skolar - Code Standards & Contributing Guide
+# Skolar - Code Standards & Contributing Guide
 
 ### Git Workflow & Merging
 
@@ -47,6 +47,7 @@ These are the most common source of ugly, unreadable merge conflicts since they'
 - At least one reviewer approval required before merge. Reviewer checks architecture/layer rules below, not just correctness.
 - Squash-merge into `master` on every PR (no merge commits, no manual rebase-merge). For a team this size, squash gives a clean linear history and removes the risk of a half-rebased PR polluting `master`. This is the default — don't rebase-merge instead.
 - If your branch touches a file someone else is actively working on, say so in standup/Slack before you start — a 30-second heads-up avoids a conflict git can't.
+- Before a PR can merge, **branch protection on `master` requires**: the `pr-title` check, all CI jobs relevant to the changed paths, and one reviewer approval. See CI Pipeline below for the full job list.
 
 #### Amending commits
 
@@ -74,6 +75,8 @@ If a rebase turns into a mess (conflicts on conflicts), it's fine to abort and a
 ```bash
 git rebase --abort
 ```
+
+**Note:** CI's `branch-up-to-date` job will fail the PR if `master` isn't an ancestor of your branch — i.e. this rebase isn't just good hygiene, it's an enforced gate. Rebase before pushing, not after CI fails.
 
 ---
 
@@ -347,7 +350,7 @@ class MockTestNotifier extends Notifier<MockTestState> {
 - Write the RLS policy in the same migration/PR that creates the table — don't ship a table without one, even temporarily.
 - DTOs map Supabase JSON responses 1:1 with `@JsonSerializable`; conversion to domain entities happens via `.toDomain()`, same as any other data source.
 - Migrations live under `supabase/migrations/`, timestamped and never edited after being merged to `master` — write a new migration to fix a previous one.
-- Merging a migration PR does NOT auto-apply it — auto-deploy requires Supabase Pro. Whoever merges must run `supabase db push` immediately after, or note in the PR thread that it's pending.
+- **Merging a migration PR does NOT auto-apply it to production.** Auto-deploy requires Supabase Pro, which we don't have. There is no preview database either — CI's Supabase check only validates migration SQL syntax, it does not deploy anywhere. Whoever merges must run `supabase db push` against production immediately after merging, or note explicitly in the PR thread that it's pending. Because there's no preview environment, review migration SQL carefully before merge — the first time it runs anywhere is production.
 - Before proposing a new Nova-related table or field, check it against `Spec.md` — several fields are intentionally computed live rather than stored (see spec #2).
 - Test RLS changes against a non-owner-authenticated session before merging, not just as the table owner (service role bypasses RLS and will hide bugs).
 
@@ -359,22 +362,48 @@ class MockTestNotifier extends Notifier<MockTestState> {
 - Use `.env.example` with placeholder values so teammates know what variables are required.
 - If a secret is accidentally committed: rotate the key immediately, then scrub history with `git filter-repo` — don't just delete the file in a new commit, since the secret remains in history.
 - Service role / admin Supabase keys are never used client-side, only in backend/server contexts.
+- Every push and PR is scanned by CI's `gitleaks` job against full git history (not just the diff), so a leaked secret will be caught even if it's buried a few commits back on the branch — but this is a backstop, not a substitute for the practices above.
 
 ---
 
 ### CI Pipeline
 
-CI runs via GitHub Actions on every PR into `master` and on every push to `master` (`.github/workflows/ci.yml`). A PR cannot be merged until it passes — branch protection on `master` requires this check plus one reviewer approval.
+CI runs via GitHub Actions on every PR into `master` and on every push to `master` (`.github/workflows/ci.yml`). A PR cannot be merged until it passes — branch protection on `master` requires the relevant jobs below plus one reviewer approval.
 
-What it runs, in order:
+Most jobs only run when relevant paths changed (a `changes` job path-filters into `flutter` vs `python`), so a Flutter-only PR won't wait on Python jobs and vice versa. A few jobs always run regardless of what changed.
 
-1. `dart format --output=none --set-exit-if-changed .` — fails if anything isn't formatted
-2. `dart run build_runner build --delete-conflicting-outputs` — regenerates `.freezed.dart`/`.g.dart`; if generated files are committed, the run fails if this produces uncommitted diffs (i.e. someone forgot to regenerate before pushing)
-3. `dart analyze --fatal-infos` — fails on any lint issue
-4. `flutter test --coverage` — runs the full test suite
-5. Supabase check — validates migration SQL syntax only. This does NOT deploy to production; see Supabase Conventions above for the required manual `db push` step.
+**Always run, regardless of changed paths:**
 
-Not yet covered by CI (tracked as gaps, not silently assumed): FastAPI backend tests, Supabase RLS policy tests against non-owner sessions, and any integration test that needs a live/staged backend. These require either a hosted staging Supabase project or a dockerized backend, and aren't set up yet — don't assume CI is catching backend bugs.
+1. `gitleaks` — secret scan against full git history.
+2. `pr-title` — validates the PR title against the commit-type pattern (see Commit Message Format below).
+3. `branch-up-to-date` — fails if `master` isn't an ancestor of your branch; rebase and re-push if this fails.
+
+**Flutter jobs** (run when `lib/**`, `pubspec.yaml`, or `pubspec.lock` changed, excluding the Python-owned `lib/core/ai/rag_llms/**` and `lib/core/ai/nova/**` paths):
+
+4. `format` — `dart format --output=none --set-exit-if-changed .`
+5. `codegen` — regenerates `.freezed.dart`/`.g.dart` via `build_runner`; fails if that produces an uncommitted diff (i.e. someone forgot to regenerate before pushing)
+6. `analyze` — `dart analyze` (fatal on lint issues)
+7. `test` — `flutter test --coverage`
+
+**Python jobs** (run when `lib/core/ai/rag_llms/**` or `lib/core/ai/nova/**` changed):
+
+8. `python-lint` — `ruff check`, a separate security-rules pass (`ruff check --select S`, the Bandit-derived hardcoded-secrets/unsafe-eval/weak-crypto/SQL-concat checks), and `mypy` type checking on `lib/core/ai/nova` if that directory exists.
+
+9. **Supabase check** — validates migration SQL syntax only. This does **not** deploy to production; see Supabase Conventions above for the required manual `db push` step.
+
+**Not yet covered by CI** (tracked as gaps, not silently assumed): FastAPI backend tests, Supabase RLS policy tests against non-owner sessions, and any integration test that needs a live/staged backend. These require either a hosted staging Supabase project or a dockerized backend, and aren't set up yet — don't assume CI is catching backend bugs.
+
+---
+
+### Dependency Updates (Dependabot)
+
+Dependabot runs weekly across three ecosystems, each capped at 5 open PRs at a time, with patch/minor updates grouped into a single PR per ecosystem to cut down on noise:
+
+- **pip** — `/lib/core/ai/rag_llms` (the RAG/LLM pipeline and Nova backend, even though it lives inside the Flutter repo)
+- **pub** — `/` (root `pubspec.yaml`)
+- **github-actions** — `/` (workflow files under `.github/workflows/`)
+
+**Known issue — Dependabot PR titles need a prefix.** Dependabot's default PR title (e.g. `"Bump requests from 2.31.0 to 2.32.1"`) does not match the `pr-title` CI pattern, since it has no `<type>:` prefix. Until `commit-message.prefix` (and `prefix-development` for dev-dependency bumps) is added per ecosystem in `dependabot.yml`, every Dependabot PR will fail the `pr-title` check and need a manual title edit before merge. Recommended prefix: `chore` for all three ecosystems, matching the `chore` type already in the commit-type list below.
 
 ---
 
@@ -547,6 +576,7 @@ final upvoted = ref.watch(
 
 ```
 <type>: <subject>
+<type>(<scope>): <subject>
 
 <body>
 
@@ -554,6 +584,14 @@ final upvoted = ref.watch(
 ```
 
 Types: `feat`, `fix`, `schema`, `refactor`, `test`, `docs`, `style`, `chore`, `perf`, `ci`
+
+An optional lowercase `(scope)` — e.g. `feat(nova): ...`, `fix(feed): ...` — is allowed between the type and the colon. This must match exactly, since **CI's `pr-title` job enforces this pattern on the PR title** (the squash-merge commit message), not just convention:
+
+```
+^(feat|fix|schema|refactor|test|docs|style|chore|perf|ci)(\([a-z0-9_-]+\))?: .+$
+```
+
+The title must also be ≤100 characters and must not end in a period, space, or tab.
 
 Example:
 
