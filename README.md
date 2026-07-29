@@ -264,9 +264,13 @@ roll_number       text, nullable
 college           text, nullable
 institution_id    uuid, nullable, references institutions.id
 campus_id         uuid, nullable, references campuses.id
-academic_year     smallint, nullable, check (1–4)
+academic_year     smallint, nullable, check (1–5) — widened from 1–4 to cover dual-degree students
 avatar_url        text, nullable
+avatar_data       text, nullable — inline avatar payload from the onboarding avatar picker
 branch            text, nullable
+dual_branch       text, nullable — second branch for dual-degree students
+current_semester  smallint, nullable, check (1 or 2)
+study_capacity    text, nullable — free-form capacity note captured at onboarding, feeds `nova_config.capacity_hour_mapping`
 plan              text, not null, default 'free'
 role              text, not null, default 'student', check (student|admin|super_admin)
 semester_credits  smallint, nullable
@@ -275,6 +279,8 @@ updated_at        timestamptz, not null, default now()
 ```
 
 RLS policies: insert, update, select scoped to `auth.uid()`.
+
+`avatar_data`, `dual_branch`, `current_semester`, and `study_capacity` were added by the redesigned onboarding flow (see [Onboarding Seed Context](#onboarding-seed-context) under Nova) — they're written by the same RPC call that seeds `standing_flags`, `nova_history`, and `career_units`, not through a separate profile-edit path.
 
 #### `custom_subjects` table **(schema only)**
 
@@ -581,7 +587,7 @@ uvicorn main:app --reload --port 8000
 - `/nova/conversation` never writes silently — all fact writes go through `/nova/proposals/{id}/confirm`
 - Minor re-ranks (no LLM call) and full reasoning passes both go through `/nova/plan/generate` — trigger severity decided beforehand by `/nova/trigger/check`
 
-> These `/nova/*` endpoints describe the planned Phase 5 backend (`nova_router.py`, not yet built). The Nova CLI prototype that exists today (see [Nova CLI (Q&A Prototype)](#nova-cli-qa-prototype)) does not go through FastAPI at all — it talks to Supabase and Groq directly from a local script.
+> Most of the table above still describes the planned Phase 5 backend. **One exception:** `POST /nova/trigger/check` is real and live today — see [Nova Trigger Layer](#nova-trigger-layer) below for where it actually lives and how it differs from this plan. The Nova CLI prototype (see [Nova CLI (Q&A Prototype)](#nova-cli-qa-prototype)) still doesn't go through FastAPI at all — it talks to Supabase and Groq directly from a local script.
 
 #### `POST /extract-plan` — Request body
 
@@ -969,7 +975,7 @@ created_at          timestamptz, not null, default now()
 
 #### `nova_config` table
 
-Generic key/value config store — not fixed columns. `user_id` is nullable, which allows global/default config rows (e.g. default staleness thresholds) alongside per-student overrides.
+Generic key/value config store — not fixed columns. `user_id` is nullable, which allows global/default config rows (e.g. default staleness thresholds) alongside per-student overrides. RLS enabled; `(user_id, key)` is unique so a per-student override and the global default for the same key can coexist without conflicting.
 
 ```
 id            uuid, primary key, default gen_random_uuid()
@@ -977,7 +983,10 @@ user_id       uuid, nullable, references users.id — null = global/default conf
 key           text, not null
 value         jsonb, not null
 updated_at    timestamptz, not null, default now()
+unique        (user_id, key)
 ```
+
+Seeded global (`user_id = NULL`) rows: `staleness_days_academic` (14), `staleness_days_career` (21), `time_left_buckets` (`[7,3,1]`), `academic_pressure_buckets` (`[10,3]`). A per-student `capacity_hour_mapping` row is written during onboarding — see [Onboarding Seed Context](#onboarding-seed-context) below.
 
 ### Nova Facts Snapshot (not a table)
 
@@ -994,6 +1003,40 @@ Nova's facts snapshot is derived live at reasoning time by `nova_pipeline.py`, n
 
 The snapshot is logged as jsonb inside `nova_why_log` for auditability. A pre-materialized table is not used because it would create a sync problem and violate the spec's atomic-fetch requirement.
 
+### Nova Trigger Layer
+
+The trigger check (`POST /nova/trigger/check`) is live today, ahead of the rest of the planned Phase 5 backend — but it landed in a different shape than the endpoint table above implies:
+
+- The actual trigger logic — staleness thresholds, time-left buckets, academic-pressure buckets — is a Postgres function, `public.get_nova_triggers(p_user_id uuid)`, not Python inside `nova_pipeline.py`. It reads directly from `nova_config`, `staleness_tracker`, `user_subject_exams`, and related tables and returns the rows that should fire a reasoning pass.
+- It's exposed by a small standalone FastAPI service at `backend/app/main.py` (`backend/app/dependencies.py` handles auth) — a separate directory from `lib/core/ai/rag_llms/`, not a mount inside `main.py`'s existing app. The route verifies the caller's bearer token against Supabase Auth (`get_current_user_id`) and then calls the RPC with the resulting `user_id`, so a student can only ever trigger-check themselves.
+- It is not yet wired into the Flutter app — no `lib/features/nova/` UI calls it yet. It exists and works, but nothing in the product surfaces it.
+
+`staleness_tracker`'s exclusivity constraint was also widened from a two-way XOR (`user_subject_id` / `career_unit_id`) to a three-way one that includes `topic_id`, since the trigger function needs to reason at topic granularity, not just subject/career granularity.
+
+### Onboarding Seed Context
+
+The redesigned onboarding flow (avatar picker + profile capture) writes everything in a single RPC call, `public.save_onboarding_seed_context(...)`, rather than separate writes per table:
+
+```
+Student completes onboarding questionnaire + profile fields (Flutter)
+        ↓
+save_onboarding_seed_context(p_endgame, p_derailer, p_buffer_pref, p_prep_style,
+                              p_career_interests, p_daily_capacity,
+                              p_avatar_data, p_full_name, p_roll_number, p_college,
+                              p_branch, p_dual_branch, p_academic_year,
+                              p_current_semester, p_study_capacity)
+        ↓
+UPDATE users              — avatar_data, full_name, roll_number, college, branch,
+                             dual_branch, academic_year, current_semester, study_capacity
+INSERT standing_flags     — endgame / derailer / buffer preference (source = 'onboarding')
+INSERT nova_history       — prep style (source = 'onboarding')
+INSERT career_units       — one row per career interest, ON CONFLICT (user_id, name)
+                             WHERE paused_at IS NULL DO NOTHING
+UPSERT nova_config        — capacity_hour_mapping, scoped to this user_id
+```
+
+All profile-field parameters are optional (`DEFAULT NULL`) and applied via `COALESCE`, so re-running onboarding, or a future profile-edit screen calling the same RPC with a partial payload, only overwrites the fields it's given. This is also why the `users` columns above (`avatar_data`, `dual_branch`, `current_semester`, `study_capacity`) live next to Nova's conversation-fed tables in this migration rather than in a plain profile-edit endpoint.
+
 ### Nova CLI (Q&A Prototype)
 
 A working, dev-only prototype exists today, ahead of the full pipeline described above. It's a local CLI (`lib/core/ai/nova/nova_agent.py`) that fetches a student's live facts snapshot from Supabase and lets you ask Nova questions about it in a terminal chat loop, answered by Groq (`llama-3.3-70b-versatile`).
@@ -1006,9 +1049,14 @@ python nova_agent.py <user_id>
 
 **What it is *not*:** it does not implement the trigger layer, the reasoning/ranking pass, structured plan output, or why-log writes described elsewhere in this section. There's no daily plan, no confirmation-gated writes, no audit trail — it's purely "fetch facts, answer a question, forget everything when the process exits."
 
+Since the prototype first shipped, the CLI has picked up:
+- **Groq key fallback** — an optional `GROQ_API_KEY_2` is read alongside the primary key; if the primary call raises (expired key, rate limit, overload), `chat_service.ask_nova` retries once against the backup client before giving up.
+- **Model switching** — `ask_nova` now takes a `model` parameter instead of hardcoding `GROQ_MODEL`, so the CLI can be pointed at a different Groq model without a code change.
+- **Scoped profile fetch** — the facts snapshot now also pulls `full_name`, `academic_year`, `branch`, and `current_semester` from `users`, but only via a `.eq("id", user_id).limit(1)` filter. The CLI runs on a service-role key that bypasses RLS, so this filter — not RLS — is what stops it from reading another student's profile row.
+
 **Known limitations** (tracked in [#15](https://github.com/Krish-876/Skolar/issues/15)):
 - `user_id` is taken as a raw CLI argument with no auth check against the caller's identity — dev-only, local use, service-role key
-- No error handling around the Groq/Supabase calls — an API failure crashes the whole session
+- No error handling around the Supabase calls — an API failure there still crashes the whole session (Groq calls now have single-retry fallback, above, but that only covers the LLM call)
 - The facts snapshot is fetched once at startup and held for the entire session, so it can go stale mid-conversation if underlying data changes
 
 See [Tech Debt](#tech-debt) for the full writeup and fix conditions.
@@ -1032,15 +1080,25 @@ See [Tech Debt](#tech-debt) for the full writeup and fix conditions.
 ## Folder Structure
 
 ```
+backend/                             # Standalone FastAPI service — Nova trigger layer only (see Nova Trigger Layer)
+├── app/
+│   ├── main.py                      # POST /nova/trigger/check → calls get_nova_triggers() RPC
+│   └── dependencies.py              # Supabase client + bearer-token auth (get_current_user_id)
+└── requirements.txt
+```
+
+This is a separate service from `lib/core/ai/rag_llms/` below — different directory, different deployment, and (so far) a single endpoint. It is not yet called from Flutter.
+
+```
 lib/
 ├── core/
 │   ├── ai/
 │   │   ├── data/                    # PYQ PDF files
-│   │   ├── rag_llms/                # Python backend
+│   │   ├── rag_llms/                # Python backend — question generation + study plans
 │   │   │   ├── main.py              # FastAPI app (all endpoints)
 │   │   │   ├── pipeline.py          # DICL pipeline + study plan extraction
 │   │   │   ├── evaluate.py          # Pipeline evaluation
-│   │   │   └── .env                 # GROQ_API_KEY, SUPABASE_URL, SUPABASE_KEY (not committed)
+│   │   │   └── .env                 # GROQ_API_KEY, GROQ_API_KEY_2 (optional fallback), SUPABASE_URL, SUPABASE_KEY (not committed)
 │   │   └── nova/                    # Nova CLI Q&A prototype (dev-only, read-only — see Nova section)
 │   │       ├── nova_agent.py        # CLI entrypoint — python nova_agent.py <user_id>
 │   │       └── nova/
@@ -1106,6 +1164,8 @@ lib/
 | Quiz confetti | `confetti ^0.8.0` |
 | Markdown rendering | `flutter_markdown_plus` |
 | File picker | `file_picker ^11.0.2` |
+| Onboarding success animation | `lottie ^3.5.1` (`onboarding_success.lottie`) |
+| Mock test / quiz success animation | Custom PNG frame-sequence player (`assets/animations/tick_frames/`) — replaced an earlier Lottie renderer for this specific animation |
 | Code generation | `build_runner` |
 
 ### AI Backend
@@ -1132,7 +1192,7 @@ lib/
 ### Built
 
 - **Authentication** — magic link via BITS college email (Supabase Auth)
-- **Onboarding** — full flow wired to Supabase
+- **Onboarding** — redesigned flow with avatar picker, full profile capture (branch, dual branch, academic year, current semester, study capacity), single seed-context RPC write (see [Onboarding Seed Context](#onboarding-seed-context))
 - **Real user data via `userProvider`**
 - **Subjects feature** — full Clean Architecture, handout upload, study plan generation
 - **Routing** — GoRouter with auth guard
@@ -1140,11 +1200,12 @@ lib/
 - **Dark theme** with custom color palette
 - **Full AI pipeline** (DICL + MMR + Supabase)
 - **FastAPI backend** — 8 endpoints, fully Supabase-backed, deployed on Railway
+- **Nova trigger layer** — `get_nova_triggers()` SQL function + standalone `backend/app` FastAPI service exposing `POST /nova/trigger/check`; live and working, not yet called from Flutter (see [Nova Trigger Layer](#nova-trigger-layer))
 - **Mock test platform** — full Clean Architecture, 4 exam types, MCQ Blitz + Written Practice
 - **Exam prediction** / question bank browser
 - **Focus session timer**
 - **Community feed** — live from Supabase, vote persistence
-- **Nova CLI Q&A prototype** — dev-only, read-only chat over a live facts snapshot (see [Nova CLI (Q&A Prototype)](#nova-cli-qa-prototype))
+- **Nova CLI Q&A prototype** — dev-only, read-only chat over a live facts snapshot, with Groq key fallback and model switching (see [Nova CLI (Q&A Prototype)](#nova-cli-qa-prototype))
 
 ### Schema Live, No UI/Code Yet
 
@@ -1245,7 +1306,21 @@ cd lib/core/ai/nova
 python nova_agent.py <user_id>
 ```
 
-Reads `SUPABASE_URL`, `SUPABASE_KEY`, and `GROQ_API_KEY` from `lib/core/ai/rag_llms/.env`. Service-role key, local dev only — see [Nova CLI (Q&A Prototype)](#nova-cli-qa-prototype) and [Tech Debt](#tech-debt) before using this with real student data.
+Reads `SUPABASE_URL`, `SUPABASE_KEY`, and `GROQ_API_KEY` from `lib/core/ai/rag_llms/.env`. Service-role key, local dev only — see [Nova CLI (Q&A Prototype)](#nova-cli-qa-prototype) and [Tech Debt](#tech-debt) before using this with real student data. An optional `GROQ_API_KEY_2` in the same `.env` is picked up automatically as a one-retry fallback if the primary key fails.
+
+### Running the Nova Trigger-Layer Backend
+
+This is a separate service from the two above — see [Nova Trigger Layer](#nova-trigger-layer).
+
+```bash
+cd backend
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8001
+```
+
+Reads `SUPABASE_URL` and `SUPABASE_KEY` from the environment (`app/dependencies.py`). Requests to `POST /nova/trigger/check` need a valid Supabase Auth bearer token in the `Authorization` header — there's no service-role bypass here.
 
 ---
 
@@ -1344,6 +1419,22 @@ RLS is enabled on `topics` with read-only access for authenticated users. Write 
 
 `questions`, `question_results`, `uploaded_pdfs`, `user_topic_weights`, and `staleness_tracker` all have both a legacy `topic` text column and a new `topic_id` FK to the `topics` table. Old code writes to `topic` text. New code should write both. Text columns will be dropped once the pipeline is fully migrated.
 
+---
+
+### `backend/app` vs `nova_router.py` — not reconciled
+
+`POST /nova/trigger/check` shipped early as a standalone FastAPI service (`backend/app/main.py`, deployed separately from `lib/core/ai/rag_llms/`), ahead of the `nova_router.py` design described in [Nova Trigger Layer](#nova-trigger-layer). It isn't decided whether the rest of the planned `/nova/*` endpoints get added to this service, get mounted into `nova_router.py` and the trigger-check route gets migrated to match, or the two stay permanently separate. It also isn't yet called from Flutter.
+
+**When to fix:** Before Phase 5 Nova backend work starts, so the rest of `nova_router.py` isn't built against an architecture that gets reconciled later.
+
+---
+
+### `dartz` vs `fpdart` — CONTRIBUTING.md doesn't match the codebase
+
+`CONTRIBUTING.md`'s architecture guidelines mandate `fpdart` for `Either`-based error handling and explicitly say not to introduce `dartz`. The app actually depends on `dartz` (see Tech Stack above) and that's what the domain/data layers use throughout. Either the contributing doc needs correcting to say `dartz`, or a migration to `fpdart` needs to happen — right now new contributors following `CONTRIBUTING.md` literally would import a package the codebase doesn't use.
+
+**When to fix:** Low priority functionally (both are equivalent `Either` implementations), but worth resolving before it causes an inconsistent PR.
+
 **When to fix:** When the pipeline is updated to write `topic_id` on extraction.
 
 ---
@@ -1399,6 +1490,10 @@ Phase 4 — Auth and Backend (complete)
        nova_history, career_units, nova_why_log, nova_config,
        topic_id and career_unit_id on all affected tables
     ✅ Nova CLI Q&A prototype — dev-only, read-only (see Tech Debt)
+    ✅ Onboarding redesign — avatar picker, full profile fields, single
+       save_onboarding_seed_context RPC (see Onboarding Seed Context)
+    ✅ CI hardening — dependabot, gitleaks, ruff security lint, pinned
+       deps, path-filtered jobs, pr-title optional scope
     ⬜ _triggerPlanExtraction wired to real FastAPI URL
     ⬜ Study plan display UI per subject
     ⬜ Compre Part A → published_tests pipeline + feed (deferred to post-Phase 5)
@@ -1416,13 +1511,21 @@ Phase 5 — Personalisation
         nova_unconfirmed_proposals
         nova_industry_relevance_log
         nova_one_off_overrides
-        (nova_why_log and nova_config already live — see Nova Schema Tables)
+        (nova_why_log, nova_config, and the trigger-layer patches to
+         standing_flags/situation_flags/nova_history/staleness_tracker
+         already live — see Nova Schema Tables and Nova Trigger Layer)
 
     Nova backend
-        nova_pipeline.py — facts fetch, trigger check, reasoning pass,
-            minor rerank, flag writes, conversation extraction, why-log writes
-        nova_router.py — all Nova endpoints
-        main.py — mount nova_router (one line)
+        ✅ get_nova_triggers() SQL function + backend/app/main.py
+           exposing POST /nova/trigger/check (early, ahead of schedule —
+           see Nova Trigger Layer) — not yet wired into a mounted router
+           or called from Flutter
+        nova_pipeline.py — facts fetch, reasoning pass, minor rerank,
+            flag writes, conversation extraction, why-log writes
+        nova_router.py — remaining Nova endpoints (trigger/check excluded,
+            already shipped separately in backend/app)
+        Decide whether backend/app gets folded into nova_router.py or
+            stays a standalone service — currently unreconciled
         pg_cron nightly retention job driven by nova_config
         Harden Nova CLI prototype into the real pipeline — auth, error
             handling, and live (non-stale) facts fetch (closes #15)
