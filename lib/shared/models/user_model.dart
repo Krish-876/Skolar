@@ -4,8 +4,12 @@ class UserModel {
   final String email;
   final String college; // campus short_name e.g. 'BPHC'
   final String rollNumber;
-  final int academicYear; // 1–4
+  final int academicYear; // 1–5
   final String? branch;
+  final String? dualBranch;
+  final int? currentSemester; // 1–2
+  final String? studyCapacity; // 'Light' | 'Normal' | 'Packed'
+  final String? avatarData; // SVG string from AvatarMaker
   final String plan; // 'free' | 'premium'
   final String? institutionId;
   final String? campusId;
@@ -23,6 +27,10 @@ class UserModel {
     required this.rollNumber,
     required this.academicYear,
     this.branch,
+    this.dualBranch,
+    this.currentSemester,
+    this.studyCapacity,
+    this.avatarData,
     this.plan = 'free',
     this.institutionId,
     this.campusId,
@@ -51,6 +59,10 @@ class UserModel {
     String? rollNumber,
     int? academicYear,
     String? branch,
+    String? dualBranch,
+    int? currentSemester,
+    String? studyCapacity,
+    String? avatarData,
     String? plan,
     String? institutionId,
     String? campusId,
@@ -67,6 +79,10 @@ class UserModel {
     rollNumber: rollNumber ?? this.rollNumber,
     academicYear: academicYear ?? this.academicYear,
     branch: branch ?? this.branch,
+    dualBranch: dualBranch ?? this.dualBranch,
+    currentSemester: currentSemester ?? this.currentSemester,
+    studyCapacity: studyCapacity ?? this.studyCapacity,
+    avatarData: avatarData ?? this.avatarData,
     plan: plan ?? this.plan,
     institutionId: institutionId ?? this.institutionId,
     campusId: campusId ?? this.campusId,

@@ -71,11 +71,11 @@ class _SubjectsPageState extends State<SubjectsPage> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         automaticallyImplyLeading: false,
-        title: const Text(
+        title: Text(
           'My Subjects',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
+          style: GoogleFonts.googleSans(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
             color: Colors.white,
             letterSpacing: 0.3,
           ),
@@ -90,11 +90,11 @@ class _SubjectsPageState extends State<SubjectsPage> {
                             onPressed: () => ref
                                 .read(subjectsProvider.notifier)
                                 .commitDeletions(),
-                            child: const Text(
+                            child: Text(
                               'Done',
-                              style: TextStyle(
-                                color: Color(0xFF8C38E5), // Onboarding primary
-                                fontWeight: FontWeight.w600,
+                              style: GoogleFonts.googleSans(
+                                color: const Color(0xFF9B4DFF),
+                                fontWeight: FontWeight.bold,
                                 fontSize: 15,
                               ),
                             ),
@@ -114,11 +114,11 @@ class _SubjectsPageState extends State<SubjectsPage> {
                                 ),
                               );
                             },
-                            child: const Text(
+                            child: Text(
                               'Edit credits',
-                              style: TextStyle(
+                              style: GoogleFonts.googleSans(
                                 color: Colors.white70,
-                                fontWeight: FontWeight.w500,
+                                fontWeight: FontWeight.w600,
                                 fontSize: 13,
                               ),
                             ),
@@ -145,31 +145,50 @@ class _SubjectsPageState extends State<SubjectsPage> {
         child: SafeArea(
           child: SizedBox(
             width: double.infinity,
-            height: 52,
-            child: ElevatedButton(
-              onPressed: _onNext,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF8C38E5),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+            height: 54,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF9B4DFF), Color(0xFF7428D8)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
-                elevation: 0,
-              ),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'Next',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.5,
-                    ),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF8C38E5).withValues(alpha: 0.38),
+                    blurRadius: 20,
+                    offset: const Offset(0, 6),
                   ),
-                  SizedBox(width: 8),
-                  Icon(Icons.arrow_forward_rounded, size: 20),
                 ],
+              ),
+              child: ElevatedButton(
+                onPressed: _onNext,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  shadowColor: Colors.transparent,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  elevation: 0,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Continue',
+                      style: GoogleFonts.googleSans(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Icon(Icons.arrow_forward_rounded, size: 20),
+                  ],
+                ),
               ),
             ),
           ),
@@ -207,13 +226,13 @@ class _SubjectsPageContentState extends ConsumerState<SubjectsPageContent> {
 
     return asyncState.when(
       loading: () => const Center(
-        child: CircularProgressIndicator(color: AppTheme.onBackground2),
+        child: CircularProgressIndicator(color: Color(0xFF8C38E5)),
       ),
       error: (e, _) => Center(
         child: Text(
           'Something went wrong.\n$e',
           textAlign: TextAlign.center,
-          style: const TextStyle(color: AppTheme.onBackground2),
+          style: GoogleFonts.googleSans(color: Colors.white70),
         ),
       ),
       data: (s) => SubjectsBody(
@@ -263,14 +282,20 @@ class _SubjectsPageContentState extends ConsumerState<SubjectsPageContent> {
     if (error != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Some uploads failed: $error'),
+          content: Text(
+            'Some uploads failed: $error',
+            style: GoogleFonts.googleSans(),
+          ),
           backgroundColor: AppTheme.wishlist,
         ),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Handouts uploaded — study plans are being generated'),
+        SnackBar(
+          content: Text(
+            'Handouts uploaded — study plans are being generated',
+            style: GoogleFonts.googleSans(),
+          ),
           backgroundColor: Colors.green,
         ),
       );
@@ -353,12 +378,10 @@ class SubjectsBody extends StatelessWidget {
             atCap
                 ? 'Credit limit reached'
                 : '${state.remainingCredits} credits remaining',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: atCap
-                  ? AppTheme.chartCompleted
-                  : AppTheme.onBackground2.withValues(alpha: 0.7),
+            style: GoogleFonts.googleSans(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: atCap ? AppTheme.chartCompleted : Colors.white54,
             ),
           ),
 
@@ -369,22 +392,23 @@ class SubjectsBody extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: AppTheme.sm),
             child: Text(
               'Tap a subject to mark for removal',
-              style: TextStyle(
-                fontSize: 12,
-                color: AppTheme.onBackground2.withValues(alpha: 0.6),
+              style: GoogleFonts.googleSans(
+                fontSize: 13,
+                color: Colors.white54,
               ),
             ),
           ),
 
         Expanded(
           child: state.subjects.isEmpty
-              ? const Center(
+              ? Center(
                   child: Text(
                     'No subjects yet.\nTap Add Subject below.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: AppTheme.onBackground2,
+                    style: GoogleFonts.googleSans(
+                      color: Colors.white54,
                       fontSize: 15,
+                      height: 1.4,
                     ),
                   ),
                 )
@@ -403,6 +427,7 @@ class SubjectsBody extends StatelessWidget {
                     final staged = state.stagedHandouts[s.userSubjectId];
                     return SubjectRow(
                       subject: s,
+                      index: i,
                       editMode: state.editMode,
                       marked: marked,
                       uploading: uploading,
@@ -436,25 +461,36 @@ class SubjectsBody extends StatelessWidget {
                 width: double.infinity,
                 height: 52,
                 decoration: BoxDecoration(
-                  gradient: AppTheme.primaryGradient,
-                  borderRadius: BorderRadius.circular(AppTheme.radiusXxl),
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF9B4DFF), Color(0xFF7428D8)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF8C38E5).withValues(alpha: 0.35),
+                      blurRadius: 16,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const Icon(
                       Icons.cloud_upload_rounded,
-                      color: AppTheme.onPrimary,
+                      color: Colors.white,
                       size: 18,
                     ),
-                    const SizedBox(width: AppTheme.xs),
+                    const SizedBox(width: 8),
                     Text(
                       'Generate plans for ${state.stagedHandouts.length} '
                       '${state.stagedHandouts.length == 1 ? 'subject' : 'subjects'}',
-                      style: const TextStyle(
-                        color: AppTheme.onPrimary,
+                      style: GoogleFonts.googleSans(
+                        color: Colors.white,
                         fontSize: 15,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ],
@@ -481,10 +517,10 @@ class SubjectsBody extends StatelessWidget {
                   width: double.infinity,
                   height: 52,
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.04),
-                    borderRadius: BorderRadius.circular(AppTheme.radiusXxl),
+                    color: const Color(0xFF1C1C1E),
+                    borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: AppTheme.onBackground2.withValues(alpha: 0.25),
+                      color: Colors.white.withValues(alpha: 0.12),
                       width: 1.2,
                     ),
                   ),
@@ -493,16 +529,16 @@ class SubjectsBody extends StatelessWidget {
                     children: [
                       const Icon(
                         Icons.add_rounded,
-                        color: AppTheme.onBackground2,
+                        color: Colors.white,
                         size: 20,
                       ),
-                      const SizedBox(width: AppTheme.xs),
+                      const SizedBox(width: 8),
                       Text(
                         atCap ? 'Credit limit reached' : 'Add Subject',
-                        style: const TextStyle(
-                          color: AppTheme.onBackground2,
+                        style: GoogleFonts.googleSans(
+                          color: Colors.white,
                           fontSize: 15,
-                          fontWeight: FontWeight.w500,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],

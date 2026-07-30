@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:Skolar/core/theme/app_theme.dart';
 import 'package:Skolar/features/subjects/domain/entities/subject_entity.dart';
 
@@ -25,20 +26,20 @@ class CreditRing extends StatelessWidget {
             children: [
               Text(
                 '$earned',
-                style: const TextStyle(
-                  fontSize: 36,
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.onBackground,
+                style: GoogleFonts.googleSans(
+                  fontSize: 38,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
                   height: 1.0,
                 ),
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 4),
               Text(
                 target > 0 ? 'of $target cr' : 'credits',
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppTheme.onBackground2,
-                  fontWeight: FontWeight.w400,
+                style: GoogleFonts.googleSans(
+                  fontSize: 13,
+                  color: Colors.white54,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ],
@@ -61,7 +62,7 @@ class RingPainter extends CustomPainter {
     const startAngle = -pi / 2;
 
     final trackPaint = Paint()
-      ..color = AppTheme.surfaceLight.withValues(alpha: 0.4)
+      ..color = Colors.white.withValues(alpha: 0.08)
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth
       ..strokeCap = StrokeCap.round;
@@ -70,7 +71,7 @@ class RingPainter extends CustomPainter {
     if (progress <= 0) return;
 
     final arcPaint = Paint()
-      ..color = AppTheme.onBackground
+      ..color = const Color(0xFF8C38E5)
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth
       ..strokeCap = StrokeCap.round;
@@ -99,6 +100,7 @@ class SubjectRow extends StatelessWidget {
   final VoidCallback onLongPress;
   final VoidCallback? onPickHandout;
   final VoidCallback? onUnstageHandout;
+  final int index;
 
   const SubjectRow({
     super.key,
@@ -111,112 +113,130 @@ class SubjectRow extends StatelessWidget {
     this.onTap,
     this.onPickHandout,
     this.onUnstageHandout,
+    this.index = 0,
   });
 
   @override
   Widget build(BuildContext context) {
     final hasHandout = subject.handoutUrl != null;
 
-    return GestureDetector(
-      onTap: onTap,
-      onLongPress: onLongPress,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-        decoration: BoxDecoration(
-          color: marked
-              ? AppTheme.wishlist.withValues(alpha: 0.12)
-              : const Color(0xFF1C1C1E),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: marked
-                ? AppTheme.wishlist.withValues(alpha: 0.5)
-                : Colors.white.withValues(alpha: 0.09),
-            width: marked ? 1.5 : 1.0,
-          ),
-          boxShadow: marked
-              ? [
-                  BoxShadow(
-                    color: AppTheme.wishlist.withValues(alpha: 0.14),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ]
-              : [],
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.0, end: 1.0),
+      duration: Duration(milliseconds: 320 + (index * 60)),
+      curve: Curves.easeOutCubic,
+      builder: (_, v, child) => Opacity(
+        opacity: v,
+        child: Transform.translate(
+          offset: Offset(0, 16 * (1 - v)),
+          child: child,
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                if (editMode) ...[
-                  Icon(
-                    marked
-                        ? Icons.remove_circle_rounded
-                        : Icons.remove_circle_outline_rounded,
-                    size: 18,
-                    color: marked
-                        ? AppTheme.wishlist
-                        : AppTheme.onBackground2.withValues(alpha: 0.4),
-                  ),
-                  const SizedBox(width: AppTheme.sm),
-                ],
-                Expanded(
-                  child: Text(
-                    subject.name,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: marked ? AppTheme.wishlist : AppTheme.onBackground,
+      ),
+      child: GestureDetector(
+        onTap: onTap,
+        onLongPress: onLongPress,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 240),
+          curve: Curves.easeOut,
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: marked
+                ? AppTheme.wishlist.withValues(alpha: 0.14)
+                : const Color(0xFF1C1C1E),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: marked
+                  ? AppTheme.wishlist.withValues(alpha: 0.5)
+                  : Colors.white.withValues(alpha: 0.08),
+              width: marked ? 1.5 : 1.0,
+            ),
+            boxShadow: marked
+                ? [
+                    BoxShadow(
+                      color: AppTheme.wishlist.withValues(alpha: 0.14),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
                     ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                if (subject.shortName != null) ...[
-                  const SizedBox(width: AppTheme.sm),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
+                  ]
+                : [],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  if (editMode) ...[
+                    Icon(
+                      marked
+                          ? Icons.remove_circle_rounded
+                          : Icons.remove_circle_outline_rounded,
+                      size: 18,
+                      color: marked
+                          ? AppTheme.wishlist
+                          : AppTheme.onBackground2.withValues(alpha: 0.4),
                     ),
-                    decoration: BoxDecoration(
-                      color: AppTheme.primary.withValues(alpha: 0.25),
-                      borderRadius: BorderRadius.circular(AppTheme.radiusSm),
-                    ),
+                    const SizedBox(width: AppTheme.sm),
+                  ],
+                  Expanded(
                     child: Text(
-                      subject.shortName!,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: AppTheme.onBackground2,
-                        letterSpacing: 0.4,
+                      subject.name,
+                      style: GoogleFonts.googleSans(
+                        fontSize: 15,
+                        fontWeight: marked ? FontWeight.bold : FontWeight.w600,
+                        color: marked ? AppTheme.wishlist : Colors.white,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (subject.shortName != null) ...[
+                    const SizedBox(width: AppTheme.sm),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 9,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF8C38E5).withValues(alpha: 0.18),
+                        borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+                        border: Border.all(
+                          color: const Color(0xFF8C38E5).withValues(alpha: 0.4),
+                          width: 1.0,
+                        ),
+                      ),
+                      child: Text(
+                        subject.shortName!,
+                        style: GoogleFonts.googleSans(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFFD4A5FF),
+                          letterSpacing: 0.4,
+                        ),
                       ),
                     ),
+                  ],
+                  const SizedBox(width: AppTheme.md),
+                  Text(
+                    subject.credits != null ? '${subject.credits} cr' : '— cr',
+                    style: GoogleFonts.googleSans(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: marked ? AppTheme.wishlist : Colors.white70,
+                    ),
                   ),
                 ],
-                const SizedBox(width: AppTheme.md),
-                Text(
-                  subject.credits != null ? '${subject.credits} cr' : '— cr',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: marked ? AppTheme.wishlist : AppTheme.onBackground2,
-                  ),
+              ),
+              if (!editMode) ...[
+                const SizedBox(height: 12),
+                HandoutChip(
+                  hasHandout: hasHandout,
+                  filename: subject.handoutFilename,
+                  uploading: uploading,
+                  stagedFilename: stagedFilename,
+                  onPick: onPickHandout,
+                  onUnstage: onUnstageHandout,
                 ),
               ],
-            ),
-            if (!editMode) ...[
-              const SizedBox(height: 10),
-              HandoutChip(
-                hasHandout: hasHandout,
-                filename: subject.handoutFilename,
-                uploading: uploading,
-                stagedFilename: stagedFilename,
-                onPick: onPickHandout,
-                onUnstage: onUnstageHandout,
-              ),
             ],
-          ],
+          ),
         ),
       ),
     );
@@ -249,20 +269,21 @@ class HandoutChip extends StatelessWidget {
       return Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          SizedBox(
+          const SizedBox(
             width: 12,
             height: 12,
             child: CircularProgressIndicator(
               strokeWidth: 1.5,
-              color: AppTheme.onBackground2.withValues(alpha: 0.6),
+              color: Colors.white54,
             ),
           ),
           const SizedBox(width: 6),
           Text(
             'Generating plan…',
-            style: TextStyle(
+            style: GoogleFonts.googleSans(
               fontSize: 11,
-              color: AppTheme.onBackground2.withValues(alpha: 0.6),
+              fontWeight: FontWeight.w500,
+              color: Colors.white60,
             ),
           ),
         ],
@@ -273,9 +294,9 @@ class HandoutChip extends StatelessWidget {
       return GestureDetector(
         onTap: onUnstage,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
           decoration: BoxDecoration(
-            color: AppTheme.wishlist.withValues(alpha: 0.12),
+            color: AppTheme.wishlist.withValues(alpha: 0.14),
             borderRadius: BorderRadius.circular(AppTheme.radiusXxl),
             border: Border.all(
               color: AppTheme.wishlist.withValues(alpha: 0.4),
@@ -290,19 +311,19 @@ class HandoutChip extends StatelessWidget {
                 size: 13,
                 color: AppTheme.wishlist.withValues(alpha: 0.8),
               ),
-              const SizedBox(width: 5),
+              const SizedBox(width: 6),
               Flexible(
                 child: Text(
                   '$stagedFilename (queued)',
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
+                  style: GoogleFonts.googleSans(
                     fontSize: 11,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w600,
                     color: AppTheme.wishlist.withValues(alpha: 0.9),
                   ),
                 ),
               ),
-              const SizedBox(width: 5),
+              const SizedBox(width: 6),
               Icon(
                 Icons.close_rounded,
                 size: 13,
@@ -317,16 +338,16 @@ class HandoutChip extends StatelessWidget {
     return GestureDetector(
       onTap: onPick,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
         decoration: BoxDecoration(
           color: hasHandout
-              ? const Color(0xFFD4A5FF).withValues(alpha: 0.15)
-              : Colors.white.withValues(alpha: 0.04),
+              ? const Color(0xFF8C38E5).withValues(alpha: 0.15)
+              : Colors.white.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(AppTheme.radiusXxl),
           border: Border.all(
             color: hasHandout
-                ? const Color(0xFFD4A5FF).withValues(alpha: 0.4)
-                : AppTheme.onBackground2.withValues(alpha: 0.2),
+                ? const Color(0xFF8C38E5).withValues(alpha: 0.4)
+                : Colors.white.withValues(alpha: 0.12),
             width: 1.0,
           ),
         ),
@@ -338,21 +359,17 @@ class HandoutChip extends StatelessWidget {
                   ? Icons.description_rounded
                   : Icons.upload_file_rounded,
               size: 13,
-              color: hasHandout
-                  ? const Color(0xFFD4A5FF)
-                  : AppTheme.onBackground2.withValues(alpha: 0.6),
+              color: hasHandout ? const Color(0xFFD4A5FF) : Colors.white54,
             ),
-            const SizedBox(width: 5),
+            const SizedBox(width: 6),
             Text(
               hasHandout
                   ? '${filename ?? 'Handout uploaded'}  ↺'
                   : 'Upload handout',
-              style: TextStyle(
+              style: GoogleFonts.googleSans(
                 fontSize: 11,
                 fontWeight: FontWeight.w500,
-                color: hasHandout
-                    ? const Color(0xFFD4A5FF)
-                    : AppTheme.onBackground2.withValues(alpha: 0.6),
+                color: hasHandout ? const Color(0xFFD4A5FF) : Colors.white70,
               ),
             ),
           ],
@@ -392,8 +409,8 @@ class _CreditTargetSheetState extends State<CreditTargetSheet> {
       ),
       child: Container(
         decoration: const BoxDecoration(
-          color: AppTheme.bgGradBegin,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          color: Color(0xFF1E1E22),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         padding: const EdgeInsets.fromLTRB(
           AppTheme.lg,
@@ -411,23 +428,26 @@ class _CreditTargetSheetState extends State<CreditTargetSheet> {
                 height: 4,
                 margin: const EdgeInsets.only(bottom: AppTheme.lg),
                 decoration: BoxDecoration(
-                  color: AppTheme.onBackground2.withValues(alpha: 0.3),
+                  color: Colors.white24,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
             ),
-            const Text(
+            Text(
               'Credits this semester',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: AppTheme.onBackground,
+              style: GoogleFonts.googleSans(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
               ),
             ),
-            const SizedBox(height: AppTheme.xs),
-            const Text(
+            const SizedBox(height: 6),
+            Text(
               'How many total credits are you registered for?',
-              style: TextStyle(fontSize: 13, color: AppTheme.onBackground2),
+              style: GoogleFonts.googleSans(
+                fontSize: 14,
+                color: Colors.white54,
+              ),
             ),
             const SizedBox(height: AppTheme.lg),
             TextField(
@@ -436,30 +456,27 @@ class _CreditTargetSheetState extends State<CreditTargetSheet> {
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               onChanged: (_) => setState(() {}),
-              style: const TextStyle(
+              style: GoogleFonts.googleSans(
                 fontSize: 32,
-                fontWeight: FontWeight.w700,
-                color: AppTheme.onBackground,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
               ),
-              cursorColor: AppTheme.onBackground2,
+              cursorColor: const Color(0xFF8C38E5),
               decoration: InputDecoration(
                 hintText: '25',
-                hintStyle: TextStyle(
+                hintStyle: GoogleFonts.googleSans(
                   fontSize: 32,
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.onBackground2.withValues(alpha: 0.3),
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white24,
                 ),
                 enabledBorder: UnderlineInputBorder(
                   borderSide: BorderSide(
-                    color: AppTheme.onBackground2.withValues(alpha: 0.2),
+                    color: Colors.white.withValues(alpha: 0.15),
                     width: 1.5,
                   ),
                 ),
                 focusedBorder: const UnderlineInputBorder(
-                  borderSide: BorderSide(
-                    color: AppTheme.onBackground2,
-                    width: 2,
-                  ),
+                  borderSide: BorderSide(color: Color(0xFF8C38E5), width: 2),
                 ),
                 contentPadding: const EdgeInsets.only(bottom: AppTheme.sm),
               ),
@@ -473,8 +490,23 @@ class _CreditTargetSheetState extends State<CreditTargetSheet> {
                 duration: const Duration(milliseconds: 200),
                 child: DecoratedBox(
                   decoration: BoxDecoration(
-                    gradient: AppTheme.primaryGradient,
-                    borderRadius: BorderRadius.circular(AppTheme.radiusXxl),
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF9B4DFF), Color(0xFF7428D8)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: _valid
+                        ? [
+                            BoxShadow(
+                              color: const Color(
+                                0xFF8C38E5,
+                              ).withValues(alpha: 0.38),
+                              blurRadius: 18,
+                              offset: const Offset(0, 4),
+                            ),
+                          ]
+                        : [],
                   ),
                   child: ElevatedButton(
                     onPressed: _valid
@@ -486,16 +518,16 @@ class _CreditTargetSheetState extends State<CreditTargetSheet> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.transparent,
                       shadowColor: Colors.transparent,
-                      foregroundColor: AppTheme.onPrimary,
+                      foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppTheme.radiusXxl),
+                        borderRadius: BorderRadius.circular(16),
                       ),
                     ),
-                    child: const Text(
-                      'Set',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
+                    child: Text(
+                      'Set Target',
+                      style: GoogleFonts.googleSans(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
@@ -590,8 +622,8 @@ class _AddSubjectSheetState extends State<AddSubjectSheet> {
       ),
       child: Container(
         decoration: const BoxDecoration(
-          color: AppTheme.bgGradBegin,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          color: Color(0xFF1E1E22),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         padding: const EdgeInsets.fromLTRB(
           AppTheme.lg,
@@ -609,17 +641,17 @@ class _AddSubjectSheetState extends State<AddSubjectSheet> {
                 height: 4,
                 margin: const EdgeInsets.only(bottom: AppTheme.lg),
                 decoration: BoxDecoration(
-                  color: AppTheme.onBackground2.withValues(alpha: 0.3),
+                  color: Colors.white24,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
             ),
-            const Text(
+            Text(
               'Add Subject',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: AppTheme.onBackground,
+              style: GoogleFonts.googleSans(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
               ),
             ),
             if (widget.remainingCredits != null) ...[
@@ -628,11 +660,11 @@ class _AddSubjectSheetState extends State<AddSubjectSheet> {
                 widget.remainingCredits! > 0
                     ? '${widget.remainingCredits} credits remaining this semester'
                     : 'Credit limit reached',
-                style: TextStyle(
-                  fontSize: 12,
+                style: GoogleFonts.googleSans(
+                  fontSize: 13,
                   fontWeight: FontWeight.w500,
                   color: widget.remainingCredits! > 0
-                      ? AppTheme.onBackground2
+                      ? Colors.white54
                       : AppTheme.wishlist,
                 ),
               ),
@@ -667,7 +699,7 @@ class _AddSubjectSheetState extends State<AddSubjectSheet> {
               const SizedBox(height: AppTheme.sm),
               Text(
                 _error!,
-                style: const TextStyle(
+                style: GoogleFonts.googleSans(
                   fontSize: 12,
                   color: AppTheme.wishlist,
                   fontWeight: FontWeight.w500,
@@ -683,17 +715,32 @@ class _AddSubjectSheetState extends State<AddSubjectSheet> {
                 duration: const Duration(milliseconds: 200),
                 child: DecoratedBox(
                   decoration: BoxDecoration(
-                    gradient: AppTheme.primaryGradient,
-                    borderRadius: BorderRadius.circular(AppTheme.radiusXxl),
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF9B4DFF), Color(0xFF7428D8)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: (_valid && !_submitting)
+                        ? [
+                            BoxShadow(
+                              color: const Color(
+                                0xFF8C38E5,
+                              ).withValues(alpha: 0.38),
+                              blurRadius: 18,
+                              offset: const Offset(0, 4),
+                            ),
+                          ]
+                        : [],
                   ),
                   child: ElevatedButton(
                     onPressed: (_valid && !_submitting) ? _submit : null,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.transparent,
                       shadowColor: Colors.transparent,
-                      foregroundColor: AppTheme.onPrimary,
+                      foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppTheme.radiusXxl),
+                        borderRadius: BorderRadius.circular(16),
                       ),
                     ),
                     child: _submitting
@@ -702,14 +749,14 @@ class _AddSubjectSheetState extends State<AddSubjectSheet> {
                             height: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: AppTheme.onPrimary,
+                              color: Colors.white,
                             ),
                           )
-                        : const Text(
-                            'Add',
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
+                        : Text(
+                            'Add Subject',
+                            style: GoogleFonts.googleSans(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
                   ),
@@ -752,10 +799,10 @@ class SheetField extends StatelessWidget {
       children: [
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 12,
+          style: GoogleFonts.googleSans(
+            fontSize: 13,
             fontWeight: FontWeight.w500,
-            color: AppTheme.onBackground2,
+            color: Colors.white60,
           ),
         ),
         const SizedBox(height: 6),
@@ -764,22 +811,22 @@ class SheetField extends StatelessWidget {
           onChanged: onChanged,
           keyboardType: keyboardType,
           inputFormatters: inputFormatters,
-          style: const TextStyle(color: AppTheme.onBackground, fontSize: 15),
-          cursorColor: AppTheme.onBackground2,
+          style: GoogleFonts.googleSans(color: Colors.white, fontSize: 15),
+          cursorColor: const Color(0xFF8C38E5),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: TextStyle(
-              color: AppTheme.onBackground2.withValues(alpha: 0.4),
+            hintStyle: GoogleFonts.googleSans(
+              color: Colors.white24,
               fontSize: 15,
             ),
             enabledBorder: UnderlineInputBorder(
               borderSide: BorderSide(
-                color: AppTheme.onBackground2.withValues(alpha: 0.2),
+                color: Colors.white.withValues(alpha: 0.12),
                 width: 1.2,
               ),
             ),
             focusedBorder: const UnderlineInputBorder(
-              borderSide: BorderSide(color: AppTheme.onBackground2, width: 1.8),
+              borderSide: BorderSide(color: Color(0xFF8C38E5), width: 1.8),
             ),
             contentPadding: const EdgeInsets.only(bottom: 6),
           ),

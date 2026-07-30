@@ -26,7 +26,7 @@ class UserNotifier extends StateNotifier<UserModel> {
       final response = await client
           .from('users')
           .select(
-            'id, email, full_name, roll_number, college, campus_id, institution_id, academic_year, branch, plan',
+            'id, email, full_name, roll_number, college, campus_id, institution_id, academic_year, branch, dual_branch, current_semester, study_capacity, avatar_data, plan',
           )
           .eq('id', authUser.id)
           .single();
@@ -39,6 +39,10 @@ class UserNotifier extends StateNotifier<UserModel> {
         rollNumber: response['roll_number'] as String? ?? '',
         academicYear: response['academic_year'] as int? ?? 1,
         branch: response['branch'] as String?,
+        dualBranch: response['dual_branch'] as String?,
+        currentSemester: response['current_semester'] as int?,
+        studyCapacity: response['study_capacity'] as String?,
+        avatarData: response['avatar_data'] as String?,
         plan: response['plan'] as String? ?? 'free',
         institutionId: response['institution_id'] as String?,
         campusId: response['campus_id'] as String?,
