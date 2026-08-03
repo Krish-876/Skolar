@@ -24,16 +24,9 @@ class _LoadingOverlayState extends ConsumerState<LoadingOverlay>
     });
   }
 
-  void _startLoop() async {
+  void _startLoop() {
     if (!mounted) return;
-    _gifController.reset();
-    _gifController.forward(from: 0);
-    _gifController.addStatusListener((status) {
-      if (status == AnimationStatus.completed && mounted) {
-        _gifController.reset();
-        _gifController.forward(from: 0);
-      }
-    });
+    _gifController.repeat(period: const Duration(milliseconds: 1500));
   }
 
   @override

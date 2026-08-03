@@ -11,6 +11,11 @@ final RouteObserver<ModalRoute<void>> routeObserver =
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
+
   await Supabase.initialize(
     url: 'https://nohxpwqlqdwqwptuvzyf.supabase.co',
     anonKey:
