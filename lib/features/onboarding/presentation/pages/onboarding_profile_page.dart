@@ -17,7 +17,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:Skolar/core/routing/app_routes.dart';
-import 'package:Skolar/core/theme/app_theme.dart';
 import 'package:Skolar/features/onboarding/presentation/providers/onboarding_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -119,6 +118,7 @@ class _OnboardingProfilePageState extends ConsumerState<OnboardingProfilePage>
     with TickerProviderStateMixin {
   // ── Step management ────────────────────────────────────────────────────────
   int _step = 0;
+  bool _isLoading = false;
 
   // ── Progress bar fill animation ───────────────────────────────────────────
   late AnimationController _progressCtrl;
@@ -200,6 +200,7 @@ class _OnboardingProfilePageState extends ConsumerState<OnboardingProfilePage>
   }
 
   void _advance() async {
+    if (_isLoading) return;
     HapticFeedback.lightImpact();
 
     // Step-0 sub-stage: confirm avatar before showing name fields
@@ -214,8 +215,13 @@ class _OnboardingProfilePageState extends ConsumerState<OnboardingProfilePage>
       setState(() => _step++);
       _playStepEntrance();
     } else {
-      await ref.read(onboardingProvider.notifier).complete();
-      if (mounted) context.go(AppRoutes.subjects);
+      setState(() => _isLoading = true);
+      try {
+        await ref.read(onboardingProvider.notifier).complete();
+        if (mounted) context.go(AppRoutes.subjects);
+      } finally {
+        if (mounted) setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -356,6 +362,7 @@ class _OnboardingProfilePageState extends ConsumerState<OnboardingProfilePage>
             _FooterButton(
               label: _buttonLabel(),
               enabled: canAdvance,
+              isLoading: _isLoading,
               onTap: _advance,
             ),
           ],
@@ -414,7 +421,6 @@ class _OnboardingProfilePageState extends ConsumerState<OnboardingProfilePage>
           selectedValue: ref.watch(onboardingProvider).endgame,
           onSelect: (val) {
             ref.read(onboardingProvider.notifier).setEndgame(val);
-            Future.delayed(const Duration(milliseconds: 280), _advance);
           },
         );
       case 5:
@@ -434,7 +440,6 @@ class _OnboardingProfilePageState extends ConsumerState<OnboardingProfilePage>
           selectedValue: ref.watch(onboardingProvider).prepStyle,
           onSelect: (val) {
             ref.read(onboardingProvider.notifier).setPrepStyle(val);
-            Future.delayed(const Duration(milliseconds: 280), _advance);
           },
         );
       default:
@@ -681,13 +686,7 @@ class _MascotHeader extends StatelessWidget {
               Container(
                 width: 54,
                 height: 54,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: _kPrimary.withValues(alpha: 0.7),
-                    width: 2,
-                  ),
-                ),
+                decoration: const BoxDecoration(shape: BoxShape.circle),
                 child: ClipOval(
                   child: Image.asset(
                     'assets/images/mascot.jpeg',
@@ -742,23 +741,26 @@ class _MascotHeader extends StatelessWidget {
 class _FooterButton extends StatelessWidget {
   final String label;
   final bool enabled;
+  final bool isLoading;
   final VoidCallback onTap;
 
   const _FooterButton({
     required this.label,
     required this.enabled,
+    this.isLoading = false,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    final active = enabled && !isLoading;
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
       child: AnimatedOpacity(
         opacity: enabled ? 1.0 : 0.4,
         duration: const Duration(milliseconds: 200),
         child: IgnorePointer(
-          ignoring: !enabled,
+          ignoring: !active,
           child: GestureDetector(
             onTap: onTap,
             child: AnimatedContainer(
@@ -786,14 +788,23 @@ class _FooterButton extends StatelessWidget {
                     : [],
               ),
               alignment: Alignment.center,
-              child: Text(
-                label,
-                style: GoogleFonts.googleSans(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              child: isLoading
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        color: Colors.white,
+                      ),
+                    )
+                  : Text(
+                      label,
+                      style: GoogleFonts.googleSans(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
             ),
           ),
         ),
@@ -837,11 +848,11 @@ class _ProfileStep extends StatelessWidget {
           Center(
             child: CircleAvatar(
               radius: 60,
-              backgroundColor: AppTheme.surface,
+              backgroundColor: const Color(0xFFF2F2F5),
               child: ClipOval(
                 child: AvatarMakerAvatar(
                   radius: 60,
-                  backgroundColor: Colors.transparent,
+                  backgroundColor: const Color(0xFFF2F2F5),
                   controller: avatarController,
                 ),
               ),

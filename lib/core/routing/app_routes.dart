@@ -17,7 +17,7 @@ import 'package:Skolar/features/analytics/presentation/pages/analytics_pages.dar
 import 'package:Skolar/features/splash%20screen/splash_screen.dart';
 import 'package:Skolar/core/loading/test_page.dart';
 
-import '../../features/profile/presentation/pages/profile_pages1.dart';
+import 'package:Skolar/features/profile/presentation/pages/profile_page.dart';
 
 class AppRoutes {
   static const String auth = '/auth';
