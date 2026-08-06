@@ -1,18 +1,21 @@
 import os
+
 os.environ["OPENBLAS_NUM_THREADS"] = "1"
 os.environ["OMP_NUM_THREADS"] = "1"
 
 import json
-import random
 import logging
-import numpy as np
-from numpy.linalg import norm
-import pdfplumber
-from sentence_transformers import SentenceTransformer
-from groq import Groq
-from dotenv import load_dotenv
+import random
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from supabase import create_client, Client
+
+import numpy as np
+import pdfplumber
+from dotenv import load_dotenv
+from groq import Groq
+from numpy.linalg import norm
+from sentence_transformers import SentenceTransformer
+
+from supabase import Client, create_client
 
 load_dotenv()
 
@@ -233,6 +236,7 @@ def extract_docx_text(docx_bytes: bytes) -> str:
     """Extract text from a .docx: paragraphs, tables, and OCR of embedded images."""
     import io
     import zipfile
+
     import docx as python_docx
 
     full_text: list[str] = []
@@ -276,18 +280,18 @@ def extract_docx_text(docx_bytes: bytes) -> str:
 
     return "\n".join(full_text)
 
-
 def extract_doc_text(doc_bytes: bytes, filename: str = "input.doc") -> str:
     """
     Legacy .doc → convert to .docx via local LibreOffice, then extract.
     Requires `soffice` (LibreOffice) installed and on PATH.
     Raises a clear error if it's missing rather than silently returning "".
     """
-    import tempfile
-    import subprocess
     import shutil
+    import subprocess
+    import tempfile
 
-    if shutil.which("soffice") is None:
+    soffice_path = shutil.which("soffice")
+    if soffice_path is None:
         raise RuntimeError(
             "LibreOffice ('soffice') not found on PATH. Legacy .doc files need "
             "it for conversion. Install LibreOffice (free, libreoffice.org) and "
@@ -300,9 +304,10 @@ def extract_doc_text(doc_bytes: bytes, filename: str = "input.doc") -> str:
         with open(src_path, "wb") as f:
             f.write(doc_bytes)
 
-        result = subprocess.run(
-            ["soffice", "--headless", "--convert-to", "docx", "--outdir", tmp, src_path],
+        result = subprocess.run(  # noqa: S603 -- soffice_path resolved via shutil.which; args are not shell-interpreted
+            [soffice_path, "--headless", "--convert-to", "docx", "--outdir", tmp, src_path],
             capture_output=True, text=True, timeout=120,
+            check=False,
         )
         if result.returncode != 0:
             raise RuntimeError(f"soffice conversion failed: {result.stderr.strip()}")
@@ -321,6 +326,7 @@ def extract_image_text(image_bytes: bytes) -> str:
     """OCR a standalone image file (photo/screenshot of a question paper)."""
     try:
         import io
+
         from PIL import Image
         img = Image.open(io.BytesIO(image_bytes))
         return _ocr_pil_image(img)
@@ -487,15 +493,14 @@ Text:
             raw = response.choices[0].message.content.strip()
             if raw.startswith("```"):
                 raw = raw.split("```")[1]
-                if raw.startswith("json"):
-                    raw = raw[4:]
+                raw = raw.removeprefix("json")
             parsed = json.loads(raw)
             for q in parsed:
                 q["subject"]          = subject
                 q["paper_year"]       = paper_year
                 q["exam_type"]        = exam_type
                 q["doc_type"]         = doc_type
-                q["marks"]            = int(round(q.get("marks", 0)))
+                q["marks"]            = round(q.get("marks", 0))
                 q["topic"]            = q.get("topic", "")
                 q["has_diagram"]      = bool(q.get("has_diagram", False))
                 q["marks_inferred"]   = bool(q.get("marks_inferred", False))
@@ -549,8 +554,7 @@ Text:
             raw = response.choices[0].message.content.strip()
             if raw.startswith("```"):
                 raw = raw.split("```")[1]
-                if raw.startswith("json"):
-                    raw = raw[4:]
+                raw = raw.removeprefix("json")
             parsed = json.loads(raw)
             all_answers.extend(parsed)
         except Exception as e:
@@ -776,8 +780,7 @@ Return ONLY a valid JSON object with exactly these fields — no markdown, no ba
     raw = response.choices[0].message.content.strip()
     if raw.startswith("```"):
         raw = raw.split("```")[1]
-        if raw.startswith("json"):
-            raw = raw[4:]
+        raw = raw.removeprefix("json")
     parsed = json.loads(raw.strip())
     return {
         "question":      parsed["question"],

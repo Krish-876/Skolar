@@ -10,10 +10,12 @@ Tests:
     4. Open-ended Diversity — pairwise cosine similarity across generated questions
 """
 
-import requests
-import numpy as np
-from numpy.linalg import norm
+import sys
 from itertools import combinations
+
+import numpy as np
+import requests
+from numpy.linalg import norm
 
 BASE_URL = "http://localhost:8000"
 COLLEGE  = "BPHC"
@@ -258,7 +260,7 @@ if __name__ == "__main__":
     results["health"]        = test_health()
     if not results["health"]:
         print("\n❌ Server not reachable. Start with: uvicorn main:app --reload --port 8000")
-        exit(1)
+        sys.exit(1)
 
     results["stats"]         = test_stats()
     results["mcq_accuracy"]  = test_mcq_accuracy()

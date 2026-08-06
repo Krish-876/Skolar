@@ -8,9 +8,8 @@ Nova's reasoning pass uses at trigger time.
 from datetime import datetime, timezone
 from typing import Any, cast
 
-from supabase import Client
-
 from nova.schemas.facts_snapshot import FactsSnapshot
+from supabase import Client
 
 
 def _fetch_own_profile(supabase: Client, user_id: str) -> dict:
