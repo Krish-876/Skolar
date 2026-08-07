@@ -1,4 +1,5 @@
 import json
+import logging
 from typing import cast
 
 from groq import Groq
@@ -6,6 +7,8 @@ from groq.types.chat import ChatCompletionMessageParam
 
 from nova.prompts.nova_system_prompt import NOVA_SYSTEM_PROMPT
 from nova.schemas.chat import ChatTurn
+
+logger = logging.getLogger(__name__)
 
 GROQ_MODEL = "openai/gpt-oss-120b"
 CEREBRAS_MODEL = "gpt-oss-120b"
@@ -33,7 +36,8 @@ def _shadow_eval_cerebras(cerebras, messages: list[dict]) -> None:
             temperature=0.4,
         )
     except Exception:
-        pass  # shadow tier - failures here are informational only
+        # shadow tier - failures here are informational only, never raised
+        logger.debug("cerebras shadow eval failed", exc_info=True)
 
 
 def _facts_message(patch: dict, is_first_turn: bool) -> dict | None:

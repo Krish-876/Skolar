@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import os
 import threading
 from pathlib import Path
@@ -6,6 +7,8 @@ from pathlib import Path
 from dotenv import load_dotenv
 from supabase import create_client, acreate_client, Client
 from groq import Groq
+
+logger = logging.getLogger(__name__)
 
 ENV_PATH = Path(__file__).resolve().parent.parent.parent.parent / "rag_llms" / ".env"
 
@@ -145,7 +148,7 @@ def start_facts_listener_threaded(supabase_url: str, supabase_key: str, user_id:
         except Exception:
             # background thread - a listener failure should never crash the
             # CLI session, it just means live updates stop coming through
-            pass
+            logger.exception("facts listener thread failed, live updates disabled")
 
     thread = threading.Thread(target=_runner, daemon=True)
     thread.start()
