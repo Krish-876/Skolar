@@ -4,8 +4,11 @@ import os
 import threading
 from pathlib import Path
 
+from typing import Any, Callable, cast
+
 from dotenv import load_dotenv
 from supabase import create_client, acreate_client, Client
+from realtime import RealtimePostgresChangesListenEvent
 from groq import Groq
 
 logger = logging.getLogger(__name__)
@@ -76,57 +79,10 @@ FACTS_TABLES = [
 ]
 
 
-def start_facts_listener(supabase: Client, user_id: str, on_change):
-    """Subscribes to every table that feeds FactsSnapshot and calls
-    on_change(table_name) whenever a row tied to this user changes.
-
-    `users` and most tables filter directly on id/user_id. user_subject_exams
-    and question_results don't carry user_id directly (joined via
-    user_subject_id / attempt_id) - subscribed unfiltered and left to the
-    caller's on_change to just mark that table dirty; the next targeted
-    refetch re-scopes to this user_id anyway, so an extra dirty flag from
-    another student's row costs one avoidable partial fetch, not a leak.
-    """
-    channel = supabase.channel(f"facts-{user_id}")
-
-    direct_filter_tables = [
-        "nova_capacity_log",
-        "staleness_tracker",
-        "standing_flags",
-        "situation_flags",
-        "nova_history",
-        "career_units",
-        "user_topic_weights",
-        "study_plans",
-    ]
-    for table in direct_filter_tables:
-        channel.on_postgres_changes(
-            event="*",
-            schema="public",
-            table=table,
-            filter=f"user_id=eq.{user_id}",
-            callback=lambda payload, t=table: on_change(t),
-        )
-
-    channel.on_postgres_changes(
-        event="*", schema="public", table="users",
-        filter=f"id=eq.{user_id}",
-        callback=lambda payload: on_change("users"),
-    )
-
-    for table in ("user_subject_exams", "question_results"):
-        channel.on_postgres_changes(
-            event="*", schema="public", table=table,
-            callback=lambda payload, t=table: on_change(t),
-        )
-
-    channel.subscribe()
-    return channel
-
-
 def start_facts_listener_threaded(supabase_url: str, supabase_key: str, user_id: str, on_change):
-    """Same subscription as start_facts_listener above, but runs on its own
-    background thread with its own asyncio event loop, using the async
+    """Subscribes to every table that feeds FactsSnapshot and calls
+    on_change(table_name) whenever a row tied to this user changes, on its
+    own background thread with its own asyncio event loop, using the async
     Supabase client. This is what lets Realtime actually work from a plain
     sync CLI (nova_agent.py's main() has no event loop of its own).
 
@@ -156,6 +112,8 @@ def start_facts_listener_threaded(supabase_url: str, supabase_key: str, user_id:
 
 
 async def _subscribe_async(supabase_url: str, supabase_key: str, user_id: str, on_change):
+    all_events = cast(RealtimePostgresChangesListenEvent, "*")
+
     async_supabase = await acreate_client(supabase_url, supabase_key)
     channel = async_supabase.channel(f"facts-{user_id}")
 
@@ -170,24 +128,31 @@ async def _subscribe_async(supabase_url: str, supabase_key: str, user_id: str, o
         "study_plans",
     ]
     for table in direct_filter_tables:
+        def _make_table_callback(t: str) -> Callable[[dict[str, Any]], None]:
+            return lambda payload: on_change(t)
+
         channel.on_postgres_changes(
-            event="*",
+            event=all_events,
             schema="public",
             table=table,
             filter=f"user_id=eq.{user_id}",
-            callback=lambda payload, t=table: on_change(t),
+            callback=_make_table_callback(table),
         )
 
+    users_callback: Callable[[dict[str, Any]], None] = lambda payload: on_change("users")
     channel.on_postgres_changes(
-        event="*", schema="public", table="users",
+        event=all_events, schema="public", table="users",
         filter=f"id=eq.{user_id}",
-        callback=lambda payload: on_change("users"),
+        callback=users_callback,
     )
 
     for table in ("user_subject_exams", "question_results"):
+        def _make_table_callback(t: str) -> Callable[[dict[str, Any]], None]:
+            return lambda payload: on_change(t)
+
         channel.on_postgres_changes(
-            event="*", schema="public", table=table,
-            callback=lambda payload, t=table: on_change(t),
+            event=all_events, schema="public", table=table,
+            callback=_make_table_callback(table),
         )
 
     await channel.subscribe()
