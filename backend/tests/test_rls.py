@@ -64,7 +64,7 @@ def test_unauthenticated_client_cannot_read_user_data(anon_client: Client):
             assert len(response.data) == 0, f"RLS Failure: Unauthenticated user read {len(response.data)} rows from {table_name}"
         except Exception as e:
             err_msg = str(e).lower()
-            assert any(term in err_msg for term in ["permission denied", "rls", "401", "403", "pgrst205", "not found"])
+            assert any(term in err_msg for term in ["permission denied", "rls", "401", "403"])
 
 
 @pytest.mark.parametrize("table_name", USER_TABLES_TO_TEST)
@@ -101,6 +101,11 @@ def test_cross_student_data_isolation(authenticated_clients, table_name: str):
     except Exception:
         # If insert fails due to DB check constraints, test existing isolation directly on user_id boundary
         pass
+
+    assert seeded_row_id is not None, (
+        f"Setup failed: could not seed a row as Student A in {table_name}, "
+        f"cannot verify isolation"
+    )
 
     # Step 2: Attempt to read records as Student B filtered by Student A's user_id or seeded record ID
     if seeded_row_id:
