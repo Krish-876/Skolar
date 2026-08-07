@@ -7,7 +7,11 @@ Usage:
 
 import sys
 
-from nova.services.clients import get_clients, start_facts_listener
+from nova.services.clients import (
+    get_clients,
+    get_supabase_credentials,
+    start_facts_listener_threaded,
+)
 from nova.services.facts_state import FactsState
 from nova.services.chat_service import ask_nova
 from nova.schemas.chat import ChatTurn
@@ -29,7 +33,8 @@ def main():
 
     facts_state = FactsState(supabase, user_id)
     _, pending_patch = facts_state.get()  # initial full fetch; keep its dump for turn 1
-    # start_facts_listener(supabase, user_id, facts_state.mark_dirty)  # disabled for dry run, sync client can't run Realtime
+    supabase_url, supabase_key = get_supabase_credentials()
+    start_facts_listener_threaded(supabase_url, supabase_key, user_id, facts_state.mark_dirty)
     current_model = MODELS["1"][0]
 
     history: list[ChatTurn] = []
