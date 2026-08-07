@@ -2,14 +2,14 @@ import asyncio
 import logging
 import os
 import threading
+from collections.abc import Callable
 from pathlib import Path
-
-from typing import Any, Callable, cast
+from typing import Any, cast
 
 from dotenv import load_dotenv
-from supabase import create_client, acreate_client, Client
-from realtime import RealtimePostgresChangesListenEvent
 from groq import Groq
+from realtime import RealtimePostgresChangesListenEvent
+from supabase import Client, acreate_client, create_client
 
 logger = logging.getLogger(__name__)
 
@@ -127,10 +127,13 @@ async def _subscribe_async(supabase_url: str, supabase_key: str, user_id: str, o
         "user_topic_weights",
         "study_plans",
     ]
-    for table in direct_filter_tables:
-        def _make_table_callback(t: str) -> Callable[[dict[str, Any]], None]:
-            return lambda payload: on_change(t)
 
+    def _make_table_callback(t: str) -> Callable[[dict[str, Any]], None]:
+        def _callback(payload: dict[str, Any]) -> None:
+            on_change(t)
+        return _callback
+
+    for table in direct_filter_tables:
         channel.on_postgres_changes(
             event=all_events,
             schema="public",
@@ -139,7 +142,9 @@ async def _subscribe_async(supabase_url: str, supabase_key: str, user_id: str, o
             callback=_make_table_callback(table),
         )
 
-    users_callback: Callable[[dict[str, Any]], None] = lambda payload: on_change("users")
+    def users_callback(payload: dict[str, Any]) -> None:
+        on_change("users")
+
     channel.on_postgres_changes(
         event=all_events, schema="public", table="users",
         filter=f"id=eq.{user_id}",
@@ -147,9 +152,6 @@ async def _subscribe_async(supabase_url: str, supabase_key: str, user_id: str, o
     )
 
     for table in ("user_subject_exams", "question_results"):
-        def _make_table_callback(t: str) -> Callable[[dict[str, Any]], None]:
-            return lambda payload: on_change(t)
-
         channel.on_postgres_changes(
             event=all_events, schema="public", table=table,
             callback=_make_table_callback(table),
