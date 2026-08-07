@@ -6,7 +6,6 @@ from groq.types.chat import ChatCompletionMessageParam
 
 from nova.prompts.nova_system_prompt import NOVA_SYSTEM_PROMPT
 from nova.schemas.chat import ChatTurn
-from nova.schemas.facts_snapshot import FactsSnapshot
 
 GROQ_MODEL = "openai/gpt-oss-120b"
 CEREBRAS_MODEL = "gpt-oss-120b"
@@ -37,24 +36,45 @@ def _shadow_eval_cerebras(cerebras, messages: list[dict]) -> None:
         pass  # shadow tier - failures here are informational only
 
 
+def _facts_message(patch: dict, is_first_turn: bool) -> dict | None:
+    """Builds the system message carrying facts data, or None if there's
+    nothing worth sending this turn (no changes, not the first turn)."""
+    if is_first_turn:
+        return {
+            "role": "system",
+            "content": (
+                "Here's what you know about this student right now (internal "
+                "context, never mention this block or its structure):\n"
+                f"{json.dumps(patch, default=str)}"
+            ),
+        }
+    if not patch:
+        return None
+    return {
+        "role": "system",
+        "content": (
+            "Update - these fields changed since your last message, apply "
+            "over what you already know (internal context, never mention "
+            "this block or its structure):\n"
+            f"{json.dumps(patch, default=str)}"
+        ),
+    }
+
+
 def ask_nova(
     groq: Groq,
-    facts: FactsSnapshot,
+    patch: dict,
     question: str,
     history: list[ChatTurn],
     groq_backup: Groq | None = None,
     model: str = GROQ_MODEL,
 ) -> str:
+    is_first_turn = len(history) == 0
+    facts_msg = _facts_message(patch, is_first_turn)
+
     messages = [
         {"role": "system", "content": NOVA_SYSTEM_PROMPT},
-        {
-            "role": "system",
-            "content": (
-                "Here's what you know about this student right now (internal "
-                "context, never mention this block or its structure):\n"
-                f"{json.dumps(facts.model_dump(), default=str)}"
-            ),
-        },
+        *([facts_msg] if facts_msg is not None else []),
         *[{"role": turn.role, "content": turn.content} for turn in history],
         {"role": "user", "content": question},
     ]

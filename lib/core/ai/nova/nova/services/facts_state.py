@@ -44,21 +44,24 @@ class FactsState:
         with self._lock:
             self._dirty.add(table)
 
-    def get(self) -> FactsSnapshot:
-        """Returns an up-to-date snapshot. First call does a full fetch;
-        later calls patch in only the tables that changed since."""
+    def get(self) -> tuple[FactsSnapshot, dict]:
+        """Returns an up-to-date snapshot, plus the patch dict of fields
+        that changed since the previous call (empty dict if nothing did).
+        First call's patch is the full snapshot dump - caller decides how
+        to use that (ask_nova treats an empty history as "first turn" and
+        sends it as full context regardless of what's passed here)."""
         with self._lock:
             if self._snapshot is None:
                 self._snapshot = fs.get_facts_snapshot(self._supabase, self._user_id)
                 self._dirty.clear()
-                return self._snapshot
+                return self._snapshot, self._snapshot.model_dump()
 
             if not self._dirty:
-                return self._snapshot
+                return self._snapshot, {}
 
             pending, self._dirty = self._dirty, set()
 
         patch = fs.fetch_partial(self._supabase, self._user_id, pending, _TABLE_TO_FIELDS)
         with self._lock:
             self._snapshot = self._snapshot.model_copy(update=patch)
-            return self._snapshot
+            return self._snapshot, patch

@@ -28,8 +28,8 @@ def main():
     supabase, groq, groq_backup = get_clients()
 
     facts_state = FactsState(supabase, user_id)
-    facts_state.get()  # initial full fetch, before the listener can mark anything dirty
-    start_facts_listener(supabase, user_id, facts_state.mark_dirty)
+    _, pending_patch = facts_state.get()  # initial full fetch; keep its dump for turn 1
+    # start_facts_listener(supabase, user_id, facts_state.mark_dirty)  # disabled for dry run, sync client can't run Realtime
     current_model = MODELS["1"][0]
 
     history: list[ChatTurn] = []
@@ -56,8 +56,10 @@ def main():
             continue
 
         try:
-            facts = facts_state.get()  # refetches only the tables flagged dirty since last turn
-            answer = ask_nova(groq, facts, question, history, groq_backup, current_model)
+            _, new_patch = facts_state.get()  # only the fields changed since last turn
+            send_patch = {**pending_patch, **new_patch} if not history else new_patch
+            answer = ask_nova(groq, send_patch, question, history, groq_backup, current_model)
+            pending_patch = {}
         except Exception:
             print("\nSomething went wrong there, try that again.\n")
             continue
