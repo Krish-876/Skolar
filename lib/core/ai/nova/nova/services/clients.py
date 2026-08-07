@@ -7,7 +7,6 @@ from dotenv import load_dotenv
 from supabase import create_client, acreate_client, Client
 from groq import Groq
 
-# lib/core/ai/nova/nova/services/clients.py -> lib/core/ai/rag_llms/.env
 ENV_PATH = Path(__file__).resolve().parent.parent.parent.parent / "rag_llms" / ".env"
 
 
