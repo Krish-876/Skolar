@@ -8,7 +8,33 @@ from nova.prompts.nova_system_prompt import NOVA_SYSTEM_PROMPT
 from nova.schemas.chat import ChatTurn
 from nova.schemas.facts_snapshot import FactsSnapshot
 
-GROQ_MODEL = "llama-3.3-70b-versatile"
+GROQ_MODEL = "openai/gpt-oss-120b"
+CEREBRAS_MODEL = "gpt-oss-120b"
+CEREBRAS_CONTEXT_CAP = 8192
+GROQ_TPM_CAP = 8000
+
+
+def _estimate_tokens(messages: list[dict]) -> int:
+    # rough chars/4 estimate - good enough for a cap check, not billing
+    return sum(len(m.get("content", "")) for m in messages) // 4
+
+
+def _shadow_eval_cerebras(cerebras, messages: list[dict]) -> None:
+    """Fires alongside the real Groq call to validate latency/context-fit.
+    Never routed to for real traffic (data policy unconfirmed, MD §0), never
+    awaited for the response, never allowed to raise into ask_nova."""
+    if cerebras is None:
+        return
+    if _estimate_tokens(messages) > CEREBRAS_CONTEXT_CAP:
+        return  # over the cap for this call - skip, don't trim, don't log as failure
+    try:
+        cerebras.chat.completions.create(
+            model=CEREBRAS_MODEL,
+            messages=cast(list[ChatCompletionMessageParam], messages),
+            temperature=0.4,
+        )
+    except Exception:
+        pass  # shadow tier - failures here are informational only
 
 
 def ask_nova(
@@ -32,6 +58,19 @@ def ask_nova(
         *[{"role": turn.role, "content": turn.content} for turn in history],
         {"role": "user", "content": question},
     ]
+
+    if _estimate_tokens(messages) > GROQ_TPM_CAP:
+        # over the per-call TPM gate - same class of failure as a provider
+        # outage, so it goes through the same backup-key path below
+        if groq_backup is None:
+            raise RuntimeError("payload exceeds Groq TPM cap and no backup key set")
+        resp = groq_backup.chat.completions.create(
+            model=model,
+            messages=cast(list[ChatCompletionMessageParam], messages),
+            temperature=0.4,
+        )
+        content = resp.choices[0].message.content
+        return content if content is not None else ""
 
     try:
         resp = groq.chat.completions.create(

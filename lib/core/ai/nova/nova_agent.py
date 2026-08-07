@@ -14,7 +14,7 @@ from nova.schemas.chat import ChatTurn
 
 
 MODELS = {
-    "1": ("llama-3.3-70b-versatile", "thinking (default)"),
+    "1": ("openai/gpt-oss-120b", "thinking (default)"),
     "2": ("llama-3.1-8b-instant", "fast"),
 }
 
