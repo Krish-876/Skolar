@@ -12,23 +12,21 @@ Endpoints:
     GET  /questions              → browse / filter the question bank (scoped by college)
 """
 
+import logging
 import traceback
 
-import logging
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Query
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from typing import Optional
 import uvicorn
-
+from fastapi import FastAPI, File, Form, HTTPException, Query, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 from pipeline import (
+    load_bank_and_embeddings,
     run_generate,
     run_generate_mcq_batch,
     run_generate_open_batch,
     run_upload_pyq,
-    load_bank_and_embeddings,
     save_generated_test,
 )
+from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 
@@ -61,9 +59,9 @@ _VALID_DOC_TYPES = {"pyq", "tutorial", "solution", "lab", "misc"}
 class GenerateRequest(BaseModel):
     subject: str
     college: str
-    year_from: Optional[int] = None
-    year_to: Optional[int] = None
-    k: Optional[int] = 5
+    year_from: int | None = None
+    year_to: int | None = None
+    k: int | None = 5
 
 class GenerateResponse(BaseModel):
     question: str
@@ -80,12 +78,12 @@ class McqQuestion(BaseModel):
 class GenerateBatchRequest(BaseModel):
     subject: str
     college: str
-    count: Optional[int] = 5
-    exam_type: Optional[str] = None
-    year_from: Optional[int] = None
-    year_to: Optional[int] = None
-    k: Optional[int] = 5
-    published_by: Optional[str] = None
+    count: int | None = 5
+    exam_type: str | None = None
+    year_from: int | None = None
+    year_to: int | None = None
+    k: int | None = 5
+    published_by: str | None = None
 
 class GenerateBatchResponse(BaseModel):
     questions: list[McqQuestion]
@@ -104,13 +102,13 @@ class OpenQuestion(BaseModel):
 class GenerateOpenBatchRequest(BaseModel):
     subject: str
     college: str
-    count: Optional[int] = 5
-    exam_type: Optional[str] = None
-    year_from: Optional[int] = None
-    year_to: Optional[int] = None
-    k: Optional[int] = 5
-    with_answers: Optional[bool] = True
-    published_by: Optional[str] = None
+    count: int | None = 5
+    exam_type: str | None = None
+    year_from: int | None = None
+    year_to: int | None = None
+    k: int | None = 5
+    with_answers: bool | None = True
+    published_by: str | None = None
 
 class GenerateOpenBatchResponse(BaseModel):
     questions: list[OpenQuestion]
@@ -125,7 +123,7 @@ class UploadResponse(BaseModel):
     added: int
     total: int
     preview: list[str]
-    pdf_id: Optional[str] = None   # uploaded_pdfs row uuid, useful for client-side status polling
+    pdf_id: str | None = None   # uploaded_pdfs row uuid, useful for client-side status polling
 
 class StatsResponse(BaseModel):
     total_questions: int
@@ -177,10 +175,10 @@ def stats(college: str = Query(...)):
 @app.get("/questions", response_model=QuestionsResponse)
 def get_questions(
     college: str = Query(...),
-    subject: Optional[str] = Query(None),
-    paper_year: Optional[int] = Query(None),
-    exam_type: Optional[str] = Query(None),
-    question_type: Optional[str] = Query(None),
+    subject: str | None = Query(None),
+    paper_year: int | None = Query(None),
+    exam_type: str | None = Query(None),
+    question_type: str | None = Query(None),
 ):
     try:
         questions, _ = load_bank_and_embeddings(college)
@@ -201,7 +199,7 @@ def get_questions(
         questions=[
             QuestionItem(
                 question_text=q.get("question_text", ""),
-                marks=int(round(q.get("marks", 0))),
+                marks=round(q.get("marks", 0)),
                 question_type=q.get("question_type", "unknown"),
                 subject=q.get("subject", "Unknown"),
                 paper_year=q.get("paper_year", 0),
@@ -232,7 +230,7 @@ def generate(req: GenerateRequest):
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Pipeline error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Pipeline error: {e!s}")
 
     return GenerateResponse(question=question, subject=req.subject, examples_used=k)
 
@@ -278,7 +276,7 @@ def generate_batch(req: GenerateBatchRequest):
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Pipeline error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Pipeline error: {e!s}")
 
     if not raw:
         raise HTTPException(
@@ -362,7 +360,7 @@ def generate_open_batch(req: GenerateOpenBatchRequest):
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Pipeline error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Pipeline error: {e!s}")
 
     if not raw:
         raise HTTPException(
@@ -402,14 +400,14 @@ async def upload_pyq(
     file: UploadFile = File(...),
     subject: str = Form(...),
     paper_year: int = Form(...),
-    exam_type: Optional[str] = Form(None),
+    exam_type: str | None = Form(None),
     college: str = Form(...),
     # ── New optional fields wired to uploaded_pdfs + questions tables ─────────
     # All optional so existing clients that don't send them continue to work.
-    subject_id:  Optional[str] = Form(None),   # uuid from subjects table
-    campus_id:   Optional[str] = Form(None),   # uuid from campuses table
-    uploaded_by: Optional[str] = Form(None),   # uuid of uploading user
-    doc_type:    Optional[str] = Form("pyq"),  # pyq | tutorial | solution | lab | misc
+    subject_id:  str | None = Form(None),   # uuid from subjects table
+    campus_id:   str | None = Form(None),   # uuid from campuses table
+    uploaded_by: str | None = Form(None),   # uuid of uploading user
+    doc_type:    str | None = Form("pyq"),  # pyq | tutorial | solution | lab | misc
 ):
     if not file.filename.endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files are accepted.")
@@ -448,7 +446,7 @@ async def upload_pyq(
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Upload error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Upload error: {e!s}")
 
     try:
         all_questions, _ = load_bank_and_embeddings(college, subject)
@@ -468,4 +466,4 @@ async def upload_pyq(
 # ── Dev entrypoint ────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True) # noqa: S104 -- local dev server, intentional
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)  # noqa: S104 -- local dev server, intentional

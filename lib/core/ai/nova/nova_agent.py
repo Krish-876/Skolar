@@ -7,11 +7,10 @@ Usage:
 
 import sys
 
+from nova.schemas.chat import ChatTurn
+from nova.services.chat_service import ask_nova
 from nova.services.clients import get_clients
 from nova.services.facts_service import get_facts_snapshot
-from nova.services.chat_service import ask_nova
-from nova.schemas.chat import ChatTurn
-
 
 MODELS = {
     "1": ("llama-3.3-70b-versatile", "thinking (default)"),
