@@ -44,3 +44,69 @@ def get_shadow_clients() -> dict[str, object | None]:
         )
 
     return {"cerebras": cerebras, "openrouter": openrouter}
+
+
+# tables Nova's FactsSnapshot is built from - kept here (not imported from
+# facts_state) so this module doesn't need to know about the patch logic,
+# just which tables to listen on.
+FACTS_TABLES = [
+    "users",
+    "user_subject_exams",
+    "nova_capacity_log",
+    "staleness_tracker",
+    "standing_flags",
+    "situation_flags",
+    "nova_history",
+    "career_units",
+    "question_results",
+    "user_topic_weights",
+    "study_plans",
+]
+
+
+def start_facts_listener(supabase: Client, user_id: str, on_change):
+    """Subscribes to every table that feeds FactsSnapshot and calls
+    on_change(table_name) whenever a row tied to this user changes.
+
+    `users` and most tables filter directly on id/user_id. user_subject_exams
+    and question_results don't carry user_id directly (joined via
+    user_subject_id / attempt_id) - subscribed unfiltered and left to the
+    caller's on_change to just mark that table dirty; the next targeted
+    refetch re-scopes to this user_id anyway, so an extra dirty flag from
+    another student's row costs one avoidable partial fetch, not a leak.
+    """
+    channel = supabase.channel(f"facts-{user_id}")
+
+    direct_filter_tables = [
+        "nova_capacity_log",
+        "staleness_tracker",
+        "standing_flags",
+        "situation_flags",
+        "nova_history",
+        "career_units",
+        "user_topic_weights",
+        "study_plans",
+    ]
+    for table in direct_filter_tables:
+        channel.on_postgres_changes(
+            event="*",
+            schema="public",
+            table=table,
+            filter=f"user_id=eq.{user_id}",
+            callback=lambda payload, t=table: on_change(t),
+        )
+
+    channel.on_postgres_changes(
+        event="*", schema="public", table="users",
+        filter=f"id=eq.{user_id}",
+        callback=lambda payload: on_change("users"),
+    )
+
+    for table in ("user_subject_exams", "question_results"):
+        channel.on_postgres_changes(
+            event="*", schema="public", table=table,
+            callback=lambda payload, t=table: on_change(t),
+        )
+
+    channel.subscribe()
+    return channel
