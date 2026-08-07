@@ -1566,6 +1566,14 @@ RLS is enabled on `topics` with read-only access for authenticated users. Write 
 
 ---
 
+### Profile — unused Clean Architecture scaffold
+
+`lib/features/profile/domain/` and `lib/features/profile/data/` (entities, repository interface, usecases, DTO, datasource, repository impl — ~10 files) exist but are entirely unused. `profile_page.dart` only calls `userProvider` and `profileDetailsProvider`, both of which query Supabase directly from the presentation layer, bypassing the scaffold. `profile_datasource.dart` is empty (`// Feature skeleton - Data layer`). Violates this project's stated Clean Architecture rule (see Architecture section).
+
+**When to fix:** Tracked in #TODO — issue number pending. Either delete the unused layers or wire `profileDetailsProvider` through them properly.
+
+---
+
 ### Nova CLI — no auth, no error handling, snapshot goes stale mid-session
 
 `nova_agent.py` currently trusts any `user_id` passed via argv with no check against the caller's identity — it runs against a service-role key locally, so anyone running it could pull any student's exam/weakness/career data just by changing the ID. API failures (Groq overloaded, Supabase down) crash the whole CLI and dump a raw stack trace, killing the session and losing all conversation history built up so far. The facts snapshot is also fetched once at CLI startup and held for the whole session — if underlying data changes mid-session (new test score, capacity update), Nova keeps answering from the stale startup snapshot. Fine for local dev/testing; tracked in [#15](https://github.com/Krish-876/Skolar/issues/15).
