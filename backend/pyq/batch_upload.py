@@ -19,17 +19,6 @@ RESUMABILITY
     (<directory>/.upload_manifest.json) keyed by content hash — not
     filename — so renaming a file doesn't cause a re-upload, and re-running
     the script after a crash skips everything already done.
-
-REQUIRED ONE-LINE CHANGE ON YOUR SIDE
-    `run_upload_pyq` currently calls `extract_raw_text(pdf_bytes)` assuming
-    PDF. Point it at document_extraction.extract_content instead:
-
-        from document_extraction import extract_content
-        ...
-        raw_text = extract_content(file_bytes, filename)   # was: extract_raw_text(pdf_bytes)
-
-    and add a `filename: str` parameter to `run_upload_pyq` so it has
-    something to pass through. This script already sends it.
 """
 
 from __future__ import annotations

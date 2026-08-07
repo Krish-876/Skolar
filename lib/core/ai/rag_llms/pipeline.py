@@ -1281,7 +1281,7 @@ def run_upload_pyq(
     raw_text = extract_raw_text_any(pdf_bytes, filename) if filename else extract_raw_text(pdf_bytes)
 
     exam_type_source = "provided"
-    if not exam_type:
+    if not exam_type and doc_type == "pyq":
         guessed_exam_type = guess_exam_type_from_text(raw_text)
         if guessed_exam_type:
             exam_type = guessed_exam_type
