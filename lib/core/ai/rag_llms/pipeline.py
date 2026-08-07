@@ -7,6 +7,7 @@ import json
 import logging
 import random
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
 
 import numpy as np
 import pdfplumber
@@ -300,7 +301,7 @@ def extract_doc_text(doc_bytes: bytes, filename: str = "input.doc") -> str:
         )
 
     with tempfile.TemporaryDirectory() as tmp:
-        src_path = os.path.join(tmp, filename)
+        src_path = str(Path(tmp) / Path(filename).name)
         with open(src_path, "wb") as f:
             f.write(doc_bytes)
 
