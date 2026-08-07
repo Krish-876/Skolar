@@ -4,11 +4,11 @@ import os
 import threading
 from collections.abc import Callable
 from pathlib import Path
-from typing import Any, cast
+from typing import cast
 
 from dotenv import load_dotenv
 from groq import Groq
-from realtime import RealtimePostgresChangesListenEvent
+from realtime import PostgresChangesPayload, RealtimePostgresChangesListenEvent
 from supabase import Client, acreate_client, create_client
 
 logger = logging.getLogger(__name__)
@@ -128,8 +128,8 @@ async def _subscribe_async(supabase_url: str, supabase_key: str, user_id: str, o
         "study_plans",
     ]
 
-    def _make_table_callback(t: str) -> Callable[[dict[str, Any]], None]:
-        def _callback(payload: dict[str, Any]) -> None:
+    def _make_table_callback(t: str) -> Callable[[PostgresChangesPayload], None]:
+        def _callback(payload: PostgresChangesPayload) -> None:
             on_change(t)
         return _callback
 
@@ -142,7 +142,7 @@ async def _subscribe_async(supabase_url: str, supabase_key: str, user_id: str, o
             callback=_make_table_callback(table),
         )
 
-    def users_callback(payload: dict[str, Any]) -> None:
+    def users_callback(payload: PostgresChangesPayload) -> None:
         on_change("users")
 
     channel.on_postgres_changes(
