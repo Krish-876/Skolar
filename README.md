@@ -14,8 +14,10 @@ An AI-powered exam preparation platform built with Flutter. Helps students track
 - [Focus Session](#focus-session)
 - [Community Feed](#community-feed)
 - [Subjects and Handout Upload](#subjects-and-handout-upload)
+- [Profile](#profile)
 - [Test Attempts, Question Results, and AI Evaluation](#test-attempts-question-results-and-ai-evaluation)
 - [PDF Upload Pipeline](#pdf-upload-pipeline)
+- [PYQ Batch Upload Pipeline (Internal Tooling)](#pyq-batch-upload-pipeline-internal-tooling)
 - [Nova — Adaptive Prep Planner](#nova--adaptive-prep-planner)
 - [Folder Structure](#folder-structure)
 - [Tech Stack](#tech-stack)
@@ -802,6 +804,37 @@ RLS policies:
 
 ---
 
+## Profile
+
+The profile page is a real, Supabase-backed screen — it replaced two earlier throwaway/mock implementations (`profile_page2.dart`, `profile_pages1.dart`, both deleted). It's read-only: there's no separate profile-edit form. Editing works by re-entering the onboarding flow, which writes through the same `save_onboarding_seed_context` RPC (see [Onboarding Seed Context](#onboarding-seed-context)) with a partial payload.
+
+### Cards
+
+| Card | Data source |
+|---|---|
+| User header — avatar, name, plan badge, roll number, campus | `userProvider` (`users` table); avatar rendered from `avatar_data` SVG via `flutter_svg`, falls back to a text initial |
+| Academic details — branch, dual branch, academic year, current semester | `userProvider` |
+| Study strategy — study pace + weekly hour range, endgame goal, prep style | `profileDetailsProvider` — `standing_flags` (endgame) + `nova_history` (prep style), both filtered to `source = 'onboarding'` |
+| Career interests | `profileDetailsProvider` — `career_units` filtered to `source = 'onboarding'` |
+| Account & actions — email, "Update Profile & Preferences" (routes to onboarding), sign out | `userProvider` |
+
+### `profileDetailsProvider`
+
+A `FutureProvider` in `lib/features/profile/presentation/providers/profile_provider.dart` that queries `standing_flags`, `career_units`, and `nova_history` directly, each scoped to the current `auth.uid()` and `source = 'onboarding'`. Each of the three queries is wrapped in its own try/catch — a failure in one (e.g. no career interests yet) doesn't blank out the other two.
+
+### Flutter Files
+
+| File | Role |
+|---|---|
+| `presentation/pages/profile_page.dart` | Full UI — five staggered-entrance cards, pull-to-refresh, sign-out confirmation dialog |
+| `presentation/providers/profile_provider.dart` | `ProfileDetails`, `profileDetailsProvider` |
+
+### Editing
+
+"Update Profile & Preferences" routes to `AppRoutes.onboardingProfile` and re-runs the onboarding questionnaire. `onboarding_profile_page.dart` now tracks its own `_isLoading` state around the `complete()` call (button shows a spinner and ignores taps mid-submit) and no longer auto-advances on the endgame/prep-style single-select steps — both were needed once onboarding became a re-entrant edit flow rather than a first-run-only screen.
+
+---
+
 ## Test Attempts, Question Results, and AI Evaluation
 
 > Schema is live in Supabase; no Flutter or FastAPI code description exists yet for this flow.
@@ -825,6 +858,72 @@ ai_evaluations  (answer_photo_url → extracted_text → score_awarded, feedback
 > Schema is live in Supabase (`uploaded_pdfs` table); no corresponding Flutter/FastAPI description exists yet.
 
 `uploaded_pdfs` tracks any PDF through ingestion independent of which feature triggered the upload. `questions.source_pdf_id` links extracted questions back to the source upload.
+
+The `POST /upload-pyq` endpoint (the one path the Flutter app and any external API caller can reach) still only accepts `.pdf` — it hard-rejects anything else by filename extension. Multi-format extraction (below) is currently only reachable through the internal `batch_upload.py` script, not through the app or the public endpoint.
+
+---
+
+## PYQ Batch Upload Pipeline (Internal Tooling)
+
+`backend/pyq/batch_upload.py` walks a local directory of PYQs and pushes every file through the same extraction/insert path the Flutter app's upload button uses (`run_upload_pyq` in `lib/core/ai/rag_llms/pipeline.py`), one file at a time, without touching the UI or the FastAPI endpoint. Dev/maintainer tool for seeding the question bank in bulk — not exposed to students.
+
+```bash
+python backend/pyq/batch_upload.py D:\PYQs\CS_F372 \
+    --subject "Compiler Construction" --college "BITS Pilani Hyderabad" \
+    --exam-type compre --doc-type pyq
+```
+
+### Multi-Format Extraction
+
+`pipeline.py` gained `extract_raw_text_any(file_bytes, filename)`, which dispatches by extension:
+
+| Extension | Extractor |
+|---|---|
+| `.pdf` | `extract_raw_text` — pdfplumber, now with hybrid per-page OCR (see below) |
+| `.docx` | `extract_docx_text` — `python-docx` for paragraphs/tables, plus OCR of any images embedded in `word/media/` |
+| `.doc` | `extract_doc_text` — converts to `.docx` via a local LibreOffice (`soffice`) install, then runs `extract_docx_text`. Raises a clear error if `soffice` isn't on PATH rather than silently returning empty text |
+| `.png` / `.jpg` / `.jpeg` / `.webp` / `.tif` / `.tiff` | `extract_image_text` — OCRs the image directly, for a standalone photo/screenshot of a paper |
+
+### Hybrid Per-Page OCR (PDF)
+
+Previously, OCR only ran when the *whole* extracted document was under 200 characters — so a page with real text plus one question pasted in as a screenshot never triggered OCR, and that question silently vanished. Now every page is checked individually: a page with an embedded image and under 400 characters of extracted text gets OCR'd on its own and the result appended, tagged `[OCR supplement — page N, ...]`. The whole-document 200-character fallback still runs afterward for fully image-only PDFs. OCR moved from `pytesseract` + `pdf2image` to `easyocr` + `pypdfium2` for PDF rendering (`pytesseract` is still used for the smaller job of OCR'ing images embedded in `.docx` files).
+
+### Exam Type Resolution
+
+`exam_type` is no longer required up front. Resolution order, cheapest/most-confident first:
+
+1. **Filename** — `_guess_exam_type()` in `batch_upload.py` looks for `compre` / `midsem` / `test1`/`quiz1` / `test2`/`quiz2` / `test3` in the filename.
+2. **Document content** — if the filename guess comes up empty, `run_upload_pyq` calls `guess_exam_type_from_text()` (same keyword set, scanned over the first 2000 characters of extracted text) before extraction proceeds.
+3. **`--exam-type` flag** — only tried if both of the above fail.
+
+If all three come up empty, `run_upload_pyq` raises `ExamTypeUndeterminedError` and the file is skipped (recorded in the manifest as `skipped_no_exam_type`) rather than silently mis-tagged. The result dict from `run_upload_pyq` now also reports `exam_type` and `exam_type_source` (`"filename"` / `"content"` / `"flag"`) for whichever value won.
+
+### Resumability
+
+Every file is hashed (SHA-256 of content, not filename — renaming a file doesn't trigger a re-upload) and recorded in `<directory>/.upload_manifest.json` after every single upload, not just at the end of the run. Re-running the script after a crash or a `Ctrl+C` skips everything already marked `succeeded`.
+
+### Scanned-Page Merging
+
+Image files (`.jpg`/`.jpeg`/`.png`/`.tif`/`.tiff`) whose filename ends in a page-number suffix (`...p1`, `...page 2`, `..._3`) are grouped by their common base name, sorted numerically, and merged in-memory into a single multi-page PDF via Pillow before upload — so a paper scanned as five separate photos becomes one document instead of five. `.pdf`/`.docx`/`.doc` files and images with no detectable page suffix are never grouped.
+
+### `download_papers.py`
+
+A separate, standalone scraper (`backend/download_papers.py`) for bulk-downloading question papers from a DSpace-based college repository by subject/author code, for feeding into `batch_upload.py`. Hardcodes an internal-network base URL — local/dev tool only, not part of the deployed backend.
+
+```bash
+python backend/download_papers.py "CS F372"
+```
+
+### New Dependencies
+
+| Package | Used by | Purpose |
+|---|---|---|
+| `pypdfium2` | `lib/core/ai/rag_llms` | Renders PDF pages to images for OCR |
+| `easyocr` | `lib/core/ai/rag_llms` | OCR engine for PDF pages and standalone images |
+| `python-docx` | `lib/core/ai/rag_llms` | `.docx` paragraph/table text extraction |
+| `pytesseract` | `lib/core/ai/rag_llms` | OCR for images embedded inside `.docx` files |
+| `pillow` | `lib/core/ai/rag_llms`, `backend` | Image handling; merging scanned pages into a PDF |
+| `requests`, `beautifulsoup4` | `backend` | `download_papers.py` scraping |
 
 ---
 
@@ -1080,14 +1179,19 @@ See [Tech Debt](#tech-debt) for the full writeup and fix conditions.
 ## Folder Structure
 
 ```
-backend/                             # Standalone FastAPI service — Nova trigger layer only (see Nova Trigger Layer)
+backend/
 ├── app/
 │   ├── main.py                      # POST /nova/trigger/check → calls get_nova_triggers() RPC
 │   └── dependencies.py              # Supabase client + bearer-token auth (get_current_user_id)
+├── pyq/
+│   └── batch_upload.py              # Dev tool — bulk-uploads a local PYQ directory through the pipeline (see PYQ Batch Upload Pipeline)
+├── tests/
+│   └── test_rls.py                  # Cross-student RLS isolation tests (see Running RLS Isolation Tests)
+├── download_papers.py               # Dev tool — scrapes a DSpace college repository for PYQs to feed into batch_upload.py
 └── requirements.txt
 ```
 
-This is a separate service from `lib/core/ai/rag_llms/` below — different directory, different deployment, and (so far) a single endpoint. It is not yet called from Flutter.
+`backend/app/` is the only piece of this directory actually deployed as a service — a standalone FastAPI app exposing the Nova trigger layer (see [Nova Trigger Layer](#nova-trigger-layer)), separate from `lib/core/ai/rag_llms/` below and not yet called from Flutter. `backend/pyq/`, `backend/download_papers.py`, and `backend/tests/` are local dev/maintainer tooling that share the directory but aren't part of that deployment.
 
 ```
 lib/
@@ -1139,7 +1243,7 @@ lib/
 │   ├── focus_session/
 │   ├── mock_tests/
 │   ├── nova/                        # planned — Nova conversation + plan display
-│   └── profile/
+│   └── profile/                     # real, Supabase-backed — see Profile
 │
 └── main.dart
 ```
@@ -1173,6 +1277,9 @@ lib/
 | Purpose | Tool |
 |---|---|
 | PDF text extraction | `pdfplumber` |
+| PDF page OCR (hybrid per-page + whole-doc fallback) | `easyocr` + `pypdfium2` |
+| `.docx` / `.doc` extraction | `python-docx` (+ local LibreOffice `soffice` for legacy `.doc`) |
+| Image / embedded-image OCR | `pytesseract`, `pillow` |
 | Question extraction | Groq API — LLaMA 3.3 70B |
 | Topic + study plan extraction | Groq API — LLaMA 3.3 70B |
 | Semantic embeddings | `sentence-transformers` — all-MiniLM-L6-v2 |
@@ -1184,6 +1291,7 @@ lib/
 | Deployment | Railway |
 | Data store | Supabase (PostgreSQL + pgvector) |
 | File storage | Supabase Storage (handouts bucket) |
+| RLS isolation testing | `pytest` (`backend/tests/test_rls.py`) |
 
 ---
 
@@ -1206,6 +1314,9 @@ lib/
 - **Focus session timer**
 - **Community feed** — live from Supabase, vote persistence
 - **Nova CLI Q&A prototype** — dev-only, read-only chat over a live facts snapshot, with Groq key fallback and model switching (see [Nova CLI (Q&A Prototype)](#nova-cli-qa-prototype))
+- **Profile page** — real, Supabase-backed, replaces two deleted mock pages; editing goes through re-running onboarding rather than a separate edit form (see [Profile](#profile))
+- **PYQ batch upload pipeline** — dev tool for bulk-seeding the question bank from a local directory, with `.docx`/`.doc`/image extraction, hybrid per-page OCR, content-based exam-type detection, and resumable manifests (see [PYQ Batch Upload Pipeline](#pyq-batch-upload-pipeline-internal-tooling))
+- **RLS isolation test suite** — automated cross-student data-isolation checks over five user-scoped tables (`backend/tests/test_rls.py`)
 
 ### Schema Live, No UI/Code Yet
 
@@ -1321,6 +1432,22 @@ uvicorn app.main:app --reload --port 8001
 ```
 
 Reads `SUPABASE_URL` and `SUPABASE_KEY` from the environment (`app/dependencies.py`). Requests to `POST /nova/trigger/check` need a valid Supabase Auth bearer token in the `Authorization` header — there's no service-role bypass here.
+
+### Running RLS Isolation Tests
+
+`backend/tests/test_rls.py` verifies students can't read each other's rows across `user_topic_weights`, `nova_capacity_log`, `standing_flags`, `situation_flags`, and `nova_config`, and that a fully unauthenticated client gets 0 rows back too. Needs two real Supabase Auth accounts to sign in as — it isn't run against a mocked backend.
+
+```bash
+cd backend
+pip install pytest
+pytest tests/test_rls.py
+```
+
+Not currently run in CI — `backend/**` isn't in `ci.yml`'s python path filter, and there's no `pytest` step in the workflow regardless. Must be run manually.
+
+`TEST_STUDENT_A_EMAIL`/`TEST_STUDENT_B_EMAIL` need to already exist as real Supabase Auth accounts — nothing in this repo provisions them. Create both manually via Supabase Auth (or the dashboard) before running.
+
+Reads `SUPABASE_URL`, `SUPABASE_KEY`, and `TEST_STUDENT_A_EMAIL` / `TEST_STUDENT_A_PASSWORD` / `TEST_STUDENT_B_EMAIL` / `TEST_STUDENT_B_PASSWORD` from the environment (`.env`, loaded via `python-dotenv`). If `SUPABASE_URL` / `SUPABASE_KEY` are unset the whole module is skipped; if the two test accounts can't sign in, the cross-student tests skip individually rather than failing. `pytest` itself isn't in `backend/requirements.txt` yet — install it separately.
 
 ---
 
@@ -1439,11 +1566,35 @@ RLS is enabled on `topics` with read-only access for authenticated users. Write 
 
 ---
 
+### Profile — unused Clean Architecture scaffold
+
+`lib/features/profile/domain/` and `lib/features/profile/data/` (entities, repository interface, usecases, DTO, datasource, repository impl — ~10 files) exist but are entirely unused. `profile_page.dart` only calls `userProvider` and `profileDetailsProvider`, both of which query Supabase directly from the presentation layer, bypassing the scaffold. `profile_datasource.dart` is empty (`// Feature skeleton - Data layer`). Violates this project's stated Clean Architecture rule (see Architecture section).
+
+**When to fix:** Tracked in #TODO — issue number pending. Either delete the unused layers or wire `profileDetailsProvider` through them properly.
+
+---
+
 ### Nova CLI — no auth, no error handling, snapshot goes stale mid-session
 
 `nova_agent.py` currently trusts any `user_id` passed via argv with no check against the caller's identity — it runs against a service-role key locally, so anyone running it could pull any student's exam/weakness/career data just by changing the ID. API failures (Groq overloaded, Supabase down) crash the whole CLI and dump a raw stack trace, killing the session and losing all conversation history built up so far. The facts snapshot is also fetched once at CLI startup and held for the whole session — if underlying data changes mid-session (new test score, capacity update), Nova keeps answering from the stale startup snapshot. Fine for local dev/testing; tracked in [#15](https://github.com/Krish-876/Skolar/issues/15).
 
 **When to fix:** Auth before this touches any real user's data; error handling before it's used for real QA testing; snapshot staleness before this pattern carries over into the real triggered Nova pipeline (Phase 5).
+
+---
+
+### Multi-format PYQ extraction — not reachable from the app or `/upload-pyq`
+
+`extract_raw_text_any` (`.docx`/`.doc`/image support) and content-based `exam_type` detection only run through the internal `backend/pyq/batch_upload.py` script, which calls `run_upload_pyq` directly. The public `POST /upload-pyq` endpoint still hard-rejects any filename not ending in `.pdf`, so students uploading through the app get none of this.
+
+**When to fix:** Before PYQ upload through the app UI ships (see Planned).
+
+---
+
+### `download_papers.py` — hardcoded internal-network URL
+
+Points at a hardcoded local-network `BASE_URL` (a DSpace repository reachable only from campus/VPN). Fine for a one-off scraping run on a maintainer's machine; would need to become configurable (env var or CLI flag) before anyone else could use it as-is.
+
+**When to fix:** Low priority — dev-only tool, not part of the deployed backend.
 
 ---
 
@@ -1494,6 +1645,13 @@ Phase 4 — Auth and Backend (complete)
        save_onboarding_seed_context RPC (see Onboarding Seed Context)
     ✅ CI hardening — dependabot, gitleaks, ruff security lint, pinned
        deps, path-filtered jobs, pr-title optional scope
+    ✅ Real profile page — replaces two deleted mock pages, reads live
+       userProvider + onboarding-sourced Nova tables (see Profile)
+    ✅ RLS isolation test suite — cross-student checks over 5 user-scoped
+       tables (backend/tests/test_rls.py)
+    ✅ PYQ batch upload pipeline — docx/doc/image extraction, hybrid
+       per-page OCR, content-based exam_type detection, resumable
+       manifests (dev tool only — see PYQ Batch Upload Pipeline)
     ⬜ _triggerPlanExtraction wired to real FastAPI URL
     ⬜ Study plan display UI per subject
     ⬜ Compre Part A → published_tests pipeline + feed (deferred to post-Phase 5)
