@@ -7,14 +7,18 @@ Usage:
 
 import sys
 
-from nova.services.clients import get_clients
-from nova.services.facts_service import get_facts_snapshot
+from nova.services.clients import (
+    get_clients,
+    get_supabase_credentials,
+    start_facts_listener_threaded,
+)
+from nova.services.facts_state import FactsState
 from nova.services.chat_service import ask_nova
 from nova.schemas.chat import ChatTurn
 
 
 MODELS = {
-    "1": ("llama-3.3-70b-versatile", "thinking (default)"),
+    "1": ("openai/gpt-oss-120b", "thinking (default)"),
     "2": ("llama-3.1-8b-instant", "fast"),
 }
 
@@ -27,7 +31,10 @@ def main():
     user_id = sys.argv[1]
     supabase, groq, groq_backup = get_clients()
 
-    facts = get_facts_snapshot(supabase, user_id)
+    facts_state = FactsState(supabase, user_id)
+    _, pending_patch = facts_state.get()  # initial full fetch; keep its dump for turn 1
+    supabase_url, supabase_key = get_supabase_credentials()
+    start_facts_listener_threaded(supabase_url, supabase_key, user_id, facts_state.mark_dirty)
     current_model = MODELS["1"][0]
 
     history: list[ChatTurn] = []
@@ -54,7 +61,10 @@ def main():
             continue
 
         try:
-            answer = ask_nova(groq, facts, question, history, groq_backup, current_model)
+            _, new_patch = facts_state.get()  # only the fields changed since last turn
+            send_patch = {**pending_patch, **new_patch} if not history else new_patch
+            answer = ask_nova(groq, send_patch, question, history, groq_backup, current_model)
+            pending_patch = {}
         except Exception:
             print("\nSomething went wrong there, try that again.\n")
             continue
