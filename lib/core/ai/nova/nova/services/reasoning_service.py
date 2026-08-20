@@ -9,7 +9,7 @@ path if both are down for a scheduled pass..
 import json
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Any, cast
+from typing import Any, Literal, cast
 
 from groq import Groq
 from groq.types.chat import ChatCompletionMessageParam
@@ -21,6 +21,20 @@ from nova.schemas.reasoning_why_log import DeferredPassEntry
 GROQ_MODEL = "openai/gpt-oss-120b"
 NEMOTRON_MODEL = "nvidia/nemotron-3-ultra-550b-a55b:free"
 GROQ_TPM_CAP = 8000
+
+TriggerType = Literal["full_pass", "minor_trigger_rerank"]
+
+# v3 §2/§4: same model/tier, two effort profiles routed by trigger type -
+# not by call-site guesswork. full_pass is the multi-factor tradeoff
+# (urgency vs stakes vs fixability vs relevance) this model tier exists
+# for. minor_trigger_rerank is a single test score / capacity update that
+# doesn't warrant re-deriving the full ranked plan from scratch. Starts at
+# "medium" per open item 4 - only drop to "low" once quality is measured
+# against real output, not guessed here.
+_REASONING_EFFORT: dict[TriggerType, str] = {
+    "full_pass": "high",
+    "minor_trigger_rerank": "medium",
+}
 
 
 @dataclass
@@ -49,12 +63,12 @@ def _build_messages(facts: FactsSnapshot) -> list[dict]:
     ]
 
 
-def _try_groq(groq: Groq, messages: list[dict], model: str) -> dict | None:
+def _try_groq(groq: Groq, messages: list[dict], model: str, reasoning_effort: str) -> dict | None:
     try:
         resp = groq.chat.completions.create(
             model=model,
             messages=cast(list[ChatCompletionMessageParam], messages),
-            reasoning_effort="high",
+            reasoning_effort=reasoning_effort,
             temperature=0.4,
             response_format={"type": "json_object"},
         )
@@ -85,6 +99,7 @@ def run_reasoning_pass(
     groq: Groq,
     facts: FactsSnapshot,
     last_good_plan: dict[str, Any] | None,
+    trigger_type: TriggerType = "full_pass",
     openrouter=None,
     model: str = GROQ_MODEL,
     user_id: str | None = None,
@@ -94,10 +109,18 @@ def run_reasoning_pass(
     explicit staleness flag if the primary tier fails - never blank, never a
     silent retry loop (MD §2).
 
+    trigger_type selects the effort profile (v3 §2/§4), NOT a different
+    model or tier: "full_pass" for a genuine new multi-factor tradeoff,
+    "minor_trigger_rerank" for a single test score / capacity update that
+    only needs a lighter re-rank. Same Groq tier, same rate limits either
+    way - callers decide which trigger fired, this function just maps that
+    to the right reasoning_effort.
+
     log_deferred_pass is an optional callable(DeferredPassEntry) -> None -
     left as an injection point since no why-log persistence exists yet.
     Defaults to None so nothing calling this today is affected."""
     messages = _build_messages(facts)
+    reasoning_effort = _REASONING_EFFORT[trigger_type]
     reason = None
 
     if _estimate_tokens(messages) > GROQ_TPM_CAP:
@@ -105,7 +128,7 @@ def run_reasoning_pass(
         # same fallback path as a provider outage
         reason = "tpm_cap_exceeded"
     else:
-        plan = _try_groq(groq, messages, model)
+        plan = _try_groq(groq, messages, model, reasoning_effort)
         if plan is not None:
             return ReasoningResult(plan=plan, stale=False)
         reason = "groq_unavailable"

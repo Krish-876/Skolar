@@ -65,6 +65,12 @@ def ask_nova(
     model: str = GROQ_MODEL,
     cerebras=None,
 ) -> str:
+    # v3 §1/§4: NOVA_SYSTEM_PROMPT is the "system_instructions" cacheable
+    # segment in model_tiers.yaml (static across every call/student) - kept
+    # as its own message, separate from the per-call dynamic facts snapshot
+    # and conversation window. Groq's chat.completions API has no explicit
+    # cache_control param today, so this is metadata only for now; the
+    # split is already structurally correct if/when that lands.
     messages = [
         {"role": "system", "content": NOVA_SYSTEM_PROMPT},
         _facts_message(full_snapshot),
