@@ -275,7 +275,7 @@ def fetch_partial(
     if "career_units" in dirty_tables:
         patch["career_units"] = _fetch_career_units(supabase, user_id)
 
-    if "question_results" in dirty_tables:
+    if "question_results" in dirty_tables or "test_attempts" in dirty_tables:
         patch["question_results"] = _fetch_question_results(
             supabase, _test_attempt_ids(supabase, user_id)
         )

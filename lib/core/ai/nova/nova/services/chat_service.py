@@ -63,6 +63,7 @@ def ask_nova(
     history: list[ChatTurn],
     groq_backup: Groq | None = None,
     model: str = GROQ_MODEL,
+    cerebras=None,
 ) -> str:
     messages = [
         {"role": "system", "content": NOVA_SYSTEM_PROMPT},
@@ -70,6 +71,10 @@ def ask_nova(
         *[{"role": turn.role, "content": turn.content} for turn in history],
         {"role": "user", "content": question},
     ]
+
+    # shadow-eval only, never awaited for the response, never allowed to
+    # raise into this call - see _shadow_eval_cerebras docstring
+    _shadow_eval_cerebras(cerebras, messages)
 
     if _estimate_tokens(messages) > GROQ_TPM_CAP:
         # over the per-call TPM gate - same class of failure as a provider
