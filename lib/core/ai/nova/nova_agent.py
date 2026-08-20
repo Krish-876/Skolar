@@ -3,6 +3,7 @@ Nova Q&A CLI
 Usage:
     python nova_agent.py <user_id>
 """
+import logging
 import sys
 from nova.services.clients import (
     get_clients,
@@ -10,12 +11,12 @@ from nova.services.clients import (
     start_facts_listener_threaded,
 )
 from nova.services.facts_state import FactsState
-from nova.services.chat_service import ask_nova
+from nova.services.chat_service import ask_nova, GROQ_MODEL
 from nova.schemas.chat import ChatTurn
-MODELS = {
-    "1": ("openai/gpt-oss-120b", "thinking (default)"),
-    "2": ("llama-3.1-8b-instant", "fast"),
-}
+logging.basicConfig(level=logging.CRITICAL + 1)
+logging.disable(logging.CRITICAL)
+
+
 def main():
     if len(sys.argv) != 2:
         print("Usage: python nova_agent.py <user_id>")
@@ -25,15 +26,15 @@ def main():
     facts_state = FactsState(supabase, user_id)
     try:
         facts_state.get()  # initial full fetch, populates the cache
-    except Exception:
-        print("Couldn't reach the student's data right now, try again shortly.")
+    except Exception as e:
+        logging.exception("facts_state.get() failed on startup")
+        print(f"Couldn't reach the student's data right now: {e}")
         sys.exit(1)
     facts_state.commit()
     supabase_url, supabase_key = get_supabase_credentials()
     start_facts_listener_threaded(supabase_url, supabase_key, user_id, facts_state.mark_dirty)
-    current_model = MODELS["1"][0]
     history: list[ChatTurn] = []
-    print("Ask Nova anything. Type /model to switch models. Ctrl+C to quit.\n")
+    print("Ask Nova anything. Ctrl+C to quit.\n")
     while True:
         try:
             question = input("> ").strip()
@@ -42,22 +43,12 @@ def main():
             break
         if not question:
             continue
-        if question == "/model":
-            for key, (model_id, label) in MODELS.items():
-                marker = " (current)" if model_id == current_model else ""
-                print(f"  {key}. {label}{marker}")
-            choice = input("  choose: ").strip()
-            if choice in MODELS:
-                current_model = MODELS[choice][0]
-                print(f"\nSwitched to {MODELS[choice][1]}.\n")
-            else:
-                print("\nNot a valid option, keeping current model.\n")
-            continue
         try:
             snapshot, _ = facts_state.get()
-            answer = ask_nova(groq, snapshot.model_dump(), question, history, groq_backup, current_model)
-        except Exception:
-            print("\nSomething went wrong there, try that again.\n")
+            answer = ask_nova(groq, snapshot.model_dump(), question, history, groq_backup, GROQ_MODEL)
+        except Exception as e:
+            logging.exception("ask_nova turn failed")
+            print(f"\nSomething went wrong there: {e}\n")
             continue
         facts_state.commit()  # only drain dirty tables once the turn actually landed
         print(f"\n{answer}\n")
