@@ -1,5 +1,6 @@
 import os
 import uuid
+import jwt
 import pytest
 from datetime import date
 from supabase import create_client, Client
@@ -9,14 +10,51 @@ load_dotenv()
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY", SUPABASE_KEY)
 
 STUDENT_A_EMAIL = os.getenv("TEST_STUDENT_A_EMAIL", "student_a@test.com")
 STUDENT_A_PASSWORD = os.getenv("TEST_STUDENT_A_PASSWORD", "TestPassword123!")
 STUDENT_B_EMAIL = os.getenv("TEST_STUDENT_B_EMAIL", "student_b@test.com")
 STUDENT_B_PASSWORD = os.getenv("TEST_STUDENT_B_PASSWORD", "TestPassword123!")
 
-if not SUPABASE_URL or not SUPABASE_KEY:
+if not SUPABASE_URL or not SUPABASE_ANON_KEY:
     pytest.skip("Supabase environment variables not set. Skipping RLS tests.", allow_module_level=True)
+
+
+def _is_anon_key(key: str) -> bool:
+    """Assert that a Supabase key is an anon (public) key, not a service_role key.
+
+    A service_role JWT contains 'role': 'service_role' in its payload and
+    bypasses RLS entirely. If the anon_client fixture accidentally receives
+    the service_role key, every RLS test becomes a false pass — the test
+    would "verify isolation" while running at full super-admin privileges.
+
+    See gh-62 acceptance criterion: verify that the anon client isn't
+    actually using a service-role key.
+    """
+    if not key:
+        return False
+    try:
+        unverified = jwt.decode(key, options={"verify_signature": False})
+        role = unverified.get("role", "")
+        if role == "service_role":
+            return False
+        return True
+    except jwt.InvalidTokenError:
+        # Not a JWT — could be a legacy API key format; assume anon if it
+        # doesn't look like a service_role key
+        return "service_role" not in key.lower()
+
+
+def _assert_anon_key(key: str, context: str = "client"):
+    """Fail loudly rather than silently bypass RLS."""
+    if not _is_anon_key(key):
+        pytest.fail(
+            f"[RLS test guard] {context} is configured with a service_role key "
+            f"or invalid key — RLS tests would be meaningless. "
+            f"Set SUPABASE_ANON_KEY to the anon/public key, not the service_role key."
+        )
+
 
 USER_TABLES_TO_TEST = [
     "user_topic_weights",
@@ -29,15 +67,18 @@ USER_TABLES_TO_TEST = [
 @pytest.fixture
 def anon_client() -> Client:
     """Returns an unauthenticated Supabase client subject to standard RLS."""
-    return create_client(SUPABASE_URL, SUPABASE_KEY)
+    _assert_anon_key(SUPABASE_ANON_KEY, "anon_client")
+    return create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
 
 @pytest.fixture
 def authenticated_clients():
     """
     Signs in Student A and Student B to retrieve authentic user JWT sessions.
     """
-    client_a = create_client(SUPABASE_URL, SUPABASE_KEY)
-    client_b = create_client(SUPABASE_URL, SUPABASE_KEY)
+    client_a = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
+    client_b = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+    _assert_anon_key(SUPABASE_ANON_KEY, "authenticated_clients")
 
     try:
         session_a = client_a.auth.sign_in_with_password({
