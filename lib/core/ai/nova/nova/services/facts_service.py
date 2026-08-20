@@ -65,10 +65,10 @@ def _fetch_exams(supabase: Client, user_subject_ids: list[str]) -> list[dict]:
         list[dict[str, Any]],
         (
             supabase.table("user_subject_exams")
-        .select("*")
-        .in_("user_subject_id", user_subject_ids)
-        .execute()
-        .data
+            .select("*")
+            .in_("user_subject_id", user_subject_ids)
+            .execute()
+            .data
         ),
     )
 
@@ -79,11 +79,11 @@ def _fetch_capacity_today(supabase: Client, user_id: str) -> list[dict]:
         list[dict[str, Any]],
         (
             supabase.table("nova_capacity_log")
-        .select("*")
-        .eq("user_id", user_id)
-        .eq("logged_for_date", today)
-        .execute()
-        .data
+            .select("*")
+            .eq("user_id", user_id)
+            .eq("logged_for_date", today)
+            .execute()
+            .data
         ),
     )
 
@@ -93,10 +93,10 @@ def _fetch_staleness(supabase: Client, user_id: str) -> list[dict]:
         list[dict[str, Any]],
         (
             supabase.table("staleness_tracker")
-        .select("*")
-        .eq("user_id", user_id)
-        .execute()
-        .data
+            .select("*")
+            .eq("user_id", user_id)
+            .execute()
+            .data
         ),
     )
 
@@ -108,12 +108,12 @@ def _fetch_confirmed_active(supabase: Client, table: str, user_id: str) -> list[
         list[dict[str, Any]],
         (
             supabase.table(table)
-        .select("*")
-        .eq("user_id", user_id)
-        .is_("superseded_at", "null")
-        .not_.is_("confirmed_at", "null")
-        .execute()
-        .data
+            .select("*")
+            .eq("user_id", user_id)
+            .is_("superseded_at", "null")
+            .not_.is_("confirmed_at", "null")
+            .execute()
+            .data
         ),
     )
 
@@ -123,12 +123,12 @@ def _fetch_career_units(supabase: Client, user_id: str) -> list[dict]:
         list[dict[str, Any]],
         (
             supabase.table("career_units")
-        .select("*")
-        .eq("user_id", user_id)
-        .is_("paused_at", "null")
-        .not_.is_("confirmed_at", "null")
-        .execute()
-        .data
+            .select("*")
+            .eq("user_id", user_id)
+            .is_("paused_at", "null")
+            .not_.is_("confirmed_at", "null")
+            .execute()
+            .data
         ),
     )
 
@@ -140,12 +140,12 @@ def _fetch_question_results(supabase: Client, test_attempt_ids: list[str]) -> li
         list[dict[str, Any]],
         (
             supabase.table("question_results")
-        .select("*")
-        .in_("attempt_id", test_attempt_ids)
-        .order("created_at", desc=True)
-        .limit(200)
-        .execute()
-        .data
+            .select("*")
+            .in_("attempt_id", test_attempt_ids)
+            .order("created_at", desc=True)
+            .limit(200)
+            .execute()
+            .data
         ),
     )
 
@@ -155,10 +155,10 @@ def _fetch_topic_weights(supabase: Client, user_id: str) -> list[dict]:
         list[dict[str, Any]],
         (
             supabase.table("user_topic_weights")
-        .select("*")
-        .eq("user_id", user_id)
-        .execute()
-        .data
+            .select("*")
+            .eq("user_id", user_id)
+            .execute()
+            .data
         ),
     )
 
@@ -168,11 +168,11 @@ def _fetch_study_plans(supabase: Client, user_id: str) -> list[dict]:
         list[dict[str, Any]],
         (
             supabase.table("study_plans")
-        .select("*")
-        .eq("user_id", user_id)
-        .eq("is_active", True)
-        .execute()
-        .data
+            .select("*")
+            .eq("user_id", user_id)
+            .eq("is_active", True)
+            .execute()
+            .data
         ),
     )
 
@@ -195,10 +195,10 @@ def _fetch_topics(supabase: Client, topic_ids: list[str]) -> list[dict]:
         list[dict[str, Any]],
         (
             supabase.table("topics")
-        .select("*")
-        .in_("id", topic_ids)
-        .execute()
-        .data
+            .select("*")
+            .in_("id", topic_ids)
+            .execute()
+            .data
         ),
     )
 

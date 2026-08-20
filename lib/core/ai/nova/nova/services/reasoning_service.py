@@ -24,6 +24,11 @@ GROQ_TPM_CAP = 8000
 
 TriggerType = Literal["full_pass", "minor_trigger_rerank"]
 
+# Matches Groq's Completions.create() reasoning_effort overload exactly, so
+# mypy can select the right overload instead of falling back to "no match"
+# when a plain str is passed in.
+ReasoningEffort = Literal["none", "default", "low", "medium", "high"]
+
 # v3 §2/§4: same model/tier, two effort profiles routed by trigger type -
 # not by call-site guesswork. full_pass is the multi-factor tradeoff
 # (urgency vs stakes vs fixability vs relevance) this model tier exists
@@ -31,7 +36,7 @@ TriggerType = Literal["full_pass", "minor_trigger_rerank"]
 # doesn't warrant re-deriving the full ranked plan from scratch. Starts at
 # "medium" per open item 4 - only drop to "low" once quality is measured
 # against real output, not guessed here.
-_REASONING_EFFORT: dict[TriggerType, str] = {
+_REASONING_EFFORT: dict[TriggerType, ReasoningEffort] = {
     "full_pass": "high",
     "minor_trigger_rerank": "medium",
 }
@@ -63,7 +68,12 @@ def _build_messages(facts: FactsSnapshot) -> list[dict]:
     ]
 
 
-def _try_groq(groq: Groq, messages: list[dict], model: str, reasoning_effort: str) -> dict | None:
+def _try_groq(
+    groq: Groq,
+    messages: list[dict],
+    model: str,
+    reasoning_effort: ReasoningEffort,
+) -> dict | None:
     try:
         resp = groq.chat.completions.create(
             model=model,
