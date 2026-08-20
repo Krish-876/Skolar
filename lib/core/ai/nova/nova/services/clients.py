@@ -12,9 +12,6 @@ from realtime import PostgresChangesPayload, RealtimePostgresChangesListenEvent
 from supabase import Client, acreate_client, create_client
 
 logger = logging.getLogger(__name__)
-
-from supabase import Client, create_client
-
 # lib/core/ai/nova/nova/services/clients.py -> lib/core/ai/rag_llms/.env
 ENV_PATH = Path(__file__).resolve().parent.parent.parent.parent / "rag_llms" / ".env"
 
