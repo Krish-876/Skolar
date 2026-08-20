@@ -8,6 +8,8 @@ class FactsSnapshot(BaseModel):
     academic_year: int | None
     branch: str | None
     current_semester: int | None
+    dual_branch: str | None
+    study_capacity: int | None
     user_subject_exams: list[dict]
     capacity_today: list[dict]
     staleness_tracker: list[dict]

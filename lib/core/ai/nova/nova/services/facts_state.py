@@ -21,9 +21,10 @@ _TABLE_TO_FIELDS = {
     "nova_history": ["nova_history"],
     "career_units": ["career_units"],
     "question_results": ["question_results"],
+    "test_attempts": ["question_results"],  # attempt completion can flip independent of a question_results write
     "user_topic_weights": ["user_topic_weights"],
     "study_plans": ["study_plans"],
-    "users": ["full_name", "academic_year", "branch", "current_semester"],
+    "users": ["full_name", "academic_year", "branch", "current_semester", "dual_branch", "study_capacity"],
 }
 
 
@@ -37,6 +38,7 @@ class FactsState:
         self._lock = Lock()
         self._snapshot: FactsSnapshot | None = None
         self._dirty: set[str] = set()
+        self._pending_commit: set[str] = set()
 
     def mark_dirty(self, table: str) -> None:
         if table not in _TABLE_TO_FIELDS:
@@ -49,19 +51,35 @@ class FactsState:
         that changed since the previous call (empty dict if nothing did).
         First call's patch is the full snapshot dump - caller decides how
         to use that (ask_nova treats an empty history as "first turn" and
-        sends it as full context regardless of what's passed here)."""
+        sends it as full context regardless of what's passed here).
+
+        Note: this computes and applies the patch but does NOT drain the
+        dirty set - call commit() only after the patch has actually been
+        delivered (i.e. the model call succeeded), so a failed/retried turn
+        doesn't lose the patch it never got to use."""
         with self._lock:
             if self._snapshot is None:
                 self._snapshot = fs.get_facts_snapshot(self._supabase, self._user_id)
-                self._dirty.clear()
                 return self._snapshot, self._snapshot.model_dump()
 
             if not self._dirty:
                 return self._snapshot, {}
 
-            pending, self._dirty = self._dirty, set()
+            pending = set(self._dirty)
 
         patch = fs.fetch_partial(self._supabase, self._user_id, pending, _TABLE_TO_FIELDS)
         with self._lock:
             self._snapshot = self._snapshot.model_copy(update=patch)
+            self._pending_commit = pending
             return self._snapshot, patch
+
+    def commit(self) -> None:
+        """Call after the patch from get() has been successfully delivered
+        to the model. Drains only the tables that were pending as of that
+        get() call - anything marked dirty afterward (e.g. mid-flight) stays
+        dirty for the next turn."""
+        with self._lock:
+            pending = self._pending_commit
+            if pending:
+                self._dirty -= pending
+            self._pending_commit = set()

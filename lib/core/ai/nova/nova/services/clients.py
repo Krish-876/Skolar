@@ -76,6 +76,7 @@ FACTS_TABLES = [
     "question_results",
     "user_topic_weights",
     "study_plans",
+    "test_attempts",  # completion can be set here independent of a question_results write
 ]
 
 
@@ -151,7 +152,13 @@ async def _subscribe_async(supabase_url: str, supabase_key: str, user_id: str, o
         callback=users_callback,
     )
 
-    for table in ("user_subject_exams", "question_results"):
+    # TODO(krish): confirm these two genuinely have no direct user_id column
+    # to filter on server-side. As-is, every student's activity here marks
+    # every other connected session dirty - fetch_partial still scopes the
+    # actual refetch correctly, so it's not a data leak, just an
+    # unnecessary-refetch storm waiting to happen past a handful of
+    # concurrent users.
+    for table in ("user_subject_exams", "question_results", "test_attempts"):
         channel.on_postgres_changes(
             event=all_events, schema="public", table=table,
             callback=_make_table_callback(table),

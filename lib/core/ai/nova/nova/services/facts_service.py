@@ -21,7 +21,7 @@ def _fetch_own_profile(supabase: Client, user_id: str) -> dict:
         list[dict[str, Any]],
         (
             supabase.table("users")
-            .select("full_name, academic_year, branch, current_semester")
+            .select("full_name, academic_year, branch, current_semester, dual_branch, study_capacity")
             .eq("id", user_id)
             .limit(1)
             .execute()
@@ -223,6 +223,8 @@ def get_facts_snapshot(supabase: Client, user_id: str) -> FactsSnapshot:
         academic_year=profile.get("academic_year"),
         branch=profile.get("branch"),
         current_semester=profile.get("current_semester"),
+        dual_branch=profile.get("dual_branch"),
+        study_capacity=profile.get("study_capacity"),
         user_subject_exams=_fetch_exams(supabase, user_subject_ids),
         capacity_today=_fetch_capacity_today(supabase, user_id),
         staleness_tracker=staleness_tracker,

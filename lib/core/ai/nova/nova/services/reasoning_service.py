@@ -19,7 +19,6 @@ from nova.schemas.facts_snapshot import FactsSnapshot
 from nova.schemas.reasoning_why_log import DeferredPassEntry
 
 GROQ_MODEL = "openai/gpt-oss-120b"
-GROQ_ALT_MODEL = "qwen/qwen3.6-27b"  # named config alt, not an ad hoc runtime pick
 NEMOTRON_MODEL = "nvidia/nemotron-3-ultra-550b-a55b:free"
 GROQ_TPM_CAP = 8000
 
