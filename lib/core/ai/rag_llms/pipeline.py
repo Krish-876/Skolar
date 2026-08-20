@@ -1,18 +1,22 @@
 import os
+
 os.environ["OPENBLAS_NUM_THREADS"] = "1"
 os.environ["OMP_NUM_THREADS"] = "1"
 
 import json
-import random
 import logging
-import numpy as np
-from numpy.linalg import norm
-import pdfplumber
-from sentence_transformers import SentenceTransformer
-from groq import Groq
-from dotenv import load_dotenv
+import random
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from supabase import create_client, Client
+from pathlib import Path
+
+import numpy as np
+import pdfplumber
+from dotenv import load_dotenv
+from groq import Groq
+from numpy.linalg import norm
+from sentence_transformers import SentenceTransformer
+
+from supabase import Client, create_client
 
 load_dotenv()
 
@@ -57,6 +61,16 @@ def get_supabase() -> Client:
     return _supabase
 
 # ── Step 1 — PDF Parsing ──────────────────────────────────────────────────────
+#
+# Hybrid per-page OCR: previously OCR only ran when the WHOLE document
+# extracted to under 200 chars. That misses the common case of a page that
+# has real text plus one question pasted in as a screenshot/diagram — the
+# page-level text looks "fine" so OCR never triggered and that question
+# silently vanished. Now any page that embeds a raster image AND whose
+# extracted text is thin gets OCR'd individually and the result appended,
+# tagged so the LLM extraction step can still pick it up. Downstream
+# _deduplicate_questions already collapses near-duplicates, so being
+# generous here is safe.
 
 def extract_raw_text(pdf_bytes: bytes) -> str:
     import io
@@ -70,6 +84,7 @@ def extract_raw_text(pdf_bytes: bytes) -> str:
         )
 
     full_text = ""
+    pages_needing_ocr: list[int] = []
 
     with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
         for page in pdf.pages:
@@ -100,36 +115,250 @@ def extract_raw_text(pdf_bytes: bytes) -> str:
             if text:
                 full_text += _clean(text) + "\n"
 
-    # 4. OCR fallback for image-only PDFs
+            # 4. Flag pages with embedded images + thin text for page-level OCR.
+            #    Threshold of 400 chars is deliberately generous — a page with
+            #    a full paragraph of real text AND a small screenshot question
+            #    below it can still clear this and get OCR'd too.
+            has_images = bool(page.images)
+            text_len = len(text.strip()) if text else 0
+            if has_images and text_len < 400:
+                pages_needing_ocr.append(page.page_number)
+
+    for page_num in pages_needing_ocr:
+        ocr_text = _ocr_single_page(pdf_bytes, page_num)
+        if ocr_text.strip():
+            full_text += f"\n[OCR supplement — page {page_num}, likely image-based content]\n"
+            full_text += _clean(ocr_text) + "\n"
+
+    # 5. OCR fallback for image-only PDFs (whole doc still thin after the above)
     if len(full_text.strip()) < 200:
         full_text = _ocr_fallback(pdf_bytes)
 
     return full_text
 
 
-def _ocr_fallback(pdf_bytes: bytes) -> str:
+_easyocr_reader = None
+
+
+def _get_easyocr_reader():
+    global _easyocr_reader
+    if _easyocr_reader is None:
+        import easyocr
+        logger.info("[ocr] loading EasyOCR reader (downloads models on first run)")
+        _easyocr_reader = easyocr.Reader(["en"], gpu=False)
+    return _easyocr_reader
+
+
+def _ocr_pil_image(img) -> str:
+    """OCR a PIL Image via EasyOCR. Returns "" on any failure rather than raising,
+    so a bad single page/image never takes down the whole extraction run."""
     try:
-        from pdf2image import convert_from_bytes
-        import pytesseract
+        import numpy as np
+        reader = _get_easyocr_reader()
+        lines = reader.readtext(np.array(img), detail=0, paragraph=True)
+        return "\n".join(lines)
+    except ImportError:
+        logger.warning("[ocr] easyocr not installed — run: pip install easyocr")
+        return ""
+    except Exception as e:
+        logger.warning(f"[ocr] failed: {e}")
+        return ""
 
-        images = convert_from_bytes(pdf_bytes, dpi=300)
-        pages_text = []
-        for img in images:
-            text = pytesseract.image_to_string(img, config="--psm 6")
-            if text.strip():
-                pages_text.append(text.strip())
-        return "\n".join(pages_text)
 
+def _render_pdf_page(pdf_bytes: bytes, page_number: int, dpi: int = 300):
+    """Render one 1-indexed PDF page to a PIL Image via pypdfium2."""
+    import pypdfium2 as pdfium
+    pdf = pdfium.PdfDocument(pdf_bytes)
+    try:
+        page = pdf[page_number - 1]
+        try:
+            bitmap = page.render(scale=dpi / 72)
+            return bitmap.to_pil()
+        finally:
+            page.close()
+    finally:
+        pdf.close()
+
+
+def _ocr_single_page(pdf_bytes: bytes, page_number: int) -> str:
+    """OCR one specific page (1-indexed) of a PDF."""
+    try:
+        img = _render_pdf_page(pdf_bytes, page_number)
+        return _ocr_pil_image(img)
+    except ImportError:
+        logger.warning("[ocr_single_page] pypdfium2 not installed — run: pip install pypdfium2")
+        return ""
+    except Exception as e:
+        logger.warning(f"[ocr_single_page] page {page_number} failed: {e}")
+        return ""
+
+
+def _ocr_fallback(pdf_bytes: bytes) -> str:
+    """OCR every page of a PDF — used when the whole document is text-sparse."""
+    try:
+        import pypdfium2 as pdfium
+        pdf = pdfium.PdfDocument(pdf_bytes)
+        try:
+            pages_text = []
+            for i in range(len(pdf)):
+                page = pdf[i]
+                try:
+                    bitmap = page.render(scale=300 / 72)
+                    img = bitmap.to_pil()
+                finally:
+                    page.close()
+                text = _ocr_pil_image(img)
+                if text.strip():
+                    pages_text.append(text.strip())
+            return "\n".join(pages_text)
+        finally:
+            pdf.close()
     except ImportError:
         logger.warning(
-            "[ocr_fallback] pdf2image or pytesseract not installed — "
+            "[ocr_fallback] pypdfium2/easyocr not installed — "
             "image-only PDFs will extract empty. "
-            "Run: pip install pdf2image pytesseract"
+            "Run: pip install pypdfium2 easyocr"
         )
         return ""
     except Exception as e:
         logger.warning(f"[ocr_fallback] failed: {e}")
         return ""
+
+# ── Step 1a — DOCX / DOC / image parsing ──────────────────────────────────────
+#
+# Adds three more input formats on top of PDF:
+#   .docx  — python-docx for paragraphs/tables, + OCR of embedded images
+#   .doc   — legacy binary format, not readable by python-docx. Converted to
+#            .docx via a local LibreOffice install (free, but a real binary
+#            install — not a pip package), then routed through extract_docx_text.
+#   images — a standalone photo/screenshot of a question paper, OCR'd directly.
+
+def extract_docx_text(docx_bytes: bytes) -> str:
+    """Extract text from a .docx: paragraphs, tables, and OCR of embedded images."""
+    import io
+    import zipfile
+
+    import docx as python_docx
+
+    full_text: list[str] = []
+
+    doc = python_docx.Document(io.BytesIO(docx_bytes))
+    for para in doc.paragraphs:
+        if para.text.strip():
+            full_text.append(para.text.strip())
+
+    for table in doc.tables:
+        for row in table.rows:
+            cells = [cell.text.strip() for cell in row.cells]
+            if any(cells):
+                full_text.append("  |  ".join(cells))
+
+    # docx is a zip archive — embedded images live under word/media/
+    try:
+        with zipfile.ZipFile(io.BytesIO(docx_bytes)) as z:
+            media_files = [n for n in z.namelist() if n.startswith("word/media/")]
+            if media_files:
+                import pytesseract
+                from PIL import Image
+
+                for name in media_files:
+                    try:
+                        img_bytes = z.read(name)
+                        img = Image.open(io.BytesIO(img_bytes))
+                        ocr_text = pytesseract.image_to_string(img, config="--psm 6").strip()
+                        if ocr_text:
+                            full_text.append(f"[OCR — embedded image {name}]")
+                            full_text.append(ocr_text)
+                    except Exception as e:
+                        logger.warning(f"[extract_docx_text] failed to OCR {name}: {e}")
+    except ImportError:
+        logger.warning(
+            "[extract_docx_text] pytesseract/Pillow not installed — "
+            "embedded images in this docx will be skipped."
+        )
+    except zipfile.BadZipFile as e:
+        logger.warning(f"[extract_docx_text] could not read docx as zip: {e}")
+
+    return "\n".join(full_text)
+
+def extract_doc_text(doc_bytes: bytes, filename: str = "input.doc") -> str:
+    """
+    Legacy .doc → convert to .docx via local LibreOffice, then extract.
+    Requires `soffice` (LibreOffice) installed and on PATH.
+    Raises a clear error if it's missing rather than silently returning "".
+    """
+    import shutil
+    import subprocess
+    import tempfile
+
+    soffice_path = shutil.which("soffice")
+    if soffice_path is None:
+        raise RuntimeError(
+            "LibreOffice ('soffice') not found on PATH. Legacy .doc files need "
+            "it for conversion. Install LibreOffice (free, libreoffice.org) and "
+            "make sure 'soffice' is callable from cmd.exe, or convert the .doc "
+            "to .docx/.pdf yourself before uploading."
+        )
+
+    with tempfile.TemporaryDirectory() as tmp:
+        src_path = str(Path(tmp) / Path(filename).name)
+        with open(src_path, "wb") as f:
+            f.write(doc_bytes)
+
+        result = subprocess.run(  # noqa: S603 -- soffice_path resolved via shutil.which; args are not shell-interpreted
+            [soffice_path, "--headless", "--convert-to", "docx", "--outdir", tmp, src_path],
+            capture_output=True, text=True, timeout=120,
+            check=False,
+        )
+        if result.returncode != 0:
+            raise RuntimeError(f"soffice conversion failed: {result.stderr.strip()}")
+
+        converted_path = os.path.splitext(src_path)[0] + ".docx"
+        if not os.path.exists(converted_path):
+            raise RuntimeError("soffice did not produce the expected .docx output.")
+
+        with open(converted_path, "rb") as f:
+            docx_bytes = f.read()
+
+    return extract_docx_text(docx_bytes)
+
+
+def extract_image_text(image_bytes: bytes) -> str:
+    """OCR a standalone image file (photo/screenshot of a question paper)."""
+    try:
+        import io
+
+        from PIL import Image
+        img = Image.open(io.BytesIO(image_bytes))
+        return _ocr_pil_image(img)
+    except Exception as e:
+        logger.warning(f"[extract_image_text] failed: {e}")
+        return ""
+
+
+_TEXT_EXTRACTORS = {
+    ".pdf":  lambda b, fn: extract_raw_text(b),
+    ".docx": lambda b, fn: extract_docx_text(b),
+    ".doc":  lambda b, fn: extract_doc_text(b, fn),
+    ".png":  lambda b, fn: extract_image_text(b),
+    ".jpg":  lambda b, fn: extract_image_text(b),
+    ".jpeg": lambda b, fn: extract_image_text(b),
+    ".webp": lambda b, fn: extract_image_text(b),
+    ".tif":  lambda b, fn: extract_image_text(b),
+    ".tiff": lambda b, fn: extract_image_text(b),
+}
+
+
+def extract_raw_text_any(file_bytes: bytes, filename: str) -> str:
+    """Dispatch to the right extractor based on file extension."""
+    ext = os.path.splitext(filename)[1].lower()
+    extractor = _TEXT_EXTRACTORS.get(ext)
+    if extractor is None:
+        raise ValueError(
+            f"Unsupported file type '{ext}' for {filename}. "
+            f"Supported: {', '.join(sorted(_TEXT_EXTRACTORS))}"
+        )
+    return extractor(file_bytes, filename)
 
 # ── Step 1b — Overlapping chunks ─────────────────────────────────────────────
 # Prevents questions that span a page break from being truncated.
@@ -245,7 +474,7 @@ Each item must have ALL of these fields:
   question_text      (string)
   marks              (integer — total marks including sub-parts)
   question_type      (mcq | short_answer | long_answer | numerical)
-  topic              (string — specific 2-6 word concept label)
+  topic               (string — specific 2-6 word concept label)
   has_diagram        (boolean)
   marks_inferred     (boolean)
   confidence_score   (decimal 0.000 to 1.000)
@@ -265,15 +494,14 @@ Text:
             raw = response.choices[0].message.content.strip()
             if raw.startswith("```"):
                 raw = raw.split("```")[1]
-                if raw.startswith("json"):
-                    raw = raw[4:]
+                raw = raw.removeprefix("json")
             parsed = json.loads(raw)
             for q in parsed:
                 q["subject"]          = subject
                 q["paper_year"]       = paper_year
                 q["exam_type"]        = exam_type
                 q["doc_type"]         = doc_type
-                q["marks"]            = int(round(q.get("marks", 0)))
+                q["marks"]            = round(q.get("marks", 0))
                 q["topic"]            = q.get("topic", "")
                 q["has_diagram"]      = bool(q.get("has_diagram", False))
                 q["marks_inferred"]   = bool(q.get("marks_inferred", False))
@@ -327,8 +555,7 @@ Text:
             raw = response.choices[0].message.content.strip()
             if raw.startswith("```"):
                 raw = raw.split("```")[1]
-                if raw.startswith("json"):
-                    raw = raw[4:]
+                raw = raw.removeprefix("json")
             parsed = json.loads(raw)
             all_answers.extend(parsed)
         except Exception as e:
@@ -344,14 +571,18 @@ def match_and_write_solutions(
     college: str,
     subject_id: str | None = None,
     similarity_threshold: float = 0.82,
+    filename: str | None = None,
 ) -> dict:
     """
     Solution sheet pipeline:
-    1. Extract answer blocks from the solution PDF
+    1. Extract answer blocks from the solution file
     2. Load existing questions for this subject from Supabase
     3. For each answer block, embed the question_hint and find the closest
        matching question by cosine similarity
     4. Above threshold, write model_answer and answer_source = 'professor'
+
+    filename — if provided, dispatches through extract_raw_text_any so
+    solution sheets uploaded as .docx/.doc/image work too, not just PDF.
 
     Returns counts of matched and unmatched answers.
     """
@@ -359,7 +590,7 @@ def match_and_write_solutions(
     model = get_embed_model()
 
     # Extract answers from the solution sheet
-    raw_text = extract_raw_text(pdf_bytes)
+    raw_text = extract_raw_text_any(pdf_bytes, filename) if filename else extract_raw_text(pdf_bytes)
     answer_blocks = _extract_answer_blocks(raw_text, subject)
 
     if not answer_blocks:
@@ -550,8 +781,7 @@ Return ONLY a valid JSON object with exactly these fields — no markdown, no ba
     raw = response.choices[0].message.content.strip()
     if raw.startswith("```"):
         raw = raw.split("```")[1]
-        if raw.startswith("json"):
-            raw = raw[4:]
+        raw = raw.removeprefix("json")
     parsed = json.loads(raw.strip())
     return {
         "question":      parsed["question"],
@@ -947,20 +1177,49 @@ def run_generate_open_batch(
     return results
 
 
+class ExamTypeUndeterminedError(ValueError):
+    """Raised by run_upload_pyq when no exam_type was provided and none could
+    be guessed from the document's own content."""
+
+
+def guess_exam_type_from_text(text: str) -> str | None:
+    """Scan the first 2000 characters of extracted text (case-insensitive)
+    for exam-type keywords. Same keyword categories as batch_upload.py's
+    _guess_exam_type, applied to document content instead of the filename."""
+    snippet = text[:2000].lower()
+    if "compre" in snippet:
+        return "compre"
+    if "mid-sem" in snippet or "mid sem" in snippet or "midsem" in snippet:
+        return "midsem"
+    if "test1" in snippet or "quiz1" in snippet or "quiz-1" in snippet or "quiz-i" in snippet:
+        return "quiz1"
+    if "test2" in snippet or "quiz2" in snippet or "quiz-2" in snippet or "quiz-ii" in snippet:
+        return "quiz2"
+    if "test3" in snippet or "test-3" in snippet:
+        return "compre"
+    return None
+
+
 def run_upload_pyq(
     pdf_bytes: bytes,
     subject: str,
     paper_year: int,
-    exam_type: str,
+    exam_type: str | None,
     college: str,
     subject_id: str | None = None,
     campus_id: str | None = None,
     uploaded_by: str | None = None,
     doc_type: str = "pyq",
     storage_path: str = "direct_upload",
+    filename: str | None = None,
 ) -> dict:
     """
     Full upload pipeline with audit trail.
+
+    filename — NEW. If provided, extraction is dispatched by file extension
+    via extract_raw_text_any, so .pdf/.docx/.doc/.png/.jpg/.jpeg/.webp all
+    work. If omitted, behaves exactly as before (PDF-only via extract_raw_text),
+    so any existing caller that doesn't pass filename is unaffected.
 
     For doc_type = "solution": routes to match_and_write_solutions instead
     of extracting new questions. Returns match counts instead of insert counts.
@@ -992,6 +1251,7 @@ def run_upload_pyq(
                 subject=subject,
                 college=college,
                 subject_id=subject_id,
+                filename=filename,
             )
             if pdf_id:
                 status = "succeeded" if result["unmatched"] == 0 else "partial"
@@ -1019,7 +1279,27 @@ def run_upload_pyq(
     except Exception as e:
         logger.warning(f"[upload_pyq] failed to create uploaded_pdfs row: {e}")
 
-    raw_text = extract_raw_text(pdf_bytes)
+    raw_text = extract_raw_text_any(pdf_bytes, filename) if filename else extract_raw_text(pdf_bytes)
+
+    exam_type_source = "provided"
+    if not exam_type and doc_type == "pyq":
+        guessed_exam_type = guess_exam_type_from_text(raw_text)
+        if guessed_exam_type:
+            exam_type = guessed_exam_type
+            exam_type_source = "content"
+            logger.info(f"[upload_pyq] exam_type determined from document content: {exam_type}")
+            if pdf_id:
+                try:
+                    sb.table("uploaded_pdfs").update({"exam_type": exam_type}).eq("id", pdf_id).execute()
+                except Exception as e:
+                    logger.warning(f"[upload_pyq] failed to update exam_type on uploaded_pdfs row: {e}")
+        else:
+            if pdf_id:
+                _update_pdf_record(sb, pdf_id, "failed", 0, 0)
+            raise ExamTypeUndeterminedError(
+                "exam_type was not provided and could not be determined from document content."
+            )
+
     new_questions = extract_questions_from_text(
         raw_text, subject, paper_year, exam_type, doc_type=doc_type
     )
@@ -1027,7 +1307,7 @@ def run_upload_pyq(
     if not new_questions:
         if pdf_id:
             _update_pdf_record(sb, pdf_id, "failed", 0, 0)
-        raise ValueError("No questions could be extracted from the PDF.")
+        raise ValueError("No questions could be extracted from the file.")
 
     new_embeddings = embed_questions(new_questions)
 
@@ -1056,9 +1336,11 @@ def run_upload_pyq(
         logger.info(f"[upload_pyq] status={status}, extracted={inserted}, failed={questions_failed}")
 
     return {
-        "added":         inserted,
-        "pdf_id":        pdf_id,
-        "new_questions": [q["question_text"][:80] + "..." for q in new_questions],
+        "added":            inserted,
+        "pdf_id":           pdf_id,
+        "exam_type":        exam_type,
+        "exam_type_source": exam_type_source,
+        "new_questions":    [q["question_text"][:80] + "..." for q in new_questions],
     }
 
 
