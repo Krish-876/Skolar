@@ -16,6 +16,9 @@ jobs:
   changes:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
     outputs:
       flutter: ${{ steps.filter.outputs.flutter }}
       python: ${{ steps.filter.outputs.python }}
@@ -40,6 +43,9 @@ jobs:
   gitleaks:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
       - uses: actions/checkout@v7
         with:
