@@ -153,7 +153,26 @@ async def _subscribe_async(supabase_url: str, supabase_key: str, user_id: str, o
     )
 
 
-    for table in ("user_subject_exams", "question_results", "test_attempts"):
+    channel.on_postgres_changes(
+        event=all_events, schema="public", table="test_attempts",
+        filter=f"user_id=eq.{user_id}",
+        callback=_make_table_callback("test_attempts"),
+    )
+
+    # user_subject_exams and question_results have no user_id column of
+    # their own - user_subject_exams only has user_subject_id (FK to
+    # user_subjects, which has user_id) and question_results only has
+    # attempt_id (FK to test_attempts, which has user_id). Realtime's
+    # Postgres Changes `filter` only supports column=eq.value on the
+    # changed row itself, not a join through a foreign key, so there is
+    # no server-side way to scope these two to a single user today.
+    # Every connected student's session will be marked dirty on any
+    # write to these tables; fetch_partial still restricts what's
+    # actually returned, so this is a wasted-refresh cost, not a data
+    # exposure issue. Fixing this for real needs either a denormalized
+    # user_id column on these tables or a different delivery mechanism
+    # (e.g. a Postgres trigger writing to a per-user notify table).
+    for table in ("user_subject_exams", "question_results"):
         channel.on_postgres_changes(
             event=all_events, schema="public", table=table,
             callback=_make_table_callback(table),
