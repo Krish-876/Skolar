@@ -14,8 +14,7 @@ from nova.services.facts_state import FactsState
 from nova.services.chat_service import ask_nova, GROQ_MODEL
 from nova.services.paper_service import get_subjects_for_student, generate_paper
 from nova.schemas.chat import ChatTurn
-logging.basicConfig(level=logging.CRITICAL + 1)
-logging.disable(logging.CRITICAL)
+logging.basicConfig(level=logging.WARNING)
 
 
 def _handle_paper_command(supabase, groq, groq_backup, user_id: str) -> None:
