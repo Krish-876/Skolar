@@ -6,9 +6,11 @@ from pydantic import BaseModel
 class FactsSnapshot(BaseModel):
     snapshot_taken_at: datetime
     full_name: str | None
-    academic_year: int | None
+    academic_year: str | int | None
     branch: str | None
-    current_semester: int | None
+    current_semester: str | int | None
+    dual_branch: str | None
+    study_capacity: str | int | None
     user_subject_exams: list[dict]
     capacity_today: list[dict]
     staleness_tracker: list[dict]

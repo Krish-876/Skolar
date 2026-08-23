@@ -1,0 +1,45 @@
+# nova/config/model_tiers.yaml
+# Ordered fallback lists the resilience wrapper reads from. Skip any tier
+# whose gate (context size, daily cap spent, status: shadow_eval) isn't met.
+#
+# v3: adds cacheable_segment markers (§1/§4) and splits reasoning_layer into
+# full_pass / minor_trigger_rerank (§2/§4). batch_generation (§3) is
+# intentionally NOT included here - no mock-question-generation service
+# exists in the codebase yet, so that hierarchy has nothing to attach to.
+
+ask_nova:
+  - provider: groq
+    model: openai/gpt-oss-120b
+    key: primary
+    cacheable_segment: system_instructions   # static persona/format/boundary rules, cached separately from per-call dynamic context
+  - provider: groq
+    model: openai/gpt-oss-120b
+    key: backup
+    cacheable_segment: system_instructions
+  - provider: cerebras
+    model: gpt-oss-120b
+    max_context_tokens: 8192   # gated per call against current payload, not once
+    status: shadow_eval        # not routed to for real student traffic until §0 data policy confirmed
+  # no live tier 3 today - fail gracefully after backup key, per §1
+
+reasoning_layer:
+  full_pass:                                  # new trigger conditions genuinely requiring the multi-factor tradeoff
+    - provider: groq
+      model: openai/gpt-oss-120b
+      reasoning_effort: high
+      max_tokens_per_minute: 8000
+      cacheable_segment: reasoning_instructions
+      alt_model: qwen/qwen3.6-27b   # named config alternative, not an ad hoc runtime swap
+  minor_trigger_rerank:                       # single test score / capacity update - doesn't warrant a full re-derive
+    - provider: groq
+      model: openai/gpt-oss-120b
+      reasoning_effort: medium   # start at medium; only drop to low if quality holds under real measurement (open item 4)
+      max_tokens_per_minute: 8000
+      cacheable_segment: reasoning_instructions
+  shadow:
+    - provider: openrouter
+      model: nvidia/nemotron-3-ultra-550b-a55b:free
+      daily_cap: null              # TODO: confirm on OpenRouter dashboard - sources disagree 50/day vs 200/day
+      status: shadow_eval
+
+  fallback_behavior: show_last_plan_with_flag   # see MD §2 - never blank, never silently stale
