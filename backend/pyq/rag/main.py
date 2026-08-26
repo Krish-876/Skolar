@@ -41,7 +41,6 @@ app = FastAPI(
     version="2.3.0",
 )
 
-# Restrict CORS origins via env config instead of open wildcard
 ALLOWED_ORIGINS = os.getenv(
     "ALLOWED_ORIGINS",
     "http://localhost:3000,http://localhost:5173,http://localhost:8080,http://127.0.0.1:3000",
@@ -89,8 +88,8 @@ class GenerateResponse(BaseModel):
 
 class McqQuestion(BaseModel):
     question: str
-    options: list[str]       # always length 4
-    correct_index: int       # 0-3
+    options: list[str]
+    correct_index: int
     subject: str
     marks: int
 
@@ -463,9 +462,6 @@ async def upload_pyq(
         pdf_id=result.get("pdf_id"),
     )
 
-
-# ── Dev entrypoint ────────────────────────────────────────────────────────────
-# Run from backend/ with: python -m pyq.rag.main
 
 if __name__ == "__main__":
     uvicorn.run("pyq.rag.main:app", host="0.0.0.0", port=8000, reload=True)  # noqa: S104 -- local dev server
