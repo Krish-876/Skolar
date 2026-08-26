@@ -1,11 +1,14 @@
+﻿import logging
 import os
 import uuid
+
 import pytest
 from datetime import date
 from supabase import create_client, Client
 from dotenv import load_dotenv
 
 load_dotenv()
+logger = logging.getLogger(__name__)
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
@@ -98,9 +101,8 @@ def test_cross_student_data_isolation(authenticated_clients, table_name: str):
         res = client_a.table(table_name).insert(payload).execute()
         if res.data and len(res.data) > 0:
             seeded_row_id = res.data[0].get("id", test_record_id)
-    except Exception:
-        # If insert fails due to DB check constraints, test existing isolation directly on user_id boundary
-        pass
+    except Exception as e:
+        logger.warning("Could not seed row for %s: %s", table_name, e)
 
     assert seeded_row_id is not None, (
         f"Setup failed: could not seed a row as Student A in {table_name}, "
@@ -120,5 +122,5 @@ def test_cross_student_data_isolation(authenticated_clients, table_name: str):
     if seeded_row_id:
         try:
             client_a.table(table_name).delete().eq("id", seeded_row_id).execute()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Cleanup failed for seeded row %s in %s: %s", seeded_row_id, table_name, e)

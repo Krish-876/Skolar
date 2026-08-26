@@ -263,10 +263,10 @@ def run_batch(
     # Import here, not at module top, so this script can be dropped anywhere
     # without failing at import time if the pipeline module isn't on the path.
     try:
-        rag_llms_dir = Path(__file__).resolve().parents[2] / "lib" / "core" / "ai" / "rag_llms"
-        if str(rag_llms_dir) not in sys.path:
-            sys.path.insert(0, str(rag_llms_dir))
-        from pipeline import run_upload_pyq, ExamTypeUndeterminedError
+        backend_dir = Path(__file__).resolve().parents[1]
+        if str(backend_dir) not in sys.path:
+            sys.path.insert(0, str(backend_dir))
+        from pyq.rag.pipeline import run_upload_pyq, ExamTypeUndeterminedError
     except ImportError:
         logger.error(
             "Could not import run_upload_pyq. Update the import in run_batch() "

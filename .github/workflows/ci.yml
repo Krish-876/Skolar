@@ -1,4 +1,4 @@
-name: CI
+﻿name: CI
 on:
   pull_request:
     branches: [master]
@@ -30,13 +30,10 @@ jobs:
           filters: |
             flutter:
               - 'lib/**'
-              - '!lib/core/ai/rag_llms/**'
-              - '!lib/core/ai/nova/**'
               - 'pubspec.yaml'
               - 'pubspec.lock'
             python:
-              - 'lib/core/ai/rag_llms/**'
-              - 'lib/core/ai/nova/**'
+              - 'backend/**'
 
   # NEW: runs on every push/PR regardless of what changed — cheap, and a
   # leaked key doesn't care whether it's Dart or Python that leaked it.
@@ -170,23 +167,23 @@ jobs:
         with:
           python-version: '3.14'
           cache: 'pip'
-          cache-dependency-path: 'lib/core/ai/rag_llms/requirements*.txt'
+          cache-dependency-path: 'backend/requirements*.txt'
       - name: Install dependencies
         run: |
-          pip install -r lib/core/ai/rag_llms/requirements.txt
-          pip install -r lib/core/ai/rag_llms/requirements-dev.txt
+          pip install -r backend/requirements.txt
+          pip install -r backend/requirements-dev.txt
       - name: Lint
-        run: ruff check lib/core/ai/
+        run: ruff check backend/
       - name: Security lint
         # Bandit-derived rules ported into ruff: hardcoded secrets, unsafe
         # eval/exec, weak crypto, SQL string concatenation, etc.
         # Kept as a separate step (not merged into --select above) so a new
         # security finding fails with an unambiguous step name in the UI.
-        run: ruff check --select S lib/core/ai/
+        run: ruff check --select S backend/
       - name: Type check
         run: |
-          if [ -d "lib/core/ai/nova" ]; then
-            mypy lib/core/ai/nova --ignore-missing-imports
+          if [ -d "backend/nova" ]; then
+            mypy backend/nova --ignore-missing-imports
           fi
 
   branch-up-to-date:

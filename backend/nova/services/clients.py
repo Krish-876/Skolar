@@ -3,7 +3,6 @@ import logging
 import os
 import threading
 from collections.abc import Callable
-from pathlib import Path
 from typing import cast
 
 from dotenv import load_dotenv
@@ -12,12 +11,10 @@ from realtime import PostgresChangesPayload, RealtimePostgresChangesListenEvent
 from supabase import Client, acreate_client, create_client
 
 logger = logging.getLogger(__name__)
-# lib/core/ai/nova/nova/services/clients.py -> lib/core/ai/rag_llms/.env
-ENV_PATH = Path(__file__).resolve().parent.parent.parent.parent / "rag_llms" / ".env"
 
 
 def get_clients() -> tuple[Client, Groq, Groq | None]:
-    load_dotenv(ENV_PATH, override=True)
+    load_dotenv(override=True)
     supabase_url = os.environ["SUPABASE_URL"]
     supabase_key = os.environ["SUPABASE_KEY"]
     groq_key = os.environ["GROQ_API_KEY"]
@@ -31,7 +28,7 @@ def get_supabase_credentials() -> tuple[str, str]:
     """Raw url/key, separate from get_clients() so callers that only need
     to open the async Realtime client (start_facts_listener_threaded)
     don't have to also build a sync Client they won't use."""
-    load_dotenv(ENV_PATH, override=True)
+    load_dotenv(override=True)
     return os.environ["SUPABASE_URL"], os.environ["SUPABASE_KEY"]
 
 
@@ -40,7 +37,7 @@ def get_shadow_clients() -> dict[str, object | None]:
     reasoning-layer tiers (Cerebras, OpenRouter/Nemotron), not the ask_nova
     contract CI checks. Missing keys just mean that tier stays unavailable,
     never an error - shadow tiers are opt-in by env presence."""
-    load_dotenv(ENV_PATH, override=True)
+    load_dotenv(override=True)
 
     cerebras = None
     cerebras_key = os.environ.get("CEREBRAS_API_KEY")

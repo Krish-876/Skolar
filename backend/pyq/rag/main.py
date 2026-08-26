@@ -1,6 +1,6 @@
 """
-Run with:
-    uvicorn main:app --reload --port 8000
+Run with (from backend/):
+    uvicorn pyq.rag.main:app --reload --port 8000
 
 Endpoints:
     POST /generate               → one AI-generated open-ended question
@@ -18,7 +18,7 @@ import traceback
 import uvicorn
 from fastapi import FastAPI, File, Form, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from pipeline import (
+from .pipeline import (
     load_bank_and_embeddings,
     run_generate,
     run_generate_mcq_batch,
@@ -464,6 +464,7 @@ async def upload_pyq(
 
 
 # ── Dev entrypoint ────────────────────────────────────────────────────────────
+# Run from backend/ with: python -m pyq.rag.main
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)  # noqa: S104 -- local dev server, intentional
+    uvicorn.run("pyq.rag.main:app", host="0.0.0.0", port=8000, reload=True)  # noqa: S104 -- local dev server, intentional
