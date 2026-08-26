@@ -3,21 +3,24 @@ Run with (from backend/):
     uvicorn pyq.rag.main:app --reload --port 8000
 
 Endpoints:
-    POST /generate               → one AI-generated open-ended question
-    POST /generate-batch         → N MCQs (Compre Part A / Quiz MCQ mode)
-    POST /generate-open-batch    → N open-ended questions + model answers (Quiz / Midsem / Compre Part B)
-    POST /upload-pyq             → PDF → extract → insert into Supabase
-    GET  /health                 → sanity check
-    GET  /stats                  → question bank stats (scoped by college)
-    GET  /questions              → browse / filter the question bank (scoped by college)
+    POST /generate                → one AI-generated open-ended question (authenticated)
+    POST /generate-batch          → N MCQs (authenticated, published_by bound to session)
+    POST /generate-open-batch     → N open-ended questions + model answers (authenticated)
+    POST /upload-pyq              → PDF → extract → insert into Supabase (authenticated)
+    GET  /health                  → sanity check (public)
+    GET  /stats                   → question bank stats (scoped to caller's college)
+    GET  /questions               → browse/filter question bank (scoped to caller's college)
 """
 
 import logging
-import traceback
-
+import os
 import uvicorn
-from fastapi import FastAPI, File, Form, HTTPException, Query, UploadFile
+from fastapi import Depends, FastAPI, File, Form, HTTPException, Query, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+
+from app.dependencies import get_current_user
+
 from .pipeline import (
     load_bank_and_embeddings,
     run_generate,
@@ -26,7 +29,6 @@ from .pipeline import (
     run_upload_pyq,
     save_generated_test,
 )
-from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 
@@ -36,37 +38,54 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title="Skolar AI API",
     description="DICL-based exam question generation using college PYQs",
-    version="2.2.0",
+    version="2.3.0",
 )
+
+# Restrict CORS origins via env config instead of open wildcard
+ALLOWED_ORIGINS = os.getenv(
+    "ALLOWED_ORIGINS",
+    "http://localhost:3000,http://localhost:5173,http://localhost:8080,http://127.0.0.1:3000",
+).split(",")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=[origin.strip() for origin in ALLOWED_ORIGINS if origin.strip()],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 
-# ── Valid exam types (mirrors schema CHECK constraint) ────────────────────────
+# ── Valid exam types & doc types ──────────────────────────────────────────────
 
 _VALID_EXAM_TYPES = {"quiz1", "midsem", "quiz2", "compre", "generated"}
-
-# ── Valid doc types (mirrors uploaded_pdfs CHECK constraint) ──────────────────
-
 _VALID_DOC_TYPES = {"pyq", "tutorial", "solution", "lab", "misc"}
+
+
+def _get_verified_college(user: dict) -> str:
+    """Ensures the caller has an assigned college in their verified user profile."""
+    college = user.get("college")
+    if not college:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Your profile does not have an assigned college. Please complete onboarding.",
+        )
+    return college
+
 
 # ── Request / Response models ─────────────────────────────────────────────────
 
 class GenerateRequest(BaseModel):
     subject: str
-    college: str
     year_from: int | None = None
     year_to: int | None = None
     k: int | None = 5
+
 
 class GenerateResponse(BaseModel):
     question: str
     subject: str
     examples_used: int
+
 
 class McqQuestion(BaseModel):
     question: str
@@ -75,15 +94,15 @@ class McqQuestion(BaseModel):
     subject: str
     marks: int
 
+
 class GenerateBatchRequest(BaseModel):
     subject: str
-    college: str
     count: int | None = 5
     exam_type: str | None = None
     year_from: int | None = None
     year_to: int | None = None
     k: int | None = 5
-    published_by: str | None = None
+
 
 class GenerateBatchResponse(BaseModel):
     questions: list[McqQuestion]
@@ -91,7 +110,6 @@ class GenerateBatchResponse(BaseModel):
     requested: int
     generated: int
 
-# ── Open-ended batch (Quiz / Midsem / Compre Part B) ──────────────────────────
 
 class OpenQuestion(BaseModel):
     question: str
@@ -99,16 +117,16 @@ class OpenQuestion(BaseModel):
     marks: int
     model_answer: str
 
+
 class GenerateOpenBatchRequest(BaseModel):
     subject: str
-    college: str
     count: int | None = 5
     exam_type: str | None = None
     year_from: int | None = None
     year_to: int | None = None
     k: int | None = 5
     with_answers: bool | None = True
-    published_by: str | None = None
+
 
 class GenerateOpenBatchResponse(BaseModel):
     questions: list[OpenQuestion]
@@ -116,19 +134,20 @@ class GenerateOpenBatchResponse(BaseModel):
     requested: int
     generated: int
 
-# ── Upload / Stats / Questions ────────────────────────────────────────────────
 
 class UploadResponse(BaseModel):
     message: str
     added: int
     total: int
     preview: list[str]
-    pdf_id: str | None = None   # uploaded_pdfs row uuid, useful for client-side status polling
+    pdf_id: str | None = None
+
 
 class StatsResponse(BaseModel):
     total_questions: int
     subjects: dict
     paper_years: list[int]
+
 
 class QuestionItem(BaseModel):
     question_text: str
@@ -138,19 +157,22 @@ class QuestionItem(BaseModel):
     paper_year: int
     exam_type: str
 
+
 class QuestionsResponse(BaseModel):
     total: int
     questions: list[QuestionItem]
+
 
 # ── Routes ────────────────────────────────────────────────────────────────────
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "service": "Skolar AI API", "version": "2.2.0"}
+    return {"status": "ok", "service": "Skolar AI API", "version": "2.3.0"}
 
 
 @app.get("/stats", response_model=StatsResponse)
-def stats(college: str = Query(...)):
+def stats(user: dict = Depends(get_current_user)):
+    college = _get_verified_college(user)
     try:
         questions, _ = load_bank_and_embeddings(college)
     except Exception as e:
@@ -174,12 +196,13 @@ def stats(college: str = Query(...)):
 
 @app.get("/questions", response_model=QuestionsResponse)
 def get_questions(
-    college: str = Query(...),
     subject: str | None = Query(None),
     paper_year: int | None = Query(None),
     exam_type: str | None = Query(None),
     question_type: str | None = Query(None),
+    user: dict = Depends(get_current_user),
 ):
+    college = _get_verified_college(user)
     try:
         questions, _ = load_bank_and_embeddings(college)
     except Exception as e:
@@ -211,7 +234,9 @@ def get_questions(
 
 
 @app.post("/generate", response_model=GenerateResponse)
-def generate(req: GenerateRequest):
+def generate(req: GenerateRequest, user: dict = Depends(get_current_user)):
+    college = _get_verified_college(user)
+
     year_range = None
     if req.year_from and req.year_to:
         if req.year_from > req.year_to:
@@ -223,7 +248,7 @@ def generate(req: GenerateRequest):
     try:
         question = run_generate(
             subject=req.subject,
-            college=req.college,
+            college=college,
             year_range=year_range,
             k=k,
         )
@@ -236,18 +261,9 @@ def generate(req: GenerateRequest):
 
 
 @app.post("/generate-batch", response_model=GenerateBatchResponse)
-def generate_batch(req: GenerateBatchRequest):
-    """
-    Generate N MCQ questions for Compre Part A practice.
+def generate_batch(req: GenerateBatchRequest, user: dict = Depends(get_current_user)):
+    college = _get_verified_college(user)
 
-    Body:
-        {
-          "subject": "Artificial Intelligence",
-          "college": "BPHC",
-          "count":   5,
-          "exam_type": "compre"
-        }
-    """
     if req.exam_type and req.exam_type not in _VALID_EXAM_TYPES:
         raise HTTPException(
             status_code=400,
@@ -267,7 +283,7 @@ def generate_batch(req: GenerateBatchRequest):
     try:
         raw = run_generate_mcq_batch(
             subject=req.subject,
-            college=req.college,
+            college=college,
             count=count,
             exam_type=req.exam_type,
             year_range=year_range,
@@ -287,13 +303,13 @@ def generate_batch(req: GenerateBatchRequest):
     try:
         save_generated_test(
             questions=raw,
-            college=req.college,
+            college=college,
             subject=req.subject,
             exam_type=req.exam_type or "generated",
-            published_by=req.published_by,
+            published_by=user["id"],
         )
     except Exception as e:
-        logger.warning(f"[generate_batch] failed to save to feed: {e}")
+        logger.warning("[generate_batch] failed to save to feed: %s", e)
 
     return GenerateBatchResponse(
         questions=[
@@ -313,23 +329,9 @@ def generate_batch(req: GenerateBatchRequest):
 
 
 @app.post("/generate-open-batch", response_model=GenerateOpenBatchResponse)
-def generate_open_batch(req: GenerateOpenBatchRequest):
-    """
-    Generate N open-ended questions with pre-generated model answers.
-    Used for Quiz, Midsem, and Compre Part B practice modes.
+def generate_open_batch(req: GenerateOpenBatchRequest, user: dict = Depends(get_current_user)):
+    college = _get_verified_college(user)
 
-    Body:
-        {
-          "subject":      "Artificial Intelligence",
-          "college":      "BPHC",
-          "count":        5,
-          "exam_type":    "midsem",
-          "with_answers": true
-        }
-
-    Longer timeout needed on the client — each question makes 2 Groq calls.
-    Expect ~8-12s for 5 questions with 3 parallel workers.
-    """
     if req.exam_type and req.exam_type not in _VALID_EXAM_TYPES:
         raise HTTPException(
             status_code=400,
@@ -349,7 +351,7 @@ def generate_open_batch(req: GenerateOpenBatchRequest):
     try:
         raw = run_generate_open_batch(
             subject=req.subject,
-            college=req.college,
+            college=college,
             count=count,
             exam_type=req.exam_type,
             year_range=year_range,
@@ -359,7 +361,7 @@ def generate_open_batch(req: GenerateOpenBatchRequest):
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
-        traceback.print_exc()
+        logger.exception("Open batch generation pipeline error")
         raise HTTPException(status_code=500, detail=f"Pipeline error: {e!s}")
 
     if not raw:
@@ -371,13 +373,13 @@ def generate_open_batch(req: GenerateOpenBatchRequest):
     try:
         save_generated_test(
             questions=raw,
-            college=req.college,
+            college=college,
             subject=req.subject,
             exam_type=req.exam_type or "generated",
-            published_by=req.published_by,
+            published_by=user["id"],
         )
     except Exception as e:
-        logger.warning(f"[generate_open_batch] failed to save to feed: {e}")
+        logger.warning("[generate_open_batch] failed to save to feed: %s", e)
 
     return GenerateOpenBatchResponse(
         questions=[
@@ -401,15 +403,14 @@ async def upload_pyq(
     subject: str = Form(...),
     paper_year: int = Form(...),
     exam_type: str | None = Form(None),
-    college: str = Form(...),
-    # ── New optional fields wired to uploaded_pdfs + questions tables ─────────
-    # All optional so existing clients that don't send them continue to work.
-    subject_id:  str | None = Form(None),   # uuid from subjects table
-    campus_id:   str | None = Form(None),   # uuid from campuses table
-    uploaded_by: str | None = Form(None),   # uuid of uploading user
-    doc_type:    str | None = Form("pyq"),  # pyq | tutorial | solution | lab | misc
+    subject_id: str | None = Form(None),
+    campus_id: str | None = Form(None),
+    doc_type: str | None = Form("pyq"),
+    user: dict = Depends(get_current_user),
 ):
-    if not file.filename.endswith(".pdf"):
+    college = _get_verified_college(user)
+
+    if not file.filename or not file.filename.endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files are accepted.")
 
     resolved_doc_type = doc_type or "pyq"
@@ -418,13 +419,13 @@ async def upload_pyq(
             status_code=400,
             detail=f"Invalid doc_type '{resolved_doc_type}'. Must be one of: {sorted(_VALID_DOC_TYPES)}",
         )
-    
+
     if resolved_doc_type == "pyq":
         if not exam_type or exam_type not in _VALID_EXAM_TYPES:
             raise HTTPException(
-            status_code=400,
-            detail=f"exam_type required for pyq. Must be one of: {sorted(_VALID_EXAM_TYPES)}",
-        )
+                status_code=400,
+                detail=f"exam_type required for pyq. Must be one of: {sorted(_VALID_EXAM_TYPES)}",
+            )
 
     pdf_bytes = await file.read()
     if len(pdf_bytes) == 0:
@@ -438,10 +439,10 @@ async def upload_pyq(
             exam_type=exam_type if resolved_doc_type == "pyq" else None,
             college=college,
             subject_id=subject_id,
-            campus_id=campus_id,
-            uploaded_by=uploaded_by,
+            campus_id=campus_id or user.get("campus_id"),
+            uploaded_by=user["id"],
             doc_type=resolved_doc_type,
-            storage_path=file.filename,   # use filename as storage_path for now
+            storage_path=file.filename,
         )
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
@@ -467,4 +468,4 @@ async def upload_pyq(
 # Run from backend/ with: python -m pyq.rag.main
 
 if __name__ == "__main__":
-    uvicorn.run("pyq.rag.main:app", host="0.0.0.0", port=8000, reload=True)  # noqa: S104 -- local dev server, intentional
+    uvicorn.run("pyq.rag.main:app", host="0.0.0.0", port=8000, reload=True)  # noqa: S104 -- local dev server
