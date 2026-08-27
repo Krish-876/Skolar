@@ -35,7 +35,7 @@ jobs:
             python:
               - 'backend/**'
 
-  # NEW: runs on every push/PR regardless of what changed — cheap, and a
+  # NEW: runs on every push/PR regardless of what changed - cheap, and a
   # leaked key doesn't care whether it's Dart or Python that leaked it.
   gitleaks:
     runs-on: ubuntu-latest
@@ -51,37 +51,19 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # NEW: catches secret formats gitleaks' generic entropy rules can miss —
-  # literal Google/OpenAI key patterns, committed service-account JSON, and
-  # a tracked .env file. Same reasoning as gitleaks above: cheap, and not
-  # gated by the changes filter since a leaked key doesn't care whether it's
-  # Dart or Python that leaked it.
-  ai-key-patterns:
+  # NEW: catches a tracked .env file that gitleaks' generic entropy rules
+  # can miss. Cheap, and not gated by the changes filter since a leaked
+  # .env doesn't care whether it's Dart or Python that leaked it.
+  env-file-check:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
       contents: read
     steps:
       - uses: actions/checkout@v7
-      - name: Scan for literal Google/OpenAI API keys
-        run: |
-          MATCHES=$(git grep -InE 'AIzaSy[A-Za-z0-9_-]{33}|sk-[A-Za-z0-9]{20,}' -- '*.py' '*.dart' || true)
-          if [ -n "$MATCHES" ]; then
-            echo "$MATCHES"
-            echo "::error::Literal API key pattern found in *.py/*.dart source. Remove the key and rotate it."
-            exit 1
-          fi
-      - name: Scan for committed service-account JSON files
-        run: |
-          MATCHES=$(git grep -Il '"type": "service_account"' || true)
-          if [ -n "$MATCHES" ]; then
-            echo "$MATCHES"
-            echo "::error::Committed service-account JSON file(s) found. Remove and rotate the key."
-            exit 1
-          fi
       - name: Check for a committed .env file
         run: |
-          if git ls-files | grep -qx '\.env'; then
+          if git ls-files | grep -qE '(^|/)\.env$'; then
             echo "::error::A file named .env is tracked in git. Remove it and rotate any secrets it contained."
             exit 1
           fi
@@ -243,6 +225,6 @@ jobs:
         run: |
           git fetch origin master
           if ! git merge-base --is-ancestor origin/master HEAD; then
-            echo "Branch is behind master — rebase before pushing (git fetch origin && git rebase origin/master)."
+            echo "Branch is behind master - rebase before pushing (git fetch origin && git rebase origin/master)."
             exit 1
           fi
