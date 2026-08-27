@@ -51,6 +51,41 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  # NEW: catches secret formats gitleaks' generic entropy rules can miss —
+  # literal Google/OpenAI key patterns, committed service-account JSON, and
+  # a tracked .env file. Same reasoning as gitleaks above: cheap, and not
+  # gated by the changes filter since a leaked key doesn't care whether it's
+  # Dart or Python that leaked it.
+  ai-key-patterns:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - name: Scan for literal Google/OpenAI API keys
+        run: |
+          MATCHES=$(git grep -InE 'AIzaSy[A-Za-z0-9_-]{33}|sk-[A-Za-z0-9]{20,}' -- '*.py' '*.dart' || true)
+          if [ -n "$MATCHES" ]; then
+            echo "$MATCHES"
+            echo "::error::Literal API key pattern found in *.py/*.dart source. Remove the key and rotate it."
+            exit 1
+          fi
+      - name: Scan for committed service-account JSON files
+        run: |
+          MATCHES=$(git grep -Il '"type": "service_account"' || true)
+          if [ -n "$MATCHES" ]; then
+            echo "$MATCHES"
+            echo "::error::Committed service-account JSON file(s) found. Remove and rotate the key."
+            exit 1
+          fi
+      - name: Check for a committed .env file
+        run: |
+          if git ls-files | grep -qx '\.env'; then
+            echo "::error::A file named .env is tracked in git. Remove it and rotate any secrets it contained."
+            exit 1
+          fi
+
   format:
     needs: changes
     if: needs.changes.outputs.flutter == 'true'
@@ -180,6 +215,16 @@ jobs:
         # Kept as a separate step (not merged into --select above) so a new
         # security finding fails with an unambiguous step name in the UI.
         run: ruff check --select S backend/
+      - name: Block legacy retry decorator on genai calls
+        # api_core.retry.if_transient_error doesn't recognize
+        # google.genai.errors.APIError, so 429s from genai calls pass
+        # through unretried. Use types.HttpRetryOptions on the genai client
+        # config instead.
+        run: |
+          if grep -rq 'api_core.retry.if_transient_error' backend/; then
+            echo "::error::Found api_core.retry.if_transient_error in backend/. This predicate doesn't recognize google.genai.errors.APIError, so 429s from genai calls pass through unretried. Use types.HttpRetryOptions instead."
+            exit 1
+          fi
       - name: Type check
         run: |
           if [ -d "backend/nova" ]; then
