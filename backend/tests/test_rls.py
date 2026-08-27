@@ -1,4 +1,4 @@
-import logging
+﻿import logging
 import os
 import uuid
 from datetime import date
@@ -79,18 +79,27 @@ def _seed_test_record(client: Client, table_name: str, user_id: str) -> tuple[st
     today_str = str(date.today())
 
     if table_name == "user_topic_weights":
+        # subject_id's FK target is `subjects` ONLY
+        # (user_topic_weights_subject_id_fkey -> subjects.id).
+        # Do NOT fall back to `courses` (not a valid FK target for this
+        # column) or a random uuid4() (guaranteed FK violation) -- either
+        # produces a confusing insert error instead of a clear diagnostic.
         subject_uuid = None
-        for lookup_table in ["subjects", "courses"]:
-            try:
-                sub_res = client.table(lookup_table).select("id").limit(1).execute()
-                if sub_res.data and len(sub_res.data) > 0:
-                    subject_uuid = sub_res.data[0]["id"]
-                    break
-            except Exception as exc:
-                logger.debug("Lookup table %s check failed: %s", lookup_table, exc)
+        try:
+            sub_res = client.table("subjects").select("id").limit(1).execute()
+            if sub_res.data and len(sub_res.data) > 0:
+                subject_uuid = sub_res.data[0]["id"]
+        except Exception as exc:
+            logger.debug("subjects lookup failed: %s", exc)
 
         if not subject_uuid:
-            subject_uuid = str(uuid.uuid4())
+            pytest.fail(
+                "Cannot seed user_topic_weights: no rows in 'subjects' "
+                "(the FK target for subject_id). This environment needs "
+                "seed data in 'subjects' before RLS tests can run -- "
+                "falling back to another table or a random UUID would "
+                "only produce a foreign-key violation, not a valid test."
+            )
 
         payload = {
             "id": test_record_id,
