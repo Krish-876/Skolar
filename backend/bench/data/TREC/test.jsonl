@@ -1,0 +1,500 @@
+{"index": 0, "label": "numeric", "text": "How far is it from Denver to Aspen ?"}
+{"index": 1, "label": "location", "text": "What county is Modesto , California in ?"}
+{"index": 2, "label": "human", "text": "Who was Galileo ?"}
+{"index": 3, "label": "description and abstract concepts", "text": "What is an atom ?"}
+{"index": 4, "label": "numeric", "text": "When did Hawaii become a state ?"}
+{"index": 5, "label": "numeric", "text": "How tall is the Sears Building ?"}
+{"index": 6, "label": "human", "text": "George Bush purchased a small interest in which baseball team ?"}
+{"index": 7, "label": "entity", "text": "What is Australia 's national flower ?"}
+{"index": 8, "label": "description and abstract concepts", "text": "Why does the moon turn orange ?"}
+{"index": 9, "label": "description and abstract concepts", "text": "What is autism ?"}
+{"index": 10, "label": "location", "text": "What city had a world fair in 1900 ?"}
+{"index": 11, "label": "human", "text": "What person 's head is on a dime ?"}
+{"index": 12, "label": "numeric", "text": "What is the average weight of a Yellow Labrador ?"}
+{"index": 13, "label": "human", "text": "Who was the first man to fly across the Pacific Ocean ?"}
+{"index": 14, "label": "numeric", "text": "When did Idaho become a state ?"}
+{"index": 15, "label": "numeric", "text": "What is the life expectancy for crickets ?"}
+{"index": 16, "label": "entity", "text": "What metal has the highest melting point ?"}
+{"index": 17, "label": "human", "text": "Who developed the vaccination against polio ?"}
+{"index": 18, "label": "description and abstract concepts", "text": "What is epilepsy ?"}
+{"index": 19, "label": "numeric", "text": "What year did the Titanic sink ?"}
+{"index": 20, "label": "human", "text": "Who was the first American to walk in space ?"}
+{"index": 21, "label": "description and abstract concepts", "text": "What is a biosphere ?"}
+{"index": 22, "label": "location", "text": "What river in the US is known as the Big Muddy ?"}
+{"index": 23, "label": "description and abstract concepts", "text": "What is bipolar disorder ?"}
+{"index": 24, "label": "description and abstract concepts", "text": "What is cholesterol ?"}
+{"index": 25, "label": "human", "text": "Who developed the Macintosh computer ?"}
+{"index": 26, "label": "description and abstract concepts", "text": "What is caffeine ?"}
+{"index": 27, "label": "location", "text": "What imaginary line is halfway between the North and South Poles ?"}
+{"index": 28, "label": "location", "text": "Where is John Wayne airport ?"}
+{"index": 29, "label": "location", "text": "What hemisphere is the Philippines in ?"}
+{"index": 30, "label": "numeric", "text": "What is the average speed of the horses at the Kentucky Derby ?"}
+{"index": 31, "label": "location", "text": "Where are the Rocky Mountains ?"}
+{"index": 32, "label": "description and abstract concepts", "text": "What are invertebrates ?"}
+{"index": 33, "label": "numeric", "text": "What is the temperature at the center of the earth ?"}
+{"index": 34, "label": "numeric", "text": "When did John F. Kennedy get elected as President ?"}
+{"index": 35, "label": "numeric", "text": "How old was Elvis Presley when he died ?"}
+{"index": 36, "label": "location", "text": "Where is the Orinoco River ?"}
+{"index": 37, "label": "numeric", "text": "How far is the service line from the net in tennis ?"}
+{"index": 38, "label": "numeric", "text": "How much fiber should you have per day ?"}
+{"index": 39, "label": "numeric", "text": "How many Great Lakes are there ?"}
+{"index": 40, "label": "entity", "text": "Material called linen is made from what plant ?"}
+{"index": 41, "label": "description and abstract concepts", "text": "What is Teflon ?"}
+{"index": 42, "label": "description and abstract concepts", "text": "What is amitriptyline ?"}
+{"index": 43, "label": "description and abstract concepts", "text": "What is a shaman ?"}
+{"index": 44, "label": "entity", "text": "What is the proper name for a female walrus ?"}
+{"index": 45, "label": "entity", "text": "What is a group of turkeys called ?"}
+{"index": 46, "label": "numeric", "text": "How long did Rip Van Winkle sleep ?"}
+{"index": 47, "label": "description and abstract concepts", "text": "What are triglycerides ?"}
+{"index": 48, "label": "numeric", "text": "How many liters in a gallon ?"}
+{"index": 49, "label": "human", "text": "What is the name of the chocolate company in San Francisco ?"}
+{"index": 50, "label": "description and abstract concepts", "text": "What are amphibians ?"}
+{"index": 51, "label": "human", "text": "Who discovered x-rays ?"}
+{"index": 52, "label": "human", "text": "Which comedian 's signature line is `` Can we talk '' ?"}
+{"index": 53, "label": "description and abstract concepts", "text": "What is fibromyalgia ?"}
+{"index": 54, "label": "description and abstract concepts", "text": "What is done with worn or outdated flags ?"}
+{"index": 55, "label": "description and abstract concepts", "text": "What does cc in engines mean ?"}
+{"index": 56, "label": "numeric", "text": "When did Elvis Presley die ?"}
+{"index": 57, "label": "location", "text": "What is the capital of Yugoslavia ?"}
+{"index": 58, "label": "location", "text": "Where is Milan ?"}
+{"index": 59, "label": "numeric", "text": "What is the speed hummingbirds fly ?"}
+{"index": 60, "label": "location", "text": "What is the oldest city in the United States ?"}
+{"index": 61, "label": "human", "text": "What was W.C. Fields ' real name ?"}
+{"index": 62, "label": "location", "text": "What river flows between Fargo , North Dakota and Moorhead , Minnesota ?"}
+{"index": 63, "label": "entity", "text": "What do bats eat ?"}
+{"index": 64, "label": "location", "text": "What state did the Battle of Bighorn take place in ?"}
+{"index": 65, "label": "human", "text": "Who was Abraham Lincoln ?"}
+{"index": 66, "label": "entity", "text": "What do you call a newborn kangaroo ?"}
+{"index": 67, "label": "description and abstract concepts", "text": "What are spider veins ?"}
+{"index": 68, "label": "numeric", "text": "What day and month did John Lennon die ?"}
+{"index": 69, "label": "location", "text": "What strait separates North America from Asia ?"}
+{"index": 70, "label": "numeric", "text": "What is the population of Seattle ?"}
+{"index": 71, "label": "numeric", "text": "How much was a ticket for the Titanic ?"}
+{"index": 72, "label": "location", "text": "What is the largest city in the world ?"}
+{"index": 73, "label": "human", "text": "What American composer wrote the music for `` West Side Story '' ?"}
+{"index": 74, "label": "location", "text": "Where is the Mall of the America ?"}
+{"index": 75, "label": "description and abstract concepts", "text": "What is the pH scale ?"}
+{"index": 76, "label": "entity", "text": "What type of currency is used in Australia ?"}
+{"index": 77, "label": "numeric", "text": "How tall is the Gateway Arch in St. Louis , MO ?"}
+{"index": 78, "label": "numeric", "text": "How much does the human adult female brain weigh ?"}
+{"index": 79, "label": "human", "text": "Who was the first governor of Alaska ?"}
+{"index": 80, "label": "description and abstract concepts", "text": "What is a prism ?"}
+{"index": 81, "label": "numeric", "text": "When was the first liver transplant ?"}
+{"index": 82, "label": "human", "text": "Who was elected president of South Africa in 1994 ?"}
+{"index": 83, "label": "numeric", "text": "What is the population of China ?"}
+{"index": 84, "label": "numeric", "text": "When was Rosa Parks born ?"}
+{"index": 85, "label": "description and abstract concepts", "text": "Why is a ladybug helpful ?"}
+{"index": 86, "label": "description and abstract concepts", "text": "What is amoxicillin ?"}
+{"index": 87, "label": "human", "text": "Who was the first female United States Representative ?"}
+{"index": 88, "label": "description and abstract concepts", "text": "What are xerophytes ?"}
+{"index": 89, "label": "location", "text": "What country did Ponce de Leon come from ?"}
+{"index": 90, "label": "entity", "text": "The U.S. Department of Treasury first issued paper currency for the U.S. during which war ?"}
+{"index": 91, "label": "description and abstract concepts", "text": "What is desktop publishing ?"}
+{"index": 92, "label": "numeric", "text": "What is the temperature of the sun 's surface ?"}
+{"index": 93, "label": "numeric", "text": "What year did Canada join the United Nations ?"}
+{"index": 94, "label": "human", "text": "What is the oldest university in the US ?"}
+{"index": 95, "label": "location", "text": "Where is Prince Edward Island ?"}
+{"index": 96, "label": "numeric", "text": "Mercury , what year was it discovered ?"}
+{"index": 97, "label": "description and abstract concepts", "text": "What is cryogenics ?"}
+{"index": 98, "label": "description and abstract concepts", "text": "What are coral reefs ?"}
+{"index": 99, "label": "entity", "text": "What is the longest major league baseball-winning streak ?"}
+{"index": 100, "label": "description and abstract concepts", "text": "What is neurology ?"}
+{"index": 101, "label": "human", "text": "Who invented the calculator ?"}
+{"index": 102, "label": "description and abstract concepts", "text": "How do you measure earthquakes ?"}
+{"index": 103, "label": "human", "text": "Who is Duke Ellington ?"}
+{"index": 104, "label": "location", "text": "What county is Phoenix , AZ in ?"}
+{"index": 105, "label": "description and abstract concepts", "text": "What is a micron ?"}
+{"index": 106, "label": "numeric", "text": "The sun 's core , what is the temperature ?"}
+{"index": 107, "label": "entity", "text": "What is the Ohio state bird ?"}
+{"index": 108, "label": "numeric", "text": "When were William Shakespeare 's twins born ?"}
+{"index": 109, "label": "location", "text": "What is the highest dam in the U.S. ?"}
+{"index": 110, "label": "entity", "text": "What color is a poison arrow frog ?"}
+{"index": 111, "label": "description and abstract concepts", "text": "What is acupuncture ?"}
+{"index": 112, "label": "numeric", "text": "What is the length of the coastline of the state of Alaska ?"}
+{"index": 113, "label": "human", "text": "What is the name of Neil Armstrong 's wife ?"}
+{"index": 114, "label": "entity", "text": "What is Hawaii 's state flower ?"}
+{"index": 115, "label": "human", "text": "Who won Ms. American in 1989 ?"}
+{"index": 116, "label": "numeric", "text": "When did the Hindenberg crash ?"}
+{"index": 117, "label": "entity", "text": "What mineral helps prevent osteoporosis ?"}
+{"index": 118, "label": "numeric", "text": "What was the last year that the Chicago Cubs won the World Series ?"}
+{"index": 119, "label": "location", "text": "Where is Perth ?"}
+{"index": 120, "label": "numeric", "text": "What year did WWII begin ?"}
+{"index": 121, "label": "numeric", "text": "What is the diameter of a golf ball ?"}
+{"index": 122, "label": "description and abstract concepts", "text": "What is an eclipse ?"}
+{"index": 123, "label": "human", "text": "Who discovered America ?"}
+{"index": 124, "label": "numeric", "text": "What is the earth 's diameter ?"}
+{"index": 125, "label": "human", "text": "Which president was unmarried ?"}
+{"index": 126, "label": "numeric", "text": "How wide is the Milky Way galaxy ?"}
+{"index": 127, "label": "numeric", "text": "During which season do most thunderstorms occur ?"}
+{"index": 128, "label": "description and abstract concepts", "text": "What is Wimbledon ?"}
+{"index": 129, "label": "numeric", "text": "What is the gestation period for a cat ?"}
+{"index": 130, "label": "numeric", "text": "How far is a nautical mile ?"}
+{"index": 131, "label": "human", "text": "Who was the abolitionist who led the raid on Harper 's Ferry in 1859 ?"}
+{"index": 132, "label": "description and abstract concepts", "text": "What does target heart rate mean ?"}
+{"index": 133, "label": "entity", "text": "What was the first satellite to go into space ?"}
+{"index": 134, "label": "description and abstract concepts", "text": "What is foreclosure ?"}
+{"index": 135, "label": "entity", "text": "What is the major fault line near Kentucky ?"}
+{"index": 136, "label": "location", "text": "Where is the Holland Tunnel ?"}
+{"index": 137, "label": "human", "text": "Who wrote the hymn `` Amazing Grace '' ?"}
+{"index": 138, "label": "human", "text": "What position did Willie Davis play in baseball ?"}
+{"index": 139, "label": "description and abstract concepts", "text": "What are platelets ?"}
+{"index": 140, "label": "description and abstract concepts", "text": "What is severance pay ?"}
+{"index": 141, "label": "entity", "text": "What is the name of Roy Roger 's dog ?"}
+{"index": 142, "label": "location", "text": "Where are the National Archives ?"}
+{"index": 143, "label": "entity", "text": "What is a baby turkey called ?"}
+{"index": 144, "label": "description and abstract concepts", "text": "What is poliomyelitis ?"}
+{"index": 145, "label": "entity", "text": "What is the longest bone in the human body ?"}
+{"index": 146, "label": "human", "text": "Who is a German philosopher ?"}
+{"index": 147, "label": "entity", "text": "What were Christopher Columbus ' three ships ?"}
+{"index": 148, "label": "description and abstract concepts", "text": "What does Phi Beta Kappa mean ?"}
+{"index": 149, "label": "description and abstract concepts", "text": "What is nicotine ?"}
+{"index": 150, "label": "entity", "text": "What is another name for vitamin B1 ?"}
+{"index": 151, "label": "human", "text": "Who discovered radium ?"}
+{"index": 152, "label": "description and abstract concepts", "text": "What are sunspots ?"}
+{"index": 153, "label": "numeric", "text": "When was Algeria colonized ?"}
+{"index": 154, "label": "human", "text": "What baseball team was the first to make numbers part of their uniform ?"}
+{"index": 155, "label": "location", "text": "What continent is Egypt on ?"}
+{"index": 156, "label": "location", "text": "What is the capital of Mongolia ?"}
+{"index": 157, "label": "description and abstract concepts", "text": "What is nanotechnology ?"}
+{"index": 158, "label": "location", "text": "In the late 1700 's British convicts were used to populate which colony ?"}
+{"index": 159, "label": "location", "text": "What state is the geographic center of the lower 48 states ?"}
+{"index": 160, "label": "description and abstract concepts", "text": "What is an obtuse angle ?"}
+{"index": 161, "label": "description and abstract concepts", "text": "What are polymers ?"}
+{"index": 162, "label": "numeric", "text": "When is hurricane season in the Caribbean ?"}
+{"index": 163, "label": "location", "text": "Where is the volcano Mauna Loa ?"}
+{"index": 164, "label": "entity", "text": "What is another astronomic term for the Northern Lights ?"}
+{"index": 165, "label": "location", "text": "What peninsula is Spain part of ?"}
+{"index": 166, "label": "numeric", "text": "When was Lyndon B. Johnson born ?"}
+{"index": 167, "label": "description and abstract concepts", "text": "What is acetaminophen ?"}
+{"index": 168, "label": "location", "text": "What state has the least amount of rain per year ?"}
+{"index": 169, "label": "human", "text": "Who founded American Red Cross ?"}
+{"index": 170, "label": "numeric", "text": "What year did the Milwaukee Braves become the Atlanta Braves ?"}
+{"index": 171, "label": "numeric", "text": "How fast is alcohol absorbed ?"}
+{"index": 172, "label": "numeric", "text": "When is the summer solstice ?"}
+{"index": 173, "label": "description and abstract concepts", "text": "What is supernova ?"}
+{"index": 174, "label": "location", "text": "Where is the Shawnee National Forest ?"}
+{"index": 175, "label": "location", "text": "What U.S. state 's motto is `` Live free or Die '' ?"}
+{"index": 176, "label": "location", "text": "Where is the Lourve ?"}
+{"index": 177, "label": "numeric", "text": "When was the first stamp issued ?"}
+{"index": 178, "label": "entity", "text": "What primary colors do you mix to make orange ?"}
+{"index": 179, "label": "numeric", "text": "How far is Pluto from the sun ?"}
+{"index": 180, "label": "location", "text": "What body of water are the Canary Islands in ?"}
+{"index": 181, "label": "description and abstract concepts", "text": "What is neuropathy ?"}
+{"index": 182, "label": "location", "text": "Where is the Euphrates River ?"}
+{"index": 183, "label": "description and abstract concepts", "text": "What is cryptography ?"}
+{"index": 184, "label": "entity", "text": "What is natural gas composed of ?"}
+{"index": 185, "label": "human", "text": "Who is the Prime Minister of Canada ?"}
+{"index": 186, "label": "human", "text": "What French ruler was defeated at the battle of Waterloo ?"}
+{"index": 187, "label": "description and abstract concepts", "text": "What is leukemia ?"}
+{"index": 188, "label": "location", "text": "Where did Howard Hughes die ?"}
+{"index": 189, "label": "entity", "text": "What is the birthstone for June ?"}
+{"index": 190, "label": "entity", "text": "What is the sales tax in Minnesota ?"}
+{"index": 191, "label": "numeric", "text": "What is the distance in miles from the earth to the sun ?"}
+{"index": 192, "label": "numeric", "text": "What is the average life span for a chicken ?"}
+{"index": 193, "label": "numeric", "text": "When was the first Wal-Mart store opened ?"}
+{"index": 194, "label": "description and abstract concepts", "text": "What is relative humidity ?"}
+{"index": 195, "label": "location", "text": "What city has the zip code of 35824 ?"}
+{"index": 196, "label": "entity", "text": "What currency is used in Algeria ?"}
+{"index": 197, "label": "human", "text": "Who invented the hula hoop ?"}
+{"index": 198, "label": "entity", "text": "What was the most popular toy in 1957 ?"}
+{"index": 199, "label": "entity", "text": "What is pastrami made of ?"}
+{"index": 200, "label": "entity", "text": "What is the name of the satellite that the Soviet Union sent into space in 1957 ?"}
+{"index": 201, "label": "location", "text": "What city 's newspaper is called `` The Enquirer '' ?"}
+{"index": 202, "label": "human", "text": "Who invented the slinky ?"}
+{"index": 203, "label": "entity", "text": "What are the animals that don 't have backbones called ?"}
+{"index": 204, "label": "numeric", "text": "What is the melting point of copper ?"}
+{"index": 205, "label": "location", "text": "Where is the volcano Olympus Mons located ?"}
+{"index": 206, "label": "human", "text": "Who was the 23rd president of the United States ?"}
+{"index": 207, "label": "numeric", "text": "What is the average body temperature ?"}
+{"index": 208, "label": "description and abstract concepts", "text": "What does a defibrillator do ?"}
+{"index": 209, "label": "description and abstract concepts", "text": "What is the effect of acid rain ?"}
+{"index": 210, "label": "numeric", "text": "What year did the United States abolish the draft ?"}
+{"index": 211, "label": "numeric", "text": "How fast is the speed of light ?"}
+{"index": 212, "label": "location", "text": "What province is Montreal in ?"}
+{"index": 213, "label": "location", "text": "What New York City structure is also known as the Twin Towers ?"}
+{"index": 214, "label": "description and abstract concepts", "text": "What is fungus ?"}
+{"index": 215, "label": "entity", "text": "What is the most frequently spoken language in the Netherlands ?"}
+{"index": 216, "label": "description and abstract concepts", "text": "What is sodium chloride ?"}
+{"index": 217, "label": "entity", "text": "What are the spots on dominoes called ?"}
+{"index": 218, "label": "numeric", "text": "How many pounds in a ton ?"}
+{"index": 219, "label": "description and abstract concepts", "text": "What is influenza ?"}
+{"index": 220, "label": "description and abstract concepts", "text": "What is ozone depletion ?"}
+{"index": 221, "label": "numeric", "text": "What year was the Mona Lisa painted ?"}
+{"index": 222, "label": "description and abstract concepts", "text": "What does `` Sitting Shiva '' mean ?"}
+{"index": 223, "label": "entity", "text": "What is the electrical output in Madrid , Spain ?"}
+{"index": 224, "label": "location", "text": "Which mountain range in North America stretches from Maine to Georgia ?"}
+{"index": 225, "label": "entity", "text": "What is plastic made of ?"}
+{"index": 226, "label": "numeric", "text": "What is the population of Nigeria ?"}
+{"index": 227, "label": "description and abstract concepts", "text": "What does your spleen do ?"}
+{"index": 228, "label": "location", "text": "Where is the Grand Canyon ?"}
+{"index": 229, "label": "human", "text": "Who invented the telephone ?"}
+{"index": 230, "label": "numeric", "text": "What year did the U.S. buy Alaska ?"}
+{"index": 231, "label": "human", "text": "What is the name of the leader of Ireland ?"}
+{"index": 232, "label": "description and abstract concepts", "text": "What is phenylalanine ?"}
+{"index": 233, "label": "numeric", "text": "How many gallons of water are there in a cubic foot ?"}
+{"index": 234, "label": "entity", "text": "What are the two houses of the Legislative branch ?"}
+{"index": 235, "label": "description and abstract concepts", "text": "What is sonar ?"}
+{"index": 236, "label": "location", "text": "In Poland , where do most people live ?"}
+{"index": 237, "label": "description and abstract concepts", "text": "What is phosphorus ?"}
+{"index": 238, "label": "location", "text": "What is the location of the Sea of Tranquility ?"}
+{"index": 239, "label": "numeric", "text": "How fast is sound ?"}
+{"index": 240, "label": "location", "text": "What French province is cognac produced in ?"}
+{"index": 241, "label": "description and abstract concepts", "text": "What is Valentine 's Day ?"}
+{"index": 242, "label": "description and abstract concepts", "text": "What causes gray hair ?"}
+{"index": 243, "label": "description and abstract concepts", "text": "What is hypertension ?"}
+{"index": 244, "label": "description and abstract concepts", "text": "What is bandwidth ?"}
+{"index": 245, "label": "location", "text": "What is the longest suspension bridge in the U.S. ?"}
+{"index": 246, "label": "description and abstract concepts", "text": "What is a parasite ?"}
+{"index": 247, "label": "description and abstract concepts", "text": "What is home equity ?"}
+{"index": 248, "label": "description and abstract concepts", "text": "What do meteorologists do ?"}
+{"index": 249, "label": "entity", "text": "What is the criterion for being legally blind ?"}
+{"index": 250, "label": "human", "text": "Who is the tallest man in the world ?"}
+{"index": 251, "label": "location", "text": "What are the twin cities ?"}
+{"index": 252, "label": "entity", "text": "What did Edward Binney and Howard Smith invent in 1903 ?"}
+{"index": 253, "label": "entity", "text": "What is the statue of liberty made of ?"}
+{"index": 254, "label": "description and abstract concepts", "text": "What is pilates ?"}
+{"index": 255, "label": "location", "text": "What planet is known as the `` red '' planet ?"}
+{"index": 256, "label": "numeric", "text": "What is the depth of the Nile river ?"}
+{"index": 257, "label": "entity", "text": "What is the colorful Korean traditional dress called ?"}
+{"index": 258, "label": "description and abstract concepts", "text": "What is Mardi Gras ?"}
+{"index": 259, "label": "numeric", "text": "Mexican pesos are worth what in U.S. dollars ?"}
+{"index": 260, "label": "human", "text": "Who was the first African American to play for the Brooklyn Dodgers ?"}
+{"index": 261, "label": "human", "text": "Who was the first Prime Minister of Canada ?"}
+{"index": 262, "label": "numeric", "text": "How many Admirals are there in the U.S. Navy ?"}
+{"index": 263, "label": "entity", "text": "What instrument did Glenn Miller play ?"}
+{"index": 264, "label": "numeric", "text": "How old was Joan of Arc when she died ?"}
+{"index": 265, "label": "description and abstract concepts", "text": "What does the word fortnight mean ?"}
+{"index": 266, "label": "description and abstract concepts", "text": "What is dianetics ?"}
+{"index": 267, "label": "location", "text": "What is the capital of Ethiopia ?"}
+{"index": 268, "label": "numeric", "text": "For how long is an elephant pregnant ?"}
+{"index": 269, "label": "description and abstract concepts", "text": "How did Janice Joplin die ?"}
+{"index": 270, "label": "entity", "text": "What is the primary language in Iceland ?"}
+{"index": 271, "label": "description and abstract concepts", "text": "What is the difference between AM radio stations and FM radio stations ?"}
+{"index": 272, "label": "description and abstract concepts", "text": "What is osteoporosis ?"}
+{"index": 273, "label": "human", "text": "Who was the first woman governor in the U.S. ?"}
+{"index": 274, "label": "description and abstract concepts", "text": "What is peyote ?"}
+{"index": 275, "label": "description and abstract concepts", "text": "What is the esophagus used for ?"}
+{"index": 276, "label": "description and abstract concepts", "text": "What is viscosity ?"}
+{"index": 277, "label": "numeric", "text": "What year did Oklahoma become a state ?"}
+{"index": 278, "label": "abbreviation", "text": "What is the abbreviation for Texas ?"}
+{"index": 279, "label": "entity", "text": "What is a mirror made out of ?"}
+{"index": 280, "label": "location", "text": "Where on the body is a mortarboard worn ?"}
+{"index": 281, "label": "human", "text": "What was J.F.K. 's wife 's name ?"}
+{"index": 282, "label": "abbreviation", "text": "What does I.V. stand for ?"}
+{"index": 283, "label": "description and abstract concepts", "text": "What is the chunnel ?"}
+{"index": 284, "label": "location", "text": "Where is Hitler buried ?"}
+{"index": 285, "label": "description and abstract concepts", "text": "What are antacids ?"}
+{"index": 286, "label": "description and abstract concepts", "text": "What is pulmonary fibrosis ?"}
+{"index": 287, "label": "description and abstract concepts", "text": "What are Quaaludes ?"}
+{"index": 288, "label": "description and abstract concepts", "text": "What is naproxen ?"}
+{"index": 289, "label": "description and abstract concepts", "text": "What is strep throat ?"}
+{"index": 290, "label": "location", "text": "What is the largest city in the U.S. ?"}
+{"index": 291, "label": "entity", "text": "What is foot and mouth disease ?"}
+{"index": 292, "label": "numeric", "text": "What is the life expectancy of a dollar bill ?"}
+{"index": 293, "label": "entity", "text": "What do you call a professional map drawer ?"}
+{"index": 294, "label": "description and abstract concepts", "text": "What are Aborigines ?"}
+{"index": 295, "label": "description and abstract concepts", "text": "What is hybridization ?"}
+{"index": 296, "label": "entity", "text": "What color is indigo ?"}
+{"index": 297, "label": "numeric", "text": "How old do you have to be in order to rent a car in Italy ?"}
+{"index": 298, "label": "entity", "text": "What does a barometer measure ?"}
+{"index": 299, "label": "entity", "text": "What color is a giraffe 's tongue ?"}
+{"index": 300, "label": "abbreviation", "text": "What does USPS stand for ?"}
+{"index": 301, "label": "numeric", "text": "What year did the NFL go on strike ?"}
+{"index": 302, "label": "description and abstract concepts", "text": "What is solar wind ?"}
+{"index": 303, "label": "numeric", "text": "What date did Neil Armstrong land on the moon ?"}
+{"index": 304, "label": "numeric", "text": "When was Hiroshima bombed ?"}
+{"index": 305, "label": "location", "text": "Where is the Savannah River ?"}
+{"index": 306, "label": "human", "text": "Who was the first woman killed in the Vietnam War ?"}
+{"index": 307, "label": "location", "text": "What planet has the strongest magnetic field of all the planets ?"}
+{"index": 308, "label": "human", "text": "Who is the governor of Alaska ?"}
+{"index": 309, "label": "numeric", "text": "What year did Mussolini seize power in Italy ?"}
+{"index": 310, "label": "location", "text": "What is the capital of Persia ?"}
+{"index": 311, "label": "location", "text": "Where is the Eiffel Tower ?"}
+{"index": 312, "label": "numeric", "text": "How many hearts does an octopus have ?"}
+{"index": 313, "label": "description and abstract concepts", "text": "What is pneumonia ?"}
+{"index": 314, "label": "location", "text": "What is the deepest lake in the US ?"}
+{"index": 315, "label": "description and abstract concepts", "text": "What is a fuel cell ?"}
+{"index": 316, "label": "human", "text": "Who was the first U.S. president to appear on TV ?"}
+{"index": 317, "label": "location", "text": "Where is the Little League Museum ?"}
+{"index": 318, "label": "entity", "text": "What are the two types of twins ?"}
+{"index": 319, "label": "location", "text": "What is the brightest star ?"}
+{"index": 320, "label": "description and abstract concepts", "text": "What is diabetes ?"}
+{"index": 321, "label": "numeric", "text": "When was President Kennedy shot ?"}
+{"index": 322, "label": "abbreviation", "text": "What is TMJ ?"}
+{"index": 323, "label": "entity", "text": "What color is yak milk ?"}
+{"index": 324, "label": "numeric", "text": "What date was Dwight D. Eisenhower born ?"}
+{"index": 325, "label": "abbreviation", "text": "What does the technical term ISDN mean ?"}
+{"index": 326, "label": "description and abstract concepts", "text": "Why is the sun yellow ?"}
+{"index": 327, "label": "numeric", "text": "What is the conversion rate between dollars and pounds ?"}
+{"index": 328, "label": "numeric", "text": "When was Abraham Lincoln born ?"}
+{"index": 329, "label": "description and abstract concepts", "text": "What is the Milky Way ?"}
+{"index": 330, "label": "description and abstract concepts", "text": "What is mold ?"}
+{"index": 331, "label": "numeric", "text": "What year was Mozart born ?"}
+{"index": 332, "label": "entity", "text": "What is a group of frogs called ?"}
+{"index": 333, "label": "entity", "text": "What is the name of William Penn 's ship ?"}
+{"index": 334, "label": "numeric", "text": "What is the melting point of gold ?"}
+{"index": 335, "label": "location", "text": "What is the street address of the White House ?"}
+{"index": 336, "label": "description and abstract concepts", "text": "What is semolina ?"}
+{"index": 337, "label": "entity", "text": "What fruit is Melba sauce made from ?"}
+{"index": 338, "label": "description and abstract concepts", "text": "What is Ursa Major ?"}
+{"index": 339, "label": "numeric", "text": "What is the percentage of water content in the human body ?"}
+{"index": 340, "label": "numeric", "text": "How much does water weigh ?"}
+{"index": 341, "label": "entity", "text": "What was President Lyndon Johnson 's reform program called ?"}
+{"index": 342, "label": "numeric", "text": "What is the murder rate in Windsor , Ontario ?"}
+{"index": 343, "label": "human", "text": "Who is the only president to serve 2 non-consecutive terms ?"}
+{"index": 344, "label": "numeric", "text": "What is the population of Australia ?"}
+{"index": 345, "label": "human", "text": "Who painted the ceiling of the Sistine Chapel ?"}
+{"index": 346, "label": "entity", "text": "Name a stimulant ."}
+{"index": 347, "label": "description and abstract concepts", "text": "What is the effect of volcanoes on the climate ?"}
+{"index": 348, "label": "numeric", "text": "What year did the Andy Griffith show begin ?"}
+{"index": 349, "label": "description and abstract concepts", "text": "What is acid rain ?"}
+{"index": 350, "label": "numeric", "text": "What is the date of Mexico 's independence ?"}
+{"index": 351, "label": "location", "text": "What is the location of Lake Champlain ?"}
+{"index": 352, "label": "entity", "text": "What is the Illinois state flower ?"}
+{"index": 353, "label": "entity", "text": "What is Maryland 's state bird ?"}
+{"index": 354, "label": "description and abstract concepts", "text": "What is quicksilver ?"}
+{"index": 355, "label": "human", "text": "Who wrote `` The Divine Comedy '' ?"}
+{"index": 356, "label": "numeric", "text": "What is the speed of light ?"}
+{"index": 357, "label": "numeric", "text": "What is the width of a football field ?"}
+{"index": 358, "label": "description and abstract concepts", "text": "Why in tennis are zero points called love ?"}
+{"index": 359, "label": "entity", "text": "What kind of dog was Toto in the Wizard of Oz ?"}
+{"index": 360, "label": "description and abstract concepts", "text": "What is a thyroid ?"}
+{"index": 361, "label": "description and abstract concepts", "text": "What does ciao mean ?"}
+{"index": 362, "label": "entity", "text": "What is the only artery that carries blue blood from the heart to the lungs ?"}
+{"index": 363, "label": "numeric", "text": "How often does Old Faithful erupt at Yellowstone National Park ?"}
+{"index": 364, "label": "description and abstract concepts", "text": "What is acetic acid ?"}
+{"index": 365, "label": "numeric", "text": "What is the elevation of St. Louis , MO ?"}
+{"index": 366, "label": "entity", "text": "What color does litmus paper turn when it comes into contact with a strong acid ?"}
+{"index": 367, "label": "entity", "text": "What are the colors of the German flag ?"}
+{"index": 368, "label": "description and abstract concepts", "text": "What is the Moulin Rouge ?"}
+{"index": 369, "label": "location", "text": "What soviet seaport is on the Black Sea ?"}
+{"index": 370, "label": "numeric", "text": "What is the atomic weight of silver ?"}
+{"index": 371, "label": "entity", "text": "What currency do they use in Brazil ?"}
+{"index": 372, "label": "description and abstract concepts", "text": "What are pathogens ?"}
+{"index": 373, "label": "description and abstract concepts", "text": "What is mad cow disease ?"}
+{"index": 374, "label": "entity", "text": "Name a food high in zinc ."}
+{"index": 375, "label": "numeric", "text": "When did North Carolina enter the union ?"}
+{"index": 376, "label": "location", "text": "Where do apple snails live ?"}
+{"index": 377, "label": "description and abstract concepts", "text": "What are ethics ?"}
+{"index": 378, "label": "abbreviation", "text": "What does CPR stand for ?"}
+{"index": 379, "label": "description and abstract concepts", "text": "What is an annuity ?"}
+{"index": 380, "label": "human", "text": "Who killed John F. Kennedy ?"}
+{"index": 381, "label": "human", "text": "Who was the first vice president of the U.S. ?"}
+{"index": 382, "label": "entity", "text": "What birthstone is turquoise ?"}
+{"index": 383, "label": "human", "text": "Who was the first US President to ride in an automobile to his inauguration ?"}
+{"index": 384, "label": "numeric", "text": "How old was the youngest president of the United States ?"}
+{"index": 385, "label": "numeric", "text": "When was Ulysses S. Grant born ?"}
+{"index": 386, "label": "description and abstract concepts", "text": "What is Muscular Dystrophy ?"}
+{"index": 387, "label": "human", "text": "Who lived in the Neuschwanstein castle ?"}
+{"index": 388, "label": "description and abstract concepts", "text": "What is propylene glycol ?"}
+{"index": 389, "label": "description and abstract concepts", "text": "What is a panic disorder ?"}
+{"index": 390, "label": "human", "text": "Who invented the instant Polaroid camera ?"}
+{"index": 391, "label": "description and abstract concepts", "text": "What is a carcinogen ?"}
+{"index": 392, "label": "entity", "text": "What is a baby lion called ?"}
+{"index": 393, "label": "numeric", "text": "What is the world 's population ?"}
+{"index": 394, "label": "description and abstract concepts", "text": "What is nepotism ?"}
+{"index": 395, "label": "description and abstract concepts", "text": "What is die-casting ?"}
+{"index": 396, "label": "description and abstract concepts", "text": "What is myopia ?"}
+{"index": 397, "label": "numeric", "text": "What is the sales tax rate in New York ?"}
+{"index": 398, "label": "numeric", "text": "Developing nations comprise what percentage of the world 's population ?"}
+{"index": 399, "label": "location", "text": "What is the fourth highest mountain in the world ?"}
+{"index": 400, "label": "human", "text": "What is Shakespeare 's nickname ?"}
+{"index": 401, "label": "entity", "text": "What is the heaviest naturally occurring element ?"}
+{"index": 402, "label": "numeric", "text": "When is Father 's Day ?"}
+{"index": 403, "label": "abbreviation", "text": "What does the acronym NASA stand for ?"}
+{"index": 404, "label": "numeric", "text": "How long is the Columbia River in miles ?"}
+{"index": 405, "label": "location", "text": "What city 's newspaper is called `` The Star '' ?"}
+{"index": 406, "label": "description and abstract concepts", "text": "What is carbon dioxide ?"}
+{"index": 407, "label": "location", "text": "Where is the Mason/Dixon line ?"}
+{"index": 408, "label": "numeric", "text": "When was the Boston tea party ?"}
+{"index": 409, "label": "description and abstract concepts", "text": "What is metabolism ?"}
+{"index": 410, "label": "human", "text": "Which U.S.A. president appeared on `` Laugh-In '' ?"}
+{"index": 411, "label": "entity", "text": "What are cigarettes made of ?"}
+{"index": 412, "label": "location", "text": "What is the capital of Zimbabwe ?"}
+{"index": 413, "label": "abbreviation", "text": "What does NASA stand for ?"}
+{"index": 414, "label": "entity", "text": "What is the state flower of Michigan ?"}
+{"index": 415, "label": "description and abstract concepts", "text": "What are semiconductors ?"}
+{"index": 416, "label": "description and abstract concepts", "text": "What is nuclear power ?"}
+{"index": 417, "label": "description and abstract concepts", "text": "What is a tsunami ?"}
+{"index": 418, "label": "human", "text": "Who is the congressman from state of Texas on the armed forces committee ?"}
+{"index": 419, "label": "human", "text": "Who was president in 1913 ?"}
+{"index": 420, "label": "numeric", "text": "When was the first kidney transplant ?"}
+{"index": 421, "label": "location", "text": "What are Canada 's two territories ?"}
+{"index": 422, "label": "entity", "text": "What was the name of the plane Lindbergh flew solo across the Atlantic ?"}
+{"index": 423, "label": "description and abstract concepts", "text": "What is genocide ?"}
+{"index": 424, "label": "location", "text": "What continent is Argentina on ?"}
+{"index": 425, "label": "entity", "text": "What monastery was raided by Vikings in the late eighth century ?"}
+{"index": 426, "label": "description and abstract concepts", "text": "What is an earthquake ?"}
+{"index": 427, "label": "location", "text": "Where is the tallest roller coaster located ?"}
+{"index": 428, "label": "description and abstract concepts", "text": "What are enzymes ?"}
+{"index": 429, "label": "human", "text": "Who discovered oxygen ?"}
+{"index": 430, "label": "description and abstract concepts", "text": "What is bangers and mash ?"}
+{"index": 431, "label": "entity", "text": "What is the name given to the Tiger at Louisiana State University ?"}
+{"index": 432, "label": "location", "text": "Where are the British crown jewels kept ?"}
+{"index": 433, "label": "human", "text": "Who was the first person to reach the North Pole ?"}
+{"index": 434, "label": "description and abstract concepts", "text": "What is an ulcer ?"}
+{"index": 435, "label": "description and abstract concepts", "text": "What is vertigo ?"}
+{"index": 436, "label": "description and abstract concepts", "text": "What is the spirometer test ?"}
+{"index": 437, "label": "numeric", "text": "When is the official first day of summer ?"}
+{"index": 438, "label": "abbreviation", "text": "What does the abbreviation SOS mean ?"}
+{"index": 439, "label": "entity", "text": "What is the smallest bird in Britain ?"}
+{"index": 440, "label": "human", "text": "Who invented Trivial Pursuit ?"}
+{"index": 441, "label": "entity", "text": "What gasses are in the troposphere ?"}
+{"index": 442, "label": "location", "text": "Which country has the most water pollution ?"}
+{"index": 443, "label": "entity", "text": "What is the scientific name for elephant ?"}
+{"index": 444, "label": "human", "text": "Who is the actress known for her role in the movie `` Gypsy '' ?"}
+{"index": 445, "label": "entity", "text": "What breed of hunting dog did the Beverly Hillbillies own ?"}
+{"index": 446, "label": "location", "text": "What is the rainiest place on Earth ?"}
+{"index": 447, "label": "human", "text": "Who was the first African American to win the Nobel Prize in literature ?"}
+{"index": 448, "label": "numeric", "text": "When is St. Patrick 's Day ?"}
+{"index": 449, "label": "entity", "text": "What was FDR 's dog 's name ?"}
+{"index": 450, "label": "entity", "text": "What colors need to be mixed to get the color pink ?"}
+{"index": 451, "label": "entity", "text": "What is the most popular sport in Japan ?"}
+{"index": 452, "label": "entity", "text": "What is the active ingredient in baking soda ?"}
+{"index": 453, "label": "numeric", "text": "When was Thomas Jefferson born ?"}
+{"index": 454, "label": "numeric", "text": "How cold should a refrigerator be ?"}
+{"index": 455, "label": "numeric", "text": "When was the telephone invented ?"}
+{"index": 456, "label": "entity", "text": "What is the most common eye color ?"}
+{"index": 457, "label": "location", "text": "Where was the first golf course in the United States ?"}
+{"index": 458, "label": "description and abstract concepts", "text": "What is schizophrenia ?"}
+{"index": 459, "label": "description and abstract concepts", "text": "What is angiotensin ?"}
+{"index": 460, "label": "human", "text": "What did Jesse Jackson organize ?"}
+{"index": 461, "label": "entity", "text": "What is New York 's state bird ?"}
+{"index": 462, "label": "location", "text": "What is the National Park in Utah ?"}
+{"index": 463, "label": "numeric", "text": "What is Susan B. Anthony 's birthday ?"}
+{"index": 464, "label": "location", "text": "In which state would you find the Catskill Mountains ?"}
+{"index": 465, "label": "entity", "text": "What do you call a word that is spelled the same backwards and forwards ?"}
+{"index": 466, "label": "description and abstract concepts", "text": "What are pediatricians ?"}
+{"index": 467, "label": "human", "text": "What chain store is headquartered in Bentonville , Arkansas ?"}
+{"index": 468, "label": "description and abstract concepts", "text": "What are solar cells ?"}
+{"index": 469, "label": "description and abstract concepts", "text": "What is compounded interest ?"}
+{"index": 470, "label": "description and abstract concepts", "text": "What are capers ?"}
+{"index": 471, "label": "description and abstract concepts", "text": "What is an antigen ?"}
+{"index": 472, "label": "entity", "text": "What currency does Luxembourg use ?"}
+{"index": 473, "label": "numeric", "text": "What is the population of Venezuela ?"}
+{"index": 474, "label": "entity", "text": "What type of polymer is used for bulletproof vests ?"}
+{"index": 475, "label": "entity", "text": "What currency does Argentina use ?"}
+{"index": 476, "label": "description and abstract concepts", "text": "What is a thermometer ?"}
+{"index": 477, "label": "location", "text": "What Canadian city has the largest population ?"}
+{"index": 478, "label": "entity", "text": "What color are crickets ?"}
+{"index": 479, "label": "location", "text": "Which country gave New York the Statue of Liberty ?"}
+{"index": 480, "label": "entity", "text": "What was the name of the first U.S. satellite sent into space ?"}
+{"index": 481, "label": "entity", "text": "What precious stone is a form of pure carbon ?"}
+{"index": 482, "label": "entity", "text": "What kind of gas is in a fluorescent bulb ?"}
+{"index": 483, "label": "description and abstract concepts", "text": "What is rheumatoid arthritis ?"}
+{"index": 484, "label": "location", "text": "What river runs through Rowe , Italy ?"}
+{"index": 485, "label": "description and abstract concepts", "text": "What is cerebral palsy ?"}
+{"index": 486, "label": "location", "text": "What city is also known as `` The Gateway to the West '' ?"}
+{"index": 487, "label": "numeric", "text": "How far away is the moon ?"}
+{"index": 488, "label": "entity", "text": "What is the source of natural gas ?"}
+{"index": 489, "label": "entity", "text": "In what spacecraft did U.S. astronaut Alan Shepard make his historic 1961 flight ?"}
+{"index": 490, "label": "description and abstract concepts", "text": "What is pectin ?"}
+{"index": 491, "label": "description and abstract concepts", "text": "What is bio-diversity ?"}
+{"index": 492, "label": "entity", "text": "What 's the easiest way to remove wallpaper ?"}
+{"index": 493, "label": "numeric", "text": "What year did the Titanic start on its journey ?"}
+{"index": 494, "label": "numeric", "text": "How much of an apple is water ?"}
+{"index": 495, "label": "human", "text": "Who was the 22nd President of the US ?"}
+{"index": 496, "label": "entity", "text": "What is the money they use in Zambia ?"}
+{"index": 497, "label": "numeric", "text": "How many feet in a mile ?"}
+{"index": 498, "label": "entity", "text": "What is the birthstone of October ?"}
+{"index": 499, "label": "description and abstract concepts", "text": "What is e-coli ?"}
