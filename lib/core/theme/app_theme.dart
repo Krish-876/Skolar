@@ -3,44 +3,32 @@ import 'package:flutter/material.dart';
 /// Application theme configuration
 class AppTheme {
   // ── Core Brand Colors ──────────────────────────────────────────────────────
-  static const Color background = Colors.black; // Background
-  static const Color primary = Color(0xFF1E2A8A); // Primary (deep blue)
-  static const Color secondary = Color(0xFF050610); // Secondary (near-black)
+  static const Color background = Color(0xFF16161A); // Deep space background
+  static const Color primary = Color(0xFF8C38E5); // Vibrant brand purple
+  static const Color secondary = Color(0xFF0F0E17); // Secondary near-black
   static const Color star = Color(0xFFF5C518); // Star / highlight yellow
-  static const Color wishlist = Color(0xFFD0021B); // Wishlist / danger red
-  static const Color accentPurple = Color(0xFFB388FF); // Skolar brand purple
+  static const Color wishlist = Color(0xFFE53935); // Wishlist / danger red
+  static const Color accentPurple = Color(0xFFB388FF); // Skolar brand purple accent
 
   // ── Surface & Overlay ─────────────────────────────────────────────────────
-  static const Color surface = Color(0xFF2E2B3E); // Surface (purple-gray)
+  static const Color surface = Color(0xFF1C1C1E); // Surface dark card
   static const Color onBackground = Color(0xFFFFFFFF); // Text on background
   static const Color onSecondary = Color(0xFFFFFFFF); // Text on secondary
   static const Color onPrimary = Color(0xFFFFFFFF); // Text on primary
   static const Color onSurface = Color(0xFFFFFFFF); // Text on surface
-  static const Color onSurfaceDark = Color(
-    0xFF000000,
-  ); // Dark text on light surface
-  static const Color onBackground2 = Color(
-    0xFFA8C4FF,
-  ); // Secondary text / light blue
-  static const Color surfaceLight = Color(
-    0xFF3A3750,
-  ); // Lighter surface variant
+  static const Color onSurfaceDark = Color(0xFF000000); // Dark text on light surface
+  static const Color onBackground2 = Color(0xFFA8C4FF); // Secondary text / soft light lavender-blue
+  static const Color surfaceLight = Color(0xFF2C2C30); // Lighter surface variant
 
   // ── Gradients (represented as begin color → end color) ────────────────────
   // Use with LinearGradient in widgets
-  static const Color primaryGradBegin = Color(0xFF1E2A8A);
-  static const Color primaryGradEnd = Color(0xFF2E3DA0);
-  static const Color bgGradBegin = Color(0xFF0D1440); // Background gradient top
-  static const Color bgGradEnd = Color(
-    0xFF000005,
-  ); // Background gradient bottom
-  static const Color surfaceGradBegin = Color(
-    0xFF0D1B3E,
-  ); // Surface gradient top
-  static const Color surfaceGradEnd = Color(
-    0xFF05061A,
-  ); // Surface gradient bottom
-  static const Color textGradBegin = Color(0xFFD0DFFF); // Text gradient light
+  static const Color primaryGradBegin = Color(0xFF9B4DFF); // Glowing purple top
+  static const Color primaryGradEnd = Color(0xFF7428D8); // Deep purple bottom
+  static const Color bgGradBegin = Color(0xFF1A1429); // Space purple-black top
+  static const Color bgGradEnd = Color(0xFF0F0E17); // Deep obsidian bottom
+  static const Color surfaceGradBegin = Color(0xFF1E1E24); // Surface card top
+  static const Color surfaceGradEnd = Color(0xFF16161A); // Surface card bottom
+  static const Color textGradBegin = Color(0xFFE2D6FF); // Text gradient light lavender
   static const Color textGradEnd = Color(0xFFFFFFFF); // Text gradient white
 
   // ── Utility ────────────────────────────────────────────────────────────────
@@ -63,8 +51,8 @@ class AppTheme {
   static const double radiusXxl = 24;
 
   // ── Surface gradient (focus panel) ────────────────────────────────────────
-  static const Color surfaceGrad2Begin = Color.fromARGB(255, 33, 45, 79);
-  static const Color surfaceGrad2End = Color(0x9920223C);
+  static const Color surfaceGrad2Begin = Color(0xFF261D3B);
+  static const Color surfaceGrad2End = Color(0x99181424);
 
   // ── Reusable Gradients ─────────────────────────────────────────────────────
   static const LinearGradient backgroundGradient = LinearGradient(
@@ -164,10 +152,10 @@ class AppTheme {
 
   static Color? get divider => null;
   // ── Dashboard specific ─────────────────────────────────────────────────────
-  static const Color cardBackground = Color(0xFF0D1440); // use surfaceGradBegin
+  static const Color cardBackground = Color(0xFF1C1C1E); // use surface
   static const Color textPrimary = onBackground; // already have this
   static const Color textSecondary = onBackground2; // already have this
-  static const Color accent = Colors.grey; // teal for charts
+  static const Color accent = Color(0xFFB388FF); // brand purple accent
   static const Color dividerColor = surface; // already have this
 
   // ── Chart segments ────────────────────────────────────────────────────────

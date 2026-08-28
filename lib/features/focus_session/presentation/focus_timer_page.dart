@@ -4,6 +4,7 @@ import 'package:Skolar/features/focus_session/widgets/present_chip.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
 import 'package:flutter_ringtone_player/flutter_ringtone_player.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:vibration/vibration.dart';
 
 import '../controllers/focus_timer_controller.dart';
@@ -40,7 +41,7 @@ class FocusTimerPageState extends State<FocusTimerPage>
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this); // ← add this
+    WidgetsBinding.instance.removeObserver(this);
     _controller.dispose();
     super.dispose();
   }
@@ -115,7 +116,7 @@ class FocusTimerPageState extends State<FocusTimerPage>
 
     return PopScope(
       canPop: canPop,
-      onPopInvoked: (didPop) {
+      onPopInvokedWithResult: (didPop, result) {
         if (!didPop && isRunning) showGiveUpSheet();
       },
       child: Scaffold(
@@ -190,10 +191,10 @@ class FocusTimerPageState extends State<FocusTimerPage>
             const SizedBox(height: 24),
             Text(
               'Focus time',
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: isRunning ? 0.5 : 0.9),
+              style: GoogleFonts.googleSans(
+                color: Colors.white.withValues(alpha: isRunning ? 0.6 : 0.95),
                 fontSize: 20,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.bold,
                 letterSpacing: 0.2,
               ),
             ),
@@ -207,7 +208,7 @@ class FocusTimerPageState extends State<FocusTimerPage>
     final isComplete = _controller.status == FocusTimerStatus.complete;
     return Text(
       isComplete ? 'Done! 🎉' : _controller.formattedTime,
-      style: const TextStyle(
+      style: GoogleFonts.googleSans(
         color: Colors.white,
         fontSize: 76,
         fontWeight: FontWeight.w700,
@@ -220,9 +221,9 @@ class FocusTimerPageState extends State<FocusTimerPage>
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Text(
+        Text(
           'Great session! Ready for another?',
-          style: TextStyle(color: Colors.white60, fontSize: 15),
+          style: GoogleFonts.googleSans(color: Colors.white60, fontSize: 15),
         ),
         const SizedBox(height: 20),
         GestureDetector(
@@ -235,22 +236,23 @@ class FocusTimerPageState extends State<FocusTimerPage>
             height: _trackHeight,
             width: double.infinity,
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-                colors: [Color(0xCCFFFFFF), AppTheme.surfaceGrad2End],
-                stops: [0.0, 0.81],
-              ),
+              gradient: AppTheme.primaryGradient,
               borderRadius: BorderRadius.circular(_trackHeight / 2),
-              border: Border.all(color: AppTheme.background, width: 1.0),
+              boxShadow: [
+                BoxShadow(
+                  color: AppTheme.primary.withValues(alpha: 0.38),
+                  blurRadius: 20,
+                  offset: const Offset(0, 6),
+                ),
+              ],
             ),
-            child: const Center(
+            child: Center(
               child: Text(
                 'Start new session',
-                style: TextStyle(
+                style: GoogleFonts.googleSans(
                   color: Colors.white,
                   fontSize: 16,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ),
@@ -380,18 +382,17 @@ class FocusTimerPageState extends State<FocusTimerPage>
                             begin: Alignment.centerLeft,
                             end: Alignment.centerRight,
                             colors: [
-                              AppTheme.primaryGradEnd,
-                              AppTheme.bgGradEnd,
+                              Color(0xFF3B1D6E),
+                              Color(0xFF20113D),
                             ],
                           )
                         : const LinearGradient(
                             begin: Alignment.centerLeft,
                             end: Alignment.centerRight,
                             colors: [
-                              Color(0xCCFFFFFF),
-                              AppTheme.surfaceGrad2End,
+                              Color(0xFF262433),
+                              Color(0xFF181622),
                             ],
-                            stops: [0.0, 0.81],
                           ),
                   ),
                 ),
@@ -413,33 +414,24 @@ class FocusTimerPageState extends State<FocusTimerPage>
                               begin: Alignment.centerLeft,
                               end: Alignment.centerRight,
                               colors: [
-                                Color(0xCCFFFFFF),
-                                AppTheme.surfaceGrad2End,
+                                Color(0xFF262433),
+                                Color(0xFF181622),
                               ],
-                              stops: [0.0, 0.81],
                             )
-                          : const LinearGradient(
-                              begin: Alignment.centerLeft,
-                              end: Alignment.centerRight,
-                              colors: [
-                                AppTheme.primaryGradEnd,
-                                AppTheme.bgGradEnd,
-                              ],
-                            ),
+                          : AppTheme.primaryGradient,
                     ),
                   ),
                 ),
               ),
 
-              // Layer 1.5 (FIX): Floating border stroke overlay.
-              // Placing this above the background gradients keeps the border anti-aliased and pristine.
+              // Layer 1.5: Floating border stroke overlay.
               Positioned.fill(
                 child: IgnorePointer(
                   child: Container(
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(_trackHeight / 2),
                       border: Border.all(
-                        color: AppTheme.background,
+                        color: Colors.white.withValues(alpha: 0.1),
                         width: 1.0,
                       ),
                     ),
@@ -451,12 +443,12 @@ class FocusTimerPageState extends State<FocusTimerPage>
               Center(
                 child: Text(
                   isRunning ? 'Slide to give up' : 'Slide to lock in',
-                  style: TextStyle(
+                  style: GoogleFonts.googleSans(
                     color: Colors.white.withValues(
-                      alpha: isRunning ? 0.6 : 0.4,
+                      alpha: isRunning ? 0.7 : 0.5,
                     ),
                     fontSize: 15,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
@@ -472,23 +464,21 @@ class FocusTimerPageState extends State<FocusTimerPage>
                   width: _knobSize,
                   height: _knobSize,
                   decoration: BoxDecoration(
-                    color: isRunning
-                        ? AppTheme.onBackground
-                        : AppTheme.background,
+                    color: isRunning ? Colors.white : AppTheme.primary,
                     shape: BoxShape.circle,
-                    boxShadow: const [
+                    boxShadow: [
                       BoxShadow(
-                        color: Colors.black26,
-                        blurRadius: 8,
-                        offset: Offset(0, 3),
+                        color: isRunning
+                            ? Colors.black38
+                            : AppTheme.primary.withValues(alpha: 0.4),
+                        blurRadius: 10,
+                        offset: const Offset(0, 3),
                       ),
                     ],
                   ),
                   child: Icon(
                     Icons.arrow_forward_ios_rounded,
-                    color: isRunning
-                        ? AppTheme.background
-                        : AppTheme.onBackground,
+                    color: isRunning ? AppTheme.primary : Colors.white,
                     size: 16,
                   ),
                 ),
@@ -593,8 +583,8 @@ class _GiveUpSheetView extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
       decoration: const BoxDecoration(
-        color: Color(0xFF0D1440),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -608,9 +598,9 @@ class _GiveUpSheetView extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 24),
-          const Text(
+          Text(
             'Give up this session?',
-            style: TextStyle(
+            style: GoogleFonts.googleSans(
               color: Colors.white,
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -619,36 +609,53 @@ class _GiveUpSheetView extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             'Remaining focus duration: $timeRemaining',
-            style: const TextStyle(color: Colors.white60, fontSize: 14),
+            style: GoogleFonts.googleSans(color: Colors.white60, fontSize: 14),
           ),
           const SizedBox(height: 28),
-          ElevatedButton(
-            onPressed: onResume,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF1E2A8A),
-              minimumSize: const Size(double.infinity, 50),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
+          GestureDetector(
+            onTap: onResume,
+            child: Container(
+              width: double.infinity,
+              height: 52,
+              decoration: BoxDecoration(
+                gradient: AppTheme.primaryGradient,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.primary.withValues(alpha: 0.35),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
-            ),
-            child: const Text(
-              'Keep focusing',
-              style: TextStyle(color: Colors.white),
+              alignment: Alignment.center,
+              child: Text(
+                'Keep focusing',
+                style: GoogleFonts.googleSans(
+                  color: Colors.white,
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
           ),
           const SizedBox(height: 12),
           OutlinedButton(
             onPressed: onClear,
             style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: Colors.redAccent),
-              minimumSize: const Size(double.infinity, 50),
+              side: BorderSide(color: AppTheme.wishlist.withValues(alpha: 0.6)),
+              minimumSize: const Size(double.infinity, 52),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(16),
               ),
             ),
-            child: const Text(
+            child: Text(
               'End session',
-              style: TextStyle(color: Colors.redAccent),
+              style: GoogleFonts.googleSans(
+                color: AppTheme.wishlist,
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],

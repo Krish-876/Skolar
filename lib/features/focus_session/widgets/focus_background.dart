@@ -130,9 +130,9 @@ class _FocusBackgroundPainter extends CustomPainter {
           begin: Alignment.centerLeft,
           end: Alignment.centerRight,
           colors: [
-            Colors.white.withValues(alpha: 0.0),
-            Colors.white.withValues(alpha: 0.22),
-            Colors.white.withValues(alpha: 0.0),
+            AppTheme.accentPurple.withValues(alpha: 0.0),
+            Colors.white.withValues(alpha: 0.25),
+            AppTheme.accentPurple.withValues(alpha: 0.0),
           ],
           stops: const [0.0, 0.5, 1.0],
         ).createShader(Rect.fromLTWH(0, cornerY - 4, w, dip + 8))

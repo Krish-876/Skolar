@@ -4,6 +4,7 @@ import 'package:Skolar/features/focus_session/widgets/focus_background.dart';
 import 'package:Skolar/features/focus_session/widgets/glow_thumb_shape.dart';
 import 'package:Skolar/features/focus_session/widgets/present_chip.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class FocusSetupPage extends StatefulWidget {
   final void Function(int seconds) onConfirm;
@@ -88,11 +89,11 @@ class _FocusSetupPageState extends State<FocusSetupPage> {
                         const SizedBox(height: AppTheme.xl),
                         _buildHeroTime(),
                         const SizedBox(height: AppTheme.xxl),
-                        _buildSectionLabel('Quick presets'),
+                        _buildSectionLabel('QUICK PRESETS'),
                         const SizedBox(height: AppTheme.md),
                         _buildPresetChips(),
                         const SizedBox(height: AppTheme.xl),
-                        _buildSectionLabel('Custom duration'),
+                        _buildSectionLabel('CUSTOM DURATION'),
                         const SizedBox(height: AppTheme.sm),
                         _buildSliderRow(),
                         const SizedBox(height: AppTheme.xxl),
@@ -126,24 +127,24 @@ class _FocusSetupPageState extends State<FocusSetupPage> {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: AppTheme.surface.withValues(alpha: 0.5),
+                color: Colors.white.withValues(alpha: 0.07),
                 borderRadius: BorderRadius.circular(AppTheme.radiusLg),
                 border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
               ),
               child: const Icon(
-                Icons.arrow_back_ios_new_rounded,
-                color: AppTheme.onBackground,
-                size: 16,
+                Icons.chevron_left_rounded,
+                color: Colors.white,
+                size: 22,
               ),
             ),
           ),
           const SizedBox(width: AppTheme.md),
-          const Text(
+          Text(
             'Set focus duration',
-            style: TextStyle(
-              color: AppTheme.onBackground,
+            style: GoogleFonts.googleSans(
+              color: Colors.white,
               fontSize: 17,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.bold,
               letterSpacing: 0.2,
             ),
           ),
@@ -161,7 +162,7 @@ class _FocusSetupPageState extends State<FocusSetupPage> {
                 AppTheme.textGradient.createShader(bounds),
             child: Text(
               _formatDuration(_selectedSeconds),
-              style: const TextStyle(
+              style: GoogleFonts.googleSans(
                 color: Colors.white,
                 fontSize: 80,
                 fontWeight: FontWeight.w700,
@@ -173,9 +174,10 @@ class _FocusSetupPageState extends State<FocusSetupPage> {
           const SizedBox(height: AppTheme.sm),
           Text(
             'focus session',
-            style: TextStyle(
+            style: GoogleFonts.googleSans(
               color: AppTheme.onBackground2.withValues(alpha: 0.7),
               fontSize: 15,
+              fontWeight: FontWeight.w500,
               letterSpacing: 0.5,
             ),
           ),
@@ -187,11 +189,11 @@ class _FocusSetupPageState extends State<FocusSetupPage> {
   Widget _buildSectionLabel(String text) {
     return Text(
       text,
-      style: const TextStyle(
-        color: AppTheme.onBackground2,
-        fontSize: 12,
-        fontWeight: FontWeight.w600,
-        letterSpacing: 1.2,
+      style: GoogleFonts.googleSans(
+        color: AppTheme.accentPurple,
+        fontSize: 11,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 1.4,
       ),
     );
   }
@@ -217,7 +219,7 @@ class _FocusSetupPageState extends State<FocusSetupPage> {
       children: [
         SliderTheme(
           data: SliderTheme.of(context).copyWith(
-            trackHeight: 3,
+            trackHeight: 4,
             thumbShape: const GlowThumbShape(),
             overlayShape: SliderComponentShape.noOverlay,
             activeTrackColor: AppTheme.primary,
@@ -238,16 +240,18 @@ class _FocusSetupPageState extends State<FocusSetupPage> {
           children: [
             Text(
               '${_minMinutes}m',
-              style: TextStyle(
-                color: AppTheme.onBackground2.withValues(alpha: 0.5),
+              style: GoogleFonts.googleSans(
+                color: Colors.white38,
                 fontSize: 11,
+                fontWeight: FontWeight.w500,
               ),
             ),
             Text(
               '${_maxMinutes ~/ 60}h',
-              style: TextStyle(
-                color: AppTheme.onBackground2.withValues(alpha: 0.5),
+              style: GoogleFonts.googleSans(
+                color: Colors.white38,
                 fontSize: 11,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ],
@@ -264,13 +268,11 @@ class _FocusSetupPageState extends State<FocusSetupPage> {
     return Container(
       padding: const EdgeInsets.all(AppTheme.md),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF0D1B3E), Color(0xFF05061A)],
-        ),
+        color: AppTheme.surface,
         borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-        border: Border.all(color: AppTheme.primary.withValues(alpha: 0.25)),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.08),
+        ),
       ),
       child: Row(
         children: [
@@ -278,12 +280,12 @@ class _FocusSetupPageState extends State<FocusSetupPage> {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: AppTheme.primary.withValues(alpha: 0.18),
+              color: AppTheme.primary.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(AppTheme.radiusMd),
             ),
             child: const Icon(
               Icons.timer_outlined,
-              color: AppTheme.onBackground2,
+              color: AppTheme.accentPurple,
               size: 22,
             ),
           ),
@@ -292,21 +294,21 @@ class _FocusSetupPageState extends State<FocusSetupPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Session breakdown',
-                  style: TextStyle(
-                    color: AppTheme.onBackground,
-                    fontSize: 13,
+                  style: GoogleFonts.googleSans(
+                    color: Colors.white,
+                    fontSize: 14,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   _buildBreakdownText(h, m, pomodoroCount),
-                  style: const TextStyle(
-                    color: AppTheme.onBackground2,
+                  style: GoogleFonts.googleSans(
+                    color: Colors.white60,
                     fontSize: 12,
-                    height: 1.5,
+                    height: 1.4,
                   ),
                 ),
               ],
@@ -335,12 +337,12 @@ class _FocusSetupPageState extends State<FocusSetupPage> {
       child: DecoratedBox(
         decoration: BoxDecoration(
           gradient: AppTheme.primaryGradient,
-          borderRadius: BorderRadius.circular(AppTheme.radiusXxl),
+          borderRadius: BorderRadius.circular(AppTheme.radiusXl),
           boxShadow: [
             BoxShadow(
-              color: AppTheme.primary.withValues(alpha: 0.35),
+              color: AppTheme.primary.withValues(alpha: 0.38),
               blurRadius: 20,
-              offset: const Offset(0, 8),
+              offset: const Offset(0, 6),
             ),
           ],
         ),
@@ -350,16 +352,16 @@ class _FocusSetupPageState extends State<FocusSetupPage> {
             backgroundColor: Colors.transparent,
             shadowColor: Colors.transparent,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppTheme.radiusXxl),
+              borderRadius: BorderRadius.circular(AppTheme.radiusXl),
             ),
           ),
-          child: const Text(
-            'Start session',
-            style: TextStyle(
-              color: AppTheme.onPrimary,
+          child: Text(
+            'Start session →',
+            style: GoogleFonts.googleSans(
+              color: Colors.white,
               fontSize: 16,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.3,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.2,
             ),
           ),
         ),
