@@ -29,6 +29,7 @@ dependencies:
   google_fonts: ^8.2.0
   file_picker: ^11.0.2
   confetti: ^0.8.0
+  audioplayers: ^6.1.0
   flutter_ringtone_player: ^4.0.0+4
   vibration: ^3.2.0
   supabase: ^2.14.0
@@ -59,6 +60,7 @@ flutter:
     - assets/animations/
     - assets/animations/tick_frames/
     - assets/models/
+    - assets/sounds/
     - .env                    
     
   fonts:                      
