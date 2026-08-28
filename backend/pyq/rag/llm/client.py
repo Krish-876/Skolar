@@ -2,7 +2,7 @@ import os
 
 from groq import Groq
 
-GROQ_MODEL = "llama-3.3-70b-versatile"
+GROQ_MODEL = "openai/gpt-oss-120b"
 
 _groq_client = None
 

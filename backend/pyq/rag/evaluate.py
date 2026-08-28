@@ -18,8 +18,8 @@ import requests
 from numpy.linalg import norm
 
 BASE_URL = "http://localhost:8000"
-COLLEGE  = "BPHC"
-SUBJECT  = "Artificial Intelligence"
+COLLEGE  = "BITS Pilani Hyderabad"
+SUBJECT  = "Operating Systems"
 MCQ_COUNT  = 10
 OPEN_COUNT = 5
 
