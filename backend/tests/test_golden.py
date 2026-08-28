@@ -73,11 +73,15 @@ def test_mmr_matches_golden_no_seed():
     assert actual == GOLDEN["mmr_no_seed"]
 
 
-def test_mmr_matches_golden_with_seed():
+def test_mmr_matches_golden_alpha_half():
+    # Formerly "with_seed": mmr() no longer takes a seed (the seed shuffle it
+    # used to apply was a no-op -- MMR's greedy argmax is deterministic given
+    # a candidate pool, so permuting candidates can't change which one wins).
+    # Per-worker variation now lives in services/generate.py's pool subsampling.
     query = EMBEDDINGS[0]
     candidates = EMBEDDINGS[1:]
 
-    actual = mmr(query, candidates, _mmr_candidates(), k=3, alpha=0.5, seed=42)
+    actual = mmr(query, candidates, _mmr_candidates(), alpha=0.5, k=3)
 
     assert actual == GOLDEN["mmr_with_seed"]
 
@@ -86,7 +90,7 @@ def test_mmr_matches_golden_k_larger_than_pool():
     query = EMBEDDINGS[0]
     candidates = EMBEDDINGS[1:5]
 
-    actual = mmr(query, candidates, _mmr_candidates()[:4], k=10, seed=7)
+    actual = mmr(query, candidates, _mmr_candidates()[:4], alpha=0.7, k=10)
 
     assert actual == GOLDEN["mmr_k_larger_than_pool"]
 

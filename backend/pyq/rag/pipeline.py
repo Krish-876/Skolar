@@ -4,8 +4,9 @@ during the backend/pyq/rag refactor — this module just re-exports everything s
 imports (`from .pipeline import ...`, `from pyq.rag.pipeline import ...`) keep working.
 """
 
-from .core.features import Backend, EMBED_MODEL, SbertBackend, get_embed_model
+from .core.features import Backend, EMBED_MODEL, SbertBackend, TfidfBackend, get_embed_model
 from .core.mmr import cosine_sim, mmr
+from .core.retrieval import retrieve_top_k
 from .ingest.chunking import CHUNK_OVERLAP, CHUNK_SIZE, _deduplicate_questions, _make_chunks
 from .ingest.extract import (
     _TEXT_EXTRACTORS,
@@ -50,9 +51,11 @@ __all__ = [
     "Backend",
     "EMBED_MODEL",
     "SbertBackend",
+    "TfidfBackend",
     "get_embed_model",
     "cosine_sim",
     "mmr",
+    "retrieve_top_k",
     "CHUNK_SIZE",
     "CHUNK_OVERLAP",
     "_make_chunks",
