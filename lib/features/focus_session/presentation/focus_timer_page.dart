@@ -1,4 +1,8 @@
+import 'dart:async';
+import 'dart:math';
 import 'package:Skolar/core/theme/app_theme.dart';
+import 'package:Skolar/features/focus_session/services/focus_notification_service.dart';
+import 'package:Skolar/features/focus_session/services/focus_pip_service.dart';
 import 'package:Skolar/features/focus_session/services/focus_sound_service.dart';
 import 'package:Skolar/features/focus_session/widgets/glow_thumb_shape.dart';
 import 'package:flutter/material.dart';
@@ -19,11 +23,19 @@ class FocusTimerPage extends StatefulWidget {
 class FocusTimerPageState extends State<FocusTimerPage>
     with TickerProviderStateMixin, WidgetsBindingObserver {
   late final FocusTimerController _controller;
-  late final AnimationController _transitionAnimController;
+  late final AnimationController _zenAnimController;
+  late final AnimationController _startRollController;
+  bool _isInPipMode = false;
+
   bool _showGiveUpSheet = false;
-  bool _showTransitionOverlay = false;
-  String _transitionTitle = '';
-  String _transitionSubtitle = '';
+
+  int _rollStartSeconds = 0;
+  int _rollTargetSeconds = 0;
+
+  int _appExitWarningCount = 0;
+  Timer? _gracePeriodTimer;
+  bool _wasCancelledDueToAppExit = false;
+  bool _isAppInForeground = true;
 
   double _targetSliderMinutes = 25.0;
   double _animatedSliderMinutes = 25.0;
@@ -38,24 +50,45 @@ class FocusTimerPageState extends State<FocusTimerPage>
   @override
   void initState() {
     super.initState();
+    FocusNotificationService.init();
+    FocusPipService.init();
+    FocusPipService.onPipModeChanged = (inPip) {
+      if (mounted) {
+        setState(() => _isInPipMode = inPip);
+      }
+    };
     _controller = FocusTimerController(vsync: this);
-    _transitionAnimController = AnimationController(
+    _zenAnimController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 380),
+      duration: const Duration(milliseconds: 280),
     );
+    _zenAnimController.addListener(() => setState(() {}));
+    _startRollController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 340),
+    );
+    _startRollController.addListener(() => setState(() {}));
+
     _targetSliderMinutes = (_controller.totalSeconds / 60.0).clamp(1.0, 180.0);
     _animatedSliderMinutes = _targetSliderMinutes;
     _controller.addListener(() => setState(() {}));
     _controller.onComplete = _onTimerComplete;
     _controller.onPhaseChanged = _onPhaseChanged;
+
     WidgetsBinding.instance.addObserver(this);
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    _gracePeriodTimer?.cancel();
+    FocusPipService.setPipEnabled(false);
+    FocusPipService.onPipModeChanged = null;
+    FocusNotificationService.cancelAll();
     FocusSoundService.stop();
-    _transitionAnimController.dispose();
+    _zenAnimController.dispose();
+    _startRollController.dispose();
     _controller.dispose();
     super.dispose();
   }
@@ -63,24 +96,110 @@ class FocusTimerPageState extends State<FocusTimerPage>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
+      _isAppInForeground = true;
+      _appExitWarningCount = 0;
+      _gracePeriodTimer?.cancel();
+      _gracePeriodTimer = null;
+      FocusNotificationService.cancelAll();
       _controller.syncWithSystemTime();
+
+      if (_wasCancelledDueToAppExit) {
+        _wasCancelledDueToAppExit = false;
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Focus session was cancelled because you left the app.',
+                style: GoogleFonts.googleSans(
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+              backgroundColor: AppTheme.wishlist,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
+      }
+    } else if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.hidden) {
+      if (_isAppInForeground) {
+        _isAppInForeground = false;
+
+        if (_controller.status == FocusTimerStatus.running) {
+          if (_controller.isBreakPhase) {
+            // During break: enable native PiP
+            FocusPipService.setPipEnabled(true);
+          } else {
+            // User minimized app during active focus session
+            if (_appExitWarningCount == 0) {
+              _appExitWarningCount = 1;
+              FocusNotificationService.showExitWarningNotification();
+              _gracePeriodTimer?.cancel();
+              _gracePeriodTimer = Timer(const Duration(seconds: 10), () {
+                if (!_isAppInForeground &&
+                    _controller.status == FocusTimerStatus.running &&
+                    !_controller.isBreakPhase) {
+                  _cancelSessionDueToAppExit();
+                }
+              });
+            } else {
+              _cancelSessionDueToAppExit();
+            }
+          }
+        }
+      }
     } else if (state == AppLifecycleState.detached) {
       if (_controller.status == FocusTimerStatus.running) {
-        _controller.reset();
-        FocusSoundService.stop();
+        _cancelSessionDueToAppExit();
       }
     }
+  }
+
+  void _cancelSessionDueToAppExit() {
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    _zenAnimController.animateTo(0.0);
+    _gracePeriodTimer?.cancel();
+    _gracePeriodTimer = null;
+    _wasCancelledDueToAppExit = true;
+    _appExitWarningCount = 0;
+    FocusPipService.setPipEnabled(false);
+    _controller.reset();
+    _springWaveBack();
+    FocusSoundService.stop();
+    FocusNotificationService.showSessionCancelledNotification();
   }
 
   void _onPhaseChanged(FocusPhase newPhase) {
     if (newPhase == FocusPhase.breakTime) {
       FocusSoundService.playEnterBreak();
+      FocusPipService.setPipEnabled(true);
     } else {
+      FocusPipService.setPipEnabled(false);
       FocusSoundService.playExitBreak();
+
+      // If user is currently outside the app when break turns into focus:
+      if (!_isAppInForeground &&
+          _controller.status == FocusTimerStatus.running) {
+        _appExitWarningCount = 1;
+        FocusNotificationService.showExitWarningNotification();
+        _gracePeriodTimer?.cancel();
+        _gracePeriodTimer = Timer(const Duration(seconds: 10), () {
+          if (!_isAppInForeground &&
+              _controller.status == FocusTimerStatus.running &&
+              !_controller.isBreakPhase) {
+            _cancelSessionDueToAppExit();
+          }
+        });
+      }
     }
   }
 
   void _onTimerComplete() {
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    _zenAnimController.animateTo(0.0);
+    _springWaveBack();
     FocusSoundService.playSessionComplete();
   }
 
@@ -108,14 +227,14 @@ class FocusTimerPageState extends State<FocusTimerPage>
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(
-                Icons.help_outline_rounded,
-                color: AppTheme.accentPurple,
+                Icons.spa_rounded,
+                color: AppTheme.primary,
                 size: 20,
               ),
             ),
             const SizedBox(width: 12),
             Text(
-              'How it works',
+              'Deep Focus Mode',
               style: GoogleFonts.googleSans(
                 color: Colors.white,
                 fontSize: 18,
@@ -128,48 +247,55 @@ class FocusTimerPageState extends State<FocusTimerPage>
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _helpRow(
-              'Set Duration',
-              'Drag the slider or tap the time numbers to type your exact focus time.',
+            _buildHelpItem(
+              Icons.notifications_active_rounded,
+              'Stay within the app while focusing. Leaving the app will issue a warning and automatically cancel after 10 seconds.',
             ),
-            const SizedBox(height: 14),
-            _helpRow(
-              'Pomodoro Mode',
-              'Splits focus into 25-minute intervals with 5-minute restorative breaks.',
+            const SizedBox(height: 12),
+            _buildHelpItem(
+              Icons.coffee_rounded,
+              'During breaks, you can freely exit the app or use Picture-in-Picture mode.',
             ),
-            const SizedBox(height: 14),
-            _helpRow(
-              'Lock-Screen Tracking',
-              'Timer continues running accurately when your phone is locked.',
-            ),
-            const SizedBox(height: 14),
-            _helpRow(
-              'Break Switching',
-              'During 5-minute break periods, you can switch apps without losing progress.',
-            ),
-            const SizedBox(height: 14),
-            _helpRow(
-              'Lock In & Give Up',
-              'Swipe the capsule to lock in or cancel your active session.',
+            const SizedBox(height: 12),
+            _buildHelpItem(
+              Icons.lock_clock_rounded,
+              'Your timer continues accurately even if your device screen turns off.',
             ),
           ],
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            style: TextButton.styleFrom(
-              foregroundColor: AppTheme.accentPurple,
-            ),
+            onPressed: () => Navigator.of(ctx).pop(),
             child: Text(
               'Got it',
               style: GoogleFonts.googleSans(
+                color: AppTheme.primary,
                 fontWeight: FontWeight.bold,
-                fontSize: 15,
               ),
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildHelpItem(IconData icon, String text) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 16, color: AppTheme.accentPurple),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            text,
+            style: GoogleFonts.googleSans(
+              color: Colors.white70,
+              fontSize: 13,
+              height: 1.4,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -192,31 +318,6 @@ class FocusTimerPageState extends State<FocusTimerPage>
     );
   }
 
-  Widget _helpRow(String title, String description) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: GoogleFonts.googleSans(
-            color: Colors.white,
-            fontSize: 13,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          description,
-          style: GoogleFonts.googleSans(
-            color: Colors.white60,
-            fontSize: 12,
-            height: 1.4,
-          ),
-        ),
-      ],
-    );
-  }
-
   double _maxKnobOffset(BoxConstraints constraints) {
     return constraints.maxWidth - _knobSize - (_trackHorizontalPadding * 2);
   }
@@ -224,8 +325,8 @@ class FocusTimerPageState extends State<FocusTimerPage>
   void _springWaveBack() {
     final spring = SpringDescription.withDampingRatio(
       mass: 1.0,
-      stiffness: 180.0,
-      ratio: 0.6,
+      stiffness: 300.0,
+      ratio: 0.8,
     );
     final sim = SpringSimulation(
       spring,
@@ -236,84 +337,251 @@ class FocusTimerPageState extends State<FocusTimerPage>
     _controller.waveAnimationController.animateWith(sim);
   }
 
-  void _springWaveForward() {
-    final spring = SpringDescription.withDampingRatio(
-      mass: 1.0,
-      stiffness: 300.0,
-      ratio: 0.8,
-    );
-    final sim = SpringSimulation(
-      spring,
-      _controller.waveAnimationController.value,
-      1.0,
-      2.0,
-    );
-    _controller.waveAnimationController.animateWith(sim);
-  }
-
   @override
   Widget build(BuildContext context) {
+    if (_isInPipMode) {
+      return _buildPipMiniplayer();
+    }
+    return _buildMainScaffold();
+  }
+
+  Widget _buildPipMiniplayer() {
+    final isBreak = _controller.isBreakPhase;
+    final accentColor = AppTheme.accentPurple;
+
+    return Scaffold(
+      backgroundColor: const Color(0xFF13131A),
+      body: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: const Color(0xFF13131A),
+          border: Border.all(
+            color: accentColor.withValues(alpha: 0.6),
+            width: 1.5,
+          ),
+        ),
+        child: Center(
+          child: isBreak
+              ? Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Icon(Icons.coffee_rounded, color: accentColor, size: 24),
+                    const SizedBox(width: 12),
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Break',
+                          style: GoogleFonts.googleSans(
+                            color: Colors.white70,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        Text(
+                          _controller.formattedTime,
+                          style: GoogleFonts.googleSans(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                )
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: accentColor.withValues(alpha: 0.2),
+                      ),
+                      child: Icon(
+                        Icons.open_in_full_rounded,
+                        color: accentColor,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      'Return to the app to continue focusing',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.googleSans(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        height: 1.15,
+                      ),
+                    ),
+                  ],
+                ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMainScaffold() {
     final isRunning = _controller.status == FocusTimerStatus.running;
     final canPop =
         _controller.status == FocusTimerStatus.idle ||
         _controller.status == FocusTimerStatus.complete;
+    final zen = _zenAnimController.value;
+    final slideProgress =
+        isRunning ? 0.0 : (_knobOffset / 180.0).clamp(0.0, 1.0);
 
     return PopScope(
       canPop: canPop,
       onPopInvokedWithResult: (didPop, result) {
         if (!didPop && isRunning) showGiveUpSheet();
       },
-      child: Scaffold(
-        backgroundColor: AppTheme.background,
-        body: Stack(
-          children: [
-            AnimatedBuilder(
-              animation: _controller.waveAnimationController,
-              builder: (context, _) {
-                return FocusBackground(
-                  slideProgress: _controller.slideProgress,
-                );
-              },
-            ),
+      child: GestureDetector(
+        onVerticalDragUpdate: (details) {
+          if (isRunning) {
+            final delta = details.primaryDelta ?? 0.0;
+            // Dragging up (negative delta) increases zen progress towards 1.0
+            _zenAnimController.value =
+                (_zenAnimController.value - delta / 260.0).clamp(0.0, 1.0);
+          }
+        },
+        onVerticalDragEnd: (details) {
+          if (isRunning) {
+            final velocity = details.primaryVelocity ?? 0.0;
+            if (velocity < -300 || _zenAnimController.value > 0.45) {
+              _zenAnimController.animateTo(1.0, curve: Curves.easeOutCubic);
+            } else {
+              _zenAnimController.animateTo(0.0, curve: Curves.easeOutCubic);
+            }
+          }
+        },
+        behavior: HitTestBehavior.translucent,
+        child: Scaffold(
+          backgroundColor: Color.lerp(AppTheme.background, Colors.black, zen),
+          body: Stack(
+            children: [
+              // Dynamic normal background (fades out as AMOLED zen increases)
+              AnimatedBuilder(
+                animation: _controller.waveAnimationController,
+                builder: (context, _) {
+                  return Opacity(
+                    opacity: (1.0 - zen).clamp(0.0, 1.0),
+                    child: FocusBackground(
+                      slideProgress: _controller.slideProgress,
+                    ),
+                  );
+                },
+              ),
 
-            SafeArea(
-              child: Column(
-                children: [
-                  _buildTopBar(isRunning),
-                  Expanded(flex: 44, child: _buildBonsaiHero(isRunning)),
-                  Expanded(
-                    flex: 56,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          if (isRunning && _controller.isBreakPhase) ...[
-                            _buildBreakPhaseHeader(),
-                            const SizedBox(height: 12),
-                          ],
-                          _buildTimerReadout(isRunning),
-                          if (isRunning) ...[
-                            const SizedBox(height: 14),
-                            _buildProgressIndicators(),
-                          ],
-                          const SizedBox(height: 20),
-                          if (_controller.status == FocusTimerStatus.complete)
-                            _buildRestartButton()
-                          else
-                            _buildInteractionZone(isIdle: !isRunning),
-                        ],
+              // AMOLED pure black overlay
+              if (zen > 0.0)
+                Positioned.fill(
+                  child: Container(color: Colors.black.withValues(alpha: zen)),
+                ),
+
+              SafeArea(
+                child: Column(
+                  children: [
+                    // Top bar (fades out first or when sliding to lock in)
+                    Opacity(
+                      opacity: isRunning
+                          ? (1.0 - zen * 3.0).clamp(0.0, 1.0)
+                          : (1.0 - slideProgress * 2.0).clamp(0.0, 1.0),
+                      child: _buildTopBar(isRunning),
+                    ),
+
+                    // Bonsai hero art (fades and moves up out of view)
+                    Expanded(
+                      flex: 44,
+                      child: Transform.translate(
+                        offset: Offset(0, -60 * zen),
+                        child: Opacity(
+                          opacity: (1.0 - zen * 2.5).clamp(0.0, 1.0),
+                          child: _buildBonsaiHero(isRunning),
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ),
 
-            if (_showGiveUpSheet) _buildGiveUpOverlay(),
-            if (_showTransitionOverlay) _buildTransitionOverlay(),
-          ],
+                    // Main timer zone (centers and enlarges)
+                    Expanded(
+                      flex: 56,
+                      child: Transform.translate(
+                        offset: Offset(
+                          0,
+                          -MediaQuery.of(context).size.height * 0.22 * zen,
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              // Phase title: "Focus" / "Break" (Always visible in AMOLED mode)
+                              if (isRunning) ...[
+                                Text(
+                                  _controller.isBreakPhase
+                                      ? 'Break'
+                                      : 'Focus',
+                                  style: GoogleFonts.googleSans(
+                                    color: Colors.white.withValues(
+                                      alpha: (0.95 - (zen * 0.15))
+                                          .clamp(0.75, 0.95),
+                                    ),
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 0.3,
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                              ],
+
+                              // Enlarging & centered timer readout
+                              Transform.scale(
+                                scale: 1.0 + (zen * 0.40),
+                                child: _buildTimerReadout(isRunning),
+                              ),
+
+                              // Progress indicators
+                              if (isRunning) ...[
+                                SizedBox(height: 14.0 - (4.0 * zen)),
+                                _buildProgressIndicators(zen: zen),
+                              ],
+
+                              const SizedBox(height: 20),
+
+                              // Bottom slider & controls
+                              Opacity(
+                                opacity: (1.0 - zen * 3.0).clamp(0.0, 1.0),
+                                child: IgnorePointer(
+                                  ignoring: zen > 0.1,
+                                  child:
+                                      _controller.status ==
+                                              FocusTimerStatus.complete
+                                          ? _buildRestartButton()
+                                          : _buildInteractionZone(
+                                              isIdle: !isRunning,
+                                              slideProgress: slideProgress,
+                                            ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              if (_showGiveUpSheet) _buildGiveUpOverlay(),
+            ],
+          ),
         ),
       ),
     );
@@ -365,72 +633,32 @@ class FocusTimerPageState extends State<FocusTimerPage>
         duration: const Duration(milliseconds: 500),
         curve: Curves.easeInOut,
         padding: EdgeInsets.only(top: isRunning ? 20 : 0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(top: 10, left: 10),
-              child: Image.asset(
-                'assets/images/bonsai.png',
-                width: 230,
-                height: 210,
-                fit: BoxFit.contain,
-                errorBuilder: (_, _, _) => const Icon(
-                  Icons.spa_rounded,
-                  size: 80,
-                  color: Color(0xFF4DA83B),
-                ),
-              ),
+        child: Padding(
+          padding: const EdgeInsets.only(top: 10, left: 10),
+          child: Image.asset(
+            'assets/images/bonsai.png',
+            width: 230,
+            height: 210,
+            fit: BoxFit.contain,
+            errorBuilder: (_, _, _) => const Icon(
+              Icons.spa_rounded,
+              size: 80,
+              color: Color(0xFF4DA83B),
             ),
-            const SizedBox(height: 14),
-            Text(
-              'Focus time',
-              style: GoogleFonts.googleSans(
-                color: Colors.white.withValues(alpha: isRunning ? 0.6 : 0.95),
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 0.2,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildBreakPhaseHeader() {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-      decoration: BoxDecoration(
-        color: const Color(0xFF0F3A2E),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF00E676), width: 1.2),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF00E676).withValues(alpha: 0.25),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.coffee_rounded, size: 14, color: Color(0xFF00E676)),
-          const SizedBox(width: 6),
-          Text(
-            '5 MIN BREAK',
-            style: GoogleFonts.googleSans(
-              color: const Color(0xFF00E676),
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.0,
-            ),
-          ),
-        ],
-      ),
-    );
+  String _formatSecondsToTime(int s) {
+    final h = s ~/ 3600;
+    final m = (s % 3600) ~/ 60;
+    final sec = s % 60;
+    if (h > 0) {
+      return '$h:${m.toString().padLeft(2, '0')}:${sec.toString().padLeft(2, '0')}';
+    }
+    return '${m.toString().padLeft(2, '0')}:${sec.toString().padLeft(2, '0')}';
   }
 
   Widget _buildTimerReadout(bool isRunning) {
@@ -463,9 +691,18 @@ class FocusTimerPageState extends State<FocusTimerPage>
       );
     }
 
-    final displayTime = _controller.status == FocusTimerStatus.idle
-        ? _controller.formattedTotalFocusTime
-        : _controller.formattedTime;
+    String displayTime;
+    if (_startRollController.isAnimating) {
+      final t = Curves.easeInOutCubic.transform(_startRollController.value);
+      final currentSec =
+          (_rollStartSeconds + (_rollTargetSeconds - _rollStartSeconds) * t)
+              .round();
+      displayTime = _formatSecondsToTime(currentSec);
+    } else if (_controller.status == FocusTimerStatus.idle) {
+      displayTime = _controller.formattedTotalFocusTime;
+    } else {
+      displayTime = _controller.formattedTime;
+    }
 
     return GestureDetector(
       onTap: isRunning ? null : _showEditTimeDialog,
@@ -486,99 +723,95 @@ class FocusTimerPageState extends State<FocusTimerPage>
     );
   }
 
-  Widget _buildProgressIndicators() {
-    final intervalProgress = _controller.currentIntervalProgress;
+  Widget _buildProgressIndicators({double zen = 0.0}) {
+    final overallProgress = _controller.sessionProgress;
     final breakSegments = _controller.breakSegments;
 
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0),
-          child: SizedBox(
-            height: 14,
-            child: Stack(
-              alignment: Alignment.centerLeft,
-              children: [
-                // Base track
-                Container(
-                  height: 6,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                ),
-
-                // Break intervals with visible duration thickness
-                if (_controller.isPomodoroEnabled && breakSegments.isNotEmpty)
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      final totalWidth = constraints.maxWidth;
-                      return Stack(
-                        children: breakSegments.map((segment) {
-                          final left = segment.startFraction * totalWidth;
-                          final width = (segment.widthFraction * totalWidth)
-                              .clamp(10.0, totalWidth);
-                          return Positioned(
-                            left: left,
-                            width: width,
-                            top: 3,
-                            height: 8,
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: AppTheme.accentPurple.withValues(
-                                  alpha: 0.6,
-                                ),
-                                borderRadius: BorderRadius.circular(3),
-                                border: Border.all(
-                                  color: AppTheme.background,
-                                  width: 1.0,
-                                ),
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      );
-                    },
-                  ),
-
-                // Active interval progress fill
-                FractionallySizedBox(
-                  widthFactor: intervalProgress,
-                  child: Container(
+        Opacity(
+          opacity: (1.0 - zen * 2.2).clamp(0.0, 1.0),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20.0),
+            child: SizedBox(
+              height: 14.0 * (1.0 - zen),
+              child: Stack(
+                alignment: Alignment.centerLeft,
+                children: [
+                  // Base track
+                  Container(
                     height: 6,
                     decoration: BoxDecoration(
-                      gradient: _controller.isBreakPhase
-                          ? const LinearGradient(
-                              colors: [Color(0xFF00E676), Color(0xFF69F0AE)],
-                            )
-                          : AppTheme.primaryGradient,
+                      color: Colors.white.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(3),
-                      boxShadow: [
-                        BoxShadow(
-                          color: (_controller.isBreakPhase
-                                  ? const Color(0xFF00E676)
-                                  : AppTheme.primary)
-                              .withValues(alpha: 0.35),
-                          blurRadius: 6,
-                        ),
-                      ],
                     ),
                   ),
-                ),
-              ],
+
+                  // Break intervals with visible duration thickness
+                  if (_controller.isPomodoroEnabled && breakSegments.isNotEmpty)
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final totalWidth = constraints.maxWidth;
+                        return Stack(
+                          children: breakSegments.map((segment) {
+                            final left = segment.startFraction * totalWidth;
+                            final width = (segment.widthFraction * totalWidth)
+                                .clamp(10.0, totalWidth);
+                            return Positioned(
+                              left: left,
+                              width: width,
+                              top: 3,
+                              height: 8,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: AppTheme.accentPurple.withValues(
+                                    alpha: 0.6,
+                                  ),
+                                  borderRadius: BorderRadius.circular(3),
+                                  border: Border.all(
+                                    color: AppTheme.background,
+                                    width: 1.0,
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        );
+                      },
+                    ),
+
+                  // Overall session progress fill
+                  FractionallySizedBox(
+                    widthFactor: overallProgress,
+                    child: Container(
+                      height: 6,
+                      decoration: BoxDecoration(
+                        gradient: AppTheme.primaryGradient,
+                        borderRadius: BorderRadius.circular(3),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppTheme.primary.withValues(alpha: 0.35),
+                            blurRadius: 6,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
-        const SizedBox(height: 10),
+        SizedBox(height: 10.0 * (1.0 - zen)),
 
-        // Upcoming break info / next session
+        // Upcoming break info / next session (Always visible in AMOLED mode)
         if (_controller.isPomodoroEnabled)
           Text(
             _controller.upcomingBreakInfo,
             style: GoogleFonts.googleSans(
-              color: _controller.isBreakPhase
-                  ? const Color(0xFF00E676).withValues(alpha: 0.95)
-                  : AppTheme.accentPurple.withValues(alpha: 0.9),
+              color: AppTheme.accentPurple.withValues(
+                alpha: (0.95 - (zen * 0.15)).clamp(0.75, 0.95),
+              ),
               fontSize: 13,
               fontWeight: FontWeight.w600,
             ),
@@ -599,8 +832,13 @@ class FocusTimerPageState extends State<FocusTimerPage>
         const SizedBox(height: 20),
         GestureDetector(
           onTap: () {
+            _appExitWarningCount = 0;
+            _gracePeriodTimer?.cancel();
+            _gracePeriodTimer = null;
+            FocusNotificationService.cancelAll();
             FocusSoundService.stop();
             _controller.reset();
+            _springWaveBack();
           },
           child: Container(
             height: _trackHeight,
@@ -632,7 +870,10 @@ class FocusTimerPageState extends State<FocusTimerPage>
     );
   }
 
-  Widget _buildInteractionZone({required bool isIdle}) {
+  Widget _buildInteractionZone({
+    required bool isIdle,
+    double slideProgress = 0.0,
+  }) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -640,14 +881,17 @@ class FocusTimerPageState extends State<FocusTimerPage>
           duration: const Duration(milliseconds: 280),
           curve: Curves.easeInOutCubic,
           child: isIdle
-              ? Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _buildDurationSlider(),
-                    const SizedBox(height: 10),
-                    _buildPomodoroModeToggle(),
-                    const SizedBox(height: 16),
-                  ],
+              ? Opacity(
+                  opacity: (1.0 - slideProgress * 1.8).clamp(0.0, 1.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _buildDurationSlider(),
+                      const SizedBox(height: 10),
+                      _buildPomodoroModeToggle(),
+                      const SizedBox(height: 16),
+                    ],
+                  ),
                 )
               : const SizedBox.shrink(),
         ),
@@ -707,26 +951,30 @@ class FocusTimerPageState extends State<FocusTimerPage>
               );
             },
           ),
-          const SizedBox(height: 2),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4.0),
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  '1m',
+                  '1 min',
                   style: GoogleFonts.googleSans(
-                    color: Colors.white30,
+                    color: Colors.white38,
                     fontSize: 11,
-                    fontWeight: FontWeight.w500,
                   ),
                 ),
                 Text(
-                  '3h',
+                  '1 hour',
                   style: GoogleFonts.googleSans(
-                    color: Colors.white30,
+                    color: Colors.white38,
                     fontSize: 11,
-                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                Text(
+                  '3 hours',
+                  style: GoogleFonts.googleSans(
+                    color: Colors.white38,
+                    fontSize: 11,
                   ),
                 ),
               ],
@@ -741,17 +989,13 @@ class FocusTimerPageState extends State<FocusTimerPage>
     final enabled = _controller.isPomodoroEnabled;
     return Column(
       mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         GestureDetector(
-          onTap: () {
-            _controller.setPomodoroEnabled(!enabled);
-          },
+          onTap: () => _controller.setPomodoroEnabled(!enabled),
           behavior: HitTestBehavior.opaque,
           child: Row(
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Icon(
                 Icons.timelapse_rounded,
@@ -797,7 +1041,7 @@ class FocusTimerPageState extends State<FocusTimerPage>
               opacity: animation,
               child: SizeTransition(
                 sizeFactor: animation,
-                axisAlignment: 0.0,
+                alignment: Alignment.center,
                 child: child,
               ),
             );
@@ -845,38 +1089,30 @@ class FocusTimerPageState extends State<FocusTimerPage>
         if (progressFraction >= _triggerFraction) {
           setState(() => _dragging = false);
           if (!isRunning) {
-            final breakStr =
-                _controller.isPomodoroEnabled &&
-                        _controller.pomodoroBreakCount > 0
-                    ? 'with ${_controller.breaksSubtitle}'
-                    : '';
-            setState(() {
-              _knobOffset = maxOffset;
-              _showTransitionOverlay = true;
-              _transitionTitle =
-                  'Focusing for ${_formatDurationText(_controller.totalSeconds)}';
-              _transitionSubtitle = breakStr;
-            });
-            _springWaveForward();
+            _appExitWarningCount = 0;
+            _wasCancelledDueToAppExit = false;
+            _gracePeriodTimer?.cancel();
+            _gracePeriodTimer = null;
+            FocusNotificationService.cancelAll();
+
+            final startSec = _controller.totalSeconds;
+            final targetSec = _controller.isPomodoroEnabled
+                ? min(startSec, FocusTimerController.pomodoroFocusDuration)
+                : startSec;
+
+            _rollStartSeconds = startSec;
+            _rollTargetSeconds = targetSec;
+
+            _controller.start();
+            _controller.waveAnimationController.value = 1.0;
+            SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
             FocusSoundService.playStartFocus();
-            _transitionAnimController.forward();
 
-            // Once the full-screen overlay covers the screen (~400ms):
-            Future.delayed(const Duration(milliseconds: 400), () {
-              if (!mounted) return;
-              // Assemble next running screen behind the overlay
-              _controller.start();
-              setState(() => _knobOffset = 0);
+            if (startSec != targetSec) {
+              _startRollController.forward(from: 0.0);
+            }
 
-              // Hold the transition text for a moment, then fade away smoothly
-              Future.delayed(const Duration(milliseconds: 750), () {
-                if (!mounted) return;
-                _transitionAnimController.reverse().then((_) {
-                  if (!mounted) return;
-                  setState(() => _showTransitionOverlay = false);
-                });
-              });
-            });
+            setState(() => _knobOffset = 0);
           } else {
             setState(() => _knobOffset = 0);
             showGiveUpSheet();
@@ -898,21 +1134,15 @@ class FocusTimerPageState extends State<FocusTimerPage>
           child: Stack(
             alignment: Alignment.centerLeft,
             children: [
-              // Layer 0: base resting background
+              // Layer 0: Base resting background
               Positioned.fill(
                 child: Container(
-                  decoration: BoxDecoration(
-                    gradient: isRunning
-                        ? const LinearGradient(
-                            begin: Alignment.centerLeft,
-                            end: Alignment.centerRight,
-                            colors: [Color(0xFF3B1D6E), Color(0xFF20113D)],
-                          )
-                        : const LinearGradient(
-                            begin: Alignment.centerLeft,
-                            end: Alignment.centerRight,
-                            colors: [Color(0xFF262433), Color(0xFF181622)],
-                          ),
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: [Color(0xFF262433), Color(0xFF181622)],
+                    ),
                   ),
                 ),
               ),
@@ -932,7 +1162,7 @@ class FocusTimerPageState extends State<FocusTimerPage>
                           ? const LinearGradient(
                               begin: Alignment.centerLeft,
                               end: Alignment.centerRight,
-                              colors: [Color(0xFF262433), Color(0xFF181622)],
+                              colors: [Color(0xFF521C2B), Color(0xFF2B0E17)],
                             )
                           : AppTheme.primaryGradient,
                     ),
@@ -980,114 +1210,25 @@ class FocusTimerPageState extends State<FocusTimerPage>
                   width: _knobSize,
                   height: _knobSize,
                   decoration: BoxDecoration(
-                    color: isRunning ? Colors.white : AppTheme.primary,
+                    color: isRunning
+                        ? const Color(0xFFE53935)
+                        : AppTheme.primary,
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: isRunning
-                            ? Colors.black38
-                            : AppTheme.primary.withValues(alpha: 0.4),
+                        color: (isRunning
+                                ? const Color(0xFFE53935)
+                                : AppTheme.primary)
+                            .withValues(alpha: 0.4),
                         blurRadius: 10,
                         offset: const Offset(0, 3),
                       ),
                     ],
                   ),
-                  child: Icon(
+                  child: const Icon(
                     Icons.arrow_forward_ios_rounded,
-                    color: isRunning ? AppTheme.primary : Colors.white,
+                    color: Colors.white,
                     size: 16,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  String _formatDurationText(int seconds) {
-    final mins = seconds ~/ 60;
-    final h = mins ~/ 60;
-    final m = mins % 60;
-    if (h > 0 && m > 0) return '$h hour ${m} mins';
-    if (h > 0) return '$h ${h == 1 ? 'hour' : 'hours'}';
-    return '$mins mins';
-  }
-
-  Widget _buildTransitionOverlay() {
-    return Positioned.fill(
-      child: FadeTransition(
-        opacity: _transitionAnimController,
-        child: Container(
-          color: const Color(0xFF16161A), // full-screen deep obsidian
-          child: Stack(
-            children: [
-              // Ambient subtle purple radial glow
-              Center(
-                child: Container(
-                  width: 260,
-                  height: 260,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [
-                        AppTheme.primary.withValues(alpha: 0.18),
-                        Colors.transparent,
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-
-              Center(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 36.0),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(top: 10, left: 10),
-                        child: Image.asset(
-                          'assets/images/bonsai.png',
-                          width: 160,
-                          height: 150,
-                          fit: BoxFit.contain,
-                          errorBuilder: (_, _, _) => const Icon(
-                            Icons.spa_rounded,
-                            size: 70,
-                            color: Color(0xFF4DA83B),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 28),
-                      Text(
-                        _transitionTitle,
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.googleSans(
-                          color: Colors.white,
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: -0.3,
-                          height: 1.3,
-                        ),
-                      ),
-                      if (_transitionSubtitle.isNotEmpty) ...[
-                        const SizedBox(height: 8),
-                        Text(
-                          _transitionSubtitle,
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.googleSans(
-                            color: AppTheme.accentPurple.withValues(
-                              alpha: 0.9,
-                            ),
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.3,
-                          ),
-                        ),
-                      ],
-                    ],
                   ),
                 ),
               ),
@@ -1112,8 +1253,15 @@ class FocusTimerPageState extends State<FocusTimerPage>
             onResume: () => setState(() => _showGiveUpSheet = false),
             onClear: () {
               setState(() => _showGiveUpSheet = false);
+              SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+              _zenAnimController.animateTo(0.0);
+              _appExitWarningCount = 0;
+              _gracePeriodTimer?.cancel();
+              _gracePeriodTimer = null;
+              FocusNotificationService.cancelAll();
               FocusSoundService.stop();
               _controller.reset();
+              _springWaveBack();
             },
           ),
         ),
@@ -1156,9 +1304,7 @@ class _TimePickerDialogState extends State<_TimePickerDialog> {
     _selectedHours = (totalMins ~/ 60).clamp(0, maxHours);
     _selectedMinutes = (totalMins % 60).clamp(0, maxMinutes);
 
-    _hoursScrollCtrl = FixedExtentScrollController(
-      initialItem: _selectedHours,
-    );
+    _hoursScrollCtrl = FixedExtentScrollController(initialItem: _selectedHours);
     _minsScrollCtrl = FixedExtentScrollController(
       initialItem: _selectedMinutes,
     );

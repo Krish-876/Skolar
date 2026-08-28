@@ -21,8 +21,8 @@ class FocusTimerController extends ChangeNotifier {
   }
 
   // 25m focus + 5m break
-  static const int pomodoroFocusDuration = 25 * 60; // 25 min
-  static const int pomodoroBreakDuration = 5 * 60; // 5 min
+  static const int pomodoroFocusDuration = 25 * 60; // 25 minutes
+  static const int pomodoroBreakDuration = 5 * 60; // 5 minutes
 
   FocusTimerStatus _status = FocusTimerStatus.idle;
   FocusTimerStatus get status => _status;
@@ -34,10 +34,10 @@ class FocusTimerController extends ChangeNotifier {
   bool _isPomodoroEnabled = true;
   bool get isPomodoroEnabled => _isPomodoroEnabled;
 
-  int _totalSeconds = 25 * 60; // default 25 min
+  int _totalSeconds = 25 * 60; // total focus seconds chosen by user
   int get totalSeconds => _totalSeconds;
 
-  int _secondsLeft = 25 * 60;
+  int _secondsLeft = 25 * 60; // total remaining wall-clock seconds
   int get secondsLeft => _secondsLeft;
 
   int _currentPhaseTotalSeconds = 25 * 60;
@@ -59,6 +59,16 @@ class FocusTimerController extends ChangeNotifier {
   VoidCallback? onComplete;
   void Function(FocusPhase newPhase)? onPhaseChanged;
 
+  int get pomodoroBreakCount {
+    if (!_isPomodoroEnabled || _totalSeconds <= pomodoroFocusDuration) return 0;
+    return ((_totalSeconds - 1) ~/ pomodoroFocusDuration);
+  }
+
+  int get totalSessionDurationWithBreaks {
+    if (!_isPomodoroEnabled) return _totalSeconds;
+    return _totalSeconds + (pomodoroBreakCount * pomodoroBreakDuration);
+  }
+
   void setPomodoroEnabled(bool enabled) {
     if (_status != FocusTimerStatus.idle) return;
     _isPomodoroEnabled = enabled;
@@ -75,7 +85,7 @@ class FocusTimerController extends ChangeNotifier {
       'Cannot change duration while running',
     );
     _totalSeconds = seconds;
-    _secondsLeft = seconds;
+    _secondsLeft = totalSessionDurationWithBreaks;
     _currentPhase = FocusPhase.focus;
     _currentPhaseTotalSeconds = _isPomodoroEnabled
         ? min(seconds, pomodoroFocusDuration)
@@ -89,13 +99,16 @@ class FocusTimerController extends ChangeNotifier {
     _status = FocusTimerStatus.running;
     _currentPhase = FocusPhase.focus;
 
+    final totalDuration = totalSessionDurationWithBreaks;
+    _secondsLeft = totalDuration;
+
     _currentPhaseTotalSeconds = _isPomodoroEnabled
         ? min(_totalSeconds, pomodoroFocusDuration)
         : _totalSeconds;
     _currentPhaseSecondsLeft = _currentPhaseTotalSeconds;
 
     final now = DateTime.now();
-    _sessionEndTime = now.add(Duration(seconds: _totalSeconds));
+    _sessionEndTime = now.add(Duration(seconds: totalDuration));
     _phaseEndTime = now.add(Duration(seconds: _currentPhaseTotalSeconds));
 
     _waveAnimation.forward();
@@ -111,7 +124,7 @@ class FocusTimerController extends ChangeNotifier {
     _phaseEndTime = null;
     _status = FocusTimerStatus.idle;
     _currentPhase = FocusPhase.focus;
-    _secondsLeft = _totalSeconds;
+    _secondsLeft = totalSessionDurationWithBreaks;
     _currentPhaseTotalSeconds = _isPomodoroEnabled
         ? min(_totalSeconds, pomodoroFocusDuration)
         : _totalSeconds;
@@ -141,24 +154,26 @@ class FocusTimerController extends ChangeNotifier {
     _secondsLeft = remainingSessionSeconds;
 
     if (_isPomodoroEnabled && _phaseEndTime != null) {
-      while (_phaseEndTime!.isBefore(now) && _secondsLeft > 0) {
-        // Transition to next phase
+      final phaseRemaining = _phaseEndTime!.difference(now).inSeconds;
+      if (phaseRemaining <= 0) {
         if (_currentPhase == FocusPhase.focus) {
+          // Transition to break
           _currentPhase = FocusPhase.breakTime;
-          _currentPhaseTotalSeconds = min(_secondsLeft, pomodoroBreakDuration);
+          _currentPhaseTotalSeconds = pomodoroBreakDuration;
+          _currentPhaseSecondsLeft = _currentPhaseTotalSeconds;
+          _phaseEndTime = now.add(Duration(seconds: _currentPhaseTotalSeconds));
+          onPhaseChanged?.call(FocusPhase.breakTime);
         } else {
+          // Break time finished -> Transition directly into next focus session!
           _currentPhase = FocusPhase.focus;
           _currentPhaseTotalSeconds = min(_secondsLeft, pomodoroFocusDuration);
+          _currentPhaseSecondsLeft = _currentPhaseTotalSeconds;
+          _phaseEndTime = now.add(Duration(seconds: _currentPhaseTotalSeconds));
+          onPhaseChanged?.call(FocusPhase.focus);
         }
-        _phaseEndTime = _phaseEndTime!.add(
-          Duration(seconds: _currentPhaseTotalSeconds),
-        );
-        onPhaseChanged?.call(_currentPhase);
+      } else {
+        _currentPhaseSecondsLeft = phaseRemaining;
       }
-      _currentPhaseSecondsLeft = _phaseEndTime!
-          .difference(now)
-          .inSeconds
-          .clamp(0, _currentPhaseTotalSeconds);
     } else {
       _currentPhaseSecondsLeft = _secondsLeft;
     }
@@ -190,15 +205,20 @@ class FocusTimerController extends ChangeNotifier {
       if (phaseRemaining <= 0) {
         // Transition phase
         if (_currentPhase == FocusPhase.focus) {
+          // Focus finished -> Enter break
           _currentPhase = FocusPhase.breakTime;
-          _currentPhaseTotalSeconds = min(_secondsLeft, pomodoroBreakDuration);
+          _currentPhaseTotalSeconds = pomodoroBreakDuration;
+          _currentPhaseSecondsLeft = _currentPhaseTotalSeconds;
+          _phaseEndTime = now.add(Duration(seconds: _currentPhaseTotalSeconds));
+          onPhaseChanged?.call(FocusPhase.breakTime);
         } else {
+          // Break finished -> Enter next focus session immediately!
           _currentPhase = FocusPhase.focus;
           _currentPhaseTotalSeconds = min(_secondsLeft, pomodoroFocusDuration);
+          _currentPhaseSecondsLeft = _currentPhaseTotalSeconds;
+          _phaseEndTime = now.add(Duration(seconds: _currentPhaseTotalSeconds));
+          onPhaseChanged?.call(FocusPhase.focus);
         }
-        _currentPhaseSecondsLeft = _currentPhaseTotalSeconds;
-        _phaseEndTime = now.add(Duration(seconds: _currentPhaseTotalSeconds));
-        onPhaseChanged?.call(_currentPhase);
       } else {
         _currentPhaseSecondsLeft = phaseRemaining;
       }
@@ -211,8 +231,9 @@ class FocusTimerController extends ChangeNotifier {
 
   /// Overall session progress from 0.0 to 1.0
   double get sessionProgress {
-    if (_totalSeconds <= 0) return 0.0;
-    return (1.0 - (_secondsLeft / _totalSeconds)).clamp(0.0, 1.0);
+    final total = totalSessionDurationWithBreaks;
+    if (total <= 0) return 0.0;
+    return (1.0 - (_secondsLeft / total)).clamp(0.0, 1.0);
   }
 
   /// Current interval phase progress from 0.0 to 1.0 (for current interval)
@@ -222,14 +243,6 @@ class FocusTimerController extends ChangeNotifier {
       0.0,
       1.0,
     );
-  }
-
-  /// Number of breaks in the session when Pomodoro is active
-  int get pomodoroBreakCount {
-    if (!_isPomodoroEnabled) return 0;
-    final totalMinutes = _totalSeconds ~/ 60;
-    if (totalMinutes <= 25) return 0;
-    return ((totalMinutes - 1) ~/ 25);
   }
 
   /// Clean string for break count subtitle (e.g. "1 break", "2 breaks")
@@ -243,13 +256,22 @@ class FocusTimerController extends ChangeNotifier {
   /// Proportional break segments along the 0.0..1.0 timeline with thickness
   List<BreakSegment> get breakSegments {
     final segments = <BreakSegment>[];
-    if (!_isPomodoroEnabled || _totalSeconds <= 0) return segments;
+    final totalDuration = totalSessionDurationWithBreaks;
+    if (!_isPomodoroEnabled || totalDuration <= 0 || pomodoroBreakCount == 0) {
+      return segments;
+    }
 
-    final breakWidth = max(0.035, pomodoroBreakDuration / _totalSeconds);
+    final breakWidth = pomodoroBreakDuration / totalDuration;
+    int elapsed = 0;
 
-    for (int t = pomodoroFocusDuration; t < _totalSeconds; t += pomodoroFocusDuration) {
-      final start = (t / _totalSeconds).clamp(0.0, 1.0 - breakWidth);
-      segments.add(BreakSegment(startFraction: start, widthFraction: breakWidth));
+    for (int i = 0; i < pomodoroBreakCount; i++) {
+      elapsed += pomodoroFocusDuration;
+      final start = elapsed / totalDuration;
+      segments.add(BreakSegment(
+        startFraction: start.clamp(0.0, 1.0 - breakWidth),
+        widthFraction: breakWidth,
+      ));
+      elapsed += pomodoroBreakDuration;
     }
     return segments;
   }
