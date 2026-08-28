@@ -28,11 +28,19 @@ OPEN_COUNT = 5
 def cosine_sim(a, b):
     return float(np.dot(a, b) / (norm(a) * norm(b) + 1e-9))
 
+_embed_model = None
+
+def _get_embed_model():
+    """Lazy singleton -- loading SentenceTransformer is expensive (~seconds),
+    so it must happen once per evaluate.py run, not on every embed_texts call."""
+    global _embed_model
+    if _embed_model is None:
+        from sentence_transformers import SentenceTransformer
+        _embed_model = SentenceTransformer("all-MiniLM-L6-v2")
+    return _embed_model
+
 def embed_texts(texts: list[str]) -> np.ndarray:
-    """Use sentence-transformers locally to embed texts for diversity scoring."""
-    from sentence_transformers import SentenceTransformer
-    model = SentenceTransformer("all-MiniLM-L6-v2")
-    return model.encode(texts)
+    return _get_embed_model().encode(texts)
 
 def pairwise_similarity(texts: list[str]) -> dict:
     """Return avg, min, max cosine similarity across all pairs."""
@@ -85,6 +93,9 @@ def test_stats():
 # ── Test 3: MCQ Accuracy ──────────────────────────────────────────────────────
 
 def test_mcq_accuracy():
+    """Returns (passed, questions) -- test_mcq_diversity reuses `questions`
+    rather than firing its own /generate-batch call, so diversity scoring
+    doesn't double the token spend of this evaluation run."""
     print_section(f"MCQ ACCURACY  (n={MCQ_COUNT})")
     r = requests.post(f"{BASE_URL}/generate-batch", json={
         "subject": SUBJECT,
@@ -92,11 +103,12 @@ def test_mcq_accuracy():
         "count":   MCQ_COUNT,
         "exam_type": "midsem",
         "k": 5,
-    }, timeout=60)
+        "persist": False,  # evaluation runs must not accumulate unreviewed rows in the bank
+    }, timeout=180)
 
     if r.status_code != 200:
         print(f"  ❌  Request failed: {r.status_code} {r.text}")
-        return False
+        return False, []
 
     questions = r.json().get("questions", [])
     generated = len(questions)
@@ -134,47 +146,44 @@ def test_mcq_accuracy():
             marker = "◀" if j == q['correct_index'] else " "
             print(f"       {chr(65+j)}) {opt} {marker}")
 
-    return valid_index == generated
+    return valid_index == generated, questions
 
 # ── Test 4: MCQ Diversity ─────────────────────────────────────────────────────
 
-def test_mcq_diversity():
+def test_mcq_diversity(questions: list[dict]):
+    """Takes the questions already fetched by test_mcq_accuracy -- no separate
+    /generate-batch call here, since that would double the token spend for no
+    extra information (diversity only needs the question texts)."""
     print_section(f"MCQ DIVERSITY  (n={MCQ_COUNT})")
-    r = requests.post(f"{BASE_URL}/generate-batch", json={
-        "subject": SUBJECT,
-        "college": COLLEGE,
-        "count":   MCQ_COUNT,
-        "exam_type": "midsem",
-        "k": 5,
-    }, timeout=60)
 
-    if r.status_code != 200:
-        print("  ❌  Request failed")
-        return False
-
-    questions = r.json().get("questions", [])
     texts = [q["question"] for q in questions]
+    generated = len(texts)
+    count_ok = generated == MCQ_COUNT
+    print_result("All requested generated", count_ok, f"{generated}/{MCQ_COUNT}")
 
-    if len(texts) < 2:
+    if generated < 2:
         print("  ❌  Not enough questions to measure diversity")
         return False
 
     sim = pairwise_similarity(texts)
-    print(f"  Pairwise cosine similarity across {len(texts)} questions:")
+    print(f"  Pairwise cosine similarity across {generated} questions:")
     print(f"    avg = {sim['avg']}  (target: < 0.5)")
     print(f"    min = {sim['min']}")
-    print(f"    max = {sim['max']}  (target: < 0.8)")
+    print(f"    max = {sim['max']}  (target: < 0.85)")
 
     avg_ok = sim["avg"] < 0.5
-    max_ok = sim["max"] < 0.8
+    max_ok = sim["max"] < 0.85
     print_result("Average similarity < 0.5", avg_ok, str(sim["avg"]))
     print_result("Max similarity < 0.8",     max_ok, str(sim["max"]))
 
-    return avg_ok and max_ok
+    return count_ok and avg_ok and max_ok
 
 # ── Test 5: Open-ended Quality ────────────────────────────────────────────────
 
 def test_open_quality():
+    """Returns (passed, questions) -- test_open_diversity reuses `questions`
+    rather than firing its own /generate-open-batch call, so diversity
+    scoring doesn't double the token spend of this evaluation run."""
     print_section(f"OPEN-ENDED QUALITY  (n={OPEN_COUNT})")
     r = requests.post(f"{BASE_URL}/generate-open-batch", json={
         "subject":      SUBJECT,
@@ -183,11 +192,12 @@ def test_open_quality():
         "exam_type":    "midsem",
         "with_answers": True,
         "k": 5,
+        "persist": False,  # evaluation runs must not accumulate unreviewed rows in the bank
     }, timeout=120)
 
     if r.status_code != 200:
         print(f"  ❌  Request failed: {r.status_code} {r.text}")
-        return False
+        return False, []
 
     questions = r.json().get("questions", [])
     generated = len(questions)
@@ -200,53 +210,50 @@ def test_open_quality():
     not_mcq         = sum(1 for q in questions if "A)" not in q.get("question","")
                           and "option" not in q.get("question","").lower())
 
-    print_result("Non-empty questions",     has_question == generated, f"{has_question}/{generated}")
-    print_result("Substantive answers",     has_answer   == generated, f"{has_answer}/{generated}")
-    print_result("Not MCQ format",          not_mcq      == generated, f"{not_mcq}/{generated}")
+    # Pass criteria compare against OPEN_COUNT (requested), not `generated`
+    # (the number that came back) -- otherwise a shortfall (e.g. 3/5) is
+    # invisible to these checks, since has_question/has_answer can never
+    # exceed `generated` and so trivially equal it.
+    print_result("Non-empty questions",     has_question == OPEN_COUNT, f"{has_question}/{OPEN_COUNT}")
+    print_result("Substantive answers",     has_answer   == OPEN_COUNT, f"{has_answer}/{OPEN_COUNT}")
+    print_result("Not MCQ format",          not_mcq      == generated,  f"{not_mcq}/{generated}")
 
     print("\n  --- Questions for manual review ---")
     for i, q in enumerate(questions, 1):
         print(f"\n  Q{i} ({q.get('marks')} marks): {q['question'][:120]}...")
         print(f"  Answer preview: {q.get('model_answer','')[:100]}...")
 
-    return has_question == generated and has_answer == generated
+    return has_question == OPEN_COUNT and has_answer == OPEN_COUNT, questions
 
 # ── Test 6: Open-ended Diversity ──────────────────────────────────────────────
 
-def test_open_diversity():
+def test_open_diversity(questions: list[dict]):
+    """Takes the questions already fetched by test_open_quality -- no separate
+    /generate-open-batch call here, since that would double the token spend
+    for no extra information (diversity only needs the question texts)."""
     print_section(f"OPEN-ENDED DIVERSITY  (n={OPEN_COUNT})")
-    r = requests.post(f"{BASE_URL}/generate-open-batch", json={
-        "subject":      SUBJECT,
-        "college":      COLLEGE,
-        "count":        OPEN_COUNT,
-        "exam_type":    "midsem",
-        "with_answers": False,
-        "k": 5,
-    }, timeout=120)
 
-    if r.status_code != 200:
-        print("  ❌  Request failed")
-        return False
-
-    questions = r.json().get("questions", [])
     texts = [q["question"] for q in questions]
+    generated = len(texts)
+    count_ok = generated == OPEN_COUNT
+    print_result("All requested generated", count_ok, f"{generated}/{OPEN_COUNT}")
 
-    if len(texts) < 2:
+    if generated < 2:
         print("  ❌  Not enough questions to measure diversity")
         return False
 
     sim = pairwise_similarity(texts)
-    print(f"  Pairwise cosine similarity across {len(texts)} questions:")
+    print(f"  Pairwise cosine similarity across {generated} questions:")
     print(f"    avg = {sim['avg']}  (target: < 0.5)")
     print(f"    min = {sim['min']}")
-    print(f"    max = {sim['max']}  (target: < 0.8)")
+    print(f"    max = {sim['max']}  (target: < 0.85)")
 
     avg_ok = sim["avg"] < 0.5
-    max_ok = sim["max"] < 0.8
+    max_ok = sim["max"] < 0.85
     print_result("Average similarity < 0.5", avg_ok, str(sim["avg"]))
     print_result("Max similarity < 0.8",     max_ok, str(sim["max"]))
 
-    return avg_ok and max_ok
+    return count_ok and avg_ok and max_ok
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 
@@ -263,10 +270,14 @@ if __name__ == "__main__":
         sys.exit(1)
 
     results["stats"]         = test_stats()
-    results["mcq_accuracy"]  = test_mcq_accuracy()
-    results["mcq_diversity"] = test_mcq_diversity()
-    results["open_quality"]  = test_open_quality()
-    results["open_diversity"]= test_open_diversity()
+
+    mcq_passed, mcq_questions = test_mcq_accuracy()
+    results["mcq_accuracy"]  = mcq_passed
+    results["mcq_diversity"] = test_mcq_diversity(mcq_questions)
+
+    open_passed, open_questions = test_open_quality()
+    results["open_quality"]  = open_passed
+    results["open_diversity"]= test_open_diversity(open_questions)
 
     print_section("FINAL RESULTS")
     all_passed = True

@@ -35,7 +35,7 @@ def load_bank_and_embeddings(
     sb = get_supabase()
     query = sb.table("questions").select(
         "id, question_text, marks, question_type, subject, paper_year, "
-        "exam_type, embedding, topic, academic_year"
+        "exam_type, embedding, topic, academic_year, doc_type"
     ).eq("college", college)
 
     if subject:
@@ -63,6 +63,7 @@ def load_bank_and_embeddings(
             "exam_type":     row["exam_type"],
             "topic":         row.get("topic", ""),
             "academic_year": row.get("academic_year"),
+            "doc_type":      row.get("doc_type"),
         })
         emb = row.get("embedding")
         if emb is not None:

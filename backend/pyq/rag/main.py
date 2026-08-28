@@ -10,6 +10,12 @@ Endpoints:
     GET  /health                 → sanity check
     GET  /stats                  → question bank stats (scoped by college)
     GET  /questions              → browse / filter the question bank (scoped by college)
+
+BREAKING CHANGE: /generate-batch and /generate-open-batch used to always
+persist generated questions to the question bank + published feed
+(save_generated_test) as a side effect of generating them. They now take a
+`persist` field (default False) and only write when it's explicitly true.
+Any caller that relied on the implicit write must now pass persist=true.
 """
 
 import logging
@@ -79,6 +85,7 @@ class GenerateBatchRequest(BaseModel):
     year_to: int | None = None
     k: int | None = 5
     published_by: str | None = None
+    persist: bool = False   # write to the question bank / published feed; opt-in, not implied by generating
 
 class GenerateBatchResponse(BaseModel):
     questions: list[McqQuestion]
@@ -104,6 +111,7 @@ class GenerateOpenBatchRequest(BaseModel):
     k: int | None = 5
     with_answers: bool | None = True
     published_by: str | None = None
+    persist: bool = False   # write to the question bank / published feed; opt-in, not implied by generating
 
 class GenerateOpenBatchResponse(BaseModel):
     questions: list[OpenQuestion]
@@ -271,24 +279,22 @@ def generate_batch(req: GenerateBatchRequest):
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
+        # Total-failure case: run_generate_mcq_batch raises with the underlying
+        # worker error once every attempt fails, so this carries the real
+        # cause (e.g. a deprecated model name) instead of a generic message.
         raise HTTPException(status_code=500, detail=f"Pipeline error: {e!s}")
 
-    if not raw:
-        raise HTTPException(
-            status_code=500,
-            detail="All MCQ generation attempts failed. Check Groq API key and question bank.",
-        )
-
-    try:
-        save_generated_test(
-            questions=raw,
-            college=req.college,
-            subject=req.subject,
-            exam_type=req.exam_type or "generated",
-            published_by=req.published_by,
-        )
-    except Exception as e:
-        logger.warning(f"[generate_batch] failed to save to feed: {e}")
+    if req.persist:
+        try:
+            save_generated_test(
+                questions=raw,
+                college=req.college,
+                subject=req.subject,
+                exam_type=req.exam_type or "generated",
+                published_by=req.published_by,
+            )
+        except Exception as e:
+            logger.warning(f"[generate_batch] failed to save to feed: {e}")
 
     return GenerateBatchResponse(
         questions=[
@@ -354,25 +360,23 @@ def generate_open_batch(req: GenerateOpenBatchRequest):
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
+        # Total-failure case: run_generate_open_batch raises with the underlying
+        # worker error once every attempt fails, so this carries the real
+        # cause (e.g. a deprecated model name) instead of a generic message.
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Pipeline error: {e!s}")
 
-    if not raw:
-        raise HTTPException(
-            status_code=500,
-            detail="All question generation attempts failed. Check Groq API key and question bank.",
-        )
-
-    try:
-        save_generated_test(
-            questions=raw,
-            college=req.college,
-            subject=req.subject,
-            exam_type=req.exam_type or "generated",
-            published_by=req.published_by,
-        )
-    except Exception as e:
-        logger.warning(f"[generate_open_batch] failed to save to feed: {e}")
+    if req.persist:
+        try:
+            save_generated_test(
+                questions=raw,
+                college=req.college,
+                subject=req.subject,
+                exam_type=req.exam_type or "generated",
+                published_by=req.published_by,
+            )
+        except Exception as e:
+            logger.warning(f"[generate_open_batch] failed to save to feed: {e}")
 
     return GenerateOpenBatchResponse(
         questions=[
