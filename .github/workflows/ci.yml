@@ -35,7 +35,7 @@ jobs:
             python:
               - 'backend/**'
 
-  # NEW: runs on every push/PR regardless of what changed — cheap, and a
+  # NEW: runs on every push/PR regardless of what changed - cheap, and a
   # leaked key doesn't care whether it's Dart or Python that leaked it.
   gitleaks:
     runs-on: ubuntu-latest
@@ -50,6 +50,23 @@ jobs:
       - uses: gitleaks/gitleaks-action@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # NEW: catches a tracked .env file that gitleaks' generic entropy rules
+  # can miss. Cheap, and not gated by the changes filter since a leaked
+  # .env doesn't care whether it's Dart or Python that leaked it.
+  env-file-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check for a committed .env file
+        run: |
+          if git ls-files | grep -qE '(^|/)\.env$'; then
+            echo "::error::A file named .env is tracked in git. Remove it and rotate any secrets it contained."
+            exit 1
+          fi
 
   format:
     needs: changes
@@ -180,6 +197,16 @@ jobs:
         # Kept as a separate step (not merged into --select above) so a new
         # security finding fails with an unambiguous step name in the UI.
         run: ruff check --select S backend/
+      - name: Block legacy retry decorator on genai calls
+        # api_core.retry.if_transient_error doesn't recognize
+        # google.genai.errors.APIError, so 429s from genai calls pass
+        # through unretried. Use types.HttpRetryOptions on the genai client
+        # config instead.
+        run: |
+          if grep -rq 'api_core.retry.if_transient_error' backend/; then
+            echo "::error::Found api_core.retry.if_transient_error in backend/. This predicate doesn't recognize google.genai.errors.APIError, so 429s from genai calls pass through unretried. Use types.HttpRetryOptions instead."
+            exit 1
+          fi
       - name: Type check
         run: |
           if [ -d "backend/nova" ]; then
@@ -198,6 +225,6 @@ jobs:
         run: |
           git fetch origin master
           if ! git merge-base --is-ancestor origin/master HEAD; then
-            echo "Branch is behind master — rebase before pushing (git fetch origin && git rebase origin/master)."
+            echo "Branch is behind master - rebase before pushing (git fetch origin && git rebase origin/master)."
             exit 1
           fi

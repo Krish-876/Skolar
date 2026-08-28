@@ -1,11 +1,11 @@
 ﻿import logging
 import os
 import uuid
+from datetime import date
 
 import pytest
-from datetime import date
-from supabase import create_client, Client
 from dotenv import load_dotenv
+from supabase import Client, create_client
 
 load_dotenv()
 logger = logging.getLogger(__name__)
@@ -29,16 +29,16 @@ USER_TABLES_TO_TEST = [
     "nova_config",
 ]
 
+
 @pytest.fixture
 def anon_client() -> Client:
     """Returns an unauthenticated Supabase client subject to standard RLS."""
     return create_client(SUPABASE_URL, SUPABASE_KEY)
 
+
 @pytest.fixture
 def authenticated_clients():
-    """
-    Signs in Student A and Student B to retrieve authentic user JWT sessions.
-    """
+    """Signs in Student A and Student B to retrieve authentic user JWT sessions."""
     client_a = create_client(SUPABASE_URL, SUPABASE_KEY)
     client_b = create_client(SUPABASE_URL, SUPABASE_KEY)
 
@@ -70,6 +70,99 @@ def test_unauthenticated_client_cannot_read_user_data(anon_client: Client):
             assert any(term in err_msg for term in ["permission denied", "rls", "401", "403"])
 
 
+def _seed_test_record(client: Client, table_name: str, user_id: str) -> tuple[str | None, dict]:
+    """
+    Attempts to seed a record for testing, matching known schema constraints.
+    Returns (seeded_record_id, payload_used).
+    """
+    test_record_id = str(uuid.uuid4())
+    today_str = str(date.today())
+
+    if table_name == "user_topic_weights":
+        # subject_id's FK target is `subjects` ONLY
+        # (user_topic_weights_subject_id_fkey -> subjects.id).
+        # Do NOT fall back to `courses` (not a valid FK target for this
+        # column) or a random uuid4() (guaranteed FK violation) -- either
+        # produces a confusing insert error instead of a clear diagnostic.
+        subject_uuid = None
+        try:
+            sub_res = client.table("subjects").select("id").limit(1).execute()
+            if sub_res.data and len(sub_res.data) > 0:
+                subject_uuid = sub_res.data[0]["id"]
+        except Exception as exc:
+            logger.debug("subjects lookup failed: %s", exc)
+
+        if not subject_uuid:
+            pytest.fail(
+                "Cannot seed user_topic_weights: no rows in 'subjects' "
+                "(the FK target for subject_id). This environment needs "
+                "seed data in 'subjects' before RLS tests can run -- "
+                "falling back to another table or a random UUID would "
+                "only produce a foreign-key violation, not a valid test."
+            )
+
+        payload = {
+            "id": test_record_id,
+            "user_id": user_id,
+            "subject_id": subject_uuid,
+            "topic": "test_topic",
+            "weight": 1.0,
+        }
+        res = client.table(table_name).insert(payload).execute()
+        if res.data and len(res.data) > 0:
+            return res.data[0].get("id", test_record_id), payload
+
+    elif table_name == "nova_capacity_log":
+        payload = {
+            "id": test_record_id,
+            "user_id": user_id,
+            "capacity": "normal",
+            "logged_for_date": today_str,
+        }
+        res = client.table(table_name).insert(payload).execute()
+        if res.data and len(res.data) > 0:
+            return res.data[0].get("id", test_record_id), payload
+
+    elif table_name == "standing_flags":
+        payload = {
+            "id": test_record_id,
+            "user_id": user_id,
+            "instruction_text": "test_flag",
+        }
+        res = client.table(table_name).insert(payload).execute()
+        if res.data and len(res.data) > 0:
+            return res.data[0].get("id", test_record_id), payload
+
+    elif table_name == "situation_flags":
+        payload = {
+            "id": test_record_id,
+            "user_id": user_id,
+            "flag_text": "test_situation",
+        }
+        res = client.table(table_name).insert(payload).execute()
+        if res.data and len(res.data) > 0:
+            return res.data[0].get("id", test_record_id), payload
+
+    elif table_name == "nova_config":
+        payload = {
+            "id": test_record_id,
+            "user_id": user_id,
+            "key": f"test_key_{test_record_id[:8]}",
+            "value": "test_value",
+        }
+        res = client.table(table_name).insert(payload).execute()
+        if res.data and len(res.data) > 0:
+            return res.data[0].get("id", test_record_id), payload
+
+    else:
+        payload = {"id": test_record_id, "user_id": user_id}
+        res = client.table(table_name).insert(payload).execute()
+        if res.data and len(res.data) > 0:
+            return res.data[0].get("id", test_record_id), payload
+
+    return None, {}
+
+
 @pytest.mark.parametrize("table_name", USER_TABLES_TO_TEST)
 def test_cross_student_data_isolation(authenticated_clients, table_name: str):
     """
@@ -77,30 +170,12 @@ def test_cross_student_data_isolation(authenticated_clients, table_name: str):
     2. Attempts to insert or query a record owned by Student A.
     3. Asserts that Student B cannot query or access any of Student A's records in table_name.
     """
-    client_a, client_b, user_a_id, user_b_id = authenticated_clients
-    test_record_id = str(uuid.uuid4())
-    today_str = str(date.today())
+    client_a, client_b, user_a_id, _ = authenticated_clients
 
-    # Generate schema payload
-    if table_name == "user_topic_weights":
-        payload = {"id": test_record_id, "user_id": user_a_id, "topic": "test_topic", "weight": 1.0}
-    elif table_name == "nova_capacity_log":
-        payload = {"id": test_record_id, "user_id": user_a_id, "capacity": 1.0, "logged_for_date": today_str}
-    elif table_name == "standing_flags":
-        payload = {"id": test_record_id, "user_id": user_a_id, "instruction_text": "test_flag"}
-    elif table_name == "situation_flags":
-        payload = {"id": test_record_id, "user_id": user_a_id, "flag_text": "test_situation"}
-    elif table_name == "nova_config":
-        payload = {"id": test_record_id, "user_id": user_a_id, "key": f"test_key_{test_record_id[:8]}", "value": "test_value"}
-    else:
-        payload = {"id": test_record_id, "user_id": user_a_id}
-
+    # Step 1: Seed row as Student A
     seeded_row_id = None
     try:
-        # Step 1: Seed row as Student A if possible
-        res = client_a.table(table_name).insert(payload).execute()
-        if res.data and len(res.data) > 0:
-            seeded_row_id = res.data[0].get("id", test_record_id)
+        seeded_row_id, _ = _seed_test_record(client_a, table_name, user_a_id)
     except Exception as e:
         logger.warning("Could not seed row for %s: %s", table_name, e)
 
@@ -109,7 +184,7 @@ def test_cross_student_data_isolation(authenticated_clients, table_name: str):
         f"cannot verify isolation"
     )
 
-    # Step 2: Attempt to read records as Student B filtered by Student A's user_id or seeded record ID
+    # Step 2: Attempt to read records as Student B filtered by Student A's record ID or user_id
     if seeded_row_id:
         read_response = client_b.table(table_name).select("*").eq("id", seeded_row_id).execute()
     else:
@@ -118,7 +193,7 @@ def test_cross_student_data_isolation(authenticated_clients, table_name: str):
     # Step 3: Assert Student B gets 0 rows back
     assert len(read_response.data) == 0, f"RLS Failure: Student B read Student A's data in {table_name}"
 
-    # Step 4: Cleanup if row was seeded
+    # Step 4: Cleanup seeded row
     if seeded_row_id:
         try:
             client_a.table(table_name).delete().eq("id", seeded_row_id).execute()
