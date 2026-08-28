@@ -1,15 +1,165 @@
 import logging
+import os
+import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import numpy as np
 
 from ..core.features import Backend, get_embed_model
-from ..core.mmr import mmr
+from ..core.mmr import cosine_sim, mmr
 from ..core.retrieval import retrieve_top_k
+from ..ingest.chunking import _deduplicate_questions
 from ..llm.generation import generate_model_answer, generate_question, generate_mcq
 from ..store.supabase import load_bank_and_embeddings
 
 logger = logging.getLogger(__name__)
+
+# Groq's free tier is ~8000 TPM (see llm/client.py's TokenBudgetLimiter), which
+# works out to roughly 9 calls/minute at this pipeline's per-call prompt size.
+# More concurrent workers than that just pile up blocked on the shared token
+# budget rather than improving throughput -- default kept low and configurable.
+_DEFAULT_MAX_WORKERS = 2
+
+
+def _max_workers_for(count: int, max_workers: int | None) -> int:
+    if max_workers is None:
+        max_workers = int(os.getenv("GROQ_MAX_WORKERS", _DEFAULT_MAX_WORKERS))
+    return max(1, min(count, max_workers))
+
+
+def _dedup_generated(results: list[dict], requested: int, label: str) -> list[dict]:
+    """Cross-worker duplication guard: independent workers can't see each
+    other's output, so a batch can end up with several near-identical
+    questions. _deduplicate_questions expects 'question_text' -- the batch
+    functions here key their results as 'question', so alias it rather than
+    changing that function (llm/extraction.py depends on its current
+    behaviour). Never regenerates to backfill a shortfall -- that would
+    multiply token cost -- just logs when dedup itself pushes the count
+    below what was requested."""
+    for r in results:
+        r["question_text"] = r["question"]
+    deduped = _deduplicate_questions(results)
+    removed = len(results) - len(deduped)
+    if removed > 0 and len(deduped) < requested:
+        logger.info(
+            f"[{label}] dedup removed {removed} near-duplicate question(s): "
+            f"{len(results)} -> {len(deduped)} (requested {requested})"
+        )
+    return deduped
+
+
+_DEFAULT_EMBEDDING_DEDUP_THRESHOLD = 0.85
+
+
+def _dedup_by_embedding(
+    results: list[dict],
+    label: str,
+    threshold: float = _DEFAULT_EMBEDDING_DEDUP_THRESHOLD,
+) -> list[dict]:
+    """Second, embedding-based duplication guard for generated batches.
+
+    _deduplicate_questions' word-overlap metric splits on whitespace without
+    normalising punctuation, so it can miss real duplicates -- a confirmed
+    duplicate pair ("execve()?" vs "execve()") scored ~0.79 against its 0.8
+    threshold and survived, while embedding cosine similarity for the same
+    pair was 0.891. This runs after _dedup_generated, on whatever it didn't
+    catch. Keeps the first occurrence of each near-duplicate cluster.
+
+    Deliberately separate from _deduplicate_questions rather than folded into
+    it or replacing it -- that function is also used by llm/extraction.py
+    over hundreds of chunks, where word overlap is the right cheap metric.
+    """
+    if len(results) < 2:
+        return results
+
+    model = get_embed_model()
+    texts = [r["question"] for r in results]
+    embeddings = model.encode(texts)
+
+    kept: list[dict] = []
+    kept_embeddings: list[np.ndarray] = []
+    for r, emb, text in zip(results, embeddings, texts):
+        is_dup = False
+        for kept_r, kept_emb in zip(kept, kept_embeddings):
+            score = cosine_sim(emb, kept_emb)
+            if score > threshold:
+                logger.info(
+                    f"[{label}] embedding dedup dropped a near-duplicate "
+                    f"(cosine={score:.3f} > {threshold}): "
+                    f"kept={kept_r['question']!r} dropped={text!r}"
+                )
+                is_dup = True
+                break
+        if not is_dup:
+            kept.append(r)
+            kept_embeddings.append(emb)
+
+    return kept
+
+
+def _backfill_shortfall(
+    results: list[dict],
+    generate_one,
+    count: int,
+    label: str,
+    threshold: float = _DEFAULT_EMBEDDING_DEDUP_THRESHOLD,
+) -> list[dict]:
+    """Tops up a batch that embedding dedup left short of `count`.
+
+    Generates one replacement at a time -- never in a batch -- so each new
+    candidate is checked against the growing kept set (not just the batch it
+    was generated alongside) before being accepted, the same guarantee
+    _dedup_by_embedding gives the initial batch. Reuses `generate_one` (the
+    caller's `_generate_one` closure) with a seed past the ones already used
+    for this batch (`count + attempt`) so a backfill draws a fresh pool
+    subsample instead of reproducing the near-duplicate that created the
+    shortfall in the first place. Bails out after 3x the requested count in
+    attempts rather than looping forever against an exhausted example pool.
+    """
+    if len(results) >= count:
+        return results
+
+    model = get_embed_model()
+    kept = list(results)
+    kept_embeddings = list(model.encode([r["question"] for r in kept])) if kept else []
+
+    max_attempts = 3 * count
+    attempt = 0
+    while len(kept) < count and attempt < max_attempts:
+        attempt += 1
+        candidate = generate_one(count + attempt)
+        if candidate is None:
+            continue
+
+        emb = model.encode([candidate["question"]])[0]
+        max_sim = max((cosine_sim(emb, kept_emb) for kept_emb in kept_embeddings), default=0.0)
+        if max_sim > threshold:
+            continue
+
+        kept.append(candidate)
+        kept_embeddings.append(emb)
+
+    if len(kept) < count:
+        logger.warning(
+            f"[{label}] backfill still short after {attempt} attempt(s): "
+            f"{len(kept)}/{count} questions"
+        )
+
+    return kept
+
+
+def _exclude_generated(questions: list[dict], embeddings: np.ndarray) -> tuple[list[dict], np.ndarray]:
+    """Example pools must be built from real PYQs, not AI-generated questions
+    from earlier batches -- otherwise generated output becomes a few-shot
+    example for the next generation, compounding without human review.
+    _EXAM_TYPE_ALLOWED alone can't catch this: a generated batch saved with
+    exam_type='midsem' still passes the 'midsem' tier's own filter, so this
+    checks doc_type directly instead."""
+    indices = [i for i, q in enumerate(questions) if q.get("doc_type") != "generated"]
+    if len(indices) == len(questions):
+        return questions, embeddings
+    return [questions[i] for i in indices], embeddings[indices]
+
 
 # ── Candidate pool retrieval (stage 1, before MMR reranks for diversity) ──────
 
@@ -110,6 +260,7 @@ def run_generate(
               defaults to SbertBackend.
     """
     all_questions, embeddings = load_bank_and_embeddings(college, subject, academic_year)
+    all_questions, embeddings = _exclude_generated(all_questions, embeddings)
 
     if year_range:
         indices = [
@@ -147,8 +298,11 @@ def run_generate_mcq_batch(
     alpha: float = 0.7,
     pool_size: int | None = None,
     backend: Backend | None = None,
+    max_workers: int | None = None,
+    dedup_threshold: float = _DEFAULT_EMBEDDING_DEDUP_THRESHOLD,
 ) -> list[dict]:
     all_questions, embeddings = load_bank_and_embeddings(college, subject, academic_year)
+    all_questions, embeddings = _exclude_generated(all_questions, embeddings)
 
     if year_range:
         indices = [
@@ -171,6 +325,9 @@ def run_generate_mcq_batch(
         query_embedding, embeddings, all_questions, _pool_size_for(k, pool_size), backend=backend
     )
 
+    errors: list[str] = []
+    errors_lock = threading.Lock()
+
     def _generate_one(worker_idx: int) -> dict | None:
         try:
             worker_embeddings, worker_questions = _subsample_pool(
@@ -180,18 +337,27 @@ def run_generate_mcq_batch(
             return generate_mcq(subject, examples)
         except Exception as e:
             logger.warning(f"[generate_mcq worker={worker_idx}] failed: {e}")
+            with errors_lock:
+                errors.append(str(e))
             return None
 
     results: list[dict] = []
-    max_workers = min(count, 3)
-    with ThreadPoolExecutor(max_workers=max_workers) as pool:
+    with ThreadPoolExecutor(max_workers=_max_workers_for(count, max_workers)) as pool:
         futures = [pool.submit(_generate_one, i) for i in range(count)]
         for future in as_completed(futures):
             result = future.result()
             if result is not None:
                 results.append(result)
 
-    return results
+    if not results:
+        detail = errors[0] if errors else "no successful generations and no error captured"
+        raise RuntimeError(f"All {count} MCQ generation attempts failed: {detail}")
+
+    deduped = _dedup_generated(results, requested=count, label="generate_mcq_batch")
+    deduped = _dedup_by_embedding(deduped, label="generate_mcq_batch", threshold=dedup_threshold)
+    return _backfill_shortfall(
+        deduped, _generate_one, count=count, label="generate_mcq_batch", threshold=dedup_threshold
+    )
 
 
 def run_generate_open_batch(
@@ -207,8 +373,11 @@ def run_generate_open_batch(
     alpha: float = 0.7,
     pool_size: int | None = None,
     backend: Backend | None = None,
+    max_workers: int | None = None,
+    dedup_threshold: float = _DEFAULT_EMBEDDING_DEDUP_THRESHOLD,
 ) -> list[dict]:
     all_questions, embeddings = load_bank_and_embeddings(college, subject, academic_year)
+    all_questions, embeddings = _exclude_generated(all_questions, embeddings)
 
     if year_range:
         indices = [
@@ -242,6 +411,9 @@ def run_generate_open_batch(
         query_embedding, written_embeddings, written_questions, _pool_size_for(k, pool_size), backend=backend
     )
 
+    errors: list[str] = []
+    errors_lock = threading.Lock()
+
     def _generate_one(worker_idx: int) -> dict | None:
         try:
             worker_embeddings, worker_questions = _subsample_pool(
@@ -264,15 +436,24 @@ def run_generate_open_batch(
             }
         except Exception as e:
             logger.warning(f"[generate_open worker={worker_idx}] failed: {e}")
+            with errors_lock:
+                errors.append(str(e))
             return None
 
     results: list[dict] = []
-    max_workers = min(count, 3)
-    with ThreadPoolExecutor(max_workers=max_workers) as pool:
+    with ThreadPoolExecutor(max_workers=_max_workers_for(count, max_workers)) as pool:
         futures = [pool.submit(_generate_one, i) for i in range(count)]
         for future in as_completed(futures):
             result = future.result()
             if result is not None:
                 results.append(result)
 
-    return results
+    if not results:
+        detail = errors[0] if errors else "no successful generations and no error captured"
+        raise RuntimeError(f"All {count} open-ended generation attempts failed: {detail}")
+
+    deduped = _dedup_generated(results, requested=count, label="generate_open_batch")
+    deduped = _dedup_by_embedding(deduped, label="generate_open_batch", threshold=dedup_threshold)
+    return _backfill_shortfall(
+        deduped, _generate_one, count=count, label="generate_open_batch", threshold=dedup_threshold
+    )

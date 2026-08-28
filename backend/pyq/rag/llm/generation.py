@@ -1,11 +1,10 @@
 import json
 
-from .client import GROQ_MODEL, get_groq_client
+from .client import GROQ_MODEL, create_chat_completion
 
 # ── Step 5 — Open-ended Question Generation ───────────────────────────────────
 
 def generate_question(subject: str, examples: list[dict]) -> str:
-    client = get_groq_client()
     examples_text = "\n\n".join(
         f"Example {i+1} ({q.get('marks', '?')} marks, {q.get('question_type', 'unknown')}, topic: {q.get('topic', 'unknown')}):\n{q['question_text']}"
         for i, q in enumerate(examples)
@@ -19,7 +18,7 @@ These set the difficulty level and style standard.
 Generate ONE new original exam question in the same style and difficulty range.
 Return ONLY the question text. No explanation, no preamble, no label."""
 
-    response = client.chat.completions.create(
+    response = create_chat_completion(
         model=GROQ_MODEL,
         messages=[{"role": "user", "content": prompt}],
         temperature=0.8,
@@ -27,12 +26,18 @@ Return ONLY the question text. No explanation, no preamble, no label."""
     raw = response.choices[0].message.content.strip()
     import re
     raw = re.sub(r'^(Q\.?\s*\d+[\.\)]\s*|\d+[\.\)]\s*)', '', raw, flags=re.IGNORECASE).strip()
+    # Some stored question_text values already carry the few-shot header this
+    # module prepends for examples ("{marks} marks, {type}, topic: {topic}:\n") --
+    # a leftover of the extraction step. When such a row is used as an example,
+    # the model echoes that header back verbatim instead of just the question.
+    raw = re.sub(
+        r'^\d+\s*marks,\s*[^,\n]+,\s*topic:\s*[^\n]*?:\s*\n+', '', raw, flags=re.IGNORECASE
+    ).strip()
     return raw
 
 # ── Step 5b — MCQ Generation ──────────────────────────────────────────────────
 
 def generate_mcq(subject: str, examples: list[dict]) -> dict:
-    client = get_groq_client()
     examples_text = "\n\n".join(
         f"Example {i+1} ({q.get('marks', '?')} marks, topic: {q.get('topic', 'unknown')}):\n{q['question_text']}"
         for i, q in enumerate(examples)
@@ -57,7 +62,7 @@ Return ONLY a valid JSON object with exactly these fields — no markdown, no ba
   "subject": "{subject}"
 }}"""
 
-    response = client.chat.completions.create(
+    response = create_chat_completion(
         model=GROQ_MODEL,
         messages=[{"role": "user", "content": prompt}],
         temperature=0.8,
@@ -78,8 +83,6 @@ Return ONLY a valid JSON object with exactly these fields — no markdown, no ba
 # ── Step 5c — Model Answer Generation ────────────────────────────────────────
 
 def generate_model_answer(question_text: str, subject: str, marks: int) -> str:
-    client = get_groq_client()
-
     if marks <= 3:
         structure = (
             "Write 2–3 sentences that DIRECTLY answer this specific question. "
@@ -136,7 +139,7 @@ Strict formatting rules:
 - Do NOT repeat the question text
 - Return ONLY the answer markdown, nothing else"""
 
-    response = client.chat.completions.create(
+    response = create_chat_completion(
         model=GROQ_MODEL,
         messages=[{"role": "user", "content": prompt}],
         temperature=0.2,
