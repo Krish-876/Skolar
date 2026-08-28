@@ -251,7 +251,7 @@ class _OnboardingProfilePageState extends ConsumerState<OnboardingProfilePage>
         n.setId(_idCtrl.text.trim());
         n.setAvatarData(_avatarMakerController.displayedAvatarSVG);
       case 1:
-        n.setCampus(_campusLocation.split(' ').first.toLowerCase());
+        n.setCampus(_campusDomain.split('@').last.split('.').first);
       case 2:
         if (_branch != null) n.setBranch(_branch!);
         n.setDualBranch(_dualBranch);
