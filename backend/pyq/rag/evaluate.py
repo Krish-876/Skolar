@@ -18,7 +18,7 @@ import requests
 from numpy.linalg import norm
 
 BASE_URL = "http://localhost:8000"
-COLLEGE  = "BITS Pilani Hyderabad"
+COLLEGE  = "hyderabad"
 SUBJECT  = "Operating Systems"
 MCQ_COUNT  = 10
 OPEN_COUNT = 5
