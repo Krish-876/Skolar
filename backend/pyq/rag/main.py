@@ -18,14 +18,9 @@ import traceback
 import uvicorn
 from fastapi import FastAPI, File, Form, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from .pipeline import (
-    load_bank_and_embeddings,
-    run_generate,
-    run_generate_mcq_batch,
-    run_generate_open_batch,
-    run_upload_pyq,
-    save_generated_test,
-)
+from .services.generate import run_generate, run_generate_mcq_batch, run_generate_open_batch
+from .services.upload import run_upload_pyq
+from .store.supabase import load_bank_and_embeddings, save_generated_test
 from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
