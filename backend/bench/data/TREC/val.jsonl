@@ -1,0 +1,545 @@
+{"index": 721, "label": "numeric", "text": "What percentage of Americans own their homes ?"}
+{"index": 3086, "label": "entity", "text": "What interesting method was used to run the credits in the early Popeye cartoons ?"}
+{"index": 1670, "label": "description and abstract concepts", "text": "What is the function of the appendix ?"}
+{"index": 763, "label": "description and abstract concepts", "text": "How do Ouija Boards work ?"}
+{"index": 3896, "label": "description and abstract concepts", "text": "What is office automation ?"}
+{"index": 62, "label": "location", "text": "What country 's capital is Tirana ?"}
+{"index": 2834, "label": "numeric", "text": "When was the G7 group of nations formed ?"}
+{"index": 4902, "label": "human", "text": "Who were the only two bald U.S. Presidents ?"}
+{"index": 2089, "label": "description and abstract concepts", "text": "Why do some people have two different color eyes ?"}
+{"index": 1630, "label": "location", "text": "What is the largest lake in North America ?"}
+{"index": 5321, "label": "numeric", "text": "When was the Berlin Wall erected ?"}
+{"index": 5194, "label": "location", "text": "The Kentucky Horse Park is close to which American city ?"}
+{"index": 1876, "label": "entity", "text": "What color is `` ash '' ?"}
+{"index": 4457, "label": "human", "text": "What President became Chief Justice after his presidency ?"}
+{"index": 4752, "label": "description and abstract concepts", "text": "What is the origin of the word `` Teddy bear '' ?"}
+{"index": 4058, "label": "human", "text": "Who is Charles Lindbergh ?"}
+{"index": 2507, "label": "description and abstract concepts", "text": "What is the difference between optical and digital video ?"}
+{"index": 4734, "label": "numeric", "text": "What is the frequency of VHF ?"}
+{"index": 1484, "label": "location", "text": "What is the website for the USA journal ?"}
+{"index": 4144, "label": "location", "text": "Where is the official `` zero '' of the sea level ?"}
+{"index": 1208, "label": "description and abstract concepts", "text": "Why are there olives in martinis ?"}
+{"index": 4540, "label": "numeric", "text": "How many people died when the Estonia sank in 1994 ?"}
+{"index": 2545, "label": "description and abstract concepts", "text": "What are the Poconos ?"}
+{"index": 4258, "label": "entity", "text": "What layer of the atmosphere contains most of the ozone layer ?"}
+{"index": 2987, "label": "location", "text": "What constellation represents a hunter with club and shield ?"}
+{"index": 3176, "label": "human", "text": "Who lived on the shores of the Gitchee Gumee River ?"}
+{"index": 2921, "label": "human", "text": "Who was Bonnie Blue Butler 's father ?"}
+{"index": 917, "label": "numeric", "text": "How many Gutenberg Bibles are there ?"}
+{"index": 1210, "label": "numeric", "text": "What year did Rossetti paint `` Beata Beatrix '' ?"}
+{"index": 4300, "label": "description and abstract concepts", "text": "Why is the mile 528 feet ?"}
+{"index": 1010, "label": "numeric", "text": "How many Canadians emmigrate each year ?"}
+{"index": 2094, "label": "numeric", "text": "How many more weeks of winter are there if a ground hog sees his shadow ?"}
+{"index": 1879, "label": "numeric", "text": "How often are quadruplets born ?"}
+{"index": 2636, "label": "description and abstract concepts", "text": "How do you handle a hungry man ?"}
+{"index": 4745, "label": "entity", "text": "What line divided the North and South in the U.S. Civil War ?"}
+{"index": 2522, "label": "numeric", "text": "How many counties are in Indiana ?"}
+{"index": 4456, "label": "human", "text": "What major airline has the best safety record in the world ?"}
+{"index": 773, "label": "human", "text": "Who was the Democratic nominee in the American presidential election ?"}
+{"index": 668, "label": "abbreviation", "text": "What is the abbreviated expression for the National Bureau of Investigation ?"}
+{"index": 142, "label": "location", "text": "What city boasts Penn 's Landing , on the banks of the Delaware river ?"}
+{"index": 4990, "label": "location", "text": "Where does most of the marijuana entering the United States come from ?"}
+{"index": 2029, "label": "description and abstract concepts", "text": "Why is Microsoft 's Windows 3 software so successful ?"}
+{"index": 993, "label": "entity", "text": "What are the most common breeding birds in the U.S. ?"}
+{"index": 3596, "label": "entity", "text": "What do penguins eat ?"}
+{"index": 1518, "label": "human", "text": "What is the first personal computer company ?"}
+{"index": 3189, "label": "entity", "text": "What famed gangland slaughter cut into the membership of Bugs Moran 's outfit ?"}
+{"index": 1354, "label": "human", "text": "What two baseball players make up the battery ?"}
+{"index": 3098, "label": "human", "text": "What company sells the most greeting cards ?"}
+{"index": 1603, "label": "entity", "text": "What is the name of the second space shuttle ?"}
+{"index": 4688, "label": "entity", "text": "Which type of soda has the greatest amount of caffeine ?"}
+{"index": 1509, "label": "entity", "text": "What is the fear of frogs ?"}
+{"index": 3080, "label": "description and abstract concepts", "text": "What is the origin of the word `` amen '' ?"}
+{"index": 2794, "label": "description and abstract concepts", "text": "How do birds have sex ?"}
+{"index": 1007, "label": "description and abstract concepts", "text": "Where did the term `` 86 '' come from ?"}
+{"index": 409, "label": "entity", "text": "What golfing accessory was patented by George Grant on December 12"}
+{"index": 3687, "label": "entity", "text": "Stuart Hamblen is considered to be the first singing cowboy of what ?"}
+{"index": 3650, "label": "location", "text": "What city does McCarren Airport serve ?"}
+{"index": 430, "label": "numeric", "text": "How much money are Dumbo 's ears insured for ?"}
+{"index": 2264, "label": "location", "text": "What are Britain 's two longest rivers ?"}
+{"index": 66, "label": "description and abstract concepts", "text": "What is a caldera ?"}
+{"index": 4589, "label": "entity", "text": "What European race sees the winner of its mountain stage awarded a jersey with large red polka dots ?"}
+{"index": 525, "label": "human", "text": "Whose first presidential order was : `` Let 's get this goddamn thing airborne '' ?"}
+{"index": 2002, "label": "description and abstract concepts", "text": "What is the meaning of thalassemia ?"}
+{"index": 2342, "label": "numeric", "text": "What is the size of Argentina ?"}
+{"index": 2083, "label": "entity", "text": "What does a deltiologist collect ?"}
+{"index": 3121, "label": "description and abstract concepts", "text": "What is the origin of the word `` sideburns '' ?"}
+{"index": 1043, "label": "numeric", "text": "How long was Mao 's 1930s Long March ?"}
+{"index": 4706, "label": "numeric", "text": "When was the USSR dissolved ?"}
+{"index": 5417, "label": "description and abstract concepts", "text": "What are chloroplasts ?"}
+{"index": 4642, "label": "numeric", "text": "What is the population of Japan ?"}
+{"index": 5397, "label": "numeric", "text": "How many propellers helped power the plane the Wright brothers flew into history ?"}
+{"index": 5335, "label": "location", "text": "Where was George Washington born ?"}
+{"index": 2421, "label": "entity", "text": "What tale has the moral : `` He who wants everything gets nothing '' ?"}
+{"index": 1447, "label": "description and abstract concepts", "text": "What is cache memory ?"}
+{"index": 530, "label": "numeric", "text": "When did CNN go on the air ?"}
+{"index": 2812, "label": "description and abstract concepts", "text": "How is cologne made ?"}
+{"index": 2866, "label": "description and abstract concepts", "text": "What is meant by blood SED rate ?"}
+{"index": 418, "label": "location", "text": "What Nevada center has been dubbed The Biggest Little City in the World ?"}
+{"index": 787, "label": "numeric", "text": "When was `` the Great Depression '' ?"}
+{"index": 271, "label": "entity", "text": "What did brontosauruses eat ?"}
+{"index": 449, "label": "description and abstract concepts", "text": "Why doesn 't www.answers.com have any answers to my questions ?"}
+{"index": 1016, "label": "numeric", "text": "What year was Desmond Mpilo Tutu awarded the Nobel Peace Prize ?"}
+{"index": 2265, "label": "location", "text": "What country covers 8 , 600 , 387 square miles ?"}
+{"index": 186, "label": "description and abstract concepts", "text": "What causes pneumonia ?"}
+{"index": 2126, "label": "description and abstract concepts", "text": "How does an ion drive work ?"}
+{"index": 2442, "label": "entity", "text": "What is the name of the largest water conservancy project in China ?"}
+{"index": 3289, "label": "description and abstract concepts", "text": "How do you get silly putty out of fabric ?"}
+{"index": 5364, "label": "description and abstract concepts", "text": "What features of the African elephant are larger than those of the Indian elephant ?"}
+{"index": 3617, "label": "entity", "text": "What are all the different types of pizza ?"}
+{"index": 4331, "label": "numeric", "text": "What year was the Avery Dennison company founded ?"}
+{"index": 713, "label": "numeric", "text": "What was the U.S. highway death toll in 1969 ?"}
+{"index": 244, "label": "location", "text": "Where was George Washington born ?"}
+{"index": 2194, "label": "entity", "text": "What J.R.R. Tolkien book features Gimli as a central character ?"}
+{"index": 2863, "label": "description and abstract concepts", "text": "Why did the Globe Theatre burn down ?"}
+{"index": 3092, "label": "numeric", "text": "How many rings are there on a five-zone archery target ?"}
+{"index": 4636, "label": "numeric", "text": "How many freckles does Howdy Doody have on his face ?"}
+{"index": 21, "label": "entity", "text": "What articles of clothing are tokens in Monopoly ?"}
+{"index": 2009, "label": "entity", "text": "What was the name of the American ship sunk by a mine in Havana harbor , causing the Spanish-American war ?"}
+{"index": 265, "label": "location", "text": "What European city do Nicois live in ?"}
+{"index": 779, "label": "description and abstract concepts", "text": "What is Olestra ?"}
+{"index": 4279, "label": "location", "text": "The Kentucky Horse Park is located near what city ?"}
+{"index": 2347, "label": "numeric", "text": "What date is Richard Nixon 's birthday ?"}
+{"index": 4615, "label": "entity", "text": "Name the men 's cologne that is associated with the sea ."}
+{"index": 3605, "label": "human", "text": "Who is John Macarthur , 1767-1834 ?"}
+{"index": 4652, "label": "entity", "text": "What does a chef coddle eggs in ?"}
+{"index": 1134, "label": "entity", "text": "What color is an Arctic fox in winter ?"}
+{"index": 504, "label": "human", "text": "Name the Ranger who was always after Yogi Bear ."}
+{"index": 1328, "label": "human", "text": "Who made the first gas engine ?"}
+{"index": 2655, "label": "human", "text": "What cable network bills itself as `` the family entertainer '' ?"}
+{"index": 4717, "label": "description and abstract concepts", "text": "What is an Angelus ?"}
+{"index": 4777, "label": "human", "text": "Who invented television ?"}
+{"index": 5222, "label": "human", "text": "Which presidents of the USA were Masons ?"}
+{"index": 4695, "label": "location", "text": "What is the oldest building in the United States ?"}
+{"index": 5379, "label": "description and abstract concepts", "text": "What is the history of the soft drink Mr. Pibb ?"}
+{"index": 2171, "label": "human", "text": "What pseudonym did William Sydney Porter use in writing The Gift of the Magi ?"}
+{"index": 2180, "label": "entity", "text": "What does El Nino mean in spanish ?"}
+{"index": 1719, "label": "entity", "text": "What color is the stripe along each side of a Coho salmon ?"}
+{"index": 3950, "label": "human", "text": "What astronomer-architect designed the present St. Paul 's Cathedral in London ?"}
+{"index": 183, "label": "human", "text": "What is the occupation of Nicholas Cage ?"}
+{"index": 4709, "label": "human", "text": "Who did the Seven Mules block for ?"}
+{"index": 366, "label": "description and abstract concepts", "text": "How successful is arometherapy ?"}
+{"index": 2839, "label": "description and abstract concepts", "text": "Why is Indiglo called Indiglo ?"}
+{"index": 1763, "label": "numeric", "text": "What was the average life expectancy during the Stone Age ?"}
+{"index": 3206, "label": "description and abstract concepts", "text": "What were the first words spoken on a film sound track ?"}
+{"index": 982, "label": "location", "text": "What is the state nickname of Mississippi ?"}
+{"index": 3301, "label": "location", "text": "Where was the first zoo in the U.S. ?"}
+{"index": 3834, "label": "entity", "text": "Name the 5 words that use all of the letters in the alphabet , except Q , with no repeats ."}
+{"index": 3960, "label": "entity", "text": "What color is Chablis ?"}
+{"index": 4808, "label": "human", "text": "Who is the richest woman in the world ?"}
+{"index": 433, "label": "description and abstract concepts", "text": "What does the name Billie mean ?"}
+{"index": 2062, "label": "human", "text": "Who asked you to do the Loco-Motion with her in 1962 ?"}
+{"index": 5075, "label": "numeric", "text": "How deep is a fathom ?"}
+{"index": 4502, "label": "human", "text": "What does Larry King do for a living ?"}
+{"index": 3101, "label": "human", "text": "What 's comic strip photographer Peter Parker 's secret identity ?"}
+{"index": 709, "label": "numeric", "text": "How far can a man travel in outer space ?"}
+{"index": 1141, "label": "entity", "text": "Winnie the Pooh is what kind of animal ?"}
+{"index": 2842, "label": "human", "text": "Who was the only president to serve two nonconsecutive terms ?"}
+{"index": 3037, "label": "location", "text": "What is the largest county in size in Massachusetts ?"}
+{"index": 886, "label": "location", "text": "What is the oldest website on the Internet ?"}
+{"index": 860, "label": "human", "text": "What U.S. Congressman said : `` Keep the faith , baby '' ."}
+{"index": 1683, "label": "description and abstract concepts", "text": "What happened in dogtown in 1899 to make that year remembered ?"}
+{"index": 2125, "label": "human", "text": "What information can you tell me about actor James Cromwell ?"}
+{"index": 5383, "label": "numeric", "text": "When was Microsoft established ?"}
+{"index": 423, "label": "location", "text": "In what U.S. state was the first woman governor elected ?"}
+{"index": 1794, "label": "entity", "text": "What is the best way to overcome a fear ?"}
+{"index": 5100, "label": "human", "text": "Who invented the electric guitar ?"}
+{"index": 2674, "label": "entity", "text": "What five cards make up a perfect Cribbage hand ?"}
+{"index": 487, "label": "human", "text": "What stereo manufacturer is `` Slightly ahead of its time '' ?"}
+{"index": 4064, "label": "human", "text": "Who is the prime minister in Norway ?"}
+{"index": 1989, "label": "entity", "text": "Which two products use a tiger as their symbol ?"}
+{"index": 1063, "label": "numeric", "text": "How large is the Arctic refuge to preserve unique wildlife and wilderness value on Alaska 's north coast ?"}
+{"index": 517, "label": "numeric", "text": "How many years is Johnnie Walker Black Label aged ?"}
+{"index": 4357, "label": "human", "text": "Who were the head writers for the Smothers Brothers Comedy Hour ?"}
+{"index": 5221, "label": "numeric", "text": "When did swimming become commonplace ?"}
+{"index": 4700, "label": "entity", "text": "What are some translations of the phrase `` Thank-you '' ?"}
+{"index": 1806, "label": "entity", "text": "In which Tennessee Williams play is one of the characters killed and devoured by a mob of starving children ?"}
+{"index": 4617, "label": "entity", "text": "What is the first book of the Old Testament ?"}
+{"index": 1709, "label": "entity", "text": "What type of performer is Ileana Cotrubas ?"}
+{"index": 2233, "label": "human", "text": "Name the two blob members of the animated Herculoids ."}
+{"index": 2052, "label": "location", "text": "Where can I get U.S. economic statistics ?"}
+{"index": 4021, "label": "location", "text": "What room did W.C. Fields keep his library in ?"}
+{"index": 5061, "label": "human", "text": "What two presidents of the U.S. published books of poetry ?"}
+{"index": 3345, "label": "human", "text": "What doctor is synonymous with footwear and foot care ?"}
+{"index": 4513, "label": "location", "text": "What are the top 5 tallest buildings in the world ?"}
+{"index": 4375, "label": "entity", "text": "What is `` the soft drink for adults '' ?"}
+{"index": 711, "label": "entity", "text": "What type of food makes you fat ?"}
+{"index": 3943, "label": "location", "text": "What Russian city used to be called St. Petersburg and Petrograd ?"}
+{"index": 2281, "label": "description and abstract concepts", "text": "What is the Socratic method ?"}
+{"index": 1699, "label": "human", "text": "Who was credited with saying : `` I never met a man I did n't like '' ?"}
+{"index": 1221, "label": "numeric", "text": "Boxing Day is celebrated on what date ?"}
+{"index": 2099, "label": "entity", "text": "What 's the International Lawn Tennis Challenge Trophy usually called ?"}
+{"index": 400, "label": "entity", "text": "What crop failure caused the Irish Famine ?"}
+{"index": 4035, "label": "description and abstract concepts", "text": "What are the rules to `` snow golf '' ?"}
+{"index": 2282, "label": "location", "text": "What island has a park called The Battery at is southern tip ?"}
+{"index": 1501, "label": "entity", "text": "What was the species of Winnie the Pooh ?"}
+{"index": 2433, "label": "numeric", "text": "How large is Missouri 's population ?"}
+{"index": 3004, "label": "human", "text": "Who was the first king of England ?"}
+{"index": 856, "label": "human", "text": "Who was Lauren Bacall 's first husband ?"}
+{"index": 2081, "label": "numeric", "text": "In what year did the US Marine Corps adopt the motto `` Semper Fidelis '' ?"}
+{"index": 2602, "label": "entity", "text": "What is the electronic device used to produce visual displays corresponding to electric signals ?"}
+{"index": 1106, "label": "entity", "text": "Which drug is commonly used to treat AIDS ?"}
+{"index": 2131, "label": "entity", "text": "What Sinatra hit did he dooby dooby do in ?"}
+{"index": 1070, "label": "description and abstract concepts", "text": "Where did marijuana come from ?"}
+{"index": 3656, "label": "human", "text": "What actor has a tattoo on his right wrist reading Scotland Forever ?"}
+{"index": 987, "label": "entity", "text": "What holidays are celebrated in Ireland ?"}
+{"index": 3530, "label": "location", "text": "What U.S. state are the Finger Lakes in ?"}
+{"index": 3474, "label": "numeric", "text": "How many neurons are in the human brain ?"}
+{"index": 394, "label": "entity", "text": "What product does `` Mrs. Olsen '' promote ?"}
+{"index": 1608, "label": "entity", "text": "What 's the second-biggest-selling magazine in America ?"}
+{"index": 83, "label": "location", "text": "What is the nickname for the state of Mississippi ?"}
+{"index": 4479, "label": "location", "text": "What two countries is Andorra nestled between ?"}
+{"index": 5006, "label": "description and abstract concepts", "text": "What does the name Jenna mean ?"}
+{"index": 849, "label": "location", "text": "What is the smallest country in Africa ?"}
+{"index": 5171, "label": "location", "text": "What U.S. city is known as The Rubber Capital of the World ?"}
+{"index": 3700, "label": "description and abstract concepts", "text": "What does the term glory hole mean ?"}
+{"index": 138, "label": "description and abstract concepts", "text": "What is gymnophobia ?"}
+{"index": 1972, "label": "description and abstract concepts", "text": "What causes canker sores in the mouth ?"}
+{"index": 3397, "label": "location", "text": "Where is Natchitoches , Louisiana ?"}
+{"index": 599, "label": "location", "text": "In What city or state do the most gay men live in ?"}
+{"index": 1688, "label": "numeric", "text": "What is the regular price ?"}
+{"index": 54, "label": "human", "text": "Who is Snoopy 's arch-enemy ?"}
+{"index": 2766, "label": "entity", "text": "Name a product that controls the ripening of apples ."}
+{"index": 3652, "label": "description and abstract concepts", "text": "What are the Low Countries ?"}
+{"index": 4430, "label": "numeric", "text": "How long does it take different materials to decompose ?"}
+{"index": 769, "label": "entity", "text": "Which hair care product told us `` hate that gray , wash it away '' ?"}
+{"index": 2427, "label": "location", "text": "What state is Mount McKinley in ?"}
+{"index": 2611, "label": "human", "text": "What `` marvelous '' major-league baseball player is now a spokesman for a beer company ?"}
+{"index": 4139, "label": "description and abstract concepts", "text": "Colin Powell is most famous for what ?"}
+{"index": 3065, "label": "entity", "text": "What 1956 Grace Metalious novel was on the best-seller list for two years ?"}
+{"index": 489, "label": "human", "text": "What TV sitcom character had the maiden name Ethel Potter ?"}
+{"index": 3081, "label": "human", "text": "Who 's baby was Sweet Pea on the Popeye cartoon ?"}
+{"index": 1890, "label": "description and abstract concepts", "text": "What is a neurosurgeon ?"}
+{"index": 2310, "label": "human", "text": "Who said : `` The victor will never be asked if he told the truth '' ?"}
+{"index": 550, "label": "numeric", "text": "When did Muhammad live ?"}
+{"index": 4594, "label": "entity", "text": "What kind of creatures are the Canary Islands named for ?"}
+{"index": 973, "label": "human", "text": "Who was the first person inducted into the U.S. Swimming Hall of Fame ?"}
+{"index": 325, "label": "numeric", "text": "What is the latitude and longitude of El Paso , Texas ?"}
+{"index": 1372, "label": "entity", "text": "What is a fear of disease ?"}
+{"index": 1074, "label": "description and abstract concepts", "text": "What does Elysium mean ?"}
+{"index": 3974, "label": "entity", "text": "What sports magazine has the largest circulation ?"}
+{"index": 2765, "label": "entity", "text": "What is a fear of crystals or glass ?"}
+{"index": 3624, "label": "description and abstract concepts", "text": "What is the VDRL test of blood ?"}
+{"index": 94, "label": "description and abstract concepts", "text": "What is `` dew point '' ?"}
+{"index": 2337, "label": "location", "text": "Where is the Orange Bowl ?"}
+{"index": 4267, "label": "entity", "text": "What was Dwight Eisenhower 's favorite card game ?"}
+{"index": 995, "label": "description and abstract concepts", "text": "How do you look up criminal records on the Internet ?"}
+{"index": 852, "label": "human", "text": "What is her profession ?"}
+{"index": 3031, "label": "numeric", "text": "How many people in Tucson ?"}
+{"index": 3733, "label": "numeric", "text": "What is the fare cost for the round trip between New York and London on Concorde ?"}
+{"index": 2529, "label": "description and abstract concepts", "text": "What is a hydrogen bond ?"}
+{"index": 3297, "label": "numeric", "text": "What is the approximate weight of a teaspoon of matter in a black hole ?"}
+{"index": 3305, "label": "human", "text": "Who is the nebbish that is Marvel 's official mascot ?"}
+{"index": 804, "label": "human", "text": "Whose cover is that of an employee of Universal Import and Export ?"}
+{"index": 459, "label": "description and abstract concepts", "text": "What makes popcorn pop ?"}
+{"index": 3935, "label": "entity", "text": "What does a farrier put shoes on ?"}
+{"index": 3659, "label": "human", "text": "Who appointed the chair of the Federal Reserve ?"}
+{"index": 729, "label": "location", "text": "What are the five most expensive cities in the world ?"}
+{"index": 1341, "label": "description and abstract concepts", "text": "Why are there 12 people on a jury in criminal cases ?"}
+{"index": 3796, "label": "entity", "text": "What joins white wine to put the spritz in a Spritzer ?"}
+{"index": 4803, "label": "entity", "text": "What non-mechanical sport achieves the highest speeds ?"}
+{"index": 5278, "label": "numeric", "text": "How many people visit the Pope each month ?"}
+{"index": 865, "label": "description and abstract concepts", "text": "Why were people recruited for the Vietnam War ?"}
+{"index": 3642, "label": "location", "text": "What man-made waterways is 1.76 miles long ?"}
+{"index": 2479, "label": "human", "text": "What is the name of Joan Jett 's band ?"}
+{"index": 1857, "label": "entity", "text": "In what film did Steven Spielberg 's dog star as the main character 's dog ?"}
+{"index": 515, "label": "description and abstract concepts", "text": "What do I need to do to take my dog with me to live in Dominica , West Indies for a year ?"}
+{"index": 1918, "label": "human", "text": "What is the name of Miss India 1994 ?"}
+{"index": 3237, "label": "entity", "text": "What William Makepeace Thackeray novel was made into a film by Stanley Kubrick ?"}
+{"index": 752, "label": "human", "text": "What lawyer won the largest divorce settlement , $85 million , in U.S. history for Sheika Dena Al-Farri ?"}
+{"index": 2625, "label": "location", "text": "What two countries are linked by the Brenner Pass ?"}
+{"index": 2217, "label": "location", "text": "What country , after Canada and Mexico , is closest to the U.S. ?"}
+{"index": 322, "label": "location", "text": "What is the deepest area of the Arctic Ocean ?"}
+{"index": 1704, "label": "entity", "text": "What is the connection between New Krypton and Daxam ?"}
+{"index": 1155, "label": "description and abstract concepts", "text": "What was unusual about Alexandra 's appearance in Josie and the Pussycats ?"}
+{"index": 2632, "label": "human", "text": "Who is the sexiest women in the world ?"}
+{"index": 33, "label": "human", "text": "Which company that manufactures video-game hardware sells the `` super system '' ?"}
+{"index": 4596, "label": "description and abstract concepts", "text": "What 's a male `` cuckquean '' ?"}
+{"index": 1022, "label": "human", "text": "What was the infamous pseudonym of Peter Sutcliffe ?"}
+{"index": 4933, "label": "numeric", "text": "How much stronger is the new vitreous carbon material invented by the Tokyo Institute of Technology compared with the material made from cellulose ?"}
+{"index": 2822, "label": "numeric", "text": "When is the Thai New Year ?"}
+{"index": 2886, "label": "location", "text": "Where can I get cotton textiles importer details ?"}
+{"index": 1468, "label": "human", "text": "Which radio stations air the Jim Bohannon Radio Talk Show ?"}
+{"index": 119, "label": "description and abstract concepts", "text": "What does the Georgetown `` Hoya '' mean ?"}
+{"index": 337, "label": "human", "text": "Who followed Caesar ?"}
+{"index": 2891, "label": "description and abstract concepts", "text": "How was the ACLU formed ?"}
+{"index": 2854, "label": "entity", "text": "What color is Mr. Spock 's blood ?"}
+{"index": 205, "label": "human", "text": "What explorer was nicknamed Iberia 's Pilot ?"}
+{"index": 1350, "label": "entity", "text": "What animals can live the longest without food ?"}
+{"index": 4371, "label": "numeric", "text": "How many gallons of water go over Niagra Falls every second ?"}
+{"index": 1177, "label": "entity", "text": "Name a Gaelic language ."}
+{"index": 4693, "label": "entity", "text": "What soft drink tells us to `` Go Hawaiian '' ?"}
+{"index": 1380, "label": "human", "text": "Which one of the original seven Mercury program astronauts did not fly on any of the Mercury flights ?"}
+{"index": 490, "label": "entity", "text": "What was the first Lifesaver flavor ?"}
+{"index": 74, "label": "human", "text": "Who starred in Singing in the Rain and The Singing Nun ?"}
+{"index": 2105, "label": "description and abstract concepts", "text": "What is spaceball played on ?"}
+{"index": 4389, "label": "human", "text": "What are the top boy names in the U.S. ?"}
+{"index": 5391, "label": "entity", "text": "What did people use to freshen their breath before toothpaste ?"}
+{"index": 1739, "label": "location", "text": "What country did the ancient Romans refer to as Hibernia ?"}
+{"index": 4645, "label": "numeric", "text": "How much did Alaska cost when bought from Russia ?"}
+{"index": 2256, "label": "description and abstract concepts", "text": "Why does cotton get caught in belly buttons ?"}
+{"index": 1815, "label": "description and abstract concepts", "text": "What is Nitrox diving ?"}
+{"index": 2449, "label": "entity", "text": "What animal has the best hearing ?"}
+{"index": 1168, "label": "numeric", "text": "What phone number can I call to have a tree planted ?"}
+{"index": 2542, "label": "description and abstract concepts", "text": "What is a multiplexer ?"}
+{"index": 1613, "label": "human", "text": "Who were the Picts ?"}
+{"index": 5023, "label": "entity", "text": "What did Esquire name Ash Hole of the Year for 1980 ?"}
+{"index": 2617, "label": "human", "text": "Who said `` the only thing we have to fear is fear itself '' ?"}
+{"index": 2376, "label": "entity", "text": "What TV show premiered on January 15 , 1981 ?"}
+{"index": 1285, "label": "description and abstract concepts", "text": "Why was the zipper invented ?"}
+{"index": 3849, "label": "location", "text": "Where is the Virtual Desk Reference ?"}
+{"index": 1942, "label": "entity", "text": "What animal occurs in Spielberg 's `` Jaws '' ?"}
+{"index": 4429, "label": "entity", "text": "What is a fear of lice ?"}
+{"index": 2343, "label": "entity", "text": "What would you add to the clay mixture to produce bone china ?"}
+{"index": 3951, "label": "description and abstract concepts", "text": "Why are so many umbrellas black ?"}
+{"index": 4890, "label": "description and abstract concepts", "text": "What is the difference between love and infatuation ?"}
+{"index": 1762, "label": "location", "text": "What Tokyo street glitters with famed department stores and nightclubs ?"}
+{"index": 4781, "label": "human", "text": "Name the person who burst through the screen in the Lite beer commercials ."}
+{"index": 4196, "label": "location", "text": "What country surrounds San Marino , the world 's smallest Republic ?"}
+{"index": 4874, "label": "entity", "text": "What common plant has a button , cap , cup , gills , and ring ?"}
+{"index": 363, "label": "description and abstract concepts", "text": "What does it mean `` Rupee Depreciates '' ?"}
+{"index": 1436, "label": "location", "text": "Where was the Cisalpine Republic , 1797-185 , ?"}
+{"index": 187, "label": "numeric", "text": "What are the three winter months in the southern hemisphere ?"}
+{"index": 117, "label": "numeric", "text": "How much money does a back injury lawsuit get ?"}
+{"index": 2519, "label": "location", "text": "Name a civil war battlefield ."}
+{"index": 3585, "label": "numeric", "text": "How many `` eyes '' does a coconut have ?"}
+{"index": 3706, "label": "description and abstract concepts", "text": "What do you need to do to marry someone in jail ?"}
+{"index": 3472, "label": "human", "text": "What fast-food magnate 's initials graced the left sleeve of the San Diego Padres ' baseball uniforms in 1984 ?"}
+{"index": 4999, "label": "human", "text": "What ethnic group introduced the idea of potlatch ?"}
+{"index": 1391, "label": "description and abstract concepts", "text": "What does the name Kelly mean ?"}
+{"index": 3392, "label": "human", "text": "What Hall of Fame pitcher started three World Series Games for the New York Yankees in 1962 ?"}
+{"index": 1565, "label": "human", "text": "Who was the star of Leave It to Beaver ?"}
+{"index": 2431, "label": "description and abstract concepts", "text": "What is hypnotherapy ?"}
+{"index": 3229, "label": "location", "text": "What Mediterranean island is home to the first Club Med ?"}
+{"index": 4451, "label": "human", "text": "Who makes the `` cross-your-heart bra '' ?"}
+{"index": 3056, "label": "human", "text": "What company makes impulse hardening equipment ?"}
+{"index": 4906, "label": "description and abstract concepts", "text": "What are the benefits of a rowing machine ?"}
+{"index": 1158, "label": "entity", "text": "What game is fatal to anybody over 21 ?"}
+{"index": 5356, "label": "human", "text": "Who made the deodorant that claimed that it `` actually builds up resistance to odor '' ?"}
+{"index": 4447, "label": "entity", "text": "What is 55 times sweeter than cane sugar ?"}
+{"index": 867, "label": "human", "text": "What American League baseball team 's worst finish between 1926 and 1964 was fourth ?"}
+{"index": 5316, "label": "numeric", "text": "How many small businesses are there in the United States ?"}
+{"index": 2532, "label": "numeric", "text": "What is the protection rate of using condoms ?"}
+{"index": 2322, "label": "numeric", "text": "What year was the NAACP founded ?"}
+{"index": 1098, "label": "location", "text": "Where is Guam ?"}
+{"index": 887, "label": "entity", "text": "What events happened January 26 , 1978 ?"}
+{"index": 963, "label": "description and abstract concepts", "text": "What is the definition of low island ?"}
+{"index": 2063, "label": "description and abstract concepts", "text": "What 's the rathaus in Frankfurt ?"}
+{"index": 5028, "label": "human", "text": "What famous husband-and-wife team did radio ads for Blue Nun wine ?"}
+{"index": 2097, "label": "location", "text": "Where is the Henry Ford Museum ?"}
+{"index": 3823, "label": "description and abstract concepts", "text": "How do they type Chinese characters on a keyboard ?"}
+{"index": 4866, "label": "location", "text": "What is a country that starts with the letter x ?"}
+{"index": 127, "label": "human", "text": "What crooner joined The Andrews Sisters for Pistol Packin Mama ?"}
+{"index": 4265, "label": "numeric", "text": "How many eyes does a bat have ?"}
+{"index": 401, "label": "location", "text": "What South Korean city is served by Kimpo International Airport ?"}
+{"index": 2423, "label": "numeric", "text": "In which year was the cartoon character Chilly Willy created ?"}
+{"index": 5002, "label": "numeric", "text": "How many yards are in 1 mile ?"}
+{"index": 2146, "label": "human", "text": "What was the nickname of German flying ace Manfred von Richthofen ?"}
+{"index": 2091, "label": "numeric", "text": "When was the first Barbie produced ?"}
+{"index": 5131, "label": "human", "text": "Who gave us the `` Rolling Writer '' ?"}
+{"index": 5398, "label": "human", "text": "Who died with more than 1 , 000 U.S. patents to his credit ?"}
+{"index": 1521, "label": "description and abstract concepts", "text": "Why are there Braille things on the ATM machines that people drive through ?"}
+{"index": 3608, "label": "description and abstract concepts", "text": "What are the words to the cd Eminem 's , or slim shady , `` My Name Is '' ?"}
+{"index": 1680, "label": "human", "text": "Who was Camp David named for ?"}
+{"index": 169, "label": "numeric", "text": "How many months does it take the moon to revolve around the Earth ?"}
+{"index": 3104, "label": "entity", "text": "What are the best ways to improve employee morale at low cost ?"}
+{"index": 1169, "label": "numeric", "text": "When did the `` Star-Spangled Banner '' become the national anthem ?"}
+{"index": 734, "label": "location", "text": "What county is Chicago in ?"}
+{"index": 3449, "label": "entity", "text": "What is a fear of money ?"}
+{"index": 2561, "label": "entity", "text": "What film ends with the line : `` This is Mrs. Norman Maine '' ?"}
+{"index": 2251, "label": "description and abstract concepts", "text": "What is carpal tunnel syndrome ?"}
+{"index": 3671, "label": "numeric", "text": "When did Mount St. Helens last erupt ?"}
+{"index": 3406, "label": "entity", "text": "What did Louis Cartier invent for aviator Santos Dumont in 1940 ?"}
+{"index": 396, "label": "description and abstract concepts", "text": "What is dry ice ?"}
+{"index": 4263, "label": "location", "text": "Where did the real St. Nicholas live ?"}
+{"index": 986, "label": "human", "text": "Who said , `` I shall return . '' during World War Two ?"}
+{"index": 1877, "label": "human", "text": "What is the best distance education university or college ?"}
+{"index": 1868, "label": "location", "text": "Where is Amsterdam ?"}
+{"index": 5111, "label": "location", "text": "What country is the worlds leading supplier of cannabis ?"}
+{"index": 4707, "label": "description and abstract concepts", "text": "Why are there letters on the telephone ? Why are there no Q or Z ?"}
+{"index": 4921, "label": "numeric", "text": "How many inches over six feet is Tom Selleck ?"}
+{"index": 2644, "label": "description and abstract concepts", "text": "Why do eyes sometimes look red in photographs ?"}
+{"index": 1934, "label": "location", "text": "What are the world 's three largest oceans , in order of size ?"}
+{"index": 2744, "label": "location", "text": "What desert country borders Saudi Arabia , Iraq and the Persian Gulf ?"}
+{"index": 3197, "label": "numeric", "text": "How many airline schools are there in the U.S. ?"}
+{"index": 1579, "label": "description and abstract concepts", "text": "How can anyone tell if a female had sexual intercourse ?"}
+{"index": 4211, "label": "human", "text": "What Democratic prankster waved the train out of the station while Richard Nixon spoke from the caboose ?"}
+{"index": 2299, "label": "numeric", "text": "What is Dick Clark 's birthday ?"}
+{"index": 3461, "label": "description and abstract concepts", "text": "What is the meaning of the name Kathryn ?"}
+{"index": 4146, "label": "description and abstract concepts", "text": "How did former WWF wrestler Rick Rude die ?"}
+{"index": 4333, "label": "human", "text": "What are the four railways in Monopoly ?"}
+{"index": 2278, "label": "entity", "text": "How do you say `` Grandma '' in Irish ?"}
+{"index": 1206, "label": "human", "text": "Who is Karenna Gore , Al Gore 's oldest daughter , married to ?"}
+{"index": 4916, "label": "entity", "text": "What was the name of the U.S. Navy gunboat in the film The Sand Pebbles ?"}
+{"index": 2208, "label": "numeric", "text": "How many children does Ray Davies of the Kinks have ?"}
+{"index": 2693, "label": "description and abstract concepts", "text": "How do you identify prime numbers ?"}
+{"index": 2015, "label": "numeric", "text": "How many Leos have been Pope ?"}
+{"index": 854, "label": "abbreviation", "text": "What does the word LASER mean ?"}
+{"index": 3293, "label": "numeric", "text": "How many spaces follow a period at the end of a sentence ?"}
+{"index": 2993, "label": "numeric", "text": "At what age did Rossini stop writing opera ?"}
+{"index": 3360, "label": "entity", "text": "What are the titles of some R-Rated Sony Playstation games ?"}
+{"index": 5196, "label": "description and abstract concepts", "text": "What do you know about multicultural and multilingual schools ?"}
+{"index": 3272, "label": "human", "text": "Who built the first pyramid ?"}
+{"index": 4722, "label": "location", "text": "What is the location of Edinburgh , Scotland ?"}
+{"index": 2414, "label": "description and abstract concepts", "text": "How did the U.S. come into the possession of an empire in the wake of the Spanish-American War ?"}
+{"index": 4259, "label": "numeric", "text": "What is the airport code for Los Angeles International ?"}
+{"index": 4751, "label": "human", "text": "Who led the Normans to victory in the Battle of Hastings ?"}
+{"index": 4681, "label": "description and abstract concepts", "text": "What are boxcars ?"}
+{"index": 463, "label": "human", "text": "Who painted Mother and Child ?"}
+{"index": 4065, "label": "description and abstract concepts", "text": "What is a urologist ?"}
+{"index": 3521, "label": "entity", "text": "Which infectious disease kills the most people worldwide ?"}
+{"index": 846, "label": "human", "text": "Who is Colin Powell ?"}
+{"index": 825, "label": "location", "text": "What city houses the U.S. headquarters of Procter and Gamble ?"}
+{"index": 3499, "label": "entity", "text": "What is a fear of stings ?"}
+{"index": 3602, "label": "description and abstract concepts", "text": "What is a serigraph ?"}
+{"index": 146, "label": "description and abstract concepts", "text": "How you can raise your IQ ?"}
+{"index": 132, "label": "entity", "text": "What is a film starring Jude Law ?"}
+{"index": 1093, "label": "entity", "text": "What is Jell-O made from ?"}
+{"index": 1276, "label": "entity", "text": "What is the only substance that gives food its `` taste '' when eaten ?"}
+{"index": 5388, "label": "human", "text": "Who is the prime minister of Australia ?"}
+{"index": 2399, "label": "human", "text": "What actor learned to play the saxophone and speak Russian for a role in a movie ?"}
+{"index": 4206, "label": "numeric", "text": "What season does a hiemal activity normally take place in ?"}
+{"index": 367, "label": "entity", "text": "What Jewish holiday saw the start of the 1973 Mideast War ?"}
+{"index": 4506, "label": "entity", "text": "What was spawned the term `` MiG Alley '' ?"}
+{"index": 3082, "label": "location", "text": "Where is Mile High Stadium ?"}
+{"index": 1147, "label": "location", "text": "In what state was the first co-educational college established"}
+{"index": 648, "label": "entity", "text": "How do you say I love you in Spanish ?"}
+{"index": 1914, "label": "human", "text": "Who 's the only man to have won the Olympic decathlon twice ?"}
+{"index": 1023, "label": "entity", "text": "What is Smokey The Bear 's middle name ?"}
+{"index": 1330, "label": "entity", "text": "What civil war was fought between 1936 and 1939 ?"}
+{"index": 1109, "label": "human", "text": "Who sought to create The Great Society ?"}
+{"index": 1094, "label": "human", "text": "Who was Monet ?"}
+{"index": 3194, "label": "entity", "text": "What food of the three bears did Goldilocks eat ?"}
+{"index": 3084, "label": "description and abstract concepts", "text": "What is limbo ?"}
+{"index": 306, "label": "human", "text": "Who has won the most Super Bowls ?"}
+{"index": 790, "label": "description and abstract concepts", "text": "How do you solve `` Rubik 's Cube '' ?"}
+{"index": 4362, "label": "human", "text": "What Scottish poet penned To a Mouse and To a Louse ?"}
+{"index": 5409, "label": "entity", "text": "What is a fear of fish ?"}
+{"index": 1742, "label": "abbreviation", "text": "What is the abbreviation of General Motors ?"}
+{"index": 5287, "label": "description and abstract concepts", "text": "What do a diamond and lump of coal have in common ?"}
+{"index": 1422, "label": "entity", "text": "Name Li 'l Abner 's favorite Indian drink ."}
+{"index": 2588, "label": "entity", "text": "What comic strip sometimes features a mailman named Beasley ?"}
+{"index": 5123, "label": "entity", "text": "Which medium is Hamblen the first singing cowboy in ?"}
+{"index": 3119, "label": "numeric", "text": "What is the average hours per months spent online by AOL users ?"}
+{"index": 3110, "label": "numeric", "text": "How many Israeli athletes were killed at the Munich Olympics ?"}
+{"index": 405, "label": "description and abstract concepts", "text": "What is the difference between a generator and an alternator ?"}
+{"index": 4482, "label": "location", "text": "What are the four largest mountain ranges in the continental United States ?"}
+{"index": 2107, "label": "human", "text": "What famous comedian recently tried without success to revive the play ?"}
+{"index": 759, "label": "location", "text": "Where does Buzz Aldrin want to build a permanent , manned space station ?"}
+{"index": 4541, "label": "location", "text": "What Southern California town is named after a character made famous by Edgar Rice Burroughs ?"}
+{"index": 1053, "label": "human", "text": "Name the various super-teams to which the Angel has belonged ."}
+{"index": 4532, "label": "description and abstract concepts", "text": "How do I know if I am pregnant ?"}
+{"index": 2740, "label": "abbreviation", "text": "What does A&W of root beer fame stand for ?"}
+{"index": 2153, "label": "numeric", "text": "When was the Bill of Rights ratified ?"}
+{"index": 4572, "label": "entity", "text": "What is the world 's deadliest infectious disease ?"}
+{"index": 1037, "label": "description and abstract concepts", "text": "How do I find out about jobs ?"}
+{"index": 967, "label": "entity", "text": "What soft drink would provide me with the biggest intake of caffeine ?"}
+{"index": 4719, "label": "entity", "text": "What was the tragedy that struck the city of Dogtown in 1899 ?"}
+{"index": 3614, "label": "description and abstract concepts", "text": "What is endometriosis ?"}
+{"index": 4725, "label": "human", "text": "What was the name of the Titanic 's captain ?"}
+{"index": 304, "label": "abbreviation", "text": "What is the abbreviation for micro ?"}
+{"index": 2345, "label": "entity", "text": "What Stephen Sondheim ballad ends : `` Well , maybe next year.. . '' ?"}
+{"index": 3095, "label": "description and abstract concepts", "text": "What is a tonne ?"}
+{"index": 1186, "label": "entity", "text": "Jude Law acted in which film ?"}
+{"index": 3027, "label": "entity", "text": "What video format was an alternative to VHS ?"}
+{"index": 28, "label": "entity", "text": "Name a golf course in Myrtle Beach ."}
+{"index": 4981, "label": "entity", "text": "Name the Islamic counterpart to the Red Cross ."}
+{"index": 1665, "label": "location", "text": "Where are all European and American eels born ?"}
+{"index": 3598, "label": "location", "text": "What is New England 's highest mountain ?"}
+{"index": 813, "label": "numeric", "text": "In what year did Ireland elect its first woman president ?"}
+{"index": 3732, "label": "human", "text": "Who founded the first aerodynamics laboratory in 1912 ?"}
+{"index": 1575, "label": "entity", "text": "What was the name of the ball game played by the mayans ?"}
+{"index": 2241, "label": "entity", "text": "What was Paul Bunyan 's ox 's name ?"}
+{"index": 2601, "label": "entity", "text": "What 's the largest U.S. agricultural crop by weight ?"}
+{"index": 495, "label": "entity", "text": "What is the Jewish bible called ?"}
+{"index": 775, "label": "entity", "text": "What historical event happened in Dogtown in 1899 ?"}
+{"index": 1368, "label": "entity", "text": "What kind of creature is a coot ?"}
+{"index": 5365, "label": "location", "text": "What ocean surrounds the Maldive Islands ?"}
+{"index": 276, "label": "description and abstract concepts", "text": "What is molybdenum ?"}
+{"index": 5081, "label": "human", "text": "What heavyweight boxer was known as The Wild Bull of the Pampas ?"}
+{"index": 5118, "label": "location", "text": "Where did Hillary Clinton graduate college ?"}
+{"index": 1648, "label": "human", "text": "Who invented the paper clip ?"}
+{"index": 4455, "label": "abbreviation", "text": "What does `` B.Y.O.B. '' mean ?"}
+{"index": 4378, "label": "human", "text": "Who awarded The Flying Fickle Finger of Fate ?"}
+{"index": 398, "label": "description and abstract concepts", "text": "What does `` intractable plantar keratoma '' mean ?"}
+{"index": 1116, "label": "location", "text": "What Colorado city owns its own glacier ?"}
+{"index": 4957, "label": "entity", "text": "What is the chemical formula for napalm ?"}
+{"index": 100, "label": "human", "text": "Who invented Make-up ?"}
+{"index": 236, "label": "location", "text": "What is the name of the tallest mountain in the world ?"}
+{"index": 3325, "label": "human", "text": "Whose biography by Maurice Zolotow is titled Shooting Star ?"}
+{"index": 3747, "label": "entity", "text": "What do you call a date that contains sequencing numbers , like 9-8-98 ?"}
+{"index": 1910, "label": "human", "text": "What National League baseball team employed 72 third baseemen in its first 2 seasons ?"}
+{"index": 103, "label": "entity", "text": "What kind of animals were in the Paleozoic era ?"}
+{"index": 5214, "label": "location", "text": "What is the nickname of Pennsylvania ?"}
+{"index": 5406, "label": "numeric", "text": "When did the art of quilting begin ?"}
+{"index": 1299, "label": "location", "text": "Where is Hearst Castle , built by publisher William Randolph Hearst ?"}
+{"index": 4124, "label": "entity", "text": "What was the name of Sergeant Preston of the Yukon 's lead dog ?"}
+{"index": 1152, "label": "location", "text": "On which Hawaiian island is Pearl Harbor ?"}
+{"index": 3879, "label": "human", "text": "Who is the owner of CNN ?"}
+{"index": 565, "label": "entity", "text": "What Vladimir Nabokov novel features Professor Humbert in love with a 12-year-old girl ?"}
+{"index": 765, "label": "description and abstract concepts", "text": "How do you get a broken cork out of a bottle ?"}
+{"index": 1383, "label": "location", "text": "What continent is Bolivia on ?"}
+{"index": 1572, "label": "human", "text": "Which of the following rock 'n roll stars has a `` star '' on Hollywood Boulevard ?"}
+{"index": 4188, "label": "entity", "text": "What chess outcome results when a player has no legal move ?"}
+{"index": 2884, "label": "description and abstract concepts", "text": "What is e-commerce ?"}
+{"index": 3059, "label": "location", "text": "What country was Hitler the chancellor of ?"}
+{"index": 1911, "label": "description and abstract concepts", "text": "What are snowballs to a hot-rodder ?"}
+{"index": 4213, "label": "location", "text": "What California bay 's largest island is Angel Island ?"}
+{"index": 753, "label": "entity", "text": "What do you call a group of geese ?"}
+{"index": 4756, "label": "entity", "text": "What nutrients are for healthy bones and teeth ?"}
+{"index": 3829, "label": "human", "text": "What are the names of Jacques Cousteau 's two sons ?"}
+{"index": 3151, "label": "human", "text": "Who led the opposition when Konrad Adenauer was Chancellor in Germany ?"}
+{"index": 2936, "label": "human", "text": "Which of the following celebrities was not born in Philadelphia ?"}
+{"index": 4691, "label": "human", "text": "Who was the accused in The Trial of the Century , which opened Janurary 1 , 1935 ?"}
+{"index": 1513, "label": "human", "text": "Who is Luke Skywalker 's father ?"}
+{"index": 2200, "label": "description and abstract concepts", "text": "What is the origin of the city `` Corpus Christi '' ?"}
+{"index": 549, "label": "entity", "text": "What kind of file has the extension .dbf ?"}
+{"index": 1048, "label": "location", "text": "What province is Edmonton located in ?"}
+{"index": 1251, "label": "description and abstract concepts", "text": "What is the difference between New York-style and Chicago-style pizza ?"}
+{"index": 1803, "label": "numeric", "text": "What is the current ticket fare from from Cairo to Barbados ?"}
+{"index": 3158, "label": "location", "text": "What is the largest office block in the world ?"}
+{"index": 2782, "label": "description and abstract concepts", "text": "What is hydrogen ?"}
+{"index": 3977, "label": "numeric", "text": "How old is Britney Spears ?"}
+{"index": 173, "label": "human", "text": "Who directed `` Jaws '' ?"}
+{"index": 1582, "label": "entity", "text": "What is a good book to read for people who hate to read ?"}
+{"index": 3701, "label": "human", "text": "What South Vietnamese president was assassinated by his generals in 1963 ?"}
+{"index": 3133, "label": "numeric", "text": "How far away is the moon ?"}
+{"index": 5189, "label": "location", "text": "Where on the Web is Adventours Tours from Sydney , Australia ?"}
+{"index": 3556, "label": "numeric", "text": "What percentage of the silver production is done by independent silversmiths ?"}
+{"index": 2359, "label": "numeric", "text": "How many consecutive baseball games did Lou Gehrig play ?"}
+{"index": 1732, "label": "description and abstract concepts", "text": "What ever happened to the once popular Yale Lock Company ?"}
+{"index": 1298, "label": "numeric", "text": "When were the Olympic Games in which Nadia Comaneci became popular played ?"}
+{"index": 2136, "label": "human", "text": "What dumb-but-loveable character did Maurice Gosfield play on The Phil Silvers Show ?"}
+{"index": 3213, "label": "entity", "text": "What is a fear of going to bed ?"}
+{"index": 2856, "label": "human", "text": "What U.S. vice-president said : `` Some newspapers dispose of their garbage by printing it '' ?"}
+{"index": 593, "label": "entity", "text": "What 's approaching when a cyclist shouts : `` Oil '' ?"}
+{"index": 4508, "label": "description and abstract concepts", "text": "What is the difference between khaki and chino ?"}
+{"index": 1297, "label": "description and abstract concepts", "text": "What are amicable numbers ?"}
+{"index": 3175, "label": "description and abstract concepts", "text": "How did the 7th inning stretch get started ?"}
+{"index": 3577, "label": "location", "text": "Where are the Austerlitz and Victor Hugo subway stops ?"}
+{"index": 4060, "label": "location", "text": "What are the largest deserts in the world ?"}
+{"index": 2622, "label": "description and abstract concepts", "text": "How do you clean an LCD monitor screen ?"}
+{"index": 3078, "label": "human", "text": "What baseball great plugged Mr. Coffee ?"}
+{"index": 4526, "label": "numeric", "text": "What year did Charles Dicken die ?"}
+{"index": 5324, "label": "entity", "text": "What Caribbean cult did Marcus Garvey originate ?"}
+{"index": 4305, "label": "numeric", "text": "When is Dick Clark 's birthday ?"}
+{"index": 3788, "label": "entity", "text": "What is Shirley MacLaine known as ?"}
+{"index": 4372, "label": "entity", "text": "What turns blue litmus paper red ?"}
+{"index": 3580, "label": "description and abstract concepts", "text": "What is a portal ?"}
+{"index": 5038, "label": "description and abstract concepts", "text": "What is federal income tax ?"}
+{"index": 3254, "label": "numeric", "text": "How many people are taller than 7 feet ?"}
+{"index": 4271, "label": "description and abstract concepts", "text": "What is power steering ?"}
+{"index": 2962, "label": "description and abstract concepts", "text": "How is bubble wrap made ?"}
+{"index": 4852, "label": "description and abstract concepts", "text": "What did Lenny Bruce say that got him arrested ?"}
+{"index": 5390, "label": "location", "text": "What does the River Seine empty into ?"}
+{"index": 386, "label": "numeric", "text": "How many equal angles are there in an isosceles triangle ?"}
+{"index": 5247, "label": "human", "text": "Who is the son-in-law of Sen. Everett Dirkson who was also a senator in the '70 's ?"}
+{"index": 3350, "label": "entity", "text": "What was the name of the Crimean meeting of Roosevelt , Churchill , and Stalin ?"}
+{"index": 1243, "label": "description and abstract concepts", "text": "What does Las Vegas mean ?"}
+{"index": 3727, "label": "description and abstract concepts", "text": "What are the short- and long-term effects of underage drinking ?"}
+{"index": 3024, "label": "human", "text": "Who shot Billy the Kid ?"}
+{"index": 4679, "label": "abbreviation", "text": "What is the abbreviation of the International Olympic Committee ?"}
+{"index": 5325, "label": "entity", "text": "What is the most widely cultivated plant ?"}
+{"index": 705, "label": "entity", "text": "What is the fear of being loved ?"}
+{"index": 3109, "label": "location", "text": "Where are some great educational resources for parents and teachers ?"}
+{"index": 821, "label": "description and abstract concepts", "text": "How do fuel injectors work ?"}
