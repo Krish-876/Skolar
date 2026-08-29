@@ -47,18 +47,22 @@ class FocusSoundService {
 
       final hasVibrator = await Vibration.hasVibrator();
       if (hasVibrator == true) {
-        await Vibration.vibrate(
-          pattern: [0, 400, 200, 400, 200, 400],
-          repeat: 0,
-        );
+        // No `repeat`: in this package repeat is a loop-back pattern index,
+        // not a count, and 0 means "loop forever from the start" — omitting
+        // it (default -1) is what makes this a one-shot buzz.
+        await Vibration.vibrate(pattern: [0, 400, 200, 400, 200, 400]);
       }
     } catch (_) {}
   }
 
-  /// Stop active sounds and vibration.
+  /// Stop active sounds and vibration. Independent try/catch per call so a
+  /// failure stopping audio can never leave haptics (e.g. a runaway
+  /// vibration pattern) uncancelled, and vice versa.
   static Future<void> stop() async {
     try {
       await _player.stop();
+    } catch (_) {}
+    try {
       await Vibration.cancel();
     } catch (_) {}
   }

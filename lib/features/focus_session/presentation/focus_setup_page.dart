@@ -4,7 +4,6 @@ import 'package:Skolar/features/focus_session/widgets/focus_background.dart';
 import 'package:Skolar/features/focus_session/widgets/glow_thumb_shape.dart';
 import 'package:Skolar/features/focus_session/widgets/present_chip.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class FocusSetupPage extends StatefulWidget {
   final void Function(int seconds) onConfirm;
@@ -141,7 +140,7 @@ class _FocusSetupPageState extends State<FocusSetupPage> {
           const SizedBox(width: AppTheme.md),
           Text(
             'Set focus duration',
-            style: GoogleFonts.googleSans(
+            style: TextStyle(fontFamily: 'GoogleSans',
               color: Colors.white,
               fontSize: 17,
               fontWeight: FontWeight.bold,
@@ -162,7 +161,7 @@ class _FocusSetupPageState extends State<FocusSetupPage> {
                 AppTheme.textGradient.createShader(bounds),
             child: Text(
               _formatDuration(_selectedSeconds),
-              style: GoogleFonts.googleSans(
+              style: TextStyle(fontFamily: 'GoogleSans',
                 color: Colors.white,
                 fontSize: 80,
                 fontWeight: FontWeight.w700,
@@ -174,7 +173,7 @@ class _FocusSetupPageState extends State<FocusSetupPage> {
           const SizedBox(height: AppTheme.sm),
           Text(
             'focus session',
-            style: GoogleFonts.googleSans(
+            style: TextStyle(fontFamily: 'GoogleSans',
               color: AppTheme.onBackground2.withValues(alpha: 0.7),
               fontSize: 15,
               fontWeight: FontWeight.w500,
@@ -189,7 +188,7 @@ class _FocusSetupPageState extends State<FocusSetupPage> {
   Widget _buildSectionLabel(String text) {
     return Text(
       text,
-      style: GoogleFonts.googleSans(
+      style: TextStyle(fontFamily: 'GoogleSans',
         color: AppTheme.accentPurple,
         fontSize: 11,
         fontWeight: FontWeight.bold,
@@ -240,7 +239,7 @@ class _FocusSetupPageState extends State<FocusSetupPage> {
           children: [
             Text(
               '${_minMinutes}m',
-              style: GoogleFonts.googleSans(
+              style: TextStyle(fontFamily: 'GoogleSans',
                 color: Colors.white38,
                 fontSize: 11,
                 fontWeight: FontWeight.w500,
@@ -248,7 +247,7 @@ class _FocusSetupPageState extends State<FocusSetupPage> {
             ),
             Text(
               '${_maxMinutes ~/ 60}h',
-              style: GoogleFonts.googleSans(
+              style: TextStyle(fontFamily: 'GoogleSans',
                 color: Colors.white38,
                 fontSize: 11,
                 fontWeight: FontWeight.w500,
@@ -296,7 +295,7 @@ class _FocusSetupPageState extends State<FocusSetupPage> {
               children: [
                 Text(
                   'Session breakdown',
-                  style: GoogleFonts.googleSans(
+                  style: TextStyle(fontFamily: 'GoogleSans',
                     color: Colors.white,
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
@@ -305,7 +304,7 @@ class _FocusSetupPageState extends State<FocusSetupPage> {
                 const SizedBox(height: 4),
                 Text(
                   _buildBreakdownText(h, m, pomodoroCount),
-                  style: GoogleFonts.googleSans(
+                  style: TextStyle(fontFamily: 'GoogleSans',
                     color: Colors.white60,
                     fontSize: 12,
                     height: 1.4,
@@ -357,7 +356,7 @@ class _FocusSetupPageState extends State<FocusSetupPage> {
           ),
           child: Text(
             'Start session →',
-            style: GoogleFonts.googleSans(
+            style: TextStyle(fontFamily: 'GoogleSans',
               color: Colors.white,
               fontSize: 16,
               fontWeight: FontWeight.bold,

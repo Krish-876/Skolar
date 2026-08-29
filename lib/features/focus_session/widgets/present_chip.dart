@@ -1,6 +1,5 @@
 import 'package:Skolar/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class PresetChip extends StatelessWidget {
   final String label;
@@ -57,7 +56,7 @@ class PresetChip extends StatelessWidget {
             ],
             Text(
               label,
-              style: GoogleFonts.googleSans(
+              style: TextStyle(fontFamily: 'GoogleSans',
                 color: isActive ? Colors.white : Colors.white60,
                 fontSize: 13,
                 fontWeight: isActive ? FontWeight.bold : FontWeight.w500,

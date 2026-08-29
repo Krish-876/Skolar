@@ -21,8 +21,8 @@ class FocusTimerController extends ChangeNotifier {
   }
 
   // 25m focus + 5m break
-  static const int pomodoroFocusDuration = 25 * 60; // 25 minutes
-  static const int pomodoroBreakDuration = 5 * 60; // 5 minutes
+  static const int pomodoroFocusDuration = 25; // 25 minutes
+  static const int pomodoroBreakDuration = 5; // 5 minutes
 
   FocusTimerStatus _status = FocusTimerStatus.idle;
   FocusTimerStatus get status => _status;
@@ -48,6 +48,11 @@ class FocusTimerController extends ChangeNotifier {
 
   DateTime? _sessionEndTime;
   DateTime? _phaseEndTime;
+
+  DateTime? _phaseStartedAt;
+  DateTime? get phaseStartedAt => _phaseStartedAt;
+
+  bool _completionNotified = false;
 
   Timer? _ticker;
   late final AnimationController _waveAnimation;
@@ -110,9 +115,11 @@ class FocusTimerController extends ChangeNotifier {
     final now = DateTime.now();
     _sessionEndTime = now.add(Duration(seconds: totalDuration));
     _phaseEndTime = now.add(Duration(seconds: _currentPhaseTotalSeconds));
+    _phaseStartedAt = now;
+    _completionNotified = false;
 
     _waveAnimation.forward();
-    _ticker = Timer.periodic(const Duration(seconds: 1), _onTick);
+    _ticker = Timer.periodic(const Duration(milliseconds: 200), _onTick);
     notifyListeners();
   }
 
@@ -122,6 +129,8 @@ class FocusTimerController extends ChangeNotifier {
     _ticker = null;
     _sessionEndTime = null;
     _phaseEndTime = null;
+    _phaseStartedAt = null;
+    _completionNotified = false;
     _status = FocusTimerStatus.idle;
     _currentPhase = FocusPhase.focus;
     _secondsLeft = totalSessionDurationWithBreaks;
@@ -138,30 +147,28 @@ class FocusTimerController extends ChangeNotifier {
     if (_status != FocusTimerStatus.running || _sessionEndTime == null) return;
 
     final now = DateTime.now();
-    final remainingSessionSeconds = _sessionEndTime!.difference(now).inSeconds;
+    final sessionMs = _sessionEndTime!.difference(now).inMilliseconds;
+    final remainingSessionSeconds = (sessionMs / 1000).ceil();
 
     if (remainingSessionSeconds <= 0) {
-      _ticker?.cancel();
-      _ticker = null;
-      _secondsLeft = 0;
-      _currentPhaseSecondsLeft = 0;
-      _status = FocusTimerStatus.complete;
-      notifyListeners();
-      onComplete?.call();
+      _completeSession();
       return;
     }
 
     _secondsLeft = remainingSessionSeconds;
 
     if (_isPomodoroEnabled && _phaseEndTime != null) {
-      final phaseRemaining = _phaseEndTime!.difference(now).inSeconds;
+      final phaseMs = _phaseEndTime!.difference(now).inMilliseconds;
+      final phaseRemaining = (phaseMs / 1000).ceil();
       if (phaseRemaining <= 0) {
+        final previousPhaseEndTime = _phaseEndTime!;
         if (_currentPhase == FocusPhase.focus) {
           // Transition to break
           _currentPhase = FocusPhase.breakTime;
           _currentPhaseTotalSeconds = pomodoroBreakDuration;
           _currentPhaseSecondsLeft = _currentPhaseTotalSeconds;
           _phaseEndTime = now.add(Duration(seconds: _currentPhaseTotalSeconds));
+          _phaseStartedAt = previousPhaseEndTime;
           onPhaseChanged?.call(FocusPhase.breakTime);
         } else {
           // Break time finished -> Transition directly into next focus session!
@@ -169,6 +176,7 @@ class FocusTimerController extends ChangeNotifier {
           _currentPhaseTotalSeconds = min(_secondsLeft, pomodoroFocusDuration);
           _currentPhaseSecondsLeft = _currentPhaseTotalSeconds;
           _phaseEndTime = now.add(Duration(seconds: _currentPhaseTotalSeconds));
+          _phaseStartedAt = previousPhaseEndTime;
           onPhaseChanged?.call(FocusPhase.focus);
         }
       } else {
@@ -181,50 +189,80 @@ class FocusTimerController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Marks the session complete and fires [onComplete] exactly once.
+  ///
+  /// Both [_onTick] and [syncWithSystemTime] can independently observe the
+  /// session has run out; this guard is what keeps a completion-triggered
+  /// side effect (sound/haptics) from ever firing twice for one session.
+  void _completeSession() {
+    if (_completionNotified) return;
+    _completionNotified = true;
+
+    _ticker?.cancel();
+    _ticker = null;
+    _secondsLeft = 0;
+    _currentPhaseSecondsLeft = 0;
+    _status = FocusTimerStatus.complete;
+    notifyListeners();
+    onComplete?.call();
+  }
+
   void _onTick(Timer t) {
     if (_sessionEndTime == null) return;
 
     final now = DateTime.now();
-    final totalRemaining = _sessionEndTime!.difference(now).inSeconds;
+    final ms = _sessionEndTime!.difference(now).inMilliseconds;
+    final totalRemaining = (ms / 1000).ceil();
 
     if (totalRemaining <= 0) {
-      t.cancel();
-      _ticker = null;
-      _secondsLeft = 0;
-      _currentPhaseSecondsLeft = 0;
-      _status = FocusTimerStatus.complete;
-      notifyListeners();
-      onComplete?.call();
+      _completeSession();
       return;
     }
 
-    _secondsLeft = totalRemaining;
+    // Resolved once below, then written to _currentPhaseSecondsLeft exactly
+    // once — never both a stale pre-transition reading and the new phase's
+    // duration in the same tick.
+    final int phaseRemaining;
 
     if (_isPomodoroEnabled && _phaseEndTime != null) {
-      final phaseRemaining = _phaseEndTime!.difference(now).inSeconds;
-      if (phaseRemaining <= 0) {
+      final phaseMs = _phaseEndTime!.difference(now).inMilliseconds;
+      final rawPhaseRemaining = (phaseMs / 1000).ceil();
+      if (rawPhaseRemaining <= 0) {
         // Transition phase
         if (_currentPhase == FocusPhase.focus) {
           // Focus finished -> Enter break
           _currentPhase = FocusPhase.breakTime;
           _currentPhaseTotalSeconds = pomodoroBreakDuration;
-          _currentPhaseSecondsLeft = _currentPhaseTotalSeconds;
           _phaseEndTime = now.add(Duration(seconds: _currentPhaseTotalSeconds));
+          _phaseStartedAt = now;
           onPhaseChanged?.call(FocusPhase.breakTime);
         } else {
           // Break finished -> Enter next focus session immediately!
           _currentPhase = FocusPhase.focus;
-          _currentPhaseTotalSeconds = min(_secondsLeft, pomodoroFocusDuration);
-          _currentPhaseSecondsLeft = _currentPhaseTotalSeconds;
+          _currentPhaseTotalSeconds = min(totalRemaining, pomodoroFocusDuration);
           _phaseEndTime = now.add(Duration(seconds: _currentPhaseTotalSeconds));
+          _phaseStartedAt = now;
           onPhaseChanged?.call(FocusPhase.focus);
         }
+        phaseRemaining = _currentPhaseTotalSeconds;
       } else {
-        _currentPhaseSecondsLeft = phaseRemaining;
+        phaseRemaining = rawPhaseRemaining;
       }
     } else {
-      _currentPhaseSecondsLeft = _secondsLeft;
+      phaseRemaining = totalRemaining;
     }
+
+    // Sampling at 200ms means most ticks land inside the same displayed
+    // second; skip the rebuild when nothing visible actually changed. Phase
+    // transitions and the completion path above always run first, so they
+    // can never be suppressed by this.
+    if (totalRemaining == _secondsLeft &&
+        phaseRemaining == _currentPhaseSecondsLeft) {
+      return;
+    }
+
+    _secondsLeft = totalRemaining;
+    _currentPhaseSecondsLeft = phaseRemaining;
 
     notifyListeners();
   }

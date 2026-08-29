@@ -163,4 +163,12 @@ class AppTheme {
   static const Color chartInProgress = Color(0xFF63C8D4);
   static const Color chartCompleted = Color(0xFF3A3750); // use surfaceLight
   static const Color error = wishlist; // already have this
+
+  // ── Focus Session: Light Break Reveal ──────────────────────────────────────
+  static const Color focusBreakBackground = Color(0xFFF7F2EA); // warm light bg
+  static const Color focusBreakOnBackground = Color(0xFF1C1A22); // dark text
+  static const Color focusBreakOnBackgroundMuted = Color(
+    0xFF6B6675,
+  ); // muted dark text
+  static const Color focusBreakAccent = Color(0xFF4A2E8F); // dark violet on light
 }
