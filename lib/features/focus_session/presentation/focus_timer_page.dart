@@ -117,6 +117,7 @@ class FocusTimerPageState extends State<FocusTimerPage>
       duration: const Duration(milliseconds: 700),
     );
     _entryWipeController.addListener(() => setState(() {}));
+    _entryWipeController.addStatusListener(_onEntryWipeStatusChanged);
     _exitWipeController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 700),
@@ -267,6 +268,14 @@ class FocusTimerPageState extends State<FocusTimerPage>
     FocusSoundService.playSessionComplete();
   }
 
+  void _onEntryWipeStatusChanged(AnimationStatus status) {
+    if (status == AnimationStatus.completed && mounted) {
+      setState(() {
+        _showLightOverlay = false;
+      });
+    }
+  }
+
   void _onExitWipeStatusChanged(AnimationStatus status) {
     if (status != AnimationStatus.completed || !mounted) return;
     setState(() {
@@ -312,27 +321,24 @@ class FocusTimerPageState extends State<FocusTimerPage>
       _exitWipeController.stop();
       setState(() {
         _showDarkExitOverlay = false;
-        _showLightOverlay = enteringBreak;
-        _entryWipeController.value = enteringBreak ? 1.0 : 0.0;
+        _showLightOverlay = false;
+        _entryWipeController.value = 0.0;
         _exitWipeController.value = 0.0;
       });
       return;
     }
 
-    // Zen/AMOLED is the primary case here, not an exception: a phase change
-    // is hardest to notice exactly when the user is deep in zen. The wipe
-    // always plays, and both stacked bodies always render at zen == 1.0
-    // geometry during it — same timer position/scale/visible elements as
-    // the AMOLED screen, so nothing moves during the wipe itself. If the
-    // user isn't already in zen, settle into zen FIRST, then start the
-    // wipe — the layout shift and the wipe must never overlap. Zen is not
-    // forced back afterward; the session simply continues in zen from here.
-    if (_zenAnimController.value >= 1.0) {
+    final isAmoled = _zenAnimController.value >= 0.5;
+    if (isAmoled) {
+      // In AMOLED mode: play full-screen dome wipe between Black and White AMOLED
       _startPhaseWipe(enteringBreak);
     } else {
-      _zenAnimController
-          .animateTo(1.0, curve: Curves.easeOutCubic)
-          .whenComplete(() => _startPhaseWipe(enteringBreak));
+      // In Non-AMOLED mode: background shifts naturally, timer rolls, no wipe overlay
+      _startRollController.forward(from: 0.0);
+      setState(() {
+        _showLightOverlay = false;
+        _showDarkExitOverlay = false;
+      });
     }
   }
 
@@ -354,8 +360,13 @@ class FocusTimerPageState extends State<FocusTimerPage>
   void _skipActiveWipe() {
     if (_entryWipeController.isAnimating) {
       _entryWipeController.value = 1.0;
+      setState(() => _showLightOverlay = false);
     } else if (_exitWipeController.isAnimating) {
       _exitWipeController.value = 1.0;
+      setState(() {
+        _showDarkExitOverlay = false;
+        _showLightOverlay = false;
+      });
     }
   }
 
@@ -592,59 +603,115 @@ class FocusTimerPageState extends State<FocusTimerPage>
     final zen = _zenAnimController.value;
     final slideProgress =
         isRunning ? 0.0 : (_knobOffset / 180.0).clamp(0.0, 1.0);
+    final isBreak = _controller.isBreakPhase;
+    final targetBreakProgress = isBreak ? 1.0 : 0.0;
 
-    return PopScope(
-      canPop: canPop,
-      onPopInvokedWithResult: (didPop, result) {
-        if (!didPop && isRunning) showGiveUpSheet();
-      },
-      child: GestureDetector(
-        onVerticalDragUpdate: (details) {
-          if (isRunning) {
-            final delta = details.primaryDelta ?? 0.0;
-            // Dragging up (negative delta) increases zen progress towards 1.0
-            _zenAnimController.value =
-                (_zenAnimController.value - delta / 260.0).clamp(0.0, 1.0);
-          }
-        },
-        onVerticalDragEnd: (details) {
-          if (isRunning) {
-            final velocity = details.primaryVelocity ?? 0.0;
-            if (velocity < -300 || _zenAnimController.value > 0.45) {
-              _zenAnimController.animateTo(1.0, curve: Curves.easeOutCubic);
-            } else {
-              _zenAnimController.animateTo(0.0, curve: Curves.easeOutCubic);
-            }
-          }
-        },
-        behavior: HitTestBehavior.translucent,
-        child: Scaffold(
-          backgroundColor: Color.lerp(AppTheme.background, Colors.black, zen),
-          body: Stack(
-            children: [
-              // Dynamic normal background (fades out as AMOLED zen increases)
-              AnimatedBuilder(
-                animation: _controller.waveAnimationController,
-                builder: (context, _) {
-                  return Opacity(
-                    opacity: (1.0 - zen).clamp(0.0, 1.0),
-                    child: FocusBackground(
-                      slideProgress: _controller.slideProgress,
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(
+        begin: targetBreakProgress,
+        end: targetBreakProgress,
+      ),
+      duration: const Duration(milliseconds: 700),
+      curve: Curves.easeInOutCubic,
+      builder: (context, breakVal, _) {
+        // Smoothly lightened Non-AMOLED base background
+        final nonAmoledBg = Color.lerp(
+          AppTheme.background,
+          const Color(0xFF1D162B),
+          breakVal,
+        )!;
+        final isEntryWiping = _entryWipeController.isAnimating;
+        final isExitWiping = _exitWipeController.isAnimating;
+
+        // While the white wipe is sweeping UP during focus->break, the underlying
+        // canvas remains black AMOLED so the white dome sweeps cleanly over black.
+        // Once the wipe completes (or while in held break), the canvas is white AMOLED.
+        final amoledBg = (isBreak && !isEntryWiping) || isExitWiping
+            ? Colors.white
+            : Colors.black;
+
+        final scaffoldBg = Color.lerp(nonAmoledBg, amoledBg, zen)!;
+
+        // In Non-AMOLED mode: text NEVER inverts (stays white/light).
+        // In AMOLED mode: text inverts when screen is white AMOLED.
+        final isAmoledWhite = ((isBreak && !isEntryWiping) || isExitWiping);
+        final activePalette = isBreak
+            ? _FocusPalette(
+                background: scaffoldBg,
+                onBackground: isAmoledWhite
+                    ? Color.lerp(Colors.white, _lightPalette.onBackground, zen)!
+                    : Colors.white,
+                muted: isAmoledWhite
+                    ? Color.lerp(Colors.white70, _lightPalette.muted, zen)!
+                    : Colors.white70,
+                accent: isAmoledWhite
+                    ? Color.lerp(AppTheme.accentPurple, _lightPalette.accent, zen)!
+                    : AppTheme.accentPurple,
+              )
+            : _darkPalette;
+
+        return PopScope(
+          canPop: canPop,
+          onPopInvokedWithResult: (didPop, result) {
+            if (!didPop && isRunning) showGiveUpSheet();
+          },
+          child: GestureDetector(
+            onVerticalDragUpdate: (details) {
+              if (isRunning) {
+                final delta = details.primaryDelta ?? 0.0;
+                // Dragging up (negative delta) increases zen progress towards 1.0
+                // Dragging down (positive delta) decreases zen progress towards 0.0
+                _zenAnimController.value =
+                    (_zenAnimController.value - delta / 220.0).clamp(0.0, 1.0);
+              }
+            },
+            onVerticalDragEnd: (details) {
+              if (isRunning) {
+                final velocity = details.primaryVelocity ?? 0.0;
+                // Positive velocity means dragging DOWN (towards normal Non-AMOLED)
+                // Negative velocity means dragging UP (towards AMOLED)
+                if (velocity > 200) {
+                  _zenAnimController.animateTo(0.0, curve: Curves.easeOutCubic);
+                } else if (velocity < -200) {
+                  _zenAnimController.animateTo(1.0, curve: Curves.easeOutCubic);
+                } else if (_zenAnimController.value > 0.5) {
+                  _zenAnimController.animateTo(1.0, curve: Curves.easeOutCubic);
+                } else {
+                  _zenAnimController.animateTo(0.0, curve: Curves.easeOutCubic);
+                }
+              }
+            },
+            behavior: HitTestBehavior.translucent,
+            child: Scaffold(
+              backgroundColor: scaffoldBg,
+              body: Stack(
+                children: [
+                  // Dynamic normal background (smoothly expands ambient glow circle and lightens in break)
+                  AnimatedBuilder(
+                    animation: _controller.waveAnimationController,
+                    builder: (context, _) {
+                      return Opacity(
+                        opacity: (1.0 - zen).clamp(0.0, 1.0),
+                        child: FocusBackground(
+                          slideProgress: _controller.slideProgress,
+                          breakProgress: breakVal,
+                        ),
+                      );
+                    },
+                  ),
+
+                  // AMOLED pure overlay (black in focus, pure white in break)
+                  if (zen > 0.0)
+                    Positioned.fill(
+                      child: Container(
+                        color: amoledBg.withValues(alpha: zen),
+                      ),
                     ),
-                  );
-                },
-              ),
 
-              // AMOLED pure black overlay
-              if (zen > 0.0)
-                Positioned.fill(
-                  child: Container(color: Colors.black.withValues(alpha: zen)),
-                ),
-
-              // REAL, interactive body — unchanged in every way.
+              // REAL, interactive body
               _buildBody(
                 context,
-                _darkPalette,
+                activePalette,
                 isRunning: isRunning,
                 zen: zen,
                 slideProgress: slideProgress,
@@ -652,8 +719,7 @@ class FocusTimerPageState extends State<FocusTimerPage>
 
               // ANIMATION 1a: light-theme clone of the same body, revealed by
               // a dome-up wipe on focus -> break and held fully open for the
-              // whole break. Purely decorative: IgnorePointer lets every
-              // gesture pass through to the real body above.
+              // whole break (rendered at AMOLED zen = 1.0).
               if (_showLightOverlay)
                 Positioned.fill(
                   child: IgnorePointer(
@@ -665,12 +731,12 @@ class FocusTimerPageState extends State<FocusTimerPage>
                         domeUp: true,
                       ),
                       child: Container(
-                        color: _lightPalette.background,
+                        color: Colors.white,
                         child: _buildBody(
                           context,
                           _lightPalette,
                           isRunning: isRunning,
-                          zen: zen,
+                          zen: 1.0,
                           slideProgress: slideProgress,
                         ),
                       ),
@@ -679,7 +745,7 @@ class FocusTimerPageState extends State<FocusTimerPage>
                 ),
 
               // ANIMATION 1b: dark-theme clone sweeping back over the light
-              // layer on break -> focus (dome down). Also decorative.
+              // layer on break -> focus (dome down, rendered at AMOLED zen = 1.0).
               if (_showDarkExitOverlay)
                 Positioned.fill(
                   child: IgnorePointer(
@@ -691,12 +757,12 @@ class FocusTimerPageState extends State<FocusTimerPage>
                         domeUp: false,
                       ),
                       child: Container(
-                        color: _darkPalette.background,
+                        color: Colors.black,
                         child: _buildBody(
                           context,
                           _darkPalette,
                           isRunning: isRunning,
-                          zen: zen,
+                          zen: 1.0,
                           slideProgress: slideProgress,
                         ),
                       ),
@@ -720,6 +786,8 @@ class FocusTimerPageState extends State<FocusTimerPage>
           ),
         ),
       ),
+    );
+      },
     );
   }
 

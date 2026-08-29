@@ -83,9 +83,7 @@ class _TreeGrowthVisualizerState extends State<TreeGrowthVisualizer>
                   progress: widget.isRunning ? widget.progress : 1.0,
                   isRunning: widget.isRunning,
                   isBreak: widget.isBreak,
-                  accentColor: widget.isBreak
-                      ? const Color(0xFFE5A93C)
-                      : AppTheme.primary,
+                  accentColor: AppTheme.primary,
                 ),
               ),
 
@@ -141,14 +139,16 @@ class _CircularGaugePainter extends CustomPainter {
     canvas.drawCircle(center, radius, trackPaint);
 
     if (isRunning && progress > 0.001) {
-      // Glow underlay
-      final glowPaint = Paint()
-        ..color = accentColor.withValues(alpha: 0.25)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 8.0
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
-
       final sweepAngle = math.pi * 2 * progress.clamp(0.0, 1.0);
+
+      // 1. Soft Glow underlay
+      final glowPaint = Paint()
+        ..color = accentColor.withValues(alpha: 0.35)
+        ..style = PaintingStyle.stroke
+        ..strokeCap = StrokeCap.round
+        ..strokeWidth = 6.5
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5);
+
       canvas.drawArc(
         Rect.fromCircle(center: center, radius: radius),
         -math.pi / 2,
@@ -157,20 +157,12 @@ class _CircularGaugePainter extends CustomPainter {
         glowPaint,
       );
 
-      // Active Gradient Arc
+      // 2. Uniformly colored active arc
       final activePaint = Paint()
-        ..shader = SweepGradient(
-          startAngle: -math.pi / 2,
-          endAngle: math.pi * 1.5,
-          colors: [
-            accentColor.withValues(alpha: 0.6),
-            accentColor,
-            AppTheme.accentPurple,
-          ],
-        ).createShader(Rect.fromCircle(center: center, radius: radius))
+        ..color = accentColor
         ..style = PaintingStyle.stroke
         ..strokeCap = StrokeCap.round
-        ..strokeWidth = 4.0;
+        ..strokeWidth = 3.5;
 
       canvas.drawArc(
         Rect.fromCircle(center: center, radius: radius),
@@ -180,7 +172,7 @@ class _CircularGaugePainter extends CustomPainter {
         activePaint,
       );
 
-      // Leading Head Particle
+      // 3. Leading Head Particle
       final headAngle = -math.pi / 2 + sweepAngle;
       final headX = center.dx + radius * math.cos(headAngle);
       final headY = center.dy + radius * math.sin(headAngle);
@@ -188,7 +180,7 @@ class _CircularGaugePainter extends CustomPainter {
       final headPaint = Paint()
         ..color = Colors.white
         ..style = PaintingStyle.fill;
-      canvas.drawCircle(Offset(headX, headY), 3.5, headPaint);
+      canvas.drawCircle(Offset(headX, headY), 3.0, headPaint);
     } else if (!isRunning) {
       // Idle Notched / Dashed Aesthetic Track
       final tickPaint = Paint()
@@ -331,8 +323,7 @@ class _TreeGrowthPainter extends CustomPainter {
       final py = (cy - (h * 0.4)) + (p.y * h * 0.35) + floatY;
 
       final pPaint = Paint()
-        ..color = (isBreak ? const Color(0xFFFFD270) : const Color(0xFFD8B4FE))
-            .withValues(alpha: p.opacity)
+        ..color = const Color(0xFFD8B4FE).withValues(alpha: p.opacity)
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2);
 
       canvas.drawCircle(Offset(px, py), p.radius, pPaint);
@@ -554,9 +545,7 @@ class _TreeGrowthPainter extends CustomPainter {
 
     // Radiant Lilac Crown Highlight
     final highlightPaint = Paint()
-      ..color = (isBreak
-              ? const Color(0xFFFFE082)
-              : (isMajestic ? const Color(0xFFE9D5FF) : const Color(0xFFC084FC)))
+      ..color = (isMajestic ? const Color(0xFFE9D5FF) : const Color(0xFFC084FC))
           .withValues(alpha: 0.52);
     canvas.drawCircle(Offset(cx - 4, cy - 5), radius * 0.45, highlightPaint);
   }
