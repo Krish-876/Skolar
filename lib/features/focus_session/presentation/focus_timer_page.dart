@@ -1232,12 +1232,7 @@ class FocusTimerPageState extends State<FocusTimerPage>
               return SliderTheme(
                 data: SliderTheme.of(context).copyWith(
                   trackHeight: 3,
-                  trackShape: SnappedTickSliderTrackShape(
-                    snapPoints: snapPoints,
-                    min: minVal,
-                    max: maxVal,
-                    currentValue: val,
-                  ),
+                  trackShape: const RoundedRectSliderTrackShape(),
                   thumbShape: const GlowThumbShape(),
                   overlayShape: SliderComponentShape.noOverlay,
                   activeTrackColor: AppTheme.primary,
@@ -2002,77 +1997,4 @@ class _GiveUpSheetView extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Custom Slider Track Shape with Snapping Line Indicators
-// ─────────────────────────────────────────────────────────────────────────────
-class SnappedTickSliderTrackShape extends RoundedRectSliderTrackShape {
-  final List<double> snapPoints;
-  final double min;
-  final double max;
-  final double currentValue;
 
-  const SnappedTickSliderTrackShape({
-    required this.snapPoints,
-    required this.min,
-    required this.max,
-    required this.currentValue,
-  });
-
-  @override
-  void paint(
-    PaintingContext context,
-    Offset offset, {
-    required RenderBox parentBox,
-    required SliderThemeData sliderTheme,
-    required Animation<double> enableAnimation,
-    required TextDirection textDirection,
-    required Offset thumbCenter,
-    Offset? secondaryOffset,
-    bool isDiscrete = false,
-    bool isEnabled = false,
-    double additionalActiveTrackHeight = 0,
-  }) {
-    super.paint(
-      context,
-      offset,
-      parentBox: parentBox,
-      sliderTheme: sliderTheme,
-      enableAnimation: enableAnimation,
-      textDirection: textDirection,
-      thumbCenter: thumbCenter,
-      secondaryOffset: secondaryOffset,
-      isDiscrete: isDiscrete,
-      isEnabled: isEnabled,
-      additionalActiveTrackHeight: additionalActiveTrackHeight,
-    );
-
-    final trackRect = getPreferredRect(
-      parentBox: parentBox,
-      offset: offset,
-      sliderTheme: sliderTheme,
-      isEnabled: isEnabled,
-      isDiscrete: isDiscrete,
-    );
-
-    final canvas = context.canvas;
-    for (final point in snapPoints) {
-      final fraction = (point - min) / (max - min);
-      final tickX = trackRect.left + fraction * trackRect.width;
-      final isPassed = point <= currentValue;
-
-      final tickPaint = Paint()
-        ..color = isPassed
-            ? Colors.white.withValues(alpha: 0.75)
-            : Colors.white.withValues(alpha: 0.28)
-        ..strokeWidth = 2.0
-        ..strokeCap = StrokeCap.round;
-
-      // Draw subtle vertical tick line indicator extending across track
-      canvas.drawLine(
-        Offset(tickX, trackRect.center.dy - 5.0),
-        Offset(tickX, trackRect.center.dy + 5.0),
-        tickPaint,
-      );
-    }
-  }
-}

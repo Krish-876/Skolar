@@ -21,14 +21,14 @@ class FocusTimerController extends ChangeNotifier {
   }
 
   /// MASTER TESTING MODE TOGGLE
-  /// - [true]: Rapid testing (25s Focus + 15s Break)
+  /// - [true]: Rapid testing (5s Focus + 5s Break)
   /// - [false]: Production mode (25m Focus + 5m Break)
-  static const bool kTestMode = true;
+  static const bool kTestMode = false;
 
-  static const int pomodoroFocusDuration = kTestMode ? 25 : (25 * 60);
-  static const int pomodoroBreakDuration = kTestMode ? 15 : (5 * 60);
+  static const int pomodoroFocusDuration = kTestMode ? 5 : (25 * 60);
+  static const int pomodoroBreakDuration = kTestMode ? 5 : (5 * 60);
 
-  static int get initialDefaultDuration => kTestMode ? 25 : (25 * 60);
+  static int get initialDefaultDuration => kTestMode ? 5 : (25 * 60);
 
   FocusTimerStatus _status = FocusTimerStatus.idle;
   FocusTimerStatus get status => _status;
@@ -362,9 +362,9 @@ class FocusTimerController extends ChangeNotifier {
   String get upcomingBreakInfo {
     if (!_isPomodoroEnabled) return '';
     if (_currentPhase == FocusPhase.focus) {
-      return kTestMode ? 'Next: 15s break' : 'Next: 5m break';
+      return kTestMode ? 'Next: 5s break' : 'Next: 5m break';
     } else {
-      return kTestMode ? 'Next: 25s focus session' : 'Next: 25m focus session';
+      return kTestMode ? 'Next: 5s focus session' : 'Next: 25m focus session';
     }
   }
 

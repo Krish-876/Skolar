@@ -76,11 +76,11 @@ class _TreeGrowthVisualizerState extends State<TreeGrowthVisualizer>
           child: Stack(
             alignment: Alignment.center,
             children: [
-              // 1. Ambient Circular Progress Gauge
+              // 1. Ambient Circular Ring & Progress Gauge
               CustomPaint(
                 size: Size(widget.size, widget.size),
                 painter: _CircularGaugePainter(
-                  progress: widget.isRunning ? widget.progress : 1.0,
+                  progress: widget.progress,
                   isRunning: widget.isRunning,
                   isBreak: widget.isBreak,
                   accentColor: AppTheme.primary,
@@ -130,11 +130,11 @@ class _CircularGaugePainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = (size.width / 2) - 6;
 
-    // Track Paint
+    // Clean, continuous circular track ring
     final trackPaint = Paint()
-      ..color = Colors.white.withValues(alpha: isRunning ? 0.08 : 0.05)
+      ..color = Colors.white.withValues(alpha: isRunning ? 0.08 : 0.10)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 3.5;
+      ..strokeWidth = 2.5;
 
     canvas.drawCircle(center, radius, trackPaint);
 
@@ -181,30 +181,6 @@ class _CircularGaugePainter extends CustomPainter {
         ..color = Colors.white
         ..style = PaintingStyle.fill;
       canvas.drawCircle(Offset(headX, headY), 3.0, headPaint);
-    } else if (!isRunning) {
-      // Idle Notched / Dashed Aesthetic Track
-      final tickPaint = Paint()
-        ..color = Colors.white.withValues(alpha: 0.18)
-        ..strokeWidth = 1.5
-        ..strokeCap = StrokeCap.round;
-
-      const tickCount = 24;
-      for (int i = 0; i < tickCount; i++) {
-        final angle = (i / tickCount) * math.pi * 2;
-        final innerR = radius - 3.0;
-        final outerR = radius + 3.0;
-
-        final p1 = Offset(
-          center.dx + innerR * math.cos(angle),
-          center.dy + innerR * math.sin(angle),
-        );
-        final p2 = Offset(
-          center.dx + outerR * math.cos(angle),
-          center.dy + outerR * math.sin(angle),
-        );
-
-        canvas.drawLine(p1, p2, tickPaint);
-      }
     }
   }
 
