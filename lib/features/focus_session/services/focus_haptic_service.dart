@@ -14,7 +14,7 @@ class FocusHapticService {
   }
 
   /// Subtle touch feedback
-  static void vibrate({int duration = 15, int amplitude = 120}) {
+  static void vibrate({int duration = 10, int amplitude = 50}) {
     try {
       _channel.invokeMethod('vibrate', {
         'duration': duration,

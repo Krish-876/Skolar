@@ -41,13 +41,15 @@ class MainActivity : FlutterActivity() {
                     }
                 }
                 "vibrate" -> {
-                    val duration = (call.argument<Int>("duration") ?: 15).toLong()
-                    val amplitude = call.argument<Int>("amplitude") ?: 120
+                    val duration = (call.argument<Int>("duration") ?: 10).toLong()
+                    val amplitude = call.argument<Int>("amplitude") ?: 50
                     vibrateDevice(duration, amplitude)
                     result.success(true)
                 }
                 "hapticSnap" -> {
-                    vibrateDevice(15, 120)
+                    val duration = (call.argument<Int>("duration") ?: 10).toLong()
+                    val amplitude = call.argument<Int>("amplitude") ?: 50
+                    vibrateDevice(duration, amplitude, useTick = true)
                     result.success(true)
                 }
                 else -> result.notImplemented()
@@ -55,15 +57,15 @@ class MainActivity : FlutterActivity() {
         }
     }
 
-    private fun vibrateDevice(durationMs: Long, amplitude: Int = 120) {
+    private fun vibrateDevice(durationMs: Long, amplitude: Int = 50, useTick: Boolean = false) {
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 val vibratorManager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager
                 val vibrator = vibratorManager?.defaultVibrator
                 if (vibrator != null && vibrator.hasVibrator()) {
-                    if (durationMs <= 25 && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    if (useTick && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                         try {
-                            val effect = VibrationEffect.createPredefined(VibrationEffect.EFFECT_CLICK)
+                            val effect = VibrationEffect.createPredefined(VibrationEffect.EFFECT_TICK)
                             vibrator.vibrate(effect)
                             return
                         } catch (e: Exception) {
@@ -76,9 +78,9 @@ class MainActivity : FlutterActivity() {
             } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
                 if (vibrator != null && vibrator.hasVibrator()) {
-                    if (durationMs <= 25 && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    if (useTick && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                         try {
-                            val effect = VibrationEffect.createPredefined(VibrationEffect.EFFECT_CLICK)
+                            val effect = VibrationEffect.createPredefined(VibrationEffect.EFFECT_TICK)
                             vibrator.vibrate(effect)
                             return
                         } catch (e: Exception) {
