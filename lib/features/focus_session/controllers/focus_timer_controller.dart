@@ -20,9 +20,15 @@ class FocusTimerController extends ChangeNotifier {
     );
   }
 
-  // 25m focus + 5m break
-  static const int pomodoroFocusDuration = 25 * 60; // 25 minutes
-  static const int pomodoroBreakDuration = 5 * 60; // 5 minutes
+  /// MASTER TESTING MODE TOGGLE
+  /// - [true]: Rapid testing (25s Focus + 15s Break)
+  /// - [false]: Production mode (25m Focus + 5m Break)
+  static const bool kTestMode = true;
+
+  static const int pomodoroFocusDuration = kTestMode ? 25 : (25 * 60);
+  static const int pomodoroBreakDuration = kTestMode ? 15 : (5 * 60);
+
+  static int get initialDefaultDuration => kTestMode ? 25 : (25 * 60);
 
   FocusTimerStatus _status = FocusTimerStatus.idle;
   FocusTimerStatus get status => _status;
@@ -34,16 +40,16 @@ class FocusTimerController extends ChangeNotifier {
   bool _isPomodoroEnabled = true;
   bool get isPomodoroEnabled => _isPomodoroEnabled;
 
-  int _totalSeconds = 25 * 60; // total focus seconds chosen by user
+  int _totalSeconds = initialDefaultDuration; // total focus seconds chosen by user
   int get totalSeconds => _totalSeconds;
 
-  int _secondsLeft = 25 * 60; // total remaining wall-clock seconds
+  int _secondsLeft = initialDefaultDuration; // total remaining wall-clock seconds
   int get secondsLeft => _secondsLeft;
 
-  int _currentPhaseTotalSeconds = 25 * 60;
+  int _currentPhaseTotalSeconds = initialDefaultDuration;
   int get currentPhaseTotalSeconds => _currentPhaseTotalSeconds;
 
-  int _currentPhaseSecondsLeft = 25 * 60;
+  int _currentPhaseSecondsLeft = initialDefaultDuration;
   int get currentPhaseSecondsLeft => _currentPhaseSecondsLeft;
 
   DateTime? _sessionEndTime;
@@ -356,9 +362,9 @@ class FocusTimerController extends ChangeNotifier {
   String get upcomingBreakInfo {
     if (!_isPomodoroEnabled) return '';
     if (_currentPhase == FocusPhase.focus) {
-      return 'Next: 5m break';
+      return kTestMode ? 'Next: 15s break' : 'Next: 5m break';
     } else {
-      return 'Next: 25m focus session';
+      return kTestMode ? 'Next: 25s focus session' : 'Next: 25m focus session';
     }
   }
 

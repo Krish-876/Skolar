@@ -13,6 +13,7 @@ import 'package:flutter/services.dart';
 import '../controllers/focus_timer_controller.dart';
 import '../widgets/focus_background.dart';
 import '../widgets/phase_takeover.dart';
+import '../widgets/tree_growth_visualizer.dart';
 
 /// Colors that differ between the real (dark) body and its light-theme
 /// break clone. Everything structural (layout, sizing, which widgets exist)
@@ -123,7 +124,10 @@ class FocusTimerPageState extends State<FocusTimerPage>
     _exitWipeController.addListener(() => setState(() {}));
     _exitWipeController.addStatusListener(_onExitWipeStatusChanged);
 
-    _targetSliderMinutes = (_controller.totalSeconds / 60.0).clamp(1.0, 180.0);
+    final isTest = FocusTimerController.kTestMode;
+    _targetSliderMinutes = isTest
+        ? _controller.totalSeconds.toDouble().clamp(10.0, 180.0)
+        : (_controller.totalSeconds / 60.0).clamp(1.0, 180.0);
     _animatedSliderMinutes = _targetSliderMinutes;
     _controller.addListener(() => setState(() {}));
     _controller.onComplete = _onTimerComplete;
@@ -863,24 +867,24 @@ class FocusTimerPageState extends State<FocusTimerPage>
   }
 
   Widget _buildBonsaiHero(bool isRunning) {
+    final isTest = FocusTimerController.kTestMode;
+    final minVal = isTest ? 10.0 : 1.0;
+    final maxVal = 180.0;
+    final previewScale =
+        ((_targetSliderMinutes - minVal) / (maxVal - minVal)).clamp(0.0, 1.0);
+    final overallProgress = _controller.sessionProgress;
+
     return Center(
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 500),
+        duration: const Duration(milliseconds: 400),
         curve: Curves.easeInOut,
-        padding: EdgeInsets.only(top: isRunning ? 20 : 0),
-        child: Padding(
-          padding: const EdgeInsets.only(top: 10, left: 10),
-          child: Image.asset(
-            'assets/images/bonsai.png',
-            width: 230,
-            height: 210,
-            fit: BoxFit.contain,
-            errorBuilder: (_, _, _) => const Icon(
-              Icons.spa_rounded,
-              size: 80,
-              color: Color(0xFF4DA83B),
-            ),
-          ),
+        padding: EdgeInsets.only(top: isRunning ? 12 : 0),
+        child: TreeGrowthVisualizer(
+          progress: overallProgress,
+          isRunning: isRunning,
+          isBreak: _controller.isBreakPhase,
+          size: 215,
+          previewScale: previewScale,
         ),
       ),
     );
@@ -1139,8 +1143,11 @@ class FocusTimerPageState extends State<FocusTimerPage>
   }
 
   Widget _buildDurationSlider() {
+    final isTestMode = FocusTimerController.kTestMode;
+    const minVal = 1.0;
+    const maxVal = 180.0;
     const snapPoints = [30.0, 60.0, 90.0, 120.0, 150.0];
-    const snapThreshold = 3.5;
+    final snapThreshold = isTestMode ? 4.0 : 3.5;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8.0),
@@ -1159,8 +1166,8 @@ class FocusTimerPageState extends State<FocusTimerPage>
                   trackHeight: 3,
                   trackShape: SnappedTickSliderTrackShape(
                     snapPoints: snapPoints,
-                    min: 1.0,
-                    max: 180.0,
+                    min: minVal,
+                    max: maxVal,
                     currentValue: val,
                   ),
                   thumbShape: const GlowThumbShape(),
@@ -1170,9 +1177,9 @@ class FocusTimerPageState extends State<FocusTimerPage>
                   thumbColor: Colors.white,
                 ),
                 child: Slider(
-                  value: val.clamp(1.0, 180.0),
-                  min: 1,
-                  max: 180,
+                  value: val.clamp(minVal, maxVal),
+                  min: minVal,
+                  max: maxVal,
                   onChanged: (dragVal) {
                     double effectiveVal = dragVal;
                     double? currentSnap;
@@ -1198,7 +1205,10 @@ class FocusTimerPageState extends State<FocusTimerPage>
                       _targetSliderMinutes = effectiveVal;
                       _animatedSliderMinutes = effectiveVal;
                     });
-                    _controller.setDuration(effectiveVal.round() * 60);
+                    final targetSeconds = isTestMode
+                        ? effectiveVal.round()
+                        : (effectiveVal.round() * 60);
+                    _controller.setDuration(targetSeconds);
                   },
                   onChangeEnd: (finalVal) {
                     double effectiveVal = finalVal;
@@ -1209,12 +1219,16 @@ class FocusTimerPageState extends State<FocusTimerPage>
                       }
                     }
 
-                    final finalMinutes = effectiveVal.round().clamp(1, 180);
+                    final finalUnits = effectiveVal
+                        .round()
+                        .clamp(minVal.round(), maxVal.round());
                     setState(() {
-                      _targetSliderMinutes = finalMinutes.toDouble();
-                      _animatedSliderMinutes = finalMinutes.toDouble();
+                      _targetSliderMinutes = finalUnits.toDouble();
+                      _animatedSliderMinutes = finalUnits.toDouble();
                     });
-                    _controller.setDuration(finalMinutes * 60);
+                    final targetSeconds =
+                        isTestMode ? finalUnits : (finalUnits * 60);
+                    _controller.setDuration(targetSeconds);
                     _lastSnappedPoint = null;
                     FocusHapticService.snap();
                   },
@@ -1228,7 +1242,7 @@ class FocusTimerPageState extends State<FocusTimerPage>
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  '1 min',
+                  isTestMode ? '1s' : '1 min',
                   style: TextStyle(
                     fontFamily: 'GoogleSans',
                     color: Colors.white38,
@@ -1236,7 +1250,7 @@ class FocusTimerPageState extends State<FocusTimerPage>
                   ),
                 ),
                 Text(
-                  '3 hours',
+                  isTestMode ? '3m' : '3 hours',
                   style: TextStyle(
                     fontFamily: 'GoogleSans',
                     color: Colors.white38,
