@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:Skolar/core/theme/app_theme.dart';
+import 'package:Skolar/features/focus_session/services/focus_haptic_service.dart';
 import 'package:Skolar/features/focus_session/services/focus_notification_service.dart';
 import 'package:Skolar/features/focus_session/services/focus_pip_service.dart';
 import 'package:Skolar/features/focus_session/services/focus_sound_service.dart';
@@ -80,6 +81,7 @@ class FocusTimerPageState extends State<FocusTimerPage>
 
   double _targetSliderMinutes = 25.0;
   double _animatedSliderMinutes = 25.0;
+  double? _lastSnappedPoint;
 
   double _knobOffset = 0;
   bool _dragging = false;
@@ -1137,6 +1139,9 @@ class FocusTimerPageState extends State<FocusTimerPage>
   }
 
   Widget _buildDurationSlider() {
+    const snapPoints = [30.0, 60.0, 90.0, 120.0, 150.0];
+    const snapThreshold = 3.5;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8.0),
       child: Column(
@@ -1152,6 +1157,12 @@ class FocusTimerPageState extends State<FocusTimerPage>
               return SliderTheme(
                 data: SliderTheme.of(context).copyWith(
                   trackHeight: 3,
+                  trackShape: SnappedTickSliderTrackShape(
+                    snapPoints: snapPoints,
+                    min: 1.0,
+                    max: 180.0,
+                    currentValue: val,
+                  ),
                   thumbShape: const GlowThumbShape(),
                   overlayShape: SliderComponentShape.noOverlay,
                   activeTrackColor: AppTheme.primary,
@@ -1163,23 +1174,49 @@ class FocusTimerPageState extends State<FocusTimerPage>
                   min: 1,
                   max: 180,
                   onChanged: (dragVal) {
+                    double effectiveVal = dragVal;
+                    double? currentSnap;
+
+                    for (final point in snapPoints) {
+                      if ((dragVal - point).abs() <= snapThreshold) {
+                        effectiveVal = point;
+                        currentSnap = point;
+                        break;
+                      }
+                    }
+
+                    if (currentSnap != null) {
+                      if (_lastSnappedPoint != currentSnap) {
+                        FocusHapticService.snap();
+                        _lastSnappedPoint = currentSnap;
+                      }
+                    } else {
+                      _lastSnappedPoint = null;
+                    }
+
                     setState(() {
-                      _targetSliderMinutes = dragVal;
-                      _animatedSliderMinutes = dragVal;
+                      _targetSliderMinutes = effectiveVal;
+                      _animatedSliderMinutes = effectiveVal;
                     });
-                    _controller.setDuration(dragVal.round() * 60);
+                    _controller.setDuration(effectiveVal.round() * 60);
                   },
                   onChangeEnd: (finalVal) {
-                    final snapped = ((finalVal / 5.0).round() * 5).clamp(
-                      1,
-                      180,
-                    );
+                    double effectiveVal = finalVal;
+                    for (final point in snapPoints) {
+                      if ((finalVal - point).abs() <= snapThreshold) {
+                        effectiveVal = point;
+                        break;
+                      }
+                    }
+
+                    final finalMinutes = effectiveVal.round().clamp(1, 180);
                     setState(() {
-                      _targetSliderMinutes = snapped.toDouble();
-                      _animatedSliderMinutes = snapped.toDouble();
+                      _targetSliderMinutes = finalMinutes.toDouble();
+                      _animatedSliderMinutes = finalMinutes.toDouble();
                     });
-                    _controller.setDuration(snapped * 60);
-                    HapticFeedback.selectionClick();
+                    _controller.setDuration(finalMinutes * 60);
+                    _lastSnappedPoint = null;
+                    FocusHapticService.snap();
                   },
                 ),
               );
@@ -1192,21 +1229,16 @@ class FocusTimerPageState extends State<FocusTimerPage>
               children: [
                 Text(
                   '1 min',
-                  style: TextStyle(fontFamily: 'GoogleSans',
-                    color: Colors.white38,
-                    fontSize: 11,
-                  ),
-                ),
-                Text(
-                  '1 hour',
-                  style: TextStyle(fontFamily: 'GoogleSans',
+                  style: TextStyle(
+                    fontFamily: 'GoogleSans',
                     color: Colors.white38,
                     fontSize: 11,
                   ),
                 ),
                 Text(
                   '3 hours',
-                  style: TextStyle(fontFamily: 'GoogleSans',
+                  style: TextStyle(
+                    fontFamily: 'GoogleSans',
                     color: Colors.white38,
                     fontSize: 11,
                   ),
@@ -1885,5 +1917,80 @@ class _GiveUpSheetView extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Custom Slider Track Shape with Snapping Line Indicators
+// ─────────────────────────────────────────────────────────────────────────────
+class SnappedTickSliderTrackShape extends RoundedRectSliderTrackShape {
+  final List<double> snapPoints;
+  final double min;
+  final double max;
+  final double currentValue;
+
+  const SnappedTickSliderTrackShape({
+    required this.snapPoints,
+    required this.min,
+    required this.max,
+    required this.currentValue,
+  });
+
+  @override
+  void paint(
+    PaintingContext context,
+    Offset offset, {
+    required RenderBox parentBox,
+    required SliderThemeData sliderTheme,
+    required Animation<double> enableAnimation,
+    required TextDirection textDirection,
+    required Offset thumbCenter,
+    Offset? secondaryOffset,
+    bool isDiscrete = false,
+    bool isEnabled = false,
+    double additionalActiveTrackHeight = 0,
+  }) {
+    super.paint(
+      context,
+      offset,
+      parentBox: parentBox,
+      sliderTheme: sliderTheme,
+      enableAnimation: enableAnimation,
+      textDirection: textDirection,
+      thumbCenter: thumbCenter,
+      secondaryOffset: secondaryOffset,
+      isDiscrete: isDiscrete,
+      isEnabled: isEnabled,
+      additionalActiveTrackHeight: additionalActiveTrackHeight,
+    );
+
+    final trackRect = getPreferredRect(
+      parentBox: parentBox,
+      offset: offset,
+      sliderTheme: sliderTheme,
+      isEnabled: isEnabled,
+      isDiscrete: isDiscrete,
+    );
+
+    final canvas = context.canvas;
+    for (final point in snapPoints) {
+      final fraction = (point - min) / (max - min);
+      final tickX = trackRect.left + fraction * trackRect.width;
+      final isPassed = point <= currentValue;
+
+      final tickPaint = Paint()
+        ..color = isPassed
+            ? Colors.white.withValues(alpha: 0.75)
+            : Colors.white.withValues(alpha: 0.28)
+        ..strokeWidth = 2.0
+        ..strokeCap = StrokeCap.round;
+
+      // Draw subtle vertical tick line indicator extending across track
+      canvas.drawLine(
+        Offset(tickX, trackRect.center.dy - 5.0),
+        Offset(tickX, trackRect.center.dy + 5.0),
+        tickPaint,
+      );
+    }
   }
 }

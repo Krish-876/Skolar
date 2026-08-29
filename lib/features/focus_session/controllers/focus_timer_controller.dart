@@ -21,8 +21,8 @@ class FocusTimerController extends ChangeNotifier {
   }
 
   // 25m focus + 5m break
-  static const int pomodoroFocusDuration = 25; // 25 minutes
-  static const int pomodoroBreakDuration = 5; // 5 minutes
+  static const int pomodoroFocusDuration = 25 * 60; // 25 minutes
+  static const int pomodoroBreakDuration = 5 * 60; // 5 minutes
 
   FocusTimerStatus _status = FocusTimerStatus.idle;
   FocusTimerStatus get status => _status;
