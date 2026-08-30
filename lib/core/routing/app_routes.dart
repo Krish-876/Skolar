@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:Skolar/features/auth/presentation/pages/auth_pages.dart';
+import 'package:Skolar/features/auth/presentation/pages/auth_preview_page.dart';
 import 'package:Skolar/features/onboarding/presentation/pages/onboarding_profile_page.dart';
 import 'package:Skolar/features/onboarding/presentation/pages/onboarding_welcome_page.dart';
 import 'package:Skolar/features/dashboard/presentation/pages/dashboard_page.dart';
@@ -20,8 +21,14 @@ import 'package:Skolar/core/loading/test_page.dart';
 
 import 'package:Skolar/features/profile/presentation/pages/profile_page.dart';
 
+/// Lets a page know when it's covered by another route (didPushNext) or
+/// becomes the topmost route again (didPopNext) — used by
+/// OnboardingWelcomePage to pause/resume its background video.
+final routeObserver = RouteObserver<PageRoute<void>>();
+
 class AppRoutes {
   static const String auth = '/auth';
+  static const String authPreview = '/auth-preview';
   static const String onboardingWelcome = '/onboarding-welcome';
   static const String onboardingProfile = '/onboarding-profile';
   static const String dashboard = '/dashboard';
@@ -51,11 +58,31 @@ final goRouterProvider = GoRouter(
 
     return null;
   },
+  observers: [routeObserver],
   routes: [
     // And add this route at the top of routes list:
     GoRoute(path: '/', builder: (_, _) => const _DevMenu()),
 
     GoRoute(path: AppRoutes.auth, builder: (_, _) => const AuthScreen()),
+    GoRoute(
+      path: AppRoutes.authPreview,
+      // No page transition at all — the onboarding welcome page and this
+      // page are built to look like the same screen at the swap instant
+      // (identical wordmark/rocket position), so a slide/fade here would
+      // undo that and read as a new page.
+      pageBuilder: (context, state) {
+        final extra = state.extra;
+        final mode = extra is AuthMode ? extra : AuthMode.login;
+        return CustomTransitionPage(
+          key: state.pageKey,
+          child: AuthPreviewPage(initialMode: mode),
+          transitionDuration: Duration.zero,
+          reverseTransitionDuration: Duration.zero,
+          transitionsBuilder: (context, animation, secondaryAnimation, child) =>
+              child,
+        );
+      },
+    ),
     GoRoute(
       path: AppRoutes.onboardingWelcome,
       builder: (_, _) => const OnboardingWelcomePage(),
@@ -108,6 +135,7 @@ class _DevMenu extends StatelessWidget {
     ('Onboarding Welcome', AppRoutes.onboardingWelcome),
     ('Onboarding', AppRoutes.onboardingProfile),
     ('Auth', AppRoutes.auth),
+    ('Auth Preview', AppRoutes.authPreview),
     ('Dashboard', AppRoutes.dashboard),
     ('Analytics', AppRoutes.analytics),
     ('Colleges', AppRoutes.colleges),

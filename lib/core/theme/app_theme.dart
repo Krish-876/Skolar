@@ -52,6 +52,18 @@ class AppTheme {
   // visible color on the black background, not a translucent tint.
   static const Color outlineButtonEdge = Color(0xFF2A2740);
 
+  // ── Preview sheet (light surfaces) ────────────────────────────────────────
+  // Light card/sheet on the otherwise all-dark theme, e.g. the auth preview
+  // screen's bottom sheet.
+  static const Color sheetBackground = Color(0xFFFFFFFF); // White sheet bg
+  static const Color sheetFieldFill = Color(0xFFF3F3F6); // Input fill on sheet
+  static const Color sheetTextSecondary = Color(
+    0xFF8E8E96,
+  ); // Hints / secondary text on the light sheet
+  static const Color sheetBorder = Color(
+    0xFFE5E5EA,
+  ); // Borders / dividers on the light sheet
+
   // ── Spacing ────────────────────────────────────────────────────────────────
   static const double xs = 4;
   static const double sm = 8;
@@ -67,6 +79,7 @@ class AppTheme {
   static const double radiusLg = 12;
   static const double radiusXl = 16;
   static const double radiusXxl = 24;
+  static const double radiusXxxl = 32; // Sheet top corners (auth preview)
 
   // ── Surface gradient (focus panel) ────────────────────────────────────────
   static const Color surfaceGrad2Begin = Color.fromARGB(255, 33, 45, 79);
