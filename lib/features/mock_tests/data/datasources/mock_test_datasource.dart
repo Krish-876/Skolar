@@ -32,7 +32,7 @@ class MockTestRemoteDataSourceImpl implements MockTestRemoteDataSource {
   final Dio _dio;
   final _supabase = Supabase.instance.client;
 
-  static const String _baseUrl = 'http://192.168.0.122:8000';
+  static const String _baseUrl = 'http://10.92.131.220:8000';
 
   MockTestRemoteDataSourceImpl({Dio? dio})
     : _dio =
@@ -41,7 +41,7 @@ class MockTestRemoteDataSourceImpl implements MockTestRemoteDataSource {
             BaseOptions(
               baseUrl: _baseUrl,
               connectTimeout: const Duration(seconds: 30),
-              receiveTimeout: const Duration(minutes: 3),
+              receiveTimeout: const Duration(minutes: 5),
             ),
           );
 
@@ -96,7 +96,7 @@ class MockTestRemoteDataSourceImpl implements MockTestRemoteDataSource {
           'exam_type': examType,
           'count': count,
           'k': k,
-          'with_answers': true,
+          'with_answers': false,
           'year_from': ?yearFrom,
           'year_to': ?yearTo,
         },

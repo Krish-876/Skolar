@@ -7,10 +7,9 @@ class AppTheme {
   static const Color primary = Color(0xFF8C38E5); // Vibrant brand purple
   static const Color secondary = Color(0xFF0F0E17); // Secondary near-black
   static const Color star = Color(0xFFF5C518); // Star / highlight yellow
-  static const Color wishlist = Color(0xFFE53935); // Wishlist / danger red
-  static const Color accentPurple = Color(
-    0xFFB388FF,
-  ); // Skolar brand purple accent
+  static const Color wishlist = Color(0xFFD0021B); // Wishlist / danger red
+  static const Color accentPurple = Color(0xFFB388FF); // Skolar brand purple
+  static const Color accentPurpleDark = Color(0xFF7B4FD9); // slab base
 
   // ── Surface & Overlay ─────────────────────────────────────────────────────
   static const Color surface = Color(0xFF1C1C1E); // Surface dark card
@@ -44,10 +43,15 @@ class AppTheme {
   // ── Utility ────────────────────────────────────────────────────────────────
   static const Color blur = Color(0x33FFFFFF); // Frosted glass / blur
   static const Color dropShadow = Color(0x40000000); // Drop shadow
+  static const Color onboardingButtonBorder = Color(0x3DFFFFFF); // white 24%
+  // Hard bottom edge for the transparent outline button. Must be a solid
+  // visible color on the black background, not a translucent tint.
+  static const Color outlineButtonEdge = Color(0xFF2A2740);
 
   // ── Spacing ────────────────────────────────────────────────────────────────
   static const double xs = 4;
   static const double sm = 8;
+  static const double smd = 12;
   static const double md = 16;
   static const double lg = 24;
   static const double xl = 32;
@@ -95,6 +99,23 @@ class AppTheme {
     colors: [surfaceGrad2Begin, surfaceGrad2End],
     stops: [0.0, 1.0],
   );
+
+  // ── Reusable Shadows ───────────────────────────────────────────────────────
+  static final List<BoxShadow> primaryButtonShadow = [
+    BoxShadow(
+      color: primary.withValues(alpha: 0.35),
+      blurRadius: 16,
+      offset: const Offset(0, 4),
+    ),
+  ];
+
+  static const List<BoxShadow> chunkyButtonShadow = [
+    BoxShadow(color: accentPurpleDark, blurRadius: 0, offset: Offset(0, 4)),
+  ];
+
+  static const List<BoxShadow> chunkyButtonShadowOutline = [
+    BoxShadow(color: outlineButtonEdge, blurRadius: 0, offset: Offset(0, 4)),
+  ];
 
   // ── Theme Data ─────────────────────────────────────────────────────────────
 
