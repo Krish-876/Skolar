@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:Skolar/core/theme/app_theme.dart';
 import '../providers/feed_provider.dart';
 import '../providers/feed_sort_option.dart';
-import 'feed_colors.dart';
 
 class FeedSortSheet extends ConsumerWidget {
   const FeedSortSheet({super.key});
@@ -10,9 +10,11 @@ class FeedSortSheet extends ConsumerWidget {
   static void show(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: FeedColors.sheetBg,
+      backgroundColor: AppTheme.surface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppTheme.radiusXxl),
+        ),
       ),
       builder: (_) => const FeedSortSheet(),
     );
@@ -22,44 +24,46 @@ class FeedSortSheet extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final current = ref.watch(feedSortProvider);
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Center(
-            child: Container(
-              width: 32,
-              height: 3,
-              decoration: BoxDecoration(
-                color: FeedColors.sheetHandle,
-                borderRadius: BorderRadius.circular(2),
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppTheme.onboardingButtonBorder,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 14),
-          const Text(
-            'Sort feed by',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: FeedColors.textSecondary,
-              fontFamily: 'DM Sans',
+            const SizedBox(height: 18),
+            const Text(
+              'Sort feed by',
+              style: TextStyle(
+                fontFamily: 'GoogleSans',
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.onBackground,
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          ...FeedSortOption.values.map(
-            (option) => _SortOptionTile(
-              option: option,
-              selected: option == current,
-              onTap: () {
-                ref.read(feedSortProvider.notifier).state = option;
-                Navigator.pop(context);
-              },
+            const SizedBox(height: 12),
+            ...FeedSortOption.values.map(
+              (option) => _SortOptionTile(
+                option: option,
+                selected: option == current,
+                onTap: () {
+                  ref.read(feedSortProvider.notifier).state = option;
+                  Navigator.pop(context);
+                },
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -91,42 +95,55 @@ class _SortOptionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(6),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-        decoration: const BoxDecoration(
-          border: Border(
-            bottom: BorderSide(color: FeedColors.sortOptBorder, width: 0.5),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
+          decoration: BoxDecoration(
+            color: selected
+                ? AppTheme.accentPurple.withValues(alpha: 0.12)
+                : Colors.white.withValues(alpha: 0.02),
+            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+            border: Border.all(
+              color: selected
+                  ? AppTheme.accentPurple
+                  : AppTheme.onboardingButtonBorder,
+              width: selected ? 1.2 : 0.8,
+            ),
           ),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              _icon,
-              size: 16,
-              color: selected ? FeedColors.sortSelText : FeedColors.textMuted,
-            ),
-            const SizedBox(width: 10),
-            Text(
-              option.label,
-              style: TextStyle(
-                fontSize: 13,
+          child: Row(
+            children: [
+              Icon(
+                _icon,
+                size: 18,
                 color: selected
-                    ? FeedColors.sortSelText
-                    : FeedColors.textSecondary,
-                fontFamily: 'DM Sans',
+                    ? AppTheme.accentPurple
+                    : AppTheme.onBackground2,
               ),
-            ),
-            const Spacer(),
-            if (selected)
-              const Icon(
-                Icons.check_rounded,
-                size: 14,
-                color: FeedColors.sortSelText,
+              const SizedBox(width: 12),
+              Text(
+                option.label,
+                style: TextStyle(
+                  fontFamily: 'GoogleSans',
+                  fontSize: 14,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  color: selected
+                      ? AppTheme.onBackground
+                      : AppTheme.onBackground2,
+                ),
               ),
-          ],
+              const Spacer(),
+              if (selected)
+                const Icon(
+                  Icons.check_circle_rounded,
+                  size: 18,
+                  color: AppTheme.accentPurple,
+                ),
+            ],
+          ),
         ),
       ),
     );

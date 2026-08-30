@@ -21,32 +21,46 @@ class PresetChip extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
           color: isActive
-              ? AppTheme.primary.withValues(alpha: 0.75)
-              : AppTheme.surface.withValues(alpha: 0.45),
+              ? AppTheme.primary.withValues(alpha: 0.22)
+              : AppTheme.surface,
           borderRadius: BorderRadius.circular(50),
           border: Border.all(
             color: isActive
-                ? AppTheme.primary.withValues(alpha: 0.8)
-                : Colors.white.withValues(alpha: 0.1),
-            width: 1.5,
+                ? AppTheme.primary
+                : Colors.white.withValues(alpha: 0.08),
+            width: isActive ? 1.5 : 1.0,
           ),
+          boxShadow: isActive
+              ? [
+                  BoxShadow(
+                    color: AppTheme.primary.withValues(alpha: 0.25),
+                    blurRadius: 12,
+                    offset: const Offset(0, 3),
+                  ),
+                ]
+              : null,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             if (icon != null) ...[
-              Icon(icon, size: 14, color: AppTheme.onBackground2),
+              Icon(
+                icon,
+                size: 14,
+                color: isActive ? AppTheme.accentPurple : Colors.white54,
+              ),
               const SizedBox(width: 6),
             ],
             Text(
               label,
               style: TextStyle(
-                color: isActive ? AppTheme.onPrimary : AppTheme.onBackground2,
+                fontFamily: 'GoogleSans',
+                color: isActive ? Colors.white : Colors.white60,
                 fontSize: 13,
-                fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+                fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
               ),
             ),
           ],

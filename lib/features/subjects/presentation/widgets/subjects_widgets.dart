@@ -5,6 +5,98 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:Skolar/core/theme/app_theme.dart';
 import 'package:Skolar/features/subjects/domain/entities/subject_entity.dart';
 
+// ── 2.5D Chunky Button ───────────────────────────────────────────────────
+
+class ChunkyButton extends StatefulWidget {
+  final String label;
+  final VoidCallback? onTap;
+  final List<BoxShadow>? shadow;
+  final Color color;
+  final Color textColor;
+  final BoxBorder? border;
+  final FontWeight fontWeight;
+  final IconData? icon;
+  final bool enabled;
+  final double height;
+
+  const ChunkyButton({
+    super.key,
+    required this.label,
+    required this.onTap,
+    this.shadow,
+    this.color = AppTheme.accentPurple,
+    this.textColor = AppTheme.onPrimary,
+    this.border,
+    this.fontWeight = FontWeight.bold,
+    this.icon,
+    this.enabled = true,
+    this.height = 54,
+  });
+
+  @override
+  State<ChunkyButton> createState() => _ChunkyButtonState();
+}
+
+class _ChunkyButtonState extends State<ChunkyButton> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final effectiveShadow = widget.shadow ?? AppTheme.chunkyButtonShadow;
+    final isInteractive = widget.enabled && widget.onTap != null;
+
+    return AnimatedOpacity(
+      duration: const Duration(milliseconds: 150),
+      opacity: widget.enabled ? 1.0 : 0.4,
+      child: GestureDetector(
+        onTapDown: isInteractive
+            ? (_) => setState(() => _pressed = true)
+            : null,
+        onTapUp: isInteractive ? (_) => setState(() => _pressed = false) : null,
+        onTapCancel: isInteractive
+            ? () => setState(() => _pressed = false)
+            : null,
+        onTap: isInteractive ? widget.onTap : null,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 60),
+          transform: _pressed
+              ? Matrix4.translationValues(0, 4, 0)
+              : Matrix4.identity(),
+          width: double.infinity,
+          height: widget.height,
+          decoration: BoxDecoration(
+            color: widget.color,
+            border: widget.border,
+            borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+            boxShadow: (_pressed || !widget.enabled) ? [] : effectiveShadow,
+          ),
+          alignment: Alignment.center,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (widget.icon != null) ...[
+                Icon(widget.icon, size: 20, color: widget.textColor),
+                const SizedBox(width: 8),
+              ],
+              Text(
+                widget.label,
+                style: TextStyle(
+                  fontFamily: 'GoogleSans',
+                  color: widget.textColor,
+                  fontWeight: widget.fontWeight,
+                  fontSize: 16,
+                  letterSpacing: 0.3,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 // ── Credit ring ───────────────────────────────────────────────────────────
 
 class CreditRing extends StatelessWidget {
@@ -71,7 +163,7 @@ class RingPainter extends CustomPainter {
     if (progress <= 0) return;
 
     final arcPaint = Paint()
-      ..color = const Color(0xFF8C38E5)
+      ..color = AppTheme.accentPurple
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth
       ..strokeCap = StrokeCap.round;
@@ -100,6 +192,7 @@ class SubjectRow extends StatelessWidget {
   final VoidCallback onLongPress;
   final VoidCallback? onPickHandout;
   final VoidCallback? onUnstageHandout;
+  final VoidCallback? onDelete;
   final int index;
 
   const SubjectRow({
@@ -113,6 +206,7 @@ class SubjectRow extends StatelessWidget {
     this.onTap,
     this.onPickHandout,
     this.onUnstageHandout,
+    this.onDelete,
     this.index = 0,
   });
 
@@ -120,7 +214,116 @@ class SubjectRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final hasHandout = subject.handoutUrl != null;
 
-    return TweenAnimationBuilder<double>(
+    final rowCard = GestureDetector(
+      onTap: onTap,
+      onLongPress: onLongPress,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 240),
+        curve: Curves.easeOut,
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: marked
+              ? AppTheme.wishlist.withValues(alpha: 0.14)
+              : AppTheme.surface,
+          borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+          border: Border.all(
+            color: marked
+                ? AppTheme.wishlist.withValues(alpha: 0.5)
+                : Colors.white.withValues(alpha: 0.08),
+            width: marked ? 1.5 : 1.0,
+          ),
+          boxShadow: marked
+              ? [
+                  BoxShadow(
+                    color: AppTheme.wishlist.withValues(alpha: 0.14),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : [],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                if (editMode) ...[
+                  Icon(
+                    marked
+                        ? Icons.remove_circle_rounded
+                        : Icons.remove_circle_outline_rounded,
+                    size: 20,
+                    color: marked
+                        ? AppTheme.wishlist
+                        : AppTheme.onBackground2.withValues(alpha: 0.4),
+                  ),
+                  const SizedBox(width: AppTheme.sm),
+                ],
+                Expanded(
+                  child: Text(
+                    subject.name,
+                    style: GoogleFonts.googleSans(
+                      fontSize: 15,
+                      fontWeight: marked ? FontWeight.bold : FontWeight.w600,
+                      color: marked ? AppTheme.wishlist : Colors.white,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                if (subject.shortName != null) ...[
+                  const SizedBox(width: AppTheme.sm),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 9,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primary.withValues(alpha: 0.18),
+                      borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+                      border: Border.all(
+                        color: AppTheme.primary.withValues(alpha: 0.4),
+                        width: 1.0,
+                      ),
+                    ),
+                    child: Text(
+                      subject.shortName!,
+                      style: GoogleFonts.googleSans(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.accentPurple,
+                        letterSpacing: 0.4,
+                      ),
+                    ),
+                  ),
+                ],
+                const SizedBox(width: AppTheme.md),
+                Text(
+                  subject.credits != null ? '${subject.credits} cr' : '— cr',
+                  style: GoogleFonts.googleSans(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: marked ? AppTheme.wishlist : Colors.white70,
+                  ),
+                ),
+              ],
+            ),
+            if (!editMode) ...[
+              const SizedBox(height: 12),
+              HandoutChip(
+                hasHandout: hasHandout,
+                filename: subject.handoutFilename,
+                uploading: uploading,
+                stagedFilename: stagedFilename,
+                onPick: onPickHandout,
+                onUnstage: onUnstageHandout,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+
+    final animatedChild = TweenAnimationBuilder<double>(
       tween: Tween(begin: 0.0, end: 1.0),
       duration: Duration(milliseconds: 320 + (index * 60)),
       curve: Curves.easeOutCubic,
@@ -131,114 +334,48 @@ class SubjectRow extends StatelessWidget {
           child: child,
         ),
       ),
-      child: GestureDetector(
-        onTap: onTap,
-        onLongPress: onLongPress,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 240),
-          curve: Curves.easeOut,
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: marked
-                ? AppTheme.wishlist.withValues(alpha: 0.14)
-                : const Color(0xFF1C1C1E),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: marked
-                  ? AppTheme.wishlist.withValues(alpha: 0.5)
-                  : Colors.white.withValues(alpha: 0.08),
-              width: marked ? 1.5 : 1.0,
+      child: rowCard,
+    );
+
+    if (editMode || onDelete == null) {
+      return animatedChild;
+    }
+
+    return Dismissible(
+      key: Key('subject_${subject.userSubjectId}'),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 24),
+        decoration: BoxDecoration(
+          color: const Color(0xFFE53935).withValues(alpha: 0.85),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.delete_sweep_rounded,
+              color: Colors.white,
+              size: 24,
             ),
-            boxShadow: marked
-                ? [
-                    BoxShadow(
-                      color: AppTheme.wishlist.withValues(alpha: 0.14),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ]
-                : [],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  if (editMode) ...[
-                    Icon(
-                      marked
-                          ? Icons.remove_circle_rounded
-                          : Icons.remove_circle_outline_rounded,
-                      size: 18,
-                      color: marked
-                          ? AppTheme.wishlist
-                          : AppTheme.onBackground2.withValues(alpha: 0.4),
-                    ),
-                    const SizedBox(width: AppTheme.sm),
-                  ],
-                  Expanded(
-                    child: Text(
-                      subject.name,
-                      style: GoogleFonts.googleSans(
-                        fontSize: 15,
-                        fontWeight: marked ? FontWeight.bold : FontWeight.w600,
-                        color: marked ? AppTheme.wishlist : Colors.white,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  if (subject.shortName != null) ...[
-                    const SizedBox(width: AppTheme.sm),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 9,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF8C38E5).withValues(alpha: 0.18),
-                        borderRadius: BorderRadius.circular(AppTheme.radiusSm),
-                        border: Border.all(
-                          color: const Color(0xFF8C38E5).withValues(alpha: 0.4),
-                          width: 1.0,
-                        ),
-                      ),
-                      child: Text(
-                        subject.shortName!,
-                        style: GoogleFonts.googleSans(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: const Color(0xFFD4A5FF),
-                          letterSpacing: 0.4,
-                        ),
-                      ),
-                    ),
-                  ],
-                  const SizedBox(width: AppTheme.md),
-                  Text(
-                    subject.credits != null ? '${subject.credits} cr' : '— cr',
-                    style: GoogleFonts.googleSans(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: marked ? AppTheme.wishlist : Colors.white70,
-                    ),
-                  ),
-                ],
+            const SizedBox(width: 8),
+            Text(
+              'Delete',
+              style: GoogleFonts.googleSans(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
               ),
-              if (!editMode) ...[
-                const SizedBox(height: 12),
-                HandoutChip(
-                  hasHandout: hasHandout,
-                  filename: subject.handoutFilename,
-                  uploading: uploading,
-                  stagedFilename: stagedFilename,
-                  onPick: onPickHandout,
-                  onUnstage: onUnstageHandout,
-                ),
-              ],
-            ],
-          ),
+            ),
+          ],
         ),
       ),
+      onDismissed: (_) {
+        HapticFeedback.mediumImpact();
+        onDelete?.call();
+      },
+      child: animatedChild,
     );
   }
 }
@@ -341,12 +478,12 @@ class HandoutChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
         decoration: BoxDecoration(
           color: hasHandout
-              ? const Color(0xFF8C38E5).withValues(alpha: 0.15)
+              ? AppTheme.primary.withValues(alpha: 0.15)
               : Colors.white.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(AppTheme.radiusXxl),
           border: Border.all(
             color: hasHandout
-                ? const Color(0xFF8C38E5).withValues(alpha: 0.4)
+                ? AppTheme.primary.withValues(alpha: 0.4)
                 : Colors.white.withValues(alpha: 0.12),
             width: 1.0,
           ),
@@ -359,7 +496,7 @@ class HandoutChip extends StatelessWidget {
                   ? Icons.description_rounded
                   : Icons.upload_file_rounded,
               size: 13,
-              color: hasHandout ? const Color(0xFFD4A5FF) : Colors.white54,
+              color: hasHandout ? AppTheme.accentPurple : Colors.white54,
             ),
             const SizedBox(width: 6),
             Text(
@@ -369,7 +506,7 @@ class HandoutChip extends StatelessWidget {
               style: GoogleFonts.googleSans(
                 fontSize: 11,
                 fontWeight: FontWeight.w500,
-                color: hasHandout ? const Color(0xFFD4A5FF) : Colors.white70,
+                color: hasHandout ? AppTheme.accentPurple : Colors.white70,
               ),
             ),
           ],
@@ -409,7 +546,7 @@ class _CreditTargetSheetState extends State<CreditTargetSheet> {
       ),
       child: Container(
         decoration: const BoxDecoration(
-          color: Color(0xFF1E1E22),
+          color: AppTheme.surface,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         padding: const EdgeInsets.fromLTRB(
@@ -461,7 +598,7 @@ class _CreditTargetSheetState extends State<CreditTargetSheet> {
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
               ),
-              cursorColor: const Color(0xFF8C38E5),
+              cursorColor: AppTheme.accentPurple,
               decoration: InputDecoration(
                 hintText: '25',
                 hintStyle: GoogleFonts.googleSans(
@@ -476,63 +613,24 @@ class _CreditTargetSheetState extends State<CreditTargetSheet> {
                   ),
                 ),
                 focusedBorder: const UnderlineInputBorder(
-                  borderSide: BorderSide(color: Color(0xFF8C38E5), width: 2),
+                  borderSide: BorderSide(
+                    color: AppTheme.accentPurple,
+                    width: 2,
+                  ),
                 ),
                 contentPadding: const EdgeInsets.only(bottom: AppTheme.sm),
               ),
             ),
             const SizedBox(height: AppTheme.xl),
-            SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: AnimatedOpacity(
-                opacity: _valid ? 1.0 : 0.4,
-                duration: const Duration(milliseconds: 200),
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF9B4DFF), Color(0xFF7428D8)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: _valid
-                        ? [
-                            BoxShadow(
-                              color: const Color(
-                                0xFF8C38E5,
-                              ).withValues(alpha: 0.38),
-                              blurRadius: 18,
-                              offset: const Offset(0, 4),
-                            ),
-                          ]
-                        : [],
-                  ),
-                  child: ElevatedButton(
-                    onPressed: _valid
-                        ? () {
-                            Navigator.pop(context);
-                            widget.onConfirm(int.parse(_ctrl.text.trim()));
-                          }
-                        : null,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.transparent,
-                      shadowColor: Colors.transparent,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                    child: Text(
-                      'Set Target',
-                      style: GoogleFonts.googleSans(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
+            ChunkyButton(
+              label: 'Set Target',
+              enabled: _valid,
+              onTap: _valid
+                  ? () {
+                      Navigator.pop(context);
+                      widget.onConfirm(int.parse(_ctrl.text.trim()));
+                    }
+                  : null,
             ),
           ],
         ),
@@ -622,7 +720,7 @@ class _AddSubjectSheetState extends State<AddSubjectSheet> {
       ),
       child: Container(
         decoration: const BoxDecoration(
-          color: Color(0xFF1E1E22),
+          color: AppTheme.surface,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         padding: const EdgeInsets.fromLTRB(
@@ -707,61 +805,10 @@ class _AddSubjectSheetState extends State<AddSubjectSheet> {
               ),
             ],
             const SizedBox(height: AppTheme.xl),
-            SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: AnimatedOpacity(
-                opacity: (_valid && !_submitting) ? 1.0 : 0.4,
-                duration: const Duration(milliseconds: 200),
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF9B4DFF), Color(0xFF7428D8)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: (_valid && !_submitting)
-                        ? [
-                            BoxShadow(
-                              color: const Color(
-                                0xFF8C38E5,
-                              ).withValues(alpha: 0.38),
-                              blurRadius: 18,
-                              offset: const Offset(0, 4),
-                            ),
-                          ]
-                        : [],
-                  ),
-                  child: ElevatedButton(
-                    onPressed: (_valid && !_submitting) ? _submit : null,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.transparent,
-                      shadowColor: Colors.transparent,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                    child: _submitting
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : Text(
-                            'Add Subject',
-                            style: GoogleFonts.googleSans(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                  ),
-                ),
-              ),
+            ChunkyButton(
+              label: _submitting ? 'Adding...' : 'Add Subject',
+              enabled: _valid && !_submitting,
+              onTap: (_valid && !_submitting) ? _submit : null,
             ),
           ],
         ),
@@ -812,7 +859,7 @@ class SheetField extends StatelessWidget {
           keyboardType: keyboardType,
           inputFormatters: inputFormatters,
           style: GoogleFonts.googleSans(color: Colors.white, fontSize: 15),
-          cursorColor: const Color(0xFF8C38E5),
+          cursorColor: AppTheme.accentPurple,
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: GoogleFonts.googleSans(
@@ -826,7 +873,7 @@ class SheetField extends StatelessWidget {
               ),
             ),
             focusedBorder: const UnderlineInputBorder(
-              borderSide: BorderSide(color: Color(0xFF8C38E5), width: 1.8),
+              borderSide: BorderSide(color: AppTheme.accentPurple, width: 1.8),
             ),
             contentPadding: const EdgeInsets.only(bottom: 6),
           ),
