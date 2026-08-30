@@ -100,6 +100,7 @@ class SubjectRow extends StatelessWidget {
   final VoidCallback onLongPress;
   final VoidCallback? onPickHandout;
   final VoidCallback? onUnstageHandout;
+  final VoidCallback? onDelete;
   final int index;
 
   const SubjectRow({
@@ -113,6 +114,7 @@ class SubjectRow extends StatelessWidget {
     this.onTap,
     this.onPickHandout,
     this.onUnstageHandout,
+    this.onDelete,
     this.index = 0,
   });
 
@@ -120,7 +122,116 @@ class SubjectRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final hasHandout = subject.handoutUrl != null;
 
-    return TweenAnimationBuilder<double>(
+    final rowCard = GestureDetector(
+      onTap: onTap,
+      onLongPress: onLongPress,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 240),
+        curve: Curves.easeOut,
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: marked
+              ? AppTheme.wishlist.withValues(alpha: 0.14)
+              : const Color(0xFF1C1C1E),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: marked
+                ? AppTheme.wishlist.withValues(alpha: 0.5)
+                : Colors.white.withValues(alpha: 0.08),
+            width: marked ? 1.5 : 1.0,
+          ),
+          boxShadow: marked
+              ? [
+                  BoxShadow(
+                    color: AppTheme.wishlist.withValues(alpha: 0.14),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : [],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                if (editMode) ...[
+                  Icon(
+                    marked
+                        ? Icons.remove_circle_rounded
+                        : Icons.remove_circle_outline_rounded,
+                    size: 20,
+                    color: marked
+                        ? AppTheme.wishlist
+                        : AppTheme.onBackground2.withValues(alpha: 0.4),
+                  ),
+                  const SizedBox(width: AppTheme.sm),
+                ],
+                Expanded(
+                  child: Text(
+                    subject.name,
+                    style: GoogleFonts.googleSans(
+                      fontSize: 15,
+                      fontWeight: marked ? FontWeight.bold : FontWeight.w600,
+                      color: marked ? AppTheme.wishlist : Colors.white,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                if (subject.shortName != null) ...[
+                  const SizedBox(width: AppTheme.sm),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 9,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF8C38E5).withValues(alpha: 0.18),
+                      borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+                      border: Border.all(
+                        color: const Color(0xFF8C38E5).withValues(alpha: 0.4),
+                        width: 1.0,
+                      ),
+                    ),
+                    child: Text(
+                      subject.shortName!,
+                      style: GoogleFonts.googleSans(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFFD4A5FF),
+                        letterSpacing: 0.4,
+                      ),
+                    ),
+                  ),
+                ],
+                const SizedBox(width: AppTheme.md),
+                Text(
+                  subject.credits != null ? '${subject.credits} cr' : '— cr',
+                  style: GoogleFonts.googleSans(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: marked ? AppTheme.wishlist : Colors.white70,
+                  ),
+                ),
+              ],
+            ),
+            if (!editMode) ...[
+              const SizedBox(height: 12),
+              HandoutChip(
+                hasHandout: hasHandout,
+                filename: subject.handoutFilename,
+                uploading: uploading,
+                stagedFilename: stagedFilename,
+                onPick: onPickHandout,
+                onUnstage: onUnstageHandout,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+
+    final animatedChild = TweenAnimationBuilder<double>(
       tween: Tween(begin: 0.0, end: 1.0),
       duration: Duration(milliseconds: 320 + (index * 60)),
       curve: Curves.easeOutCubic,
@@ -131,114 +242,44 @@ class SubjectRow extends StatelessWidget {
           child: child,
         ),
       ),
-      child: GestureDetector(
-        onTap: onTap,
-        onLongPress: onLongPress,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 240),
-          curve: Curves.easeOut,
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: marked
-                ? AppTheme.wishlist.withValues(alpha: 0.14)
-                : const Color(0xFF1C1C1E),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: marked
-                  ? AppTheme.wishlist.withValues(alpha: 0.5)
-                  : Colors.white.withValues(alpha: 0.08),
-              width: marked ? 1.5 : 1.0,
-            ),
-            boxShadow: marked
-                ? [
-                    BoxShadow(
-                      color: AppTheme.wishlist.withValues(alpha: 0.14),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ]
-                : [],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  if (editMode) ...[
-                    Icon(
-                      marked
-                          ? Icons.remove_circle_rounded
-                          : Icons.remove_circle_outline_rounded,
-                      size: 18,
-                      color: marked
-                          ? AppTheme.wishlist
-                          : AppTheme.onBackground2.withValues(alpha: 0.4),
-                    ),
-                    const SizedBox(width: AppTheme.sm),
-                  ],
-                  Expanded(
-                    child: Text(
-                      subject.name,
-                      style: GoogleFonts.googleSans(
-                        fontSize: 15,
-                        fontWeight: marked ? FontWeight.bold : FontWeight.w600,
-                        color: marked ? AppTheme.wishlist : Colors.white,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  if (subject.shortName != null) ...[
-                    const SizedBox(width: AppTheme.sm),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 9,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF8C38E5).withValues(alpha: 0.18),
-                        borderRadius: BorderRadius.circular(AppTheme.radiusSm),
-                        border: Border.all(
-                          color: const Color(0xFF8C38E5).withValues(alpha: 0.4),
-                          width: 1.0,
-                        ),
-                      ),
-                      child: Text(
-                        subject.shortName!,
-                        style: GoogleFonts.googleSans(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: const Color(0xFFD4A5FF),
-                          letterSpacing: 0.4,
-                        ),
-                      ),
-                    ),
-                  ],
-                  const SizedBox(width: AppTheme.md),
-                  Text(
-                    subject.credits != null ? '${subject.credits} cr' : '— cr',
-                    style: GoogleFonts.googleSans(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: marked ? AppTheme.wishlist : Colors.white70,
-                    ),
-                  ),
-                ],
+      child: rowCard,
+    );
+
+    if (editMode || onDelete == null) {
+      return animatedChild;
+    }
+
+    return Dismissible(
+      key: Key('subject_${subject.userSubjectId}'),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 24),
+        decoration: BoxDecoration(
+          color: const Color(0xFFE53935).withValues(alpha: 0.85),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.delete_sweep_rounded, color: Colors.white, size: 24),
+            const SizedBox(width: 8),
+            Text(
+              'Delete',
+              style: GoogleFonts.googleSans(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
               ),
-              if (!editMode) ...[
-                const SizedBox(height: 12),
-                HandoutChip(
-                  hasHandout: hasHandout,
-                  filename: subject.handoutFilename,
-                  uploading: uploading,
-                  stagedFilename: stagedFilename,
-                  onPick: onPickHandout,
-                  onUnstage: onUnstageHandout,
-                ),
-              ],
-            ],
-          ),
+            ),
+          ],
         ),
       ),
+      onDismissed: (_) {
+        HapticFeedback.mediumImpact();
+        onDelete?.call();
+      },
+      child: animatedChild,
     );
   }
 }

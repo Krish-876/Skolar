@@ -202,6 +202,30 @@ class SubjectsNotifier extends AutoDisposeAsyncNotifier<SubjectsPageState> {
     state = AsyncData(current.copyWith(pendingDelete: next));
   }
 
+  Future<void> deleteSubject(String userSubjectId) async {
+    final current = state.valueOrNull;
+    if (current == null) return;
+
+    try {
+      await ref
+          .read(deleteUserSubjectUseCaseProvider)
+          .call(userSubjectId: userSubjectId);
+      final remaining = current.subjects
+          .where((s) => s.userSubjectId != userSubjectId)
+          .toList();
+      state = AsyncData(
+        current.copyWith(
+          subjects: remaining,
+          pendingDelete: current.pendingDelete
+              .where((id) => id != userSubjectId)
+              .toSet(),
+        ),
+      );
+    } catch (e) {
+      debugPrint('[SubjectsNotifier] deleteSubject failed: $e');
+    }
+  }
+
   Future<void> commitDeletions() async {
     final current = state.valueOrNull;
     if (current == null || current.pendingDelete.isEmpty) {

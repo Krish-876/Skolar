@@ -86,42 +86,88 @@ class _SubjectsPageState extends State<SubjectsPage> {
               final asyncState = ref.watch(subjectsProvider);
               return asyncState.whenOrNull(
                     data: (s) => s.editMode
-                        ? TextButton(
-                            onPressed: () => ref
-                                .read(subjectsProvider.notifier)
-                                .commitDeletions(),
-                            child: Text(
-                              'Done',
-                              style: GoogleFonts.googleSans(
-                                color: const Color(0xFF9B4DFF),
-                                fontWeight: FontWeight.bold,
-                                fontSize: 15,
-                              ),
-                            ),
-                          )
-                        : TextButton(
-                            onPressed: () {
-                              showModalBottomSheet(
-                                context: context,
-                                isScrollControlled: true,
-                                backgroundColor: Colors.transparent,
-                                builder: (_) => CreditTargetSheet(
-                                  onConfirm: (value) {
-                                    ref
-                                        .read(subjectsProvider.notifier)
-                                        .setCreditTarget(value);
-                                  },
+                        ? Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              TextButton(
+                                onPressed: () => ref
+                                    .read(subjectsProvider.notifier)
+                                    .exitEditMode(),
+                                child: Text(
+                                  'Cancel',
+                                  style: GoogleFonts.googleSans(
+                                    color: Colors.white60,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 14,
+                                  ),
                                 ),
-                              );
-                            },
-                            child: Text(
-                              'Edit credits',
-                              style: GoogleFonts.googleSans(
-                                color: Colors.white70,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 13,
                               ),
-                            ),
+                              TextButton(
+                                onPressed: () => ref
+                                    .read(subjectsProvider.notifier)
+                                    .commitDeletions(),
+                                child: Text(
+                                  s.pendingDelete.isNotEmpty
+                                      ? 'Delete (${s.pendingDelete.length})'
+                                      : 'Done',
+                                  style: GoogleFonts.googleSans(
+                                    color: s.pendingDelete.isNotEmpty
+                                        ? const Color(0xFFFF5252)
+                                        : const Color(0xFF9B4DFF),
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          )
+                        : Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (s.subjects.isNotEmpty)
+                                TextButton.icon(
+                                  onPressed: () => ref
+                                      .read(subjectsProvider.notifier)
+                                      .enterEditMode(),
+                                  icon: const Icon(
+                                    Icons.delete_outline_rounded,
+                                    size: 16,
+                                    color: Colors.white70,
+                                  ),
+                                  label: Text(
+                                    'Delete',
+                                    style: GoogleFonts.googleSans(
+                                      color: Colors.white70,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ),
+                              TextButton(
+                                onPressed: () {
+                                  showModalBottomSheet(
+                                    context: context,
+                                    isScrollControlled: true,
+                                    backgroundColor: Colors.transparent,
+                                    builder: (_) => CreditTargetSheet(
+                                      onConfirm: (value) {
+                                        ref
+                                            .read(subjectsProvider.notifier)
+                                            .setCreditTarget(value);
+                                      },
+                                    ),
+                                  );
+                                },
+                                child: Text(
+                                  'Edit credits',
+                                  style: GoogleFonts.googleSans(
+                                    color: Colors.white70,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                   ) ??
                   const SizedBox.shrink();
@@ -244,6 +290,8 @@ class _SubjectsPageContentState extends ConsumerState<SubjectsPageContent> {
         },
         onTap: (id) =>
             ref.read(subjectsProvider.notifier).togglePendingDelete(id),
+        onDelete: (id) =>
+            ref.read(subjectsProvider.notifier).deleteSubject(id),
         onAdd: () => _showAddSheet(context),
         onPickHandout: (userSubjectId) => _pickHandout(context, userSubjectId),
         onUnstageHandout: (userSubjectId) =>
@@ -343,6 +391,7 @@ class SubjectsBody extends StatelessWidget {
   final SubjectsPageState state;
   final void Function(String id) onLongPress;
   final void Function(String id) onTap;
+  final void Function(String id) onDelete;
   final VoidCallback onAdd;
   final void Function(String userSubjectId) onPickHandout;
   final void Function(String userSubjectId) onUnstageHandout;
@@ -353,6 +402,7 @@ class SubjectsBody extends StatelessWidget {
     required this.state,
     required this.onLongPress,
     required this.onTap,
+    required this.onDelete,
     required this.onAdd,
     required this.onPickHandout,
     required this.onUnstageHandout,
@@ -436,6 +486,7 @@ class SubjectsBody extends StatelessWidget {
                           ? () => onTap(s.userSubjectId)
                           : null,
                       onLongPress: () => onLongPress(s.userSubjectId),
+                      onDelete: () => onDelete(s.userSubjectId),
                       onPickHandout: state.editMode
                           ? null
                           : () => onPickHandout(s.userSubjectId),
