@@ -17,19 +17,19 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:Skolar/core/theme/app_theme.dart';
 import 'package:Skolar/features/mock_tests/presentation/providers/mock_tests_provider.dart';
 
-const _bg = Color(0xFF05061A);
-const _primary = Color(0xFF1E2A8A);
-const _surface = Color(0xFF2E2B3E);
-const _accent = Color(0xFF63C8D4);
-const _textPrim = Color(0xFFFFFFFF);
-const _textSec = Color(0xFFA8C4FF);
+const _bg = AppTheme.background;
+const _primary = AppTheme.accentPurple;
+const _surface = AppTheme.surface;
+const _accent = AppTheme.accentPurple;
+const _textPrim = AppTheme.onBackground;
+const _textSec = AppTheme.onBackground2;
 const _correct = Color(0xFF4CAF50);
-const _wrong = Color(0xFFD0021B);
+const _wrong = Color(0xFFFF5252);
 
 Color _marksColor(int marks) {
   if (marks <= 3) return const Color(0xFF4CAF50);
   if (marks <= 6) return const Color(0xFFF5C518);
-  return const Color(0xFFFF6B6B);
+  return const Color(0xFFFF7A00);
 }
 
 final _gfm = md.ExtensionSet(
@@ -40,60 +40,74 @@ final _gfm = md.ExtensionSet(
 MarkdownStyleSheet _answerMarkdownStyle() {
   return MarkdownStyleSheet(
     p: const TextStyle(
-      color: _textPrim,
+      fontFamily: 'GoogleSans',
+      color: AppTheme.onBackground,
       fontSize: 14,
       height: 1.7,
       fontWeight: FontWeight.w400,
     ),
     h3: const TextStyle(
-      color: _accent,
-      fontSize: 12,
+      fontFamily: 'GoogleSans',
+      color: AppTheme.accentPurple,
+      fontSize: 13,
       fontWeight: FontWeight.w700,
       letterSpacing: 0.7,
     ),
     strong: const TextStyle(
-      color: _textPrim,
-      fontWeight: FontWeight.w600,
+      fontFamily: 'GoogleSans',
+      color: AppTheme.onBackground,
+      fontWeight: FontWeight.w700,
       fontSize: 14,
     ),
     em: const TextStyle(
-      color: _textSec,
+      fontFamily: 'GoogleSans',
+      color: AppTheme.onBackground2,
       fontStyle: FontStyle.italic,
       fontSize: 14,
     ),
     code: TextStyle(
-      color: _accent,
-      backgroundColor: _primary.withValues(alpha: 0.3),
+      color: AppTheme.accentPurple,
+      backgroundColor: AppTheme.surfaceLight,
       fontSize: 13,
       fontFamily: 'monospace',
     ),
     codeblockDecoration: BoxDecoration(
-      color: _primary.withValues(alpha: 0.2),
-      borderRadius: BorderRadius.circular(8),
-      border: Border.all(color: _primary.withValues(alpha: 0.4)),
+      color: AppTheme.surfaceLight,
+      borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+      border: Border.all(color: AppTheme.onboardingButtonBorder),
     ),
     codeblockPadding: const EdgeInsets.all(12),
-    listBullet: const TextStyle(color: _accent, fontSize: 14),
+    listBullet: const TextStyle(color: AppTheme.accentPurple, fontSize: 14),
     listIndent: 18,
     blockSpacing: 10,
     tableHead: const TextStyle(
-      color: _accent,
+      fontFamily: 'GoogleSans',
+      color: AppTheme.accentPurple,
       fontSize: 12,
       fontWeight: FontWeight.w700,
       letterSpacing: 0.3,
     ),
-    tableBody: const TextStyle(color: _textPrim, fontSize: 13, height: 1.5),
+    tableBody: const TextStyle(
+      fontFamily: 'GoogleSans',
+      color: AppTheme.onBackground,
+      fontSize: 13,
+      height: 1.5,
+    ),
     tableBorder: TableBorder.all(
-      color: _surface,
+      color: AppTheme.onboardingButtonBorder,
       width: 1,
       borderRadius: BorderRadius.circular(6),
     ),
     tableHeadAlign: TextAlign.center,
     tableColumnWidth: const FlexColumnWidth(),
     tableCellsPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-    tableCellsDecoration: BoxDecoration(color: _primary.withValues(alpha: 0.4)),
-    horizontalRuleDecoration: BoxDecoration(
-      border: Border(top: BorderSide(color: _surface, width: 1)),
+    tableCellsDecoration: const BoxDecoration(
+      color: AppTheme.surfaceLight,
+    ),
+    horizontalRuleDecoration: const BoxDecoration(
+      border: Border(
+        top: BorderSide(color: AppTheme.onboardingButtonBorder, width: 1),
+      ),
     ),
   );
 }
@@ -101,47 +115,56 @@ MarkdownStyleSheet _answerMarkdownStyle() {
 MarkdownStyleSheet _questionMarkdownStyle() {
   return MarkdownStyleSheet(
     p: const TextStyle(
-      color: _textPrim,
-      fontSize: 13,
+      fontFamily: 'GoogleSans',
+      color: AppTheme.onBackground,
+      fontSize: 14,
       height: 1.65,
       fontWeight: FontWeight.w500,
     ),
     strong: const TextStyle(
-      color: _textPrim,
+      fontFamily: 'GoogleSans',
+      color: AppTheme.onBackground,
       fontWeight: FontWeight.w700,
-      fontSize: 13,
+      fontSize: 14,
     ),
     em: const TextStyle(
-      color: _textSec,
+      fontFamily: 'GoogleSans',
+      color: AppTheme.onBackground2,
       fontStyle: FontStyle.italic,
-      fontSize: 13,
+      fontSize: 14,
     ),
     code: TextStyle(
-      color: _accent,
-      backgroundColor: _primary.withValues(alpha: 0.3),
+      color: AppTheme.accentPurple,
+      backgroundColor: AppTheme.surfaceLight,
       fontSize: 12,
       fontFamily: 'monospace',
     ),
-    listBullet: const TextStyle(color: _textSec, fontSize: 13),
+    listBullet: const TextStyle(color: AppTheme.onBackground2, fontSize: 13),
     listIndent: 16,
     blockSpacing: 8,
     tableHead: const TextStyle(
-      color: _textSec,
+      fontFamily: 'GoogleSans',
+      color: AppTheme.onBackground2,
       fontSize: 12,
       fontWeight: FontWeight.w600,
       letterSpacing: 0.2,
     ),
-    tableBody: const TextStyle(color: _textPrim, fontSize: 12, height: 1.5),
+    tableBody: const TextStyle(
+      fontFamily: 'GoogleSans',
+      color: AppTheme.onBackground,
+      fontSize: 12,
+      height: 1.5,
+    ),
     tableBorder: TableBorder.all(
-      color: _surface,
+      color: AppTheme.onboardingButtonBorder,
       width: 1,
       borderRadius: BorderRadius.circular(6),
     ),
     tableHeadAlign: TextAlign.center,
     tableColumnWidth: const FlexColumnWidth(),
     tableCellsPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-    tableCellsDecoration: BoxDecoration(
-      color: _primary.withValues(alpha: 0.35),
+    tableCellsDecoration: const BoxDecoration(
+      color: AppTheme.surfaceLight,
     ),
   );
 }
@@ -307,20 +330,37 @@ class _NoSubjectsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: AppTheme.background,
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(32),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.menu_book_outlined, color: _textSec, size: 48),
-              const SizedBox(height: 16),
+              Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  color: AppTheme.surface,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: AppTheme.onboardingButtonBorder,
+                    width: 1.5,
+                  ),
+                ),
+                child: const Icon(
+                  Icons.menu_book_outlined,
+                  color: AppTheme.accentPurple,
+                  size: 32,
+                ),
+              ),
+              const SizedBox(height: 20),
               const Text(
                 'No subjects yet',
                 style: TextStyle(
-                  color: _textPrim,
-                  fontSize: 18,
+                  fontFamily: 'GoogleSans',
+                  color: AppTheme.onBackground,
+                  fontSize: 20,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -328,10 +368,18 @@ class _NoSubjectsScreen extends StatelessWidget {
               const Text(
                 'Add your subjects first to generate a mock test.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: _textSec, fontSize: 13),
+                style: TextStyle(
+                  fontFamily: 'GoogleSans',
+                  color: AppTheme.onBackground2,
+                  fontSize: 14,
+                ),
               ),
-              const SizedBox(height: 24),
-              _StartButton(label: 'Go to Subjects', onTap: onAddSubjects),
+              const SizedBox(height: 32),
+              _StartButton(
+                label: 'Go to Subjects',
+                icon: Icons.add_rounded,
+                onTap: onAddSubjects,
+              ),
             ],
           ),
         ),
@@ -368,119 +416,241 @@ class _SetupScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppTheme.background,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              IconButton(
-                onPressed: () => Navigator.maybePop(context),
-                icon: const Icon(
-                  Icons.arrow_back_ios_new_rounded,
-                  color: _textSec,
-                  size: 18,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: constraints.maxHeight - 40,
                 ),
-                padding: EdgeInsets.zero,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Mock Test',
-                style: GoogleFonts.googleSansFlex(
-                  fontSize: 32,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'AI-generated from your college PYQs',
-                style: GoogleFonts.googleSans(color: _textSec, fontSize: 14),
-              ),
-              const SizedBox(height: 28),
-              _SectionLabel('Exam Type'),
-              const SizedBox(height: 10),
-              _ExamTypeGrid(selected: selectedExam, onChanged: onExamChanged),
-              const SizedBox(height: 24),
-              _SectionLabel('Subject'),
-              const SizedBox(height: 10),
-              _GlassContainer(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    value: selectedSubject,
-                    isExpanded: true,
-                    dropdownColor: const Color(0xFF1A1B2E),
-                    style: const TextStyle(color: _textPrim, fontSize: 15),
-                    iconEnabledColor: _textSec,
-                    items: subjects
-                        .map((s) => DropdownMenuItem(value: s, child: Text(s)))
-                        .toList(),
-                    onChanged: (v) => onSubjectChanged(v!),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  _SectionLabel('Questions'),
-                  const Spacer(),
-                  _GlassChip(
-                    child: Text(
-                      '$questionCount',
-                      style: const TextStyle(
-                        color: _textPrim,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                      ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            GestureDetector(
+                              onTap: () => Navigator.maybePop(context),
+                              child: Container(
+                                width: 42,
+                                height: 42,
+                                decoration: BoxDecoration(
+                                  color: AppTheme.surface,
+                                  borderRadius: BorderRadius.circular(
+                                    AppTheme.radiusLg,
+                                  ),
+                                  border: Border.all(
+                                    color: AppTheme.onboardingButtonBorder,
+                                    width: 1,
+                                  ),
+                                ),
+                                alignment: Alignment.center,
+                                child: const Icon(
+                                  Icons.arrow_back_ios_new_rounded,
+                                  color: AppTheme.onBackground,
+                                  size: 16,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+                        Text(
+                          'Mock Test',
+                          style: GoogleFonts.googleSansFlex(
+                            fontSize: 32,
+                            fontWeight: FontWeight.w700,
+                            color: AppTheme.onBackground,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'AI-generated from your college PYQs',
+                          style: GoogleFonts.googleSans(
+                            color: AppTheme.onBackground2,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                        const SizedBox(height: 28),
+                        const _SectionLabel('Exam Type'),
+                        const SizedBox(height: 12),
+                        _ExamTypeGrid(
+                          selected: selectedExam,
+                          onChanged: onExamChanged,
+                        ),
+                        const SizedBox(height: 24),
+                        const _SectionLabel('Subject'),
+                        const SizedBox(height: 12),
+                        Container(
+                          decoration: BoxDecoration(
+                            color: AppTheme.surface,
+                            borderRadius: BorderRadius.circular(
+                              AppTheme.radiusXl,
+                            ),
+                            border: Border.all(
+                              color: AppTheme.onboardingButtonBorder,
+                              width: 1.2,
+                            ),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 4,
+                          ),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<String>(
+                              value: selectedSubject,
+                              isExpanded: true,
+                              dropdownColor: AppTheme.surface,
+                              borderRadius: BorderRadius.circular(
+                                AppTheme.radiusLg,
+                              ),
+                              style: const TextStyle(
+                                fontFamily: 'GoogleSans',
+                                color: AppTheme.onBackground,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              icon: const Icon(
+                                Icons.keyboard_arrow_down_rounded,
+                                color: AppTheme.accentPurple,
+                                size: 22,
+                              ),
+                              items: subjects
+                                  .map(
+                                    (s) => DropdownMenuItem(
+                                      value: s,
+                                      child: Text(
+                                        s,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  )
+                                  .toList(),
+                              onChanged: (v) {
+                                if (v != null) onSubjectChanged(v);
+                              },
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        Row(
+                          children: [
+                            const _SectionLabel('Questions'),
+                            const Spacer(),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppTheme.surfaceLight,
+                                borderRadius: BorderRadius.circular(
+                                  AppTheme.radiusXl,
+                                ),
+                                border: Border.all(
+                                  color: AppTheme.onboardingButtonBorder,
+                                  width: 1,
+                                ),
+                              ),
+                              child: Text(
+                                '$questionCount',
+                                style: const TextStyle(
+                                  fontFamily: 'GoogleSans',
+                                  color: AppTheme.accentPurple,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        SliderTheme(
+                          data: SliderThemeData(
+                            trackHeight: 4,
+                            activeTrackColor: AppTheme.accentPurple,
+                            inactiveTrackColor: AppTheme.surfaceLight,
+                            thumbColor: AppTheme.accentPurple,
+                            overlayColor: AppTheme.accentPurple.withValues(
+                              alpha: 0.15,
+                            ),
+                            thumbShape: const RoundSliderThumbShape(
+                              enabledThumbRadius: 7,
+                            ),
+                          ),
+                          child: Slider(
+                            min: 3,
+                            max: selectedExam.maxCount.toDouble(),
+                            divisions: selectedExam.maxCount - 3,
+                            value: questionCount
+                                .clamp(3, selectedExam.maxCount)
+                                .toDouble(),
+                            onChanged: (v) => onCountChanged(v.round()),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 6),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                '3 min',
+                                style: TextStyle(
+                                  fontFamily: 'GoogleSans',
+                                  color: AppTheme.onBackground2.withValues(
+                                    alpha: 0.7,
+                                  ),
+                                  fontSize: 11,
+                                ),
+                              ),
+                              Text(
+                                '${selectedExam.maxCount} max',
+                                style: TextStyle(
+                                  fontFamily: 'GoogleSans',
+                                  color: AppTheme.onBackground2.withValues(
+                                    alpha: 0.7,
+                                  ),
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              SliderTheme(
-                data: SliderThemeData(
-                  trackHeight: 3,
-                  activeTrackColor: _accent,
-                  inactiveTrackColor: _surface,
-                  thumbColor: _accent,
-                  overlayColor: _accent.withValues(alpha: 0.15),
-                ),
-                child: Slider(
-                  min: 3,
-                  max: selectedExam.maxCount.toDouble(),
-                  divisions: selectedExam.maxCount - 3,
-                  value: questionCount
-                      .clamp(3, selectedExam.maxCount)
-                      .toDouble(),
-                  onChanged: (v) => onCountChanged(v.round()),
-                ),
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    '3',
-                    style: const TextStyle(color: _textSec, fontSize: 11),
-                  ),
-                  Text(
-                    '${selectedExam.maxCount}',
-                    style: const TextStyle(color: _textSec, fontSize: 11),
-                  ),
-                ],
-              ),
-              const Spacer(),
-              _StartButton(label: 'Start Test', onTap: onStart),
-              const SizedBox(height: 8),
-              Center(
-                child: Text(
-                  selectedExam.mode == ExamMode.mcqBlitz
-                      ? 'Generation takes ~${questionCount * 4}s'
-                      : 'Generation takes ~${questionCount * 8}s (questions + answers)',
-                  style: const TextStyle(color: _textSec, fontSize: 12),
+                    const SizedBox(height: 24),
+                    Column(
+                      children: [
+                        _StartButton(
+                          label: 'Start Test',
+                          icon: Icons.auto_awesome_rounded,
+                          onTap: onStart,
+                        ),
+                        const SizedBox(height: 10),
+                        Center(
+                          child: Text(
+                            selectedExam.mode == ExamMode.mcqBlitz
+                                ? 'Generation takes ~${questionCount * 4}s'
+                                : 'Generation takes ~${questionCount * 8}s (questions + answers)',
+                            style: GoogleFonts.googleSans(
+                              color: AppTheme.onBackground2,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );
@@ -502,38 +672,53 @@ class _ExamTypeGrid extends StatelessWidget {
       physics: const NeverScrollableScrollPhysics(),
       crossAxisSpacing: 10,
       mainAxisSpacing: 10,
-      childAspectRatio: 2.4,
+      childAspectRatio: 2.3,
       children: _ExamType.values.map((type) {
         final isSel = type == selected;
         return GestureDetector(
           onTap: () => onChanged(type),
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            duration: const Duration(milliseconds: 180),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
               color: isSel
-                  ? _primary.withValues(alpha: 0.5)
-                  : Colors.white.withValues(alpha: 0.04),
-              borderRadius: BorderRadius.circular(12),
+                  ? AppTheme.accentPurple.withValues(alpha: 0.16)
+                  : AppTheme.surface,
+              borderRadius: BorderRadius.circular(AppTheme.radiusLg),
               border: Border.all(
-                color: isSel ? _accent : Colors.white.withValues(alpha: 0.08),
+                color: isSel
+                    ? AppTheme.accentPurple
+                    : AppTheme.onboardingButtonBorder,
                 width: isSel ? 1.5 : 1,
               ),
             ),
             child: Row(
               children: [
-                Icon(type.icon, color: isSel ? _accent : _textSec, size: 16),
-                const SizedBox(width: 8),
+                Icon(
+                  type.icon,
+                  color: isSel ? AppTheme.accentPurple : AppTheme.onBackground2,
+                  size: 18,
+                ),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     type.label,
                     style: TextStyle(
-                      color: isSel ? _textPrim : _textSec,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
+                      fontFamily: 'GoogleSans',
+                      color: isSel
+                          ? AppTheme.onBackground
+                          : AppTheme.onBackground2,
+                      fontSize: 13,
+                      fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
                     ),
                   ),
                 ),
+                if (isSel)
+                  const Icon(
+                    Icons.check_circle_rounded,
+                    color: AppTheme.accentPurple,
+                    size: 16,
+                  ),
               ],
             ),
           ),
@@ -558,20 +743,37 @@ class _ErrorScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: AppTheme.background,
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(32),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.wifi_off_rounded, color: _wrong, size: 48),
-              const SizedBox(height: 16),
+              Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  color: AppTheme.wishlist.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: AppTheme.wishlist.withValues(alpha: 0.4),
+                    width: 1.5,
+                  ),
+                ),
+                child: const Icon(
+                  Icons.wifi_off_rounded,
+                  color: AppTheme.wishlist,
+                  size: 32,
+                ),
+              ),
+              const SizedBox(height: 20),
               const Text(
                 'Could not generate test',
                 style: TextStyle(
-                  color: _textPrim,
-                  fontSize: 18,
+                  fontFamily: 'GoogleSans',
+                  color: AppTheme.onBackground,
+                  fontSize: 20,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -579,16 +781,29 @@ class _ErrorScreen extends StatelessWidget {
               Text(
                 error,
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: _textSec, fontSize: 13),
+                style: const TextStyle(
+                  fontFamily: 'GoogleSans',
+                  color: AppTheme.onBackground2,
+                  fontSize: 13,
+                ),
               ),
-              const SizedBox(height: 24),
-              _StartButton(label: 'Retry', onTap: onRetry),
-              const SizedBox(height: 12),
+              const SizedBox(height: 32),
+              _StartButton(
+                label: 'Retry',
+                icon: Icons.refresh_rounded,
+                onTap: onRetry,
+              ),
+              const SizedBox(height: 16),
               TextButton(
                 onPressed: onBack,
                 child: const Text(
                   'Change subject',
-                  style: TextStyle(color: _textSec),
+                  style: TextStyle(
+                    fontFamily: 'GoogleSans',
+                    color: AppTheme.onBackground2,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
             ],
@@ -640,140 +855,147 @@ class _QuestionCard extends StatelessWidget {
     final parts = _split();
     final mc = _marksColor(marks);
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(18),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.04),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.08),
-              width: 1.2,
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+        border: Border.all(
+          color: AppTheme.onboardingButtonBorder,
+          width: 1.2,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+            child: Row(
+              children: [
+                if (questionNumber != null) ...[
+                  Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: AppTheme.accentPurple.withValues(alpha: 0.18),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: AppTheme.accentPurple.withValues(alpha: 0.4),
+                        width: 1,
+                      ),
+                    ),
+                    child: Center(
+                      child: Text(
+                        '$questionNumber',
+                        style: const TextStyle(
+                          fontFamily: 'GoogleSans',
+                          color: AppTheme.accentPurple,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                ],
+                Expanded(
+                  child: Text(
+                    subject,
+                    style: const TextStyle(
+                      fontFamily: 'GoogleSans',
+                      color: AppTheme.onBackground2,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: mc.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: mc.withValues(alpha: 0.4),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.star_rounded, color: mc, size: 12),
+                      const SizedBox(width: 3),
+                      Text(
+                        '$marks M',
+                        style: TextStyle(
+                          fontFamily: 'GoogleSans',
+                          color: mc,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
-                child: Row(
-                  children: [
-                    if (questionNumber != null) ...[
-                      Container(
-                        width: 28,
-                        height: 28,
-                        decoration: BoxDecoration(
-                          color: _primary.withValues(alpha: 0.6),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Center(
-                          child: Text(
-                            '$questionNumber',
-                            style: const TextStyle(
-                              color: _textPrim,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                    ],
-                    Expanded(
-                      child: Text(
-                        subject,
-                        style: const TextStyle(
-                          color: _textSec,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: mc.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: mc.withValues(alpha: 0.5),
-                          width: 1,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.star_rounded, color: mc, size: 11),
-                          const SizedBox(width: 3),
-                          Text(
-                            '$marks M',
-                            style: TextStyle(
-                              color: mc,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+          if (parts.context.isNotEmpty)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+              decoration: const BoxDecoration(
+                color: AppTheme.surfaceLight,
+                border: Border(
+                  top: BorderSide(
+                    color: AppTheme.onboardingButtonBorder,
+                    width: 0.8,
+                  ),
+                  bottom: BorderSide(
+                    color: AppTheme.onboardingButtonBorder,
+                    width: 0.8,
+                  ),
                 ),
               ),
-              if (parts.context.isNotEmpty)
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.02),
+              child: MarkdownBody(
+                data: parts.context,
+                styleSheet: _questionMarkdownStyle(),
+                softLineBreak: true,
+                extensionSet: _gfm,
+              ),
+            ),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+            decoration: parts.context.isNotEmpty
+                ? const BoxDecoration(
                     border: Border(
-                      top: BorderSide(
-                        color: Colors.white.withValues(alpha: 0.06),
-                      ),
-                      bottom: BorderSide(
-                        color: Colors.white.withValues(alpha: 0.06),
+                      left: BorderSide(
+                        color: AppTheme.accentPurple,
+                        width: 3,
                       ),
                     ),
-                  ),
-                  child: MarkdownBody(
-                    data: parts.context,
-                    styleSheet: _questionMarkdownStyle(),
-                    softLineBreak: true,
-                    extensionSet: _gfm,
-                  ),
-                ),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                decoration: parts.context.isNotEmpty
-                    ? const BoxDecoration(
-                        border: Border(
-                          left: BorderSide(color: _accent, width: 3),
-                        ),
-                      )
-                    : null,
-                child: MarkdownBody(
-                  data: parts.ask,
-                  styleSheet: parts.context.isNotEmpty
-                      ? _questionMarkdownStyle().copyWith(
-                          p: const TextStyle(
-                            color: _textPrim,
-                            fontSize: 13,
-                            height: 1.65,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        )
-                      : _questionMarkdownStyle(),
-                  softLineBreak: true,
-                  extensionSet: _gfm,
-                ),
-              ),
-            ],
+                  )
+                : null,
+            child: MarkdownBody(
+              data: parts.ask,
+              styleSheet: parts.context.isNotEmpty
+                  ? _questionMarkdownStyle().copyWith(
+                      p: const TextStyle(
+                        fontFamily: 'GoogleSans',
+                        color: AppTheme.onBackground,
+                        fontSize: 14,
+                        height: 1.65,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    )
+                  : _questionMarkdownStyle(),
+              softLineBreak: true,
+              extensionSet: _gfm,
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -789,47 +1011,48 @@ class _ModelAnswerCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _GlassContainer(
-      padding: EdgeInsets.zero,
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+        border: Border.all(
+          color: AppTheme.onboardingButtonBorder,
+          width: 1.2,
+        ),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
             decoration: BoxDecoration(
-              color: _accent.withValues(alpha: 0.08),
-              border: Border(
+              color: AppTheme.accentPurple.withValues(alpha: 0.12),
+              border: const Border(
                 bottom: BorderSide(
-                  color: _accent.withValues(alpha: 0.2),
+                  color: AppTheme.onboardingButtonBorder,
                   width: 1,
                 ),
               ),
               borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(16),
+                top: Radius.circular(AppTheme.radiusXl),
               ),
             ),
-            child: Row(
+            child: const Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: _accent.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(
-                    Icons.lightbulb_rounded,
-                    color: _accent,
-                    size: 14,
-                  ),
+                Icon(
+                  Icons.lightbulb_rounded,
+                  color: AppTheme.accentPurple,
+                  size: 16,
                 ),
-                const SizedBox(width: 10),
-                const Text(
-                  'Model Answer',
+                SizedBox(width: 8),
+                Text(
+                  'MODEL ANSWER',
                   style: TextStyle(
-                    color: _accent,
-                    fontSize: 13,
+                    fontFamily: 'GoogleSans',
+                    color: AppTheme.accentPurple,
+                    fontSize: 12,
                     fontWeight: FontWeight.w700,
-                    letterSpacing: 0.3,
+                    letterSpacing: 0.8,
                   ),
                 ),
               ],
@@ -888,7 +1111,7 @@ class _MarkdownWithAccentHeadings extends StatelessWidget {
                   width: 3,
                   height: 16,
                   decoration: BoxDecoration(
-                    color: _accent,
+                    color: AppTheme.accentPurple,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -896,7 +1119,8 @@ class _MarkdownWithAccentHeadings extends StatelessWidget {
                 Text(
                   seg.text.toUpperCase(),
                   style: const TextStyle(
-                    color: _accent,
+                    fontFamily: 'GoogleSans',
+                    color: AppTheme.accentPurple,
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.8,
@@ -961,41 +1185,39 @@ class _McqQuizFlowState extends ConsumerState<_McqQuizFlow> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _bg,
-      body: GlassBackground(
-        child: SafeArea(
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 400),
-            transitionBuilder: (child, anim) => FadeTransition(
-              opacity: anim,
-              child: SlideTransition(
-                position: Tween(
-                  begin: const Offset(0.06, 0),
-                  end: Offset.zero,
-                ).animate(CurvedAnimation(parent: anim, curve: Curves.easeOut)),
-                child: child,
-              ),
+      backgroundColor: AppTheme.background,
+      body: SafeArea(
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 400),
+          transitionBuilder: (child, anim) => FadeTransition(
+            opacity: anim,
+            child: SlideTransition(
+              position: Tween(
+                begin: const Offset(0.06, 0),
+                end: Offset.zero,
+              ).animate(CurvedAnimation(parent: anim, curve: Curves.easeOut)),
+              child: child,
             ),
-            child: _done
-                ? _McqResultScreen(
-                    key: const ValueKey('result'),
-                    score: _score,
-                    total: widget.questions.fold(0, (s, q) => s + q.marks),
-                    answers: _answers,
-                    questions: widget.questions,
-                    onRestart: () =>
-                        ref.read(mockTestProvider.notifier).reset(),
-                  )
-                : _McqQuestionScreen(
-                    key: ValueKey(_current),
-                    question: widget.questions[_current],
-                    index: _current,
-                    total: widget.questions.length,
-                    score: _score,
-                    picked: _answers[_current],
-                    onAnswer: _onAnswer,
-                  ),
           ),
+          child: _done
+              ? _McqResultScreen(
+                  key: const ValueKey('result'),
+                  score: _score,
+                  total: widget.questions.fold(0, (s, q) => s + q.marks),
+                  answers: _answers,
+                  questions: widget.questions,
+                  onRestart: () =>
+                      ref.read(mockTestProvider.notifier).reset(),
+                )
+              : _McqQuestionScreen(
+                  key: ValueKey(_current),
+                  question: widget.questions[_current],
+                  index: _current,
+                  total: widget.questions.length,
+                  score: _score,
+                  picked: _answers[_current],
+                  onAnswer: _onAnswer,
+                ),
         ),
       ),
     );
@@ -1054,9 +1276,9 @@ class _McqQuestionScreenState extends State<_McqQuestionScreen>
   }
 
   Color get _timerColor {
-    if (_seconds > 15) return _accent;
+    if (_seconds > 15) return AppTheme.accentPurple;
     if (_seconds > 7) return const Color(0xFFF5C518);
-    return _wrong;
+    return const Color(0xFFFF5252);
   }
 
   @override
@@ -1068,37 +1290,58 @@ class _McqQuestionScreenState extends State<_McqQuestionScreen>
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
           child: Row(
             children: [
-              IconButton(
-                onPressed: () => Navigator.maybePop(context),
-                icon: const Icon(
-                  Icons.arrow_back_ios_new_rounded,
-                  color: _textSec,
-                  size: 18,
+              GestureDetector(
+                onTap: () => Navigator.maybePop(context),
+                child: Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: AppTheme.surfaceLight,
+                    borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                    border: Border.all(
+                      color: AppTheme.onboardingButtonBorder,
+                      width: 1,
+                    ),
+                  ),
+                  child: const Center(
+                    child: Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      color: AppTheme.onBackground,
+                      size: 16,
+                    ),
+                  ),
                 ),
               ),
+              const SizedBox(width: 14),
               Expanded(
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       'Question ${widget.index + 1} of ${widget.total}',
-                      style: const TextStyle(color: _textSec, fontSize: 12),
+                      style: const TextStyle(
+                        fontFamily: 'GoogleSans',
+                        color: AppTheme.onBackground2,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                     const SizedBox(height: 6),
                     ClipRRect(
                       borderRadius: BorderRadius.circular(8),
                       child: LinearProgressIndicator(
                         value: (widget.index + 1) / widget.total,
-                        minHeight: 5,
-                        backgroundColor: _surface,
+                        minHeight: 6,
+                        backgroundColor: AppTheme.surfaceLight,
                         valueColor: const AlwaysStoppedAnimation(
-                          Color(0xFF5B6EF5),
+                          AppTheme.accentPurple,
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 14),
               _GlassChip(
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -1106,13 +1349,14 @@ class _McqQuestionScreenState extends State<_McqQuestionScreen>
                     const Icon(
                       Icons.bolt_rounded,
                       color: Color(0xFFF5C518),
-                      size: 14,
+                      size: 16,
                     ),
                     const SizedBox(width: 4),
                     Text(
                       '${widget.score}',
                       style: const TextStyle(
-                        color: _textPrim,
+                        fontFamily: 'GoogleSans',
+                        color: AppTheme.onBackground,
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
                       ),
@@ -1123,13 +1367,21 @@ class _McqQuestionScreenState extends State<_McqQuestionScreen>
             ],
           ),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 18),
         AnimatedBuilder(
           animation: _pulseCtrl,
           builder: (_, _) => Transform.scale(
-            scale: _seconds <= 7 ? 1.0 + _pulseCtrl.value * 0.15 : 1.0,
-            child: _GlassContainer(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            scale: _seconds <= 7 ? 1.0 + _pulseCtrl.value * 0.12 : 1.0,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppTheme.surface,
+                borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+                border: Border.all(
+                  color: _timerColor.withValues(alpha: 0.4),
+                  width: 1.2,
+                ),
+              ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -1138,8 +1390,9 @@ class _McqQuestionScreenState extends State<_McqQuestionScreen>
                   Text(
                     '${_seconds}s',
                     style: TextStyle(
+                      fontFamily: 'GoogleSans',
                       color: _timerColor,
-                      fontSize: 15,
+                      fontSize: 14,
                       fontWeight: FontWeight.w700,
                       fontFeatures: const [FontFeature.tabularFigures()],
                     ),
@@ -1149,7 +1402,7 @@ class _McqQuestionScreenState extends State<_McqQuestionScreen>
             ),
           ),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 18),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: _QuestionCard(
@@ -1158,12 +1411,12 @@ class _McqQuestionScreenState extends State<_McqQuestionScreen>
             marks: q.marks,
           ),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 16),
         Expanded(
           child: ListView.separated(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
             itemCount: q.options.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 12),
+            separatorBuilder: (_, _) => const SizedBox(height: 10),
             itemBuilder: (_, i) => _OptionTile(
               label: String.fromCharCode(65 + i),
               text: q.options[i],
@@ -1228,18 +1481,18 @@ class _McqResultScreenState extends State<_McqResultScreen>
 
   String get _grade {
     final p = widget.score / widget.total;
-    if (p >= 0.9) return 'Outstanding';
-    if (p >= 0.7) return 'Great Work';
-    if (p >= 0.5) return 'Keep Going';
-    return 'Try Again';
+    if (p >= 0.9) return 'Outstanding!';
+    if (p >= 0.7) return 'Great Work!';
+    if (p >= 0.5) return 'Keep Going!';
+    return 'Try Again!';
   }
 
   Color get _gradeColor {
     final p = widget.score / widget.total;
-    if (p >= 0.9) return _accent;
-    if (p >= 0.7) return const Color(0xFF5B6EF5);
+    if (p >= 0.9) return AppTheme.accentPurple;
+    if (p >= 0.7) return const Color(0xFF9E77ED);
     if (p >= 0.5) return const Color(0xFFF5C518);
-    return _wrong;
+    return const Color(0xFFFF5252);
   }
 
   int get _correctCount => widget.answers
@@ -1261,8 +1514,8 @@ class _McqResultScreenState extends State<_McqResultScreen>
           blastDirectionality: BlastDirectionality.explosive,
           shouldLoop: false,
           colors: const [
-            _accent,
-            Color(0xFF5B6EF5),
+            AppTheme.accentPurple,
+            AppTheme.accentPurpleDark,
             Color(0xFFF5C518),
             Colors.white,
           ],
@@ -1291,7 +1544,8 @@ class _McqResultScreenState extends State<_McqResultScreen>
                           Text(
                             '${widget.score}',
                             style: const TextStyle(
-                              color: _textPrim,
+                              fontFamily: 'GoogleSans',
+                              color: AppTheme.onBackground,
                               fontSize: 40,
                               fontWeight: FontWeight.w800,
                             ),
@@ -1299,8 +1553,10 @@ class _McqResultScreenState extends State<_McqResultScreen>
                           Text(
                             'of ${widget.total}',
                             style: const TextStyle(
-                              color: _textSec,
+                              fontFamily: 'GoogleSans',
+                              color: AppTheme.onBackground2,
                               fontSize: 13,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ],
@@ -1309,19 +1565,24 @@ class _McqResultScreenState extends State<_McqResultScreen>
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
               Text(
                 _grade,
                 style: TextStyle(
+                  fontFamily: 'GoogleSans',
                   color: _gradeColor,
-                  fontSize: 28,
+                  fontSize: 26,
                   fontWeight: FontWeight.w800,
                 ),
               ),
               const SizedBox(height: 6),
               Text(
-                '$_correctCount / ${widget.questions.length} correct',
-                style: const TextStyle(color: _textSec, fontSize: 14),
+                '$_correctCount / ${widget.questions.length} questions correct',
+                style: const TextStyle(
+                  fontFamily: 'GoogleSans',
+                  color: AppTheme.onBackground2,
+                  fontSize: 14,
+                ),
               ),
               const SizedBox(height: 32),
               Row(
@@ -1329,7 +1590,7 @@ class _McqResultScreenState extends State<_McqResultScreen>
                   Expanded(
                     child: _StatCard(
                       icon: Icons.check_circle_rounded,
-                      iconColor: _correct,
+                      iconColor: const Color(0xFF4CAF50),
                       label: 'Correct',
                       value: '$_correctCount',
                     ),
@@ -1338,7 +1599,7 @@ class _McqResultScreenState extends State<_McqResultScreen>
                   Expanded(
                     child: _StatCard(
                       icon: Icons.cancel_rounded,
-                      iconColor: _wrong,
+                      iconColor: const Color(0xFFFF5252),
                       label: 'Wrong',
                       value:
                           '${widget.answers.where((a) => a != null).length - _correctCount}',
@@ -1348,7 +1609,7 @@ class _McqResultScreenState extends State<_McqResultScreen>
                   Expanded(
                     child: _StatCard(
                       icon: Icons.radio_button_unchecked,
-                      iconColor: _textSec,
+                      iconColor: AppTheme.onBackground2,
                       label: 'Skipped',
                       value: '${widget.answers.where((a) => a == null).length}',
                     ),
@@ -1356,7 +1617,11 @@ class _McqResultScreenState extends State<_McqResultScreen>
                 ],
               ),
               const SizedBox(height: 32),
-              _StartButton(label: 'New Test', onTap: widget.onRestart),
+              _StartButton(
+                label: 'New Test',
+                icon: Icons.refresh_rounded,
+                onTap: widget.onRestart,
+              ),
             ],
           ),
         ),
@@ -1404,29 +1669,50 @@ class _ViewModeChooser extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _bg,
-      body: GlassBackground(
+      backgroundColor: AppTheme.background,
+      body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(32),
+          padding: const EdgeInsets.all(28),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.check_circle_rounded, color: _accent, size: 40),
-              const SizedBox(height: 16),
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: AppTheme.accentPurple.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: AppTheme.accentPurple.withValues(alpha: 0.4),
+                    width: 1.5,
+                  ),
+                ),
+                child: const Icon(
+                  Icons.auto_awesome_rounded,
+                  color: AppTheme.accentPurple,
+                  size: 30,
+                ),
+              ),
+              const SizedBox(height: 20),
               const Text(
                 'Questions Ready',
                 style: TextStyle(
-                  color: _textPrim,
-                  fontSize: 22,
+                  fontFamily: 'GoogleSans',
+                  color: AppTheme.onBackground,
+                  fontSize: 24,
                   fontWeight: FontWeight.w700,
                 ),
               ),
               const SizedBox(height: 8),
               const Text(
                 'How would you like to practice?',
-                style: TextStyle(color: _textSec, fontSize: 14),
+                style: TextStyle(
+                  fontFamily: 'GoogleSans',
+                  color: AppTheme.onBackground2,
+                  fontSize: 14,
+                ),
               ),
-              const SizedBox(height: 40),
+              const SizedBox(height: 36),
               _ModeCard(
                 icon: Icons.view_agenda_outlined,
                 title: 'One at a time',
@@ -1463,17 +1749,29 @@ class _ModeCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: _GlassContainer(
-        padding: const EdgeInsets.all(20),
+      child: Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: AppTheme.surface,
+          borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+          border: Border.all(
+            color: AppTheme.onboardingButtonBorder,
+            width: 1.2,
+          ),
+        ),
         child: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: _primary.withValues(alpha: 0.4),
-                borderRadius: BorderRadius.circular(12),
+                color: AppTheme.accentPurple.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                border: Border.all(
+                  color: AppTheme.accentPurple.withValues(alpha: 0.3),
+                  width: 1,
+                ),
               ),
-              child: Icon(icon, color: _accent, size: 24),
+              child: Icon(icon, color: AppTheme.accentPurple, size: 22),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -1483,18 +1781,20 @@ class _ModeCard extends StatelessWidget {
                   Text(
                     title,
                     style: const TextStyle(
-                      color: _textPrim,
+                      fontFamily: 'GoogleSans',
+                      color: AppTheme.onBackground,
                       fontSize: 16,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     subtitle,
                     style: const TextStyle(
-                      color: _textSec,
+                      fontFamily: 'GoogleSans',
+                      color: AppTheme.onBackground2,
                       fontSize: 13,
-                      height: 1.4,
+                      height: 1.3,
                     ),
                   ),
                 ],
@@ -1502,7 +1802,7 @@ class _ModeCard extends StatelessWidget {
             ),
             const Icon(
               Icons.arrow_forward_ios_rounded,
-              color: _textSec,
+              color: AppTheme.onBackground2,
               size: 16,
             ),
           ],
@@ -1552,118 +1852,141 @@ class _FlashcardViewState extends State<_FlashcardView> {
   Widget build(BuildContext context) {
     final q = widget.questions[_current];
     return Scaffold(
-      backgroundColor: _bg,
-      body: Stack(
-        children: [
-          const FocusBackground(slideProgress: 1.0),
-          SafeArea(
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-                  child: Row(
-                    children: [
-                      IconButton(
-                        onPressed: () => _onBackPressed(context),
-                        icon: const Icon(
+      backgroundColor: AppTheme.background,
+      body: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: () => _onBackPressed(context),
+                    child: Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        color: AppTheme.surfaceLight,
+                        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                        border: Border.all(
+                          color: AppTheme.onboardingButtonBorder,
+                          width: 1,
+                        ),
+                      ),
+                      child: const Center(
+                        child: Icon(
                           Icons.arrow_back_ios_new_rounded,
-                          color: _textSec,
-                          size: 18,
+                          color: AppTheme.onBackground,
+                          size: 16,
                         ),
                       ),
-                      Expanded(
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: LinearProgressIndicator(
-                            value: (_current + 1) / widget.questions.length,
-                            minHeight: 5,
-                            backgroundColor: _surface,
-                            valueColor: const AlwaysStoppedAnimation(
-                              Color(0xFF5B6EF5),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        '${_current + 1}/${widget.questions.length}',
-                        style: const TextStyle(color: _textSec, fontSize: 13),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _QuestionCard(
-                          question: q.question,
-                          subject: q.subject,
-                          marks: q.marks,
-                        ),
-                        const SizedBox(height: 16),
-                        AnimatedCrossFade(
-                          duration: const Duration(milliseconds: 350),
-                          crossFadeState: _revealed
-                              ? CrossFadeState.showSecond
-                              : CrossFadeState.showFirst,
-                          firstChild: GestureDetector(
-                            onTap: () => setState(() => _revealed = true),
-                            child: Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              decoration: BoxDecoration(
-                                border: Border.all(
-                                  color: _accent.withValues(alpha: 0.4),
-                                ),
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                              child: const Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.lightbulb_outline_rounded,
-                                    color: _accent,
-                                    size: 18,
-                                  ),
-                                  SizedBox(width: 8),
-                                  Text(
-                                    'Reveal Model Answer',
-                                    style: TextStyle(
-                                      color: _accent,
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          secondChild: _ModelAnswerCard(
-                            modelAnswer: q.modelAnswer,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                      ],
                     ),
                   ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-                  child: _StartButton(
-                    label: _current == widget.questions.length - 1
-                        ? '✓ Finish'
-                        : 'Next Question →',
-                    onTap: _next,
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: LinearProgressIndicator(
+                        value: (_current + 1) / widget.questions.length,
+                        minHeight: 6,
+                        backgroundColor: AppTheme.surfaceLight,
+                        valueColor: const AlwaysStoppedAnimation(
+                          AppTheme.accentPurple,
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-              ],
+                  const SizedBox(width: 14),
+                  Text(
+                    '${_current + 1}/${widget.questions.length}',
+                    style: const TextStyle(
+                      fontFamily: 'GoogleSans',
+                      color: AppTheme.onBackground2,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: 18),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _QuestionCard(
+                      question: q.question,
+                      subject: q.subject,
+                      marks: q.marks,
+                    ),
+                    const SizedBox(height: 16),
+                    AnimatedCrossFade(
+                      duration: const Duration(milliseconds: 350),
+                      crossFadeState: _revealed
+                          ? CrossFadeState.showSecond
+                          : CrossFadeState.showFirst,
+                      firstChild: GestureDetector(
+                        onTap: () => setState(() => _revealed = true),
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          decoration: BoxDecoration(
+                            color: AppTheme.surface,
+                            border: Border.all(
+                              color: AppTheme.accentPurple.withValues(
+                                alpha: 0.5,
+                              ),
+                              width: 1.2,
+                            ),
+                            borderRadius: BorderRadius.circular(
+                              AppTheme.radiusXl,
+                            ),
+                          ),
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.lightbulb_outline_rounded,
+                                color: AppTheme.accentPurple,
+                                size: 18,
+                              ),
+                              SizedBox(width: 8),
+                              Text(
+                                'Reveal Model Answer',
+                                style: TextStyle(
+                                  fontFamily: 'GoogleSans',
+                                  color: AppTheme.accentPurple,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      secondChild: _ModelAnswerCard(
+                        modelAnswer: q.modelAnswer,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+              child: _StartButton(
+                label: _current == widget.questions.length - 1
+                    ? '✓ Finish'
+                    : 'Next Question →',
+                icon: null,
+                onTap: _next,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1685,43 +2008,65 @@ class _PaperViewState extends State<_PaperView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _bg,
-      body: Stack(
-        children: [
-          const FocusBackground(slideProgress: 1.0),
-          SafeArea(
-            child: Column(
+      backgroundColor: AppTheme.background,
+      body: SafeArea(
+        child: Stack(
+          children: [
+            Column(
               children: [
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
                   child: Row(
                     children: [
-                      IconButton(
-                        onPressed: () => Navigator.maybePop(context),
-                        icon: const Icon(
-                          Icons.arrow_back_ios_new_rounded,
-                          color: _textSec,
-                          size: 18,
+                      GestureDetector(
+                        onTap: () => Navigator.maybePop(context),
+                        child: Container(
+                          width: 38,
+                          height: 38,
+                          decoration: BoxDecoration(
+                            color: AppTheme.surfaceLight,
+                            borderRadius: BorderRadius.circular(
+                              AppTheme.radiusMd,
+                            ),
+                            border: Border.all(
+                              color: AppTheme.onboardingButtonBorder,
+                              width: 1,
+                            ),
+                          ),
+                          child: const Center(
+                            child: Icon(
+                              Icons.arrow_back_ios_new_rounded,
+                              color: AppTheme.onBackground,
+                              size: 16,
+                            ),
+                          ),
                         ),
                       ),
+                      const SizedBox(width: 14),
                       const Expanded(
                         child: Text(
                           'Practice Paper',
                           style: TextStyle(
-                            color: _textPrim,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
+                            fontFamily: 'GoogleSans',
+                            color: AppTheme.onBackground,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ),
                       Text(
                         '${widget.questions.length} questions',
-                        style: const TextStyle(color: _textSec, fontSize: 13),
+                        style: const TextStyle(
+                          fontFamily: 'GoogleSans',
+                          color: AppTheme.onBackground2,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 Expanded(
                   child: ListView.builder(
                     padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
@@ -1749,26 +2094,33 @@ class _PaperViewState extends State<_PaperView> {
                                     horizontal: 16,
                                   ),
                                   decoration: BoxDecoration(
+                                    color: AppTheme.surface,
                                     border: Border.all(
-                                      color: _accent.withValues(alpha: 0.4),
+                                      color: AppTheme.accentPurple.withValues(
+                                        alpha: 0.5,
+                                      ),
+                                      width: 1,
                                     ),
-                                    borderRadius: BorderRadius.circular(10),
+                                    borderRadius: BorderRadius.circular(
+                                      AppTheme.radiusLg,
+                                    ),
                                   ),
                                   child: const Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Icon(
                                         Icons.lightbulb_outline_rounded,
-                                        color: _accent,
+                                        color: AppTheme.accentPurple,
                                         size: 15,
                                       ),
                                       SizedBox(width: 6),
                                       Text(
                                         'Show Answer',
                                         style: TextStyle(
-                                          color: _accent,
+                                          fontFamily: 'GoogleSans',
+                                          color: AppTheme.accentPurple,
                                           fontSize: 13,
-                                          fontWeight: FontWeight.w600,
+                                          fontWeight: FontWeight.w700,
                                         ),
                                       ),
                                     ],
@@ -1785,27 +2137,32 @@ class _PaperViewState extends State<_PaperView> {
                 ),
               ],
             ),
-          ),
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: Container(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [_bg.withValues(alpha: 0), _bg],
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      AppTheme.background.withValues(alpha: 0),
+                      AppTheme.background.withValues(alpha: 0.9),
+                      AppTheme.background,
+                    ],
+                  ),
+                ),
+                child: _StartButton(
+                  label: 'Finish Session',
+                  icon: Icons.check_circle_rounded,
+                  onTap: widget.onDone,
                 ),
               ),
-              child: _StartButton(
-                label: '✦ Finish Session',
-                onTap: widget.onDone,
-              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -1854,19 +2211,19 @@ class _OptionTileState extends State<_OptionTile>
   }
 
   Color get _borderColor => switch (widget.state) {
-    _OptionState.correct => _correct,
-    _OptionState.wrong => _wrong,
-    _ => Colors.white.withValues(alpha: 0.08),
+    _OptionState.correct => const Color(0xFF4CAF50),
+    _OptionState.wrong => const Color(0xFFFF5252),
+    _ => AppTheme.onboardingButtonBorder,
   };
   Color get _bgColor => switch (widget.state) {
-    _OptionState.correct => _correct.withValues(alpha: 0.15),
-    _OptionState.wrong => _wrong.withValues(alpha: 0.12),
-    _ => Colors.white.withValues(alpha: 0.03),
+    _OptionState.correct => const Color(0xFF4CAF50).withValues(alpha: 0.12),
+    _OptionState.wrong => const Color(0xFFFF5252).withValues(alpha: 0.12),
+    _ => AppTheme.surface,
   };
   Color get _labelColor => switch (widget.state) {
-    _OptionState.correct => _correct,
-    _OptionState.wrong => _wrong,
-    _ => _primary,
+    _OptionState.correct => const Color(0xFF4CAF50),
+    _OptionState.wrong => const Color(0xFFFF5252),
+    _ => AppTheme.accentPurple,
   };
 
   @override
@@ -1885,7 +2242,7 @@ class _OptionTileState extends State<_OptionTile>
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
             color: _bgColor,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
             border: Border.all(color: _borderColor, width: 1.2),
           ),
           child: Row(
@@ -1903,6 +2260,7 @@ class _OptionTileState extends State<_OptionTile>
                   child: Text(
                     widget.label,
                     style: TextStyle(
+                      fontFamily: 'GoogleSans',
                       color: _labelColor,
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
@@ -1915,11 +2273,12 @@ class _OptionTileState extends State<_OptionTile>
                 child: Text(
                   widget.text,
                   style: TextStyle(
+                    fontFamily: 'GoogleSans',
                     color: widget.state == _OptionState.idle
-                        ? _textPrim
+                        ? AppTheme.onBackground
                         : widget.state == _OptionState.correct
-                        ? _correct
-                        : _wrong,
+                        ? const Color(0xFF4CAF50)
+                        : const Color(0xFFFF5252),
                     fontSize: 14,
                     height: 1.4,
                     fontWeight: FontWeight.w500,
@@ -1929,11 +2288,15 @@ class _OptionTileState extends State<_OptionTile>
               if (widget.state == _OptionState.correct)
                 const Icon(
                   Icons.check_circle_rounded,
-                  color: _correct,
+                  color: Color(0xFF4CAF50),
                   size: 20,
                 ),
               if (widget.state == _OptionState.wrong)
-                const Icon(Icons.cancel_rounded, color: _wrong, size: 20),
+                const Icon(
+                  Icons.cancel_rounded,
+                  color: Color(0xFFFF5252),
+                  size: 20,
+                ),
             ],
           ),
         ),
@@ -1957,7 +2320,7 @@ class _RingPainter extends CustomPainter {
       center,
       radius,
       Paint()
-        ..color = _surface
+        ..color = AppTheme.surfaceLight
         ..style = PaintingStyle.stroke
         ..strokeWidth = 10,
     );
@@ -1988,49 +2351,66 @@ class _SectionLabel extends StatelessWidget {
   Widget build(BuildContext context) => Text(
     text,
     style: GoogleFonts.googleSans(
-      color: _textSec,
-      fontSize: 12,
+      color: AppTheme.onBackground2,
+      fontSize: 13,
       fontWeight: FontWeight.w600,
-      letterSpacing: 0.5,
+      letterSpacing: 0.4,
     ),
   );
 }
 
-class _StartButton extends StatelessWidget {
+class _StartButton extends StatefulWidget {
   final String label;
   final VoidCallback onTap;
-  const _StartButton({required this.label, required this.onTap});
+  final IconData? icon;
+
+  const _StartButton({
+    required this.label,
+    required this.onTap,
+    this.icon = Icons.auto_awesome_rounded,
+  });
+
+  @override
+  State<_StartButton> createState() => _StartButtonState();
+}
+
+class _StartButtonState extends State<_StartButton> {
+  bool _pressed = false;
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
-      child: Container(
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) => setState(() => _pressed = false),
+      onTapCancel: () => setState(() => _pressed = false),
+      onTap: widget.onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 60),
+        transform: _pressed
+            ? Matrix4.translationValues(0, 4, 0)
+            : Matrix4.identity(),
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 16),
+        height: 56,
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [AppTheme.primaryGradBegin, AppTheme.primaryGradEnd],
-          ),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: _primary.withValues(alpha: 0.4),
-              blurRadius: 20,
-              offset: const Offset(0, 6),
-            ),
-          ],
+          color: AppTheme.accentPurple,
+          borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+          boxShadow: _pressed ? [] : AppTheme.chunkyButtonShadow,
         ),
+        alignment: Alignment.center,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.auto_awesome_rounded, color: _textPrim, size: 18),
-            const SizedBox(width: 8),
+            if (widget.icon != null) ...[
+              Icon(widget.icon, color: AppTheme.onPrimary, size: 20),
+              const SizedBox(width: 10),
+            ],
             Text(
-              label,
+              widget.label,
               style: const TextStyle(
-                color: _textPrim,
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
+                fontFamily: 'GoogleSans',
+                color: AppTheme.onPrimary,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
               ),
             ),
           ],
@@ -2060,13 +2440,22 @@ class _StatCard extends StatelessWidget {
         Text(
           value,
           style: const TextStyle(
-            color: _textPrim,
+            fontFamily: 'GoogleSans',
+            color: AppTheme.onBackground,
             fontSize: 20,
             fontWeight: FontWeight.w800,
           ),
         ),
         const SizedBox(height: 2),
-        Text(label, style: const TextStyle(color: _textSec, fontSize: 11)),
+        Text(
+          label,
+          style: const TextStyle(
+            fontFamily: 'GoogleSans',
+            color: AppTheme.onBackground2,
+            fontSize: 11,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
       ],
     ),
   );
@@ -2078,23 +2467,17 @@ class _GlassContainer extends StatelessWidget {
   const _GlassContainer({required this.child, this.padding});
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-        child: Container(
-          padding: padding,
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.04),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.08),
-              width: 1.2,
-            ),
-          ),
-          child: child,
+    return Container(
+      padding: padding,
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+        border: Border.all(
+          color: AppTheme.onboardingButtonBorder,
+          width: 1.2,
         ),
       ),
+      child: child,
     );
   }
 }
@@ -2104,23 +2487,17 @@ class _GlassChip extends StatelessWidget {
   const _GlassChip({required this.child});
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(20),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.05),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.1),
-              width: 1,
-            ),
-          ),
-          child: child,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceLight,
+        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+        border: Border.all(
+          color: AppTheme.onboardingButtonBorder,
+          width: 1,
         ),
       ),
+      child: child,
     );
   }
 }
