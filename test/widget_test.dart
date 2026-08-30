@@ -70,9 +70,15 @@ void main() {
 
     test('initial state', () {
       expect(controller.status, FocusTimerStatus.idle);
-      expect(controller.totalSeconds, 3600);
-      expect(controller.secondsLeft, 3600);
-      expect(controller.formattedTime, '1:00:00');
+      expect(
+        controller.totalSeconds,
+        FocusTimerController.initialDefaultDuration,
+      );
+      expect(
+        controller.secondsLeft,
+        FocusTimerController.initialDefaultDuration,
+      );
+      expect(controller.formattedTime, '25:00');
     });
 
     test('setDuration updates seconds and formatted time', () {
@@ -87,8 +93,8 @@ void main() {
       controller.start();
       expect(controller.status, FocusTimerStatus.running);
 
-      // Wait 1 second to verify ticker decreases secondsLeft
-      await Future.delayed(const Duration(seconds: 1));
+      // Wait for ticker (200ms interval) to tick past 1s so ceil(remaining) drops below 10
+      await Future.delayed(const Duration(milliseconds: 1300));
       expect(controller.secondsLeft, lessThan(10));
     });
 
