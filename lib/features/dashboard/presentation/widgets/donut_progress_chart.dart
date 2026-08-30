@@ -2,293 +2,165 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:Skolar/core/theme/app_theme.dart';
-import 'package:Skolar/features/analytics/domain/entities/analytics_entity.dart';
 
-class DonutProgressChart extends StatefulWidget {
-  final AnalyticsData data;
-  const DonutProgressChart({super.key, required this.data});
+/// One ring's worth of arc data — a track (full circle) plus a progress arc,
+/// both drawn at the same stroke width. Multiple of these, stepped inward
+/// from a shared outer radius, are what let [DonutProgressChart] draw
+/// concentric rings (e.g. a legend against several metrics in the expanded
+/// dashboard card) instead of just one.
+class DonutRingData {
+  /// Raw 0..1 sweep — capping (if any) is the caller's job; this class
+  /// draws exactly what it's given.
+  final double percent;
+  final Color progressColor;
+  final Color backgroundColor;
+  final double lineWidth;
 
-  @override
-  State<DonutProgressChart> createState() => _DonutProgressChartState();
+  const DonutRingData({
+    required this.percent,
+    required this.progressColor,
+    required this.backgroundColor,
+    required this.lineWidth,
+  });
 }
 
-class _DonutProgressChartState extends State<DonutProgressChart>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-  late final Animation<double> _reveal;
+/// A concentric progress ring (track + arc, same center), drawn directly
+/// with a [CustomPainter] instead of the `percent_indicator` package.
+///
+/// That package computes its own pixel diameter once and wraps everything
+/// in a `Column` sized off of it — with `radius`/`lineWidth` animating every
+/// frame here (the dashboard progress card's expand/collapse drag), that
+/// internal `Column` ended up a fraction of a pixel short of the content it
+/// was handed on almost every frame, regardless of how the content passed
+/// into it was sized (the mismatch was in the package's own layout, not
+/// anything on our side — see the git history on this file for the exhausted
+/// attempts to constrain around it). Drawing the arc ourselves sidesteps
+/// that entirely: there's no intermediate `Column`/`Material` for a
+/// sub-pixel size mismatch to hide in, just a `CustomPaint` sized exactly to
+/// `radius * 2` and a plain centered child.
+///
+/// The ring is capped below 100% so it can never visually close — there is
+/// no "complete" state or celebration variant anywhere on this surface.
+class DonutProgressChart extends StatelessWidget {
+  static const double _maxVisualPercent = 0.92;
 
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1400),
-    );
-    _reveal = CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _controller.forward();
-    });
-  }
+  /// Raw 0..1 completion ratio — capping to [_maxVisualPercent] happens here,
+  /// same as it always did.
+  final double percent;
+  final double radius;
+  final double lineWidth;
+  final Widget? center;
 
-  @override
-  void didUpdateWidget(DonutProgressChart oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    _controller.forward(from: 0);
-  }
+  /// Additional rings drawn inside the primary one, each stepped inward by
+  /// its own [DonutRingData.lineWidth] plus a small gap — for a legend
+  /// against multiple metrics. Empty by default; existing single-ring
+  /// callers (today, every one of them) are completely unaffected.
+  final List<DonutRingData> innerRings;
 
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
+  const DonutProgressChart({
+    super.key,
+    required this.percent,
+    this.radius = 55,
+    this.lineWidth = 10,
+    this.center,
+    this.innerRings = const [],
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: AppTheme.surfaceGradient,
-        borderRadius: BorderRadius.circular(20),
+    final capped = percent.clamp(0.0, 1.0) * _maxVisualPercent;
+    final rings = [
+      DonutRingData(
+        percent: capped,
+        progressColor: AppTheme.accent,
+        backgroundColor: AppTheme.surface.withValues(alpha: 0.4),
+        lineWidth: lineWidth,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      ...innerRings,
+    ];
+    final diameter = radius * 2;
+
+    return SizedBox(
+      width: diameter,
+      height: diameter,
+      // Plain child of a Stack, centered — no Column, no Material, no
+      // AnimatedPhysicalModel between the arc and whatever `center` is, so
+      // there's nothing here with its own opinion about layout that the
+      // caller's animating content could ever fractionally overflow.
+      child: Stack(
+        alignment: Alignment.center,
         children: [
-          // ── Header ────────────────────────────────────────────────────
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Task Progress',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(color: AppTheme.textPrimary),
-              ),
-              Icon(Icons.more_horiz, color: AppTheme.textSecondary),
-            ],
+          CustomPaint(
+            size: Size(diameter, diameter),
+            painter: _DonutRingsPainter(rings: rings, outerRadius: radius),
           ),
-
-          const SizedBox(height: 24),
-
-          // ── Rings + center label ──────────────────────────────────────
-          SizedBox(
-            height: 220,
-            child: AnimatedBuilder(
-              animation: _reveal,
-              builder: (context, _) {
-                return Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    // CustomPainter draws the three concentric arcs
-                    Center(
-                      child: CustomPaint(
-                        size: const Size(220, 220),
-                        painter: _ConcentricRingsPainter(
-                          progress: _reveal.value,
-                          todoPercent: widget.data.todoPercent,
-                          inProgressPercent: widget.data.inProgressPercent,
-                          completedPercent: widget.data.completedPercent,
-                          trackColor: AppTheme.surface.withValues(alpha: 0.4),
-                          todoColor: AppTheme.chartTodo,
-                          inProgressColor: AppTheme.chartInProgress,
-                          completedColor: AppTheme.chartCompleted,
-                        ),
-                      ),
-                    ),
-
-                    // Center label fades in after rings are ~50% drawn
-                    Opacity(
-                      opacity: (((_reveal.value) - 0.4) / 0.6).clamp(0.0, 1.0),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            '${widget.data.totalTasksCompleted}',
-                            style: Theme.of(context).textTheme.displaySmall
-                                ?.copyWith(
-                                  color: AppTheme.textPrimary,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                          ),
-                          Text(
-                            'Tasks Completed',
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(color: AppTheme.textSecondary),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
-          ),
-
-          const SizedBox(height: 20),
-
-          // ── Legend ────────────────────────────────────────────────────
-          _LegendRow(data: widget.data),
+          ?center,
         ],
       ),
     );
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Painter
-// ─────────────────────────────────────────────────────────────────────────────
+class _DonutRingsPainter extends CustomPainter {
+  final List<DonutRingData> rings;
+  final double outerRadius;
 
-class _ConcentricRingsPainter extends CustomPainter {
-  final double progress; // 0.0 → 1.0 (animation value)
-  final double todoPercent;
-  final double inProgressPercent;
-  final double completedPercent;
-  final Color trackColor;
-  final Color todoColor;
-  final Color inProgressColor;
-  final Color completedColor;
+  // Breathing room between concentric rings so adjacent strokes don't touch.
+  static const double _ringGap = 4;
 
-  static const double _strokeWidth = 10.0;
-  static const double _gap = 10.0; // space between rings
-  // Start at top (−90°) going clockwise
-  static const double _startAngle = -math.pi / 2;
-
-  _ConcentricRingsPainter({
-    required this.progress,
-    required this.todoPercent,
-    required this.inProgressPercent,
-    required this.completedPercent,
-    required this.trackColor,
-    required this.todoColor,
-    required this.inProgressColor,
-    required this.completedColor,
-  });
+  _DonutRingsPainter({required this.rings, required this.outerRadius});
 
   @override
   void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    // Outermost ring = todoPercent, middle = inProgress, inner = completed
-    final double outerRadius = size.width / 2 - 4;
-    final double midRadius = outerRadius - _strokeWidth - _gap;
-    final double innerRadius = midRadius - _strokeWidth - _gap;
+    final center = size.center(Offset.zero);
+    var currentOuter = outerRadius;
 
-    _drawRing(canvas, center, outerRadius, todoPercent, todoColor);
-    _drawRing(canvas, center, midRadius, inProgressPercent, inProgressColor);
-    _drawRing(canvas, center, innerRadius, completedPercent, completedColor);
+    for (final ring in rings) {
+      // Inset by half the stroke width so the *outer edge* of the stroke
+      // sits at `currentOuter` — matches the proportions the previous
+      // percent_indicator-based ring drew at the same radius/lineWidth.
+      final ringRadius = currentOuter - ring.lineWidth / 2;
+      if (ringRadius > 0) {
+        final rect = Rect.fromCircle(center: center, radius: ringRadius);
+
+        final backgroundPaint = Paint()
+          ..color = ring.backgroundColor
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = ring.lineWidth
+          ..strokeCap = StrokeCap.round;
+        canvas.drawCircle(center, ringRadius, backgroundPaint);
+
+        if (ring.percent > 0) {
+          final progressPaint = Paint()
+            ..color = ring.progressColor
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = ring.lineWidth
+            ..strokeCap = StrokeCap.round;
+          // Starts at the top (-90°) and sweeps clockwise, same convention
+          // percent_indicator used with its default `startAngle`/`reverse`.
+          const startAngle = -math.pi / 2;
+          final sweepAngle = 2 * math.pi * ring.percent;
+          canvas.drawArc(rect, startAngle, sweepAngle, false, progressPaint);
+        }
+      }
+
+      currentOuter -= ring.lineWidth + _ringGap;
+    }
   }
 
-  void _drawRing(
-    Canvas canvas,
-    Offset center,
-    double radius,
-    double percent,
-    Color color,
-  ) {
-    final rect = Rect.fromCircle(center: center, radius: radius);
-
-    // Track (full circle, dimmed)
-    final trackPaint = Paint()
-      ..color = trackColor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = _strokeWidth
-      ..strokeCap = StrokeCap.round;
-    canvas.drawArc(rect, 0, 2 * math.pi, false, trackPaint);
-
-    // Arc (animated sweep)
-    final sweepAngle = 2 * math.pi * percent * progress;
-    if (sweepAngle <= 0) return;
-
-    final arcPaint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = _strokeWidth
-      ..strokeCap = StrokeCap.round;
-    canvas.drawArc(rect, _startAngle, sweepAngle, false, arcPaint);
-  }
-
-  // Repaint only when progress changes — not on every frame
   @override
-  bool shouldRepaint(_ConcentricRingsPainter old) =>
-      old.progress != progress ||
-      old.todoPercent != todoPercent ||
-      old.inProgressPercent != inProgressPercent ||
-      old.completedPercent != completedPercent;
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Legend (unchanged)
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _LegendRow extends StatelessWidget {
-  final AnalyticsData data;
-  const _LegendRow({required this.data});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-        _LegendItem(
-          color: AppTheme.chartTodo,
-          label: 'To Do',
-          percent: data.todoPercent,
-        ),
-        _LegendItem(
-          color: AppTheme.chartInProgress,
-          label: 'In Progress',
-          percent: data.inProgressPercent,
-        ),
-        _LegendItem(
-          color: AppTheme.chartCompleted,
-          label: 'Completed',
-          percent: data.completedPercent,
-        ),
-      ],
-    );
-  }
-}
-
-class _LegendItem extends StatelessWidget {
-  final Color color;
-  final String label;
-  final double percent;
-
-  const _LegendItem({
-    required this.color,
-    required this.label,
-    required this.percent,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 8,
-              height: 8,
-              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-            ),
-            const SizedBox(width: 6),
-            Text(
-              '${(percent * 100).toStringAsFixed(0)}%',
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                color: AppTheme.textPrimary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: Theme.of(
-            context,
-          ).textTheme.bodySmall?.copyWith(color: AppTheme.textSecondary),
-        ),
-      ],
-    );
+  bool shouldRepaint(covariant _DonutRingsPainter oldDelegate) {
+    if (rings.length != oldDelegate.rings.length) return true;
+    for (var i = 0; i < rings.length; i++) {
+      final a = rings[i];
+      final b = oldDelegate.rings[i];
+      if (a.percent != b.percent ||
+          a.progressColor != b.progressColor ||
+          a.backgroundColor != b.backgroundColor ||
+          a.lineWidth != b.lineWidth) {
+        return true;
+      }
+    }
+    return false;
   }
 }

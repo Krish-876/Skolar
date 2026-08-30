@@ -103,7 +103,12 @@ final goRouterProvider = GoRouter(
     GoRoute(path: AppRoutes.feed, builder: (_, _) => const FeedPage()),
     GoRoute(
       path: AppRoutes.focusSession,
-      builder: (_, _) => const FocusTimerPage(),
+      builder: (_, state) {
+        final extra = state.extra;
+        return FocusTimerPage(
+          initialDuration: extra is Duration ? extra : null,
+        );
+      },
     ),
     GoRoute(
       path: AppRoutes.examPrediction,

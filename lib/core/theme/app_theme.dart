@@ -195,10 +195,28 @@ class AppTheme {
   static ThemeData get lightTheme => darkTheme;
 
   static Color? get divider => null;
+
+  // ── Common ─────────────────────────────────────────────────────────────────
+  // Generic building blocks for one-off overlay/border tints (e.g.
+  // `AppTheme.white.withValues(alpha: 0.05)` for a glass card's edge) — kept
+  // here so widgets reach for these instead of `Colors.white`/
+  // `Colors.transparent` directly, and every color used in the app traces
+  // back to this file.
+  static const Color white = Color(0xFFFFFFFF);
+  static const Color transparent = Color(0x00000000);
+
   // ── Dashboard specific ─────────────────────────────────────────────────────
+  // True black (not `background`'s near-black) — the AMOLED-style dashboard
+  // page background and the collapsible progress card's expanded surface.
+  static const Color pureBlack = Color(0xFF000000);
   static const Color cardBackground = Color(0xFF1C1C1E); // use surface
   static const Color textPrimary = onBackground; // already have this
   static const Color textSecondary = onBackground2; // already have this
+  // Dimmer, less saturated than `textSecondary` (a bright lavender-blue) —
+  // for captions that should read as muted everywhere, not just faded via
+  // opacity against one particular background (see `StreakStrip`'s section
+  // label).
+  static const Color textMuted = Color(0xFF8A8A90);
   static const Color accent = Color(0xFFB388FF); // brand purple accent
   static const Color dividerColor = surface; // already have this
 

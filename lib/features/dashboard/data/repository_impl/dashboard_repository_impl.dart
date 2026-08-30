@@ -9,20 +9,40 @@ class DashboardRepositoryImpl implements DashboardRepository {
   const DashboardRepositoryImpl(this.dataSource);
 
   @override
-  Future<Either<Failure, List<DashboardEntity>>> getAll() async {
+  Future<Either<Failure, ProgressStats>> getProgressStats() async {
     try {
-      final dtos = await dataSource.getAll();
-      return Right(dtos.map((d) => d.toEntity()).toList());
+      final dto = await dataSource.getProgressStats();
+      return Right(dto.toEntity());
     } catch (e) {
       return Left(ServerFailure());
     }
   }
 
   @override
-  Future<Either<Failure, DashboardEntity>> getById(String id) async {
+  Future<Either<Failure, DashboardPlan>> getPlan() async {
     try {
-      final dto = await dataSource.getById(id);
+      final dto = await dataSource.getPlan();
       return Right(dto.toEntity());
+    } catch (e) {
+      return Left(ServerFailure());
+    }
+  }
+
+  @override
+  Future<Either<Failure, DashboardPlan>> toggleTaskCompletion(String taskId) async {
+    try {
+      final dto = await dataSource.toggleTask(taskId);
+      return Right(dto.toEntity());
+    } catch (e) {
+      return Left(ServerFailure());
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<DevelopmentAxis>>> getDevelopmentAxes() async {
+    try {
+      final dtos = await dataSource.getDevelopmentAxes();
+      return Right(dtos.map((d) => d.toEntity()).toList());
     } catch (e) {
       return Left(ServerFailure());
     }

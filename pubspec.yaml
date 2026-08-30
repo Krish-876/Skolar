@@ -45,6 +45,9 @@ dependencies:
   lottie: ^3.5.1
   flutter_svg: ^2.3.0
   video_player: ^2.9.2
+  flutter_heatmap_calendar: ^1.0.5
+  shimmer: ^4.0.0
+  dotlottie_loader: ^0.0.6
 dev_dependencies:
   flutter_test:
     sdk: flutter

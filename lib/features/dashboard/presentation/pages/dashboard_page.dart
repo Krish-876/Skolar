@@ -1,306 +1,146 @@
-import 'package:Skolar/core/routing/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:Skolar/core/theme/app_theme.dart';
 import 'package:Skolar/features/dashboard/presentation/providers/dashboard_provider.dart';
-import 'package:Skolar/features/dashboard/presentation/widgets/animated_mesh_bg.dart';
+import 'package:Skolar/features/dashboard/presentation/widgets/all_round_development_card.dart';
 import 'package:Skolar/features/dashboard/presentation/widgets/dashboard_header.dart';
-import 'package:Skolar/features/dashboard/presentation/widgets/dashboard_section_header.dart';
-import 'package:Skolar/features/dashboard/presentation/widgets/donut_progress_chart.dart';
-import 'package:Skolar/features/dashboard/presentation/widgets/recent_activity_tile.dart';
-import 'package:Skolar/features/dashboard/presentation/widgets/task_list_tile.dart';
-import 'package:Skolar/features/dashboard/presentation/widgets/weekly_line_chart.dart';
-// ignore: unused_import
-import 'package:Skolar/shared/providers/global_providers.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:Skolar/features/dashboard/presentation/widgets/expandable_progress_card.dart';
 
-class DashboardPage extends ConsumerWidget {
+class DashboardPage extends ConsumerStatefulWidget {
   const DashboardPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(dashboardProvider);
+  ConsumerState<DashboardPage> createState() => _DashboardPageState();
+}
 
+class _DashboardPageState extends ConsumerState<DashboardPage> {
+  final _cardAnchorKey = GlobalKey();
+  final _expansionProgress = ValueNotifier<double>(0);
+  final _scrollController = ScrollController();
+
+  // Matches the collapsed card's actual content height: 20px padding (top
+  // + bottom, see `_CollapsedContent`) around its tallest element, the ring
+  // at its collapsed diameter (radius 38 * 2 = 76) — 20 + 76 + 20 = 116.
+  // This box is a fixed-size overlay (`Positioned.fromRect`), not something
+  // that sizes to its own content, so a taller-than-necessary value here
+  // left visible dead space at the bottom of the card.
+  static const double _collapsedCardHeight = 116;
+
+  @override
+  void dispose() {
+    _expansionProgress.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  // Reloads every dashboard data source, then bumps
+  // `dashboardRefreshSignalProvider` so the week strip pages itself back to
+  // the current week — regardless of which week/month the user had swiped
+  // to — instead of a reload leaving it stranded wherever it was.
+  Future<void> _onRefresh() async {
+    ref.invalidate(progressStatsProvider);
+    ref.invalidate(developmentAxesProvider);
+    await Future.wait([
+      ref.read(dashboardPlanProvider.notifier).refresh(),
+      ref.read(progressStatsProvider.future),
+      ref.read(developmentAxesProvider.future),
+    ]);
+    // The widget (and this State's `ref`) can be disposed while the above
+    // await is pending — e.g. the user navigates away mid-refresh — so `ref`
+    // is no longer safe to touch once we come back from it without checking
+    // first.
+    if (!mounted) return;
+    ref.read(dashboardRefreshSignalProvider.notifier).state++;
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Stack(
       children: [
-        // ── Animated neon background — isolated in its own render layer ──────
-        const AnimatedMeshBackground(),
-
-        // ── Scaffold is transparent so the background shows through ──────────
+        const ColoredBox(color: AppTheme.pureBlack),
         Scaffold(
-          backgroundColor: Colors.transparent,
-          body: SafeArea(child: _buildBody(context, ref, state)),
+          backgroundColor: AppTheme.transparent,
+          body: SafeArea(
+            child: ValueListenableBuilder<double>(
+              valueListenable: _expansionProgress,
+              builder: (context, progress, child) => IgnorePointer(
+                ignoring: progress > 0.05,
+                child: Opacity(
+                  opacity: (1 - progress * 1.6).clamp(0.0, 1.0),
+                  child: Transform.translate(
+                    offset: Offset(0, -16 * progress),
+                    child: child,
+                  ),
+                ),
+              ),
+              child: _buildScaffoldContent(context),
+            ),
+          ),
+        ),
+        ExpandableProgressCard(
+          anchorKey: _cardAnchorKey,
+          expansionProgress: _expansionProgress,
+          scrollController: _scrollController,
         ),
       ],
     );
   }
 
-  Widget _buildBody(BuildContext context, WidgetRef ref, AsyncValue state) {
-    return state.when(
-      loading: () => const Center(
-        child: CircularProgressIndicator(color: AppTheme.accent),
-      ),
-      error: (error, _) => Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.error_outline, color: AppTheme.error, size: 48),
-            const SizedBox(height: 12),
-            const Text(
-              'Failed to load dashboard',
-              style: TextStyle(color: AppTheme.textPrimary),
-            ),
-            const SizedBox(height: 8),
-            TextButton(
-              onPressed: () => ref.invalidate(dashboardProvider),
-              child: const Text('Retry'),
-            ),
-          ],
+  Widget _buildScaffoldContent(BuildContext context) {
+    // DashboardHeader (which contains the week/month StreakStrip toggle) used
+    // to be a fixed, non-scrolling sibling above an `Expanded(CustomScrollView)`
+    // — so when the month grid made the header taller, it squeezed the
+    // Expanded's available height rather than just extending the scroll
+    // content, and on a small enough screen that overflowed the outer Column
+    // outright ("RenderFlex overflowed..."). It's now the CustomScrollView's
+    // own first sliver: the anchor below it is guaranteed to sit immediately
+    // below it by ordinary layout flow regardless of how tall the header
+    // gets, and a taller header just extends scrollable content instead of
+    // budging against a fixed remaining-space budget.
+    return RefreshIndicator(
+      onRefresh: _onRefresh,
+      color: AppTheme.accent,
+      backgroundColor: AppTheme.surface,
+      child: CustomScrollView(
+        controller: _scrollController,
+        // `AlwaysScrollableScrollPhysics` (not plain `BouncingScrollPhysics`)
+        // so the pull-to-refresh gesture still triggers even on a screen
+        // tall enough that this content doesn't overflow it — otherwise
+        // there'd be no overscroll for `RefreshIndicator` to detect.
+        physics: const AlwaysScrollableScrollPhysics(
+          parent: BouncingScrollPhysics(),
         ),
-      ),
-      data: (analytics) => RefreshIndicator(
-        color: AppTheme.accent,
-        backgroundColor: AppTheme.surface,
-        onRefresh: () => ref.read(dashboardProvider.notifier).refresh(),
-        child: CustomScrollView(
-          physics: const BouncingScrollPhysics(),
-          slivers: [
-            // ── App Bar ────────────────────────────────────────────────────
-            SliverAppBar(
-              floating: true,
-              snap: true,
-              backgroundColor:
-                  Colors.transparent, // transparent — bg shows through
-              elevation: 0,
-              title: _DevMenuTrigger(
-                child: Text(
-                  'Dashboard',
-                  style: GoogleFonts.googleSans(
-                    color: AppTheme.textPrimary,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 22,
-                  ),
-                ),
+        slivers: [
+          const SliverToBoxAdapter(child: DashboardHeader()),
+          // Anchor placeholder for the collapsed card's overlay geometry —
+          // lives in the scrollable content so it scrolls away with the rest
+          // of the page instead of leaving the overlay stuck in place. Extra
+          // top padding (was 8) gives it a bit more breathing room below the
+          // streak strip now that the date row (see `streak_strip.dart`)
+          // makes that section taller — without it the card sat too close
+          // underneath.
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: SizedBox(
+                key: _cardAnchorKey,
+                width: double.infinity,
+                height: _collapsedCardHeight,
               ),
             ),
-
-            // ── Header (avatar + welcome + bell) ──────────────────────────
-            const SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.symmetric(vertical: 10.0),
-                child: DashboardHeader(),
-              ),
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              // Top padding (was 0) matches the same breathing-room bump
+              // just given to the anchor above it — the collapsed card now
+              // sits with more space below it too, so this card doesn't
+              // crowd right up against it.
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: const AllRoundDevelopmentCard(),
             ),
-
-            // ── Donut Chart ────────────────────────────────────────────────
-            SliverToBoxAdapter(
-              child: DonutProgressChart(
-                key: const ValueKey('donut'),
-                data: analytics,
-              ),
-            ),
-
-            // ── Weekly Line Chart ──────────────────────────────────────────
-            SliverToBoxAdapter(
-              child: WeeklyLineChart(points: analytics.weeklyProgress),
-            ),
-
-            // ── Tasks Section Header ───────────────────────────────────────
-            SliverToBoxAdapter(
-              child: DashboardSectionHeader(title: 'Tasks', showRefresh: true),
-            ),
-
-            // ── Tasks List — SliverList for large lists ────────────────────
-            SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              sliver: SliverToBoxAdapter(
-                child: Container(
-                  padding: const EdgeInsets.fromLTRB(
-                    20,
-                    20,
-                    20,
-                    10,
-                  ), // Reduced bottom padding slightly
-                  decoration: BoxDecoration(
-                    gradient: AppTheme.surfaceGradient,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(
-                        height:
-                            300, // Adjust this number based on how many sub-boxes you want visible at once
-                        child: ListView.builder(
-                          padding: EdgeInsets
-                              .zero, // Clears default list view padding
-                          shrinkWrap:
-                              false, // No longer needed to shrink since height is explicit
-                          physics:
-                              const BouncingScrollPhysics(), // 2. Restores smooth scrolling mechanics inside the card
-                          itemCount: analytics.tasks.length,
-                          itemBuilder: (context, i) => TaskListTile(
-                            task: analytics.tasks[i],
-                            showDivider: false,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-
-            // ── Recent Activity Section Header ─────────────────────────────
-            SliverToBoxAdapter(
-              child: DashboardSectionHeader(
-                title: 'Recent Activity',
-                showRefresh: false,
-              ),
-            ),
-
-            // ── Recent Activity List ───────────────────────────────────────
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
-              sliver: SliverList.separated(
-                itemCount: analytics.recentActivities.length,
-                separatorBuilder: (_, _) =>
-                    const Divider(height: 1, color: AppTheme.dividerColor),
-                itemBuilder: (context, i) => RecentActivityTile(
-                  activity: analytics.recentActivities[i],
-                  showDivider: false,
-                ),
-              ),
-            ),
-
-            // ── Dev Navigation ─────────────────────────────────────────────────────
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Padding(
-                      padding: EdgeInsets.only(bottom: 8),
-                      child: Text(
-                        'Dev Nav',
-                        style: TextStyle(
-                          color: AppTheme.textSecondary,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        _DevButton(
-                          'Mock Tests',
-                          () => context.go(AppRoutes.mockTests),
-                        ),
-                        _DevButton('Feed', () => context.go(AppRoutes.feed)),
-                        _DevButton(
-                          'Focus',
-                          () => context.go(AppRoutes.focusSession),
-                        ),
-                        _DevButton(
-                          'Exam Predict',
-                          () => context.go(AppRoutes.examPrediction),
-                        ),
-                        _DevButton(
-                          'Profile',
-                          () => context.go(AppRoutes.profile),
-                        ),
-                        _DevButton(
-                          'PYQ Upload',
-                          () => context.go(AppRoutes.pyqUpload),
-                        ),
-                        _DevButton(
-                          'Colleges',
-                          () => context.go(AppRoutes.colleges),
-                        ),
-                        _DevButton(
-                          'Onboarding',
-                          () => context.go(AppRoutes.onboardingProfile),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: ElevatedButton(
-                  onPressed: () async {
-                    await Supabase.instance.client.auth.signOut();
-                    context.go(AppRoutes.auth);
-                  },
-                  child: const Text('Sign Out'),
-                ),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
-  }
-}
-
-// This should be at the very bottom of the file, outside everything else
-class _DevButton extends StatelessWidget {
-  final String label;
-  final VoidCallback onTap;
-  const _DevButton(this.label, this.onTap);
-
-  @override
-  Widget build(BuildContext context) {
-    return OutlinedButton(
-      onPressed: onTap,
-      style: OutlinedButton.styleFrom(
-        foregroundColor: AppTheme.textPrimary,
-        side: const BorderSide(color: AppTheme.accent),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        minimumSize: Size.zero,
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      ),
-      child: Text(label, style: const TextStyle(fontSize: 12)),
-    );
-  }
-}
-
-class _DevMenuTrigger extends StatefulWidget {
-  final Widget child;
-  const _DevMenuTrigger({required this.child});
-
-  @override
-  State<_DevMenuTrigger> createState() => _DevMenuTriggerState();
-}
-
-class _DevMenuTriggerState extends State<_DevMenuTrigger> {
-  int _tapCount = 0;
-  DateTime? _lastTap;
-
-  void _handleTap() {
-    final now = DateTime.now();
-    if (_lastTap != null &&
-        now.difference(_lastTap!) > const Duration(milliseconds: 500)) {
-      _tapCount = 0;
-    }
-    _tapCount++;
-    _lastTap = now;
-
-    if (_tapCount >= 3) {
-      _tapCount = 0;
-      context.push('/');
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(onTap: _handleTap, child: widget.child);
   }
 }
