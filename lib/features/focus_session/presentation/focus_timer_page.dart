@@ -13,7 +13,6 @@ import 'package:flutter/services.dart';
 import '../controllers/focus_timer_controller.dart';
 import '../widgets/focus_background.dart';
 import '../widgets/phase_takeover.dart';
-import '../widgets/tree_growth_visualizer.dart';
 
 /// Colors that differ between the real (dark) body and its light-theme
 /// break clone. Everything structural (layout, sizing, which widgets exist)
@@ -935,24 +934,16 @@ class FocusTimerPageState extends State<FocusTimerPage>
   }
 
   Widget _buildBonsaiHero(bool isRunning) {
-    final isTest = FocusTimerController.kTestMode;
-    final minVal = isTest ? 10.0 : 1.0;
-    final maxVal = 180.0;
-    final previewScale =
-        ((_targetSliderMinutes - minVal) / (maxVal - minVal)).clamp(0.0, 1.0);
-    final overallProgress = _controller.sessionProgress;
-
     return Center(
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 400),
         curve: Curves.easeInOut,
         padding: EdgeInsets.only(top: isRunning ? 12 : 0),
-        child: TreeGrowthVisualizer(
-          progress: overallProgress,
-          isRunning: isRunning,
-          isBreak: _controller.isBreakPhase,
-          size: 215,
-          previewScale: previewScale,
+        child: Image.asset(
+          'assets/images/bonsai.png',
+          width: 215,
+          height: 215,
+          fit: BoxFit.contain,
         ),
       ),
     );
