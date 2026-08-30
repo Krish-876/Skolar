@@ -17,19 +17,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:Skolar/core/routing/app_routes.dart';
+import 'package:Skolar/core/theme/app_theme.dart';
 import 'package:Skolar/features/onboarding/presentation/providers/onboarding_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Constants
+// Constants & Options
 // ─────────────────────────────────────────────────────────────────────────────
 
-const _kTotalSteps = 7;
-
-const _kPrimary = Color(0xFF8C38E5);
-const _kSurface = Color(0xFF1C1C1E);
-const _kBg = Color(0xFF16161A);
-const _kSpeechBubble = Color(0xFF2A0D55);
+const _kTotalSteps = 8;
 
 const _kEndgameOptions = [
   'Placements / internships',
@@ -103,7 +99,7 @@ const _kCapacityOptions = [
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
-// OnboardingProfilePage — entry point, hosts the full 7-step flow
+// OnboardingProfilePage — entry point, hosts the full 8-step flow
 // ─────────────────────────────────────────────────────────────────────────────
 
 class OnboardingProfilePage extends ConsumerStatefulWidget {
@@ -124,25 +120,24 @@ class _OnboardingProfilePageState extends ConsumerState<OnboardingProfilePage>
   late AnimationController _progressCtrl;
   late Animation<double> _progressFill; // 0→1 for the current segment
 
-  // ── Step 0 : Profile ──────────────────────────────────────────────────────
+  // ── Step 0 & 1 : Avatar & Profile ─────────────────────────────────────────
   final _nameCtrl = TextEditingController();
   final _idCtrl = TextEditingController();
-  bool _avatarConfirmed = false;
   late final AvatarMakerController _avatarMakerController;
 
-  // ── Step 1 : Institution ──────────────────────────────────────────────────
+  // ── Step 2 : Institution ──────────────────────────────────────────────────
   String _campusName = 'BITS Pilani';
   String _campusLocation = 'Pilani Campus';
   String _campusDomain = '@pilani.bits-pilani.ac.in';
 
-  // ── Step 2 : Academic details ─────────────────────────────────────────────
+  // ── Step 3 : Academic details ─────────────────────────────────────────────
   String? _branch;
   bool _isDualDegree = false;
   String? _dualBranch;
   int? _currentYear;
   int? _currentSemester;
 
-  // ── Step 3 : Study capacity ───────────────────────────────────────────────
+  // ── Step 4 : Study capacity ───────────────────────────────────────────────
   String? _studyCapacity;
 
   @override
@@ -150,7 +145,6 @@ class _OnboardingProfilePageState extends ConsumerState<OnboardingProfilePage>
     super.initState();
     _avatarMakerController = NonPersistentAvatarMakerController();
 
-    // Step entrance animation
     // Progress bar fill animation (plays each time step advances)
     _progressCtrl = AnimationController(
       vsync: this,
@@ -203,12 +197,6 @@ class _OnboardingProfilePageState extends ConsumerState<OnboardingProfilePage>
     if (_isLoading) return;
     HapticFeedback.lightImpact();
 
-    // Step-0 sub-stage: confirm avatar before showing name fields
-    if (_step == 0 && !_avatarConfirmed) {
-      setState(() => _avatarConfirmed = true);
-      return;
-    }
-
     _persistCurrentStep();
 
     if (_step < _kTotalSteps - 1) {
@@ -228,11 +216,6 @@ class _OnboardingProfilePageState extends ConsumerState<OnboardingProfilePage>
   void _back() {
     HapticFeedback.selectionClick();
 
-    if (_step == 0 && _avatarConfirmed) {
-      setState(() => _avatarConfirmed = false);
-      return;
-    }
-
     if (_step == 0) {
       context.go(AppRoutes.auth);
       return;
@@ -247,17 +230,18 @@ class _OnboardingProfilePageState extends ConsumerState<OnboardingProfilePage>
     final n = ref.read(onboardingProvider.notifier);
     switch (_step) {
       case 0:
-        n.setName(_nameCtrl.text.trim());
-        n.setId(_idCtrl.text.trim());
         n.setAvatarData(_avatarMakerController.displayedAvatarSVG);
       case 1:
-        n.setCampus(_campusDomain.split('@').last.split('.').first);
+        n.setName(_nameCtrl.text.trim());
+        n.setId(_idCtrl.text.trim());
       case 2:
+        n.setCampus(_campusDomain.split('@').last.split('.').first);
+      case 3:
         if (_branch != null) n.setBranch(_branch!);
         n.setDualBranch(_dualBranch);
         if (_currentYear != null) n.setCurrentYear(_currentYear!);
         if (_currentSemester != null) n.setCurrentSemester(_currentSemester!);
-      case 3:
+      case 4:
         if (_studyCapacity != null) n.setStudyCapacity(_studyCapacity!);
     }
   }
@@ -267,23 +251,24 @@ class _OnboardingProfilePageState extends ConsumerState<OnboardingProfilePage>
     final s = ref.watch(onboardingProvider);
     switch (_step) {
       case 0:
-        if (!_avatarConfirmed) return true; // "Confirm Avatar" always enabled
+        return true; // Avatar customization is always ready
+      case 1:
         return _nameCtrl.text.trim().isNotEmpty &&
             _idCtrl.text.trim().isNotEmpty;
-      case 1:
-        return true;
       case 2:
+        return true; // Campus confirmation
+      case 3:
         return _branch != null &&
             _currentYear != null &&
             _currentSemester != null &&
             (!_isDualDegree || _dualBranch != null);
-      case 3:
-        return _studyCapacity != null;
       case 4:
-        return s.endgame != null;
+        return _studyCapacity != null;
       case 5:
-        return s.careerInterests.isNotEmpty;
+        return s.endgame != null;
       case 6:
+        return s.careerInterests.isNotEmpty;
+      case 7:
         return s.prepStyle != null;
       default:
         return false;
@@ -291,29 +276,29 @@ class _OnboardingProfilePageState extends ConsumerState<OnboardingProfilePage>
   }
 
   String _buttonLabel() {
-    if (_step == 0 && !_avatarConfirmed) return 'Confirm Avatar';
-    if (_step == 1) return 'Yes, continue →';
-    if (_step == _kTotalSteps - 1) return 'Save Preference →';
+    if (_step == 0) return 'Confirm Avatar →';
+    if (_step == 2) return 'Yes, continue →';
+    if (_step == _kTotalSteps - 1) return 'Save Preferences →';
     return 'Continue →';
   }
 
   String _mascotMessage() {
     switch (_step) {
       case 0:
-        return _avatarConfirmed
-            ? "Looking good! Now, what should I call you?"
-            : "Let's create your digital twin! Customise your avatar below.";
+        return "Let's create your digital twin! Customise your avatar below.";
       case 1:
-        return "I've automatically detected your institution based on your BITS email. Is this the campus you're currently attending?";
+        return "Looking good! Now, what should I call you?";
       case 2:
-        return "Tell me about your academic setup — I'll personalise your study plan around it.";
+        return "I've automatically detected your institution based on your BITS email. Is this the campus you're currently attending?";
       case 3:
-        return "Nova will curate your focus list based on your availability. You can change this anytime in settings.";
+        return "Tell me about your academic setup — I'll personalise your study plan around it.";
       case 4:
-        return "What's your endgame right now? Nova will use this to balance your academic vs career focus.";
+        return "Nova will curate your focus list based on your availability. You can change this anytime in settings.";
       case 5:
-        return "Select all the areas that interest you — I'll weight resources accordingly.";
+        return "What's your endgame right now? Nova will use this to balance your academic vs career focus.";
       case 6:
+        return "Select all the areas that interest you — I'll weight resources accordingly.";
+      case 7:
         return "How do you usually prep for exams? This helps Nova understand your study patterns.";
       default:
         return '';
@@ -328,7 +313,7 @@ class _OnboardingProfilePageState extends ConsumerState<OnboardingProfilePage>
   Widget build(BuildContext context) {
     final canAdvance = _canAdvance();
     return Scaffold(
-      backgroundColor: _kBg,
+      backgroundColor: AppTheme.background,
       body: SafeArea(
         child: Column(
           children: [
@@ -354,7 +339,7 @@ class _OnboardingProfilePageState extends ConsumerState<OnboardingProfilePage>
                   ),
                 ),
                 child: KeyedSubtree(
-                  key: ValueKey('step_${_step}_$_avatarConfirmed'),
+                  key: ValueKey('step_$_step'),
                   child: _buildCurrentStep(),
                 ),
               ),
@@ -374,15 +359,19 @@ class _OnboardingProfilePageState extends ConsumerState<OnboardingProfilePage>
   Widget _buildCurrentStep() {
     switch (_step) {
       case 0:
-        return _ProfileStep(
-          avatarConfirmed: _avatarConfirmed,
+        return _AvatarStep(
+          avatarController: _avatarMakerController,
+          mascotMessage: _mascotMessage(),
+        );
+      case 1:
+        return _BasicInfoStep(
           avatarController: _avatarMakerController,
           nameCtrl: _nameCtrl,
           idCtrl: _idCtrl,
           mascotMessage: _mascotMessage(),
           onTextChanged: () => setState(() {}),
         );
-      case 1:
+      case 2:
         return _InstitutionStep(
           campusName: _campusName,
           campusLocation: _campusLocation,
@@ -390,7 +379,7 @@ class _OnboardingProfilePageState extends ConsumerState<OnboardingProfilePage>
           mascotMessage: _mascotMessage(),
           onChangeCampus: _changeCampus,
         );
-      case 2:
+      case 3:
         return _AcademicStep(
           branch: _branch,
           isDualDegree: _isDualDegree,
@@ -407,13 +396,13 @@ class _OnboardingProfilePageState extends ConsumerState<OnboardingProfilePage>
           onYearChanged: (v) => setState(() => _currentYear = v),
           onSemesterChanged: (v) => setState(() => _currentSemester = v),
         );
-      case 3:
+      case 4:
         return _CapacityStep(
           selected: _studyCapacity,
           mascotMessage: _mascotMessage(),
           onSelect: (v) => setState(() => _studyCapacity = v),
         );
-      case 4:
+      case 5:
         return _QuestionStep(
           mascotMessage: _mascotMessage(),
           options: _kEndgameOptions,
@@ -423,7 +412,7 @@ class _OnboardingProfilePageState extends ConsumerState<OnboardingProfilePage>
             ref.read(onboardingProvider.notifier).setEndgame(val);
           },
         );
-      case 5:
+      case 6:
         return _QuestionStep(
           mascotMessage: _mascotMessage(),
           options: _kCareerInterests,
@@ -432,7 +421,7 @@ class _OnboardingProfilePageState extends ConsumerState<OnboardingProfilePage>
           onSelect: (val) =>
               ref.read(onboardingProvider.notifier).toggleCareerInterest(val),
         );
-      case 6:
+      case 7:
         return _QuestionStep(
           mascotMessage: _mascotMessage(),
           options: _kPrepStyles,
@@ -451,52 +440,56 @@ class _OnboardingProfilePageState extends ConsumerState<OnboardingProfilePage>
   void _changeCampus() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF1E1E22),
+      backgroundColor: AppTheme.surface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppTheme.radiusXxxl),
+        ),
       ),
-      builder: (ctx) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const SizedBox(height: 12),
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: Colors.white24,
-              borderRadius: BorderRadius.circular(2),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.white24,
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            'Choose Campus',
-            style: GoogleFonts.googleSans(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
+            const SizedBox(height: 20),
+            Text(
+              'Choose Campus',
+              style: GoogleFonts.googleSans(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          _campusTile(
-            ctx,
-            'BITS Pilani',
-            'Pilani Campus',
-            '@pilani.bits-pilani.ac.in',
-          ),
-          _campusTile(
-            ctx,
-            'BITS Pilani',
-            'Goa Campus',
-            '@goa.bits-pilani.ac.in',
-          ),
-          _campusTile(
-            ctx,
-            'BITS Pilani',
-            'Hyderabad Campus',
-            '@hyderabad.bits-pilani.ac.in',
-          ),
-          const SizedBox(height: 24),
-        ],
+            const SizedBox(height: 12),
+            _campusTile(
+              ctx,
+              'BITS Pilani',
+              'Pilani Campus',
+              '@pilani.bits-pilani.ac.in',
+            ),
+            _campusTile(
+              ctx,
+              'BITS Pilani',
+              'Goa Campus',
+              '@goa.bits-pilani.ac.in',
+            ),
+            _campusTile(
+              ctx,
+              'BITS Pilani',
+              'Hyderabad Campus',
+              '@hyderabad.bits-pilani.ac.in',
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
       ),
     );
   }
@@ -507,14 +500,21 @@ class _OnboardingProfilePageState extends ConsumerState<OnboardingProfilePage>
     String location,
     String domain,
   ) {
+    final isCurrent = _campusLocation == location;
     return ListTile(
       leading: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: _kPrimary.withValues(alpha: 0.15),
+          color: isCurrent
+              ? AppTheme.accentPurple.withValues(alpha: 0.2)
+              : Colors.white.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(10),
         ),
-        child: const Icon(Icons.business_rounded, color: _kPrimary, size: 18),
+        child: Icon(
+          Icons.business_rounded,
+          color: isCurrent ? AppTheme.accentPurple : Colors.white70,
+          size: 18,
+        ),
       ),
       title: Text(
         '$name, $location',
@@ -525,8 +525,18 @@ class _OnboardingProfilePageState extends ConsumerState<OnboardingProfilePage>
       ),
       subtitle: Text(
         domain,
-        style: GoogleFonts.googleSans(color: Colors.white54, fontSize: 12),
+        style: GoogleFonts.googleSans(
+          color: AppTheme.onBackground2,
+          fontSize: 12,
+        ),
       ),
+      trailing: isCurrent
+          ? const Icon(
+              Icons.check_circle_rounded,
+              color: AppTheme.accentPurple,
+              size: 20,
+            )
+          : null,
       onTap: () {
         setState(() {
           _campusName = name;
@@ -567,6 +577,9 @@ class _TopBar extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.07),
                 borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.08),
+                ),
               ),
               child: const Icon(
                 Icons.chevron_left,
@@ -583,8 +596,8 @@ class _TopBar extends StatelessWidget {
               Text(
                 'ONBOARDING',
                 style: GoogleFonts.googleSans(
-                  color: _kPrimary,
-                  fontSize: 10,
+                  color: AppTheme.accentPurple,
+                  fontSize: 11,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.6,
                 ),
@@ -594,7 +607,7 @@ class _TopBar extends StatelessWidget {
                 style: GoogleFonts.googleSans(
                   color: Colors.white54,
                   fontSize: 11,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
@@ -605,9 +618,12 @@ class _TopBar extends StatelessWidget {
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.07),
               borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.08),
+              ),
             ),
             child: const Icon(
-              Icons.help_outline,
+              Icons.help_outline_rounded,
               color: Colors.white38,
               size: 18,
             ),
@@ -632,7 +648,7 @@ class _ProgressBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
       child: Row(
         children: List.generate(total, (i) {
           final isPast = i < step;
@@ -640,24 +656,24 @@ class _ProgressBar extends StatelessWidget {
           return Expanded(
             child: Container(
               margin: EdgeInsets.only(right: i < total - 1 ? 5 : 0),
-              height: 3,
+              height: 3.5,
               clipBehavior: Clip.antiAlias,
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(2),
               ),
               child: isPast
-                  ? Container(color: _kPrimary)
+                  ? Container(color: AppTheme.accentPurple)
                   : isCurrent
-                  ? AnimatedBuilder(
-                      animation: fillAnim,
-                      builder: (_, _) => FractionallySizedBox(
-                        widthFactor: fillAnim.value,
-                        alignment: Alignment.centerLeft,
-                        child: Container(color: _kPrimary),
-                      ),
-                    )
-                  : null,
+                      ? AnimatedBuilder(
+                          animation: fillAnim,
+                          builder: (_, _) => FractionallySizedBox(
+                            widthFactor: fillAnim.value,
+                            alignment: Alignment.centerLeft,
+                            child: Container(color: AppTheme.accentPurple),
+                          ),
+                        )
+                      : null,
             ),
           );
         }),
@@ -684,9 +700,15 @@ class _MascotHeader extends StatelessWidget {
             clipBehavior: Clip.none,
             children: [
               Container(
-                width: 54,
-                height: 54,
-                decoration: const BoxDecoration(shape: BoxShape.circle),
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: AppTheme.accentPurple.withValues(alpha: 0.35),
+                    width: 1.5,
+                  ),
+                ),
                 child: ClipOval(
                   child: Image.asset(
                     'assets/images/mascot.jpeg',
@@ -695,15 +717,15 @@ class _MascotHeader extends StatelessWidget {
                 ),
               ),
               Positioned(
-                bottom: 2,
-                right: 2,
+                bottom: 1,
+                right: 1,
                 child: Container(
-                  width: 12,
-                  height: 12,
+                  width: 13,
+                  height: 13,
                   decoration: BoxDecoration(
                     color: const Color(0xFF34C759),
                     shape: BoxShape.circle,
-                    border: Border.all(color: _kBg, width: 2),
+                    border: Border.all(color: AppTheme.background, width: 2),
                   ),
                 ),
               ),
@@ -713,14 +735,25 @@ class _MascotHeader extends StatelessWidget {
           // Speech bubble
           Expanded(
             child: Container(
-              padding: const EdgeInsets.all(14),
-              decoration: const BoxDecoration(
-                color: _kSpeechBubble,
-                borderRadius: BorderRadius.only(
-                  topRight: Radius.circular(16),
-                  bottomLeft: Radius.circular(16),
-                  bottomRight: Radius.circular(16),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                color: const Color(0xFF221A36),
+                borderRadius: const BorderRadius.only(
+                  topRight: Radius.circular(18),
+                  bottomLeft: Radius.circular(18),
+                  bottomRight: Radius.circular(18),
                 ),
+                border: Border.all(
+                  color: AppTheme.accentPurple.withValues(alpha: 0.22),
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.25),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
               child: Text(
                 message,
@@ -728,6 +761,7 @@ class _MascotHeader extends StatelessWidget {
                   color: Colors.white,
                   fontSize: 14,
                   height: 1.45,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ),
@@ -738,7 +772,8 @@ class _MascotHeader extends StatelessWidget {
   }
 }
 
-class _FooterButton extends StatelessWidget {
+/// 3D tactile chunky button matching OnboardingWelcomePage and AuthPreviewPage
+class _FooterButton extends StatefulWidget {
   final String label;
   final bool enabled;
   final bool isLoading;
@@ -752,57 +787,65 @@ class _FooterButton extends StatelessWidget {
   });
 
   @override
+  State<_FooterButton> createState() => _FooterButtonState();
+}
+
+class _FooterButtonState extends State<_FooterButton> {
+  bool _pressed = false;
+
+  @override
   Widget build(BuildContext context) {
-    final active = enabled && !isLoading;
+    final active = widget.enabled && !widget.isLoading;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+      padding: const EdgeInsets.fromLTRB(
+        AppTheme.lg,
+        AppTheme.sm,
+        AppTheme.lg,
+        AppTheme.lg,
+      ),
       child: AnimatedOpacity(
-        opacity: enabled ? 1.0 : 0.4,
+        opacity: widget.enabled ? 1.0 : 0.4,
         duration: const Duration(milliseconds: 200),
         child: IgnorePointer(
           ignoring: !active,
           child: GestureDetector(
-            onTap: onTap,
+            onTapDown: (_) => setState(() => _pressed = true),
+            onTapUp: (_) => setState(() => _pressed = false),
+            onTapCancel: () => setState(() => _pressed = false),
+            onTap: widget.onTap,
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 250),
+              duration: const Duration(milliseconds: 60),
+              transform: (_pressed && active)
+                  ? Matrix4.translationValues(0, 4, 0)
+                  : Matrix4.identity(),
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 17),
+              height: 56,
               decoration: BoxDecoration(
-                gradient: enabled
-                    ? const LinearGradient(
-                        colors: [Color(0xFF9B4DFF), Color(0xFF7428D8)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      )
-                    : null,
-                color: enabled ? null : _kSurface,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: enabled
-                    ? [
-                        BoxShadow(
-                          color: _kPrimary.withValues(alpha: 0.38),
-                          blurRadius: 20,
-                          offset: const Offset(0, 6),
-                        ),
-                      ]
+                color: widget.enabled
+                    ? AppTheme.accentPurple
+                    : AppTheme.surface,
+                borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+                boxShadow: (widget.enabled && !_pressed)
+                    ? AppTheme.chunkyButtonShadow
                     : [],
               ),
               alignment: Alignment.center,
-              child: isLoading
+              child: widget.isLoading
                   ? const SizedBox(
                       width: 22,
                       height: 22,
                       child: CircularProgressIndicator(
                         strokeWidth: 2.5,
-                        color: Colors.white,
+                        color: AppTheme.secondary,
                       ),
                     )
                   : Text(
-                      label,
-                      style: GoogleFonts.googleSans(
-                        color: Colors.white,
-                        fontSize: 16,
+                      widget.label,
+                      style: const TextStyle(
+                        fontFamily: 'GoogleSans',
+                        color: AppTheme.secondary,
                         fontWeight: FontWeight.bold,
+                        fontSize: 16,
                       ),
                     ),
             ),
@@ -817,18 +860,137 @@ class _FooterButton extends StatelessWidget {
 // Step Widgets
 // ─────────────────────────────────────────────────────────────────────────────
 
-// ── Step 0: Profile ──────────────────────────────────────────────────────────
+// ── Step 0: Avatar Customisation ─────────────────────────────────────────────
 
-class _ProfileStep extends StatelessWidget {
-  final bool avatarConfirmed;
+class _AvatarStep extends StatelessWidget {
+  final AvatarMakerController avatarController;
+  final String mascotMessage;
+
+  const _AvatarStep({
+    required this.avatarController,
+    required this.mascotMessage,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _MascotHeader(message: mascotMessage),
+          const SizedBox(height: 24),
+          // Avatar preview — always visible with light background for SVG visibility
+          Center(
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: AppTheme.accentPurple.withValues(alpha: 0.6),
+                  width: 2.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.accentPurple.withValues(alpha: 0.2),
+                    blurRadius: 20,
+                  ),
+                ],
+              ),
+              child: CircleAvatar(
+                radius: 60,
+                backgroundColor: const Color(0xFFF2EFF9),
+                child: ClipOval(
+                  child: AvatarMakerAvatar(
+                    radius: 60,
+                    backgroundColor: const Color(0xFFF2EFF9),
+                    controller: avatarController,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Container(
+            height: 365,
+            margin: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF4EBFF),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: AppTheme.accentPurple.withValues(alpha: 0.35),
+                width: 1.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.25),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: AvatarMakerCustomizer(
+                controller: avatarController,
+                theme: AvatarMakerThemeData(
+                  primaryBgColor: Colors.transparent,
+                  secondaryBgColor: Colors.transparent,
+                  iconColor: const Color(0xFF49454F),
+                  selectedIconColor: AppTheme.primary,
+                  unselectedIconColor: const Color(0xFF79747E),
+                  labelTextStyle: GoogleFonts.googleSans(
+                    color: const Color(0xFF1D1B20),
+                    fontWeight: FontWeight.bold,
+                  ),
+                  selectedTileDecoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: AppTheme.primary,
+                      width: 2.5,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppTheme.primary.withValues(alpha: 0.2),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  unselectedTileDecoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: const Color(0xFFE4D7F5),
+                      width: 1,
+                    ),
+                  ),
+                  boxDecoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  tileMargin: const EdgeInsets.all(4.0),
+                  tilePadding: const EdgeInsets.all(4.0),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 100),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Step 1: Basic Info ───────────────────────────────────────────────────────
+
+class _BasicInfoStep extends StatelessWidget {
   final AvatarMakerController avatarController;
   final TextEditingController nameCtrl;
   final TextEditingController idCtrl;
   final String mascotMessage;
   final VoidCallback onTextChanged;
 
-  const _ProfileStep({
-    required this.avatarConfirmed,
+  const _BasicInfoStep({
     required this.avatarController,
     required this.nameCtrl,
     required this.idCtrl,
@@ -843,108 +1005,68 @@ class _ProfileStep extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _MascotHeader(message: mascotMessage),
-          const SizedBox(height: 24),
-          // Avatar preview — always visible
+          const SizedBox(height: 28),
           Center(
-            child: CircleAvatar(
-              radius: 60,
-              backgroundColor: const Color(0xFFF2F2F5),
-              child: ClipOval(
-                child: AvatarMakerAvatar(
-                  radius: 60,
-                  backgroundColor: const Color(0xFFF2F2F5),
-                  controller: avatarController,
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: AppTheme.accentPurple.withValues(alpha: 0.6),
+                  width: 2.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.accentPurple.withValues(alpha: 0.2),
+                    blurRadius: 20,
+                  ),
+                ],
+              ),
+              child: CircleAvatar(
+                radius: 54,
+                backgroundColor: const Color(0xFFF2EFF9),
+                child: ClipOval(
+                  child: AvatarMakerAvatar(
+                    radius: 54,
+                    backgroundColor: const Color(0xFFF2EFF9),
+                    controller: avatarController,
+                  ),
                 ),
               ),
             ),
           ),
-          // Animated switch between customiser and input fields
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 460),
-            switchInCurve: Curves.easeOutCubic,
-            switchOutCurve: Curves.easeIn,
-            transitionBuilder: (child, anim) => SizeTransition(
-              sizeFactor: anim,
-              alignment: AlignmentDirectional.topCenter,
-              child: FadeTransition(opacity: anim, child: child),
-            ),
-            child: !avatarConfirmed
-                ? Column(
-                    key: const ValueKey('customiser'),
-                    children: [
-                      const SizedBox(height: 24),
-                      Container(
-                        height: 360,
-                        margin: const EdgeInsets.symmetric(horizontal: 16),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF4EBFF),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: AvatarMakerCustomizer(
-                          controller: avatarController,
-                          theme: AvatarMakerThemeData(
-                            primaryBgColor: Colors.transparent,
-                            secondaryBgColor: Colors.transparent,
-                            iconColor: Colors.black54,
-                            selectedIconColor: _kPrimary,
-                            unselectedIconColor: Colors.black38,
-                            labelTextStyle: GoogleFonts.googleSans(
-                              color: Colors.black87,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            selectedTileDecoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: _kPrimary, width: 3.0),
-                            ),
-                            unselectedTileDecoration: const BoxDecoration(),
-                            boxDecoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            tileMargin: const EdgeInsets.all(4.0),
-                            tilePadding: const EdgeInsets.all(4.0),
-                          ),
-                        ),
-                      ),
-                    ],
-                  )
-                : Column(
-                    key: const ValueKey('inputs'),
-                    children: [
-                      const SizedBox(height: 32),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Basic Info',
-                              style: GoogleFonts.googleSans(
-                                color: Colors.white,
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-                            _OnboardingTextField(
-                              controller: nameCtrl,
-                              label: 'Full Name',
-                              hint: 'e.g. Arjun Sharma',
-                              onChanged: (_) => onTextChanged(),
-                              textCapitalization: TextCapitalization.words,
-                            ),
-                            const SizedBox(height: 16),
-                            _OnboardingTextField(
-                              controller: idCtrl,
-                              label: 'BITS ID',
-                              hint: 'e.g. 2023A7PSXXXXH',
-                              onChanged: (_) => onTextChanged(),
-                              textCapitalization: TextCapitalization.none,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+          const SizedBox(height: 28),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Basic Info',
+                  style: GoogleFonts.googleSans(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
                   ),
+                ),
+                const SizedBox(height: 20),
+                _OnboardingTextField(
+                  controller: nameCtrl,
+                  label: 'Full Name',
+                  hint: 'e.g. Arjun Sharma',
+                  onChanged: (_) => onTextChanged(),
+                  textCapitalization: TextCapitalization.words,
+                ),
+                const SizedBox(height: 16),
+                _OnboardingTextField(
+                  controller: idCtrl,
+                  label: 'BITS ID',
+                  hint: 'e.g. 2023A7PSXXXXH',
+                  onChanged: (_) => onTextChanged(),
+                  textCapitalization: TextCapitalization.none,
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 100),
         ],
@@ -983,8 +1105,8 @@ class _InstitutionStep extends StatelessWidget {
           Container(
             width: double.infinity,
             decoration: BoxDecoration(
-              color: _kSurface,
-              borderRadius: BorderRadius.circular(20),
+              color: AppTheme.surface,
+              borderRadius: BorderRadius.circular(24),
               border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
             ),
             child: Column(
@@ -993,10 +1115,14 @@ class _InstitutionStep extends StatelessWidget {
                 Container(
                   height: 130,
                   decoration: const BoxDecoration(
-                    color: Color(0xFF200A42),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Color(0xFF2E1B4E), Color(0xFF1E1730)],
+                    ),
                     borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(20),
-                      topRight: Radius.circular(20),
+                      topLeft: Radius.circular(24),
+                      topRight: Radius.circular(24),
                     ),
                   ),
                   child: Stack(
@@ -1007,7 +1133,7 @@ class _InstitutionStep extends StatelessWidget {
                         bottom: -16,
                         child: Icon(
                           Icons.business_rounded,
-                          color: Colors.white.withValues(alpha: 0.05),
+                          color: Colors.white.withValues(alpha: 0.04),
                           size: 110,
                         ),
                       ),
@@ -1016,7 +1142,7 @@ class _InstitutionStep extends StatelessWidget {
                         bottom: -16,
                         child: Icon(
                           Icons.business_rounded,
-                          color: Colors.white.withValues(alpha: 0.04),
+                          color: Colors.white.withValues(alpha: 0.03),
                           size: 90,
                         ),
                       ),
@@ -1028,30 +1154,42 @@ class _InstitutionStep extends StatelessWidget {
                             Container(
                               padding: const EdgeInsets.all(18),
                               decoration: BoxDecoration(
-                                color: _kPrimary.withValues(alpha: 0.2),
+                                color: AppTheme.accentPurple.withValues(
+                                  alpha: 0.15,
+                                ),
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: _kPrimary.withValues(alpha: 0.4),
+                                  color: AppTheme.accentPurple.withValues(
+                                    alpha: 0.5,
+                                  ),
                                   width: 1.5,
                                 ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppTheme.accentPurple.withValues(
+                                      alpha: 0.2,
+                                    ),
+                                    blurRadius: 16,
+                                  ),
+                                ],
                               ),
                               child: const Icon(
                                 Icons.business_rounded,
-                                color: _kPrimary,
+                                color: AppTheme.accentPurple,
                                 size: 34,
                               ),
                             ),
                             // Verified badge
                             Positioned(
                               top: -6,
-                              right: -10,
+                              right: -12,
                               child: Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 8,
                                   vertical: 3,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: _kPrimary,
+                                  color: AppTheme.accentPurple,
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Row(
@@ -1059,15 +1197,15 @@ class _InstitutionStep extends StatelessWidget {
                                   children: [
                                     const Icon(
                                       Icons.verified_rounded,
-                                      color: Colors.white,
+                                      color: AppTheme.secondary,
                                       size: 10,
                                     ),
                                     const SizedBox(width: 3),
                                     Text(
                                       'VERIFIED',
                                       style: GoogleFonts.googleSans(
-                                        color: Colors.white,
-                                        fontSize: 8,
+                                        color: AppTheme.secondary,
+                                        fontSize: 9,
                                         fontWeight: FontWeight.bold,
                                         letterSpacing: 0.5,
                                       ),
@@ -1102,14 +1240,14 @@ class _InstitutionStep extends StatelessWidget {
                         children: [
                           const Icon(
                             Icons.location_on_rounded,
-                            color: Colors.white54,
+                            color: AppTheme.onBackground2,
                             size: 14,
                           ),
                           const SizedBox(width: 4),
                           Text(
                             campusLocation,
                             style: GoogleFonts.googleSans(
-                              color: Colors.white54,
+                              color: AppTheme.onBackground2,
                               fontSize: 14,
                             ),
                           ),
@@ -1134,16 +1272,16 @@ class _InstitutionStep extends StatelessWidget {
                           vertical: 9,
                         ),
                         decoration: BoxDecoration(
-                          color: _kPrimary.withValues(alpha: 0.1),
+                          color: AppTheme.accentPurple.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                            color: _kPrimary.withValues(alpha: 0.28),
+                            color: AppTheme.accentPurple.withValues(alpha: 0.3),
                           ),
                         ),
                         child: Text(
                           campusDomain,
                           style: GoogleFonts.googleSans(
-                            color: _kPrimary,
+                            color: AppTheme.accentPurple,
                             fontWeight: FontWeight.w600,
                             fontSize: 13,
                           ),
@@ -1162,8 +1300,9 @@ class _InstitutionStep extends StatelessWidget {
             child: Text(
               'Choose different campus',
               style: GoogleFonts.googleSans(
-                color: Colors.white60,
+                color: AppTheme.onBackground2,
                 fontSize: 14,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ),
@@ -1256,11 +1395,11 @@ class _AcademicStep extends StatelessWidget {
             duration: const Duration(milliseconds: 250),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: _kSurface,
-              borderRadius: BorderRadius.circular(12),
+              color: AppTheme.surface,
+              borderRadius: BorderRadius.circular(14),
               border: Border.all(
                 color: isDualDegree
-                    ? _kPrimary.withValues(alpha: 0.5)
+                    ? AppTheme.accentPurple.withValues(alpha: 0.5)
                     : Colors.white.withValues(alpha: 0.08),
               ),
             ),
@@ -1270,7 +1409,10 @@ class _AcademicStep extends StatelessWidget {
                   scale: 0.88,
                   child: Switch(
                     value: isDualDegree,
-                    activeThumbColor: _kPrimary,
+                    activeTrackColor: AppTheme.accentPurple.withValues(
+                      alpha: 0.5,
+                    ),
+                    activeColor: AppTheme.accentPurple,
                     onChanged: onDualToggle,
                   ),
                 ),
@@ -1397,22 +1539,22 @@ class _CapacityStep extends StatelessWidget {
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.04),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(14),
               border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
             ),
             child: Row(
               children: [
                 const Icon(
                   Icons.info_outline_rounded,
-                  color: Colors.white38,
-                  size: 14,
+                  color: AppTheme.onBackground2,
+                  size: 16,
                 ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     "Most CS and Phoenix students choose 'Normal' to balance lab work and exam prep.",
                     style: GoogleFonts.googleSans(
-                      color: Colors.white38,
+                      color: Colors.white54,
                       fontSize: 12,
                       fontStyle: FontStyle.italic,
                     ),
@@ -1445,7 +1587,7 @@ class _CapacityCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0.0, end: 1.0),
-      duration: Duration(milliseconds: 380) + animDelay,
+      duration: const Duration(milliseconds: 380) + animDelay,
       curve: Curves.easeOutCubic,
       builder: (_, v, child) => Opacity(
         opacity: v,
@@ -1464,18 +1606,20 @@ class _CapacityCard extends StatelessWidget {
           curve: Curves.easeOut,
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: isSelected ? _kPrimary.withValues(alpha: 0.18) : _kSurface,
+            color: isSelected
+                ? AppTheme.accentPurple.withValues(alpha: 0.16)
+                : AppTheme.surface,
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
               color: isSelected
-                  ? _kPrimary
+                  ? AppTheme.accentPurple
                   : Colors.white.withValues(alpha: 0.08),
               width: isSelected ? 1.5 : 1.0,
             ),
             boxShadow: isSelected
                 ? [
                     BoxShadow(
-                      color: _kPrimary.withValues(alpha: 0.18),
+                      color: AppTheme.accentPurple.withValues(alpha: 0.2),
                       blurRadius: 18,
                       offset: const Offset(0, 4),
                     ),
@@ -1492,13 +1636,13 @@ class _CapacityCard extends StatelessWidget {
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? _kPrimary.withValues(alpha: 0.28)
-                          : Colors.white.withValues(alpha: 0.07),
+                          ? AppTheme.accentPurple.withValues(alpha: 0.24)
+                          : Colors.white.withValues(alpha: 0.06),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
                       option.icon,
-                      color: isSelected ? _kPrimary : Colors.white54,
+                      color: isSelected ? AppTheme.accentPurple : Colors.white60,
                       size: 22,
                     ),
                   ),
@@ -1517,22 +1661,22 @@ class _CapacityCard extends StatelessWidget {
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: _kPrimary,
+                              color: AppTheme.accentPurple,
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 const Icon(
-                                  Icons.check_circle_outline_rounded,
-                                  color: Colors.white,
+                                  Icons.check_circle_rounded,
+                                  color: AppTheme.secondary,
                                   size: 11,
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
                                   'Selected',
                                   style: GoogleFonts.googleSans(
-                                    color: Colors.white,
+                                    color: AppTheme.secondary,
                                     fontSize: 11,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -1590,7 +1734,7 @@ class _CapacityCard extends StatelessWidget {
   }
 }
 
-// ── Steps 4–6: Questionnaire (card-list style preserved) ─────────────────────
+// ── Steps 4–6: Questionnaire ─────────────────────────────────────────────────
 
 class _QuestionStep extends StatelessWidget {
   final String mascotMessage;
@@ -1661,7 +1805,7 @@ class _QuestionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0.0, end: 1.0),
-      duration: Duration(milliseconds: 320) + animDelay,
+      duration: const Duration(milliseconds: 320) + animDelay,
       curve: Curves.easeOutCubic,
       builder: (_, v, child) => Opacity(
         opacity: v,
@@ -1676,18 +1820,20 @@ class _QuestionCard extends StatelessWidget {
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
           decoration: BoxDecoration(
-            color: isSelected ? _kPrimary.withValues(alpha: 0.22) : _kSurface,
+            color: isSelected
+                ? AppTheme.accentPurple.withValues(alpha: 0.16)
+                : AppTheme.surface,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: isSelected
-                  ? _kPrimary
-                  : Colors.white.withValues(alpha: 0.09),
+                  ? AppTheme.accentPurple
+                  : Colors.white.withValues(alpha: 0.08),
               width: isSelected ? 1.5 : 1.0,
             ),
             boxShadow: isSelected
                 ? [
                     BoxShadow(
-                      color: _kPrimary.withValues(alpha: 0.14),
+                      color: AppTheme.accentPurple.withValues(alpha: 0.14),
                       blurRadius: 12,
                       offset: const Offset(0, 4),
                     ),
@@ -1714,8 +1860,8 @@ class _QuestionCard extends StatelessWidget {
                 height: 24,
                 decoration: BoxDecoration(
                   shape: isMultiSelect ? BoxShape.rectangle : BoxShape.circle,
-                  color: isSelected ? _kPrimary : Colors.transparent,
-                  borderRadius: isMultiSelect ? BorderRadius.circular(6) : null,
+                  color: isSelected ? AppTheme.accentPurple : Colors.transparent,
+                  borderRadius: isMultiSelect ? BorderRadius.circular(7) : null,
                   border: isSelected
                       ? null
                       : Border.all(color: Colors.white38, width: 1.5),
@@ -1723,8 +1869,8 @@ class _QuestionCard extends StatelessWidget {
                 child: isSelected
                     ? const Icon(
                         Icons.check_rounded,
-                        color: Colors.white,
-                        size: 14,
+                        color: AppTheme.secondary,
+                        size: 15,
                       )
                     : null,
               ),
@@ -1762,7 +1908,11 @@ class _OnboardingTextField extends StatelessWidget {
       children: [
         Text(
           label,
-          style: GoogleFonts.googleSans(color: Colors.white60, fontSize: 13),
+          style: GoogleFonts.googleSans(
+            color: AppTheme.onBackground2,
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+          ),
         ),
         const SizedBox(height: 8),
         TextField(
@@ -1774,20 +1924,23 @@ class _OnboardingTextField extends StatelessWidget {
             hintText: hint,
             hintStyle: GoogleFonts.googleSans(color: Colors.white24),
             filled: true,
-            fillColor: _kSurface,
+            fillColor: AppTheme.surface,
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(14),
               borderSide: BorderSide.none,
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(14),
               borderSide: BorderSide(
                 color: Colors.white.withValues(alpha: 0.08),
               ),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: _kPrimary, width: 1.5),
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(
+                color: AppTheme.accentPurple,
+                width: 1.5,
+              ),
             ),
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 16,
@@ -1820,18 +1973,22 @@ class _OnboardingDropdown<T> extends StatelessWidget {
       children: [
         Text(
           label,
-          style: GoogleFonts.googleSans(color: Colors.white60, fontSize: 13),
+          style: GoogleFonts.googleSans(
+            color: AppTheme.onBackground2,
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+          ),
         ),
         const SizedBox(height: 8),
         AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(horizontal: 16),
           decoration: BoxDecoration(
-            color: _kSurface,
-            borderRadius: BorderRadius.circular(12),
+            color: AppTheme.surface,
+            borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: value != null
-                  ? _kPrimary.withValues(alpha: 0.4)
+                  ? AppTheme.accentPurple.withValues(alpha: 0.4)
                   : Colors.white.withValues(alpha: 0.08),
             ),
           ),
@@ -1839,7 +1996,7 @@ class _OnboardingDropdown<T> extends StatelessWidget {
             child: DropdownButton<T>(
               value: value,
               isExpanded: true,
-              dropdownColor: const Color(0xFF1E1E22),
+              dropdownColor: const Color(0xFF1E1E24),
               icon: const Icon(
                 Icons.keyboard_arrow_down_rounded,
                 color: Colors.white54,
