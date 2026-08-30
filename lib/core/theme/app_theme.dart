@@ -114,19 +114,11 @@ class AppTheme {
   ];
 
   static const List<BoxShadow> chunkyButtonShadow = [
-    BoxShadow(
-      color: accentPurpleDark,
-      blurRadius: 0,
-      offset: Offset(0, 4),
-    ),
+    BoxShadow(color: accentPurpleDark, blurRadius: 0, offset: Offset(0, 4)),
   ];
 
   static const List<BoxShadow> chunkyButtonShadowOutline = [
-    BoxShadow(
-      color: outlineButtonEdge,
-      blurRadius: 0,
-      offset: Offset(0, 4),
-    ),
+    BoxShadow(color: outlineButtonEdge, blurRadius: 0, offset: Offset(0, 4)),
   ];
 
   // ── Theme Data ─────────────────────────────────────────────────────────────
