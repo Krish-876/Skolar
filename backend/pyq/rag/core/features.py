@@ -1,10 +1,7 @@
 from typing import Protocol
 
 import numpy as np
-from scipy import sparse
-from scipy.sparse.linalg import norm as _sparse_norm
 from sentence_transformers import SentenceTransformer
-from sklearn.feature_extraction.text import TfidfVectorizer
 
 EMBED_MODEL = "all-MiniLM-L6-v2"
 
@@ -19,18 +16,29 @@ def get_embed_model():
     return _embed_model
 
 
+def _issparse(x) -> bool:
+    # scipy is only needed for TfidfBackend's sparse rows; import it lazily
+    # here so SbertBackend's dense path works even if scipy is unavailable.
+    try:
+        from scipy.sparse import issparse
+    except ImportError:
+        return False
+    return issparse(x)
+
+
 def _norm(x) -> float:
     # scipy sparse matrices raise on np.linalg.norm, so route them through
     # scipy.sparse.linalg.norm instead of densifying.
-    if sparse.issparse(x):
+    if _issparse(x):
+        from scipy.sparse.linalg import norm as _sparse_norm
         return float(_sparse_norm(x))
     return float(np.linalg.norm(x))
 
 
 def _dot(a, b) -> float:
-    if sparse.issparse(a):
+    if _issparse(a):
         return float(a.multiply(b).sum())
-    if sparse.issparse(b):
+    if _issparse(b):
         return float(b.multiply(a).sum())
     return float(np.dot(np.asarray(a).ravel(), np.asarray(b).ravel()))
 
@@ -69,6 +77,8 @@ class TfidfBackend:
     vectorizer must be fit on a training corpus before encode() is called."""
 
     def __init__(self):
+        from sklearn.feature_extraction.text import TfidfVectorizer
+
         self._vectorizer = TfidfVectorizer()
 
     def fit(self, train_texts: list[str]) -> None:

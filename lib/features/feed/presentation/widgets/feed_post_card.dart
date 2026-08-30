@@ -3,6 +3,7 @@ import 'package:Skolar/shared/models/exam_type.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:Skolar/core/theme/app_theme.dart';
+import 'package:go_router/go_router.dart';
 import '../../domain/entities/feed_post_entity.dart';
 import '../providers/feed_provider.dart';
 import 'feed_colors.dart';
@@ -83,7 +84,7 @@ class _FeedPostCardState extends ConsumerState<FeedPostCard>
     print('questionIds passed: ${widget.post.questionIds}');
 
     if (!mounted) return;
-    Navigator.pushNamed(context, '/mock-tests');
+    context.push('/mock-tests');
   }
 
   @override

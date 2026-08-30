@@ -13,7 +13,7 @@ final feedDataSourceProvider = Provider<FeedRemoteDataSource>(
 );
 
 final feedRepositoryProvider = Provider<FeedRepositoryImpl>((ref) {
-  final college = ref.read(userProvider).college;
+  final college = ref.watch(userProvider).college;
   return FeedRepositoryImpl(
     ref.watch(feedDataSourceProvider),
     college: college,
