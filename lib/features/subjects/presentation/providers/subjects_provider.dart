@@ -121,8 +121,10 @@ class SubjectsNotifier extends AutoDisposeAsyncNotifier<SubjectsPageState> {
     _institutionId = user.institutionId ?? '';
     _campusId = user.campusId ?? '';
     _academicYear = user.academicYear;
-    _semester = SemesterUtils.currentSemesterNumber();
-    _semesterLabel = SemesterUtils.currentSemesterLabel();
+    _semester = user.currentSemester ?? SemesterUtils.currentSemesterNumber();
+    _semesterLabel = user.currentSemester != null
+        ? '${DateTime.now().year}-S${user.currentSemester}'
+        : SemesterUtils.currentSemesterLabel();
 
     int? creditTarget;
     bool creditTargetLoaded = false;
@@ -143,13 +145,6 @@ class SubjectsNotifier extends AutoDisposeAsyncNotifier<SubjectsPageState> {
         creditTargetLoaded = true;
       },
     );
-
-    if (_campusId.isEmpty) {
-      return SubjectsPageState(
-        creditTarget: creditTarget,
-        creditTargetLoaded: creditTargetLoaded,
-      );
-    }
 
     final result = await ref
         .read(getSubjectsForUserUseCaseProvider)
