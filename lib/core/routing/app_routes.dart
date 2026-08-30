@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:Skolar/features/auth/presentation/pages/auth_pages.dart';
 import 'package:Skolar/features/onboarding/presentation/pages/onboarding_profile_page.dart';
+import 'package:Skolar/features/onboarding/presentation/pages/onboarding_welcome_page.dart';
 import 'package:Skolar/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:Skolar/features/mock_tests/presentation/pages/mock_tests_pages.dart';
 import 'package:Skolar/features/feed/presentation/pages/feed_page.dart';
@@ -21,6 +22,7 @@ import 'package:Skolar/features/profile/presentation/pages/profile_page.dart';
 
 class AppRoutes {
   static const String auth = '/auth';
+  static const String onboardingWelcome = '/onboarding-welcome';
   static const String onboardingProfile = '/onboarding-profile';
   static const String dashboard = '/dashboard';
   static const String mockTests = '/mock-tests';
@@ -54,6 +56,10 @@ final goRouterProvider = GoRouter(
     GoRoute(path: '/', builder: (_, _) => const _DevMenu()),
 
     GoRoute(path: AppRoutes.auth, builder: (_, _) => const AuthScreen()),
+    GoRoute(
+      path: AppRoutes.onboardingWelcome,
+      builder: (_, _) => const OnboardingWelcomePage(),
+    ),
     GoRoute(
       path: AppRoutes.onboardingProfile,
       builder: (_, _) => const OnboardingProfilePage(),
@@ -99,6 +105,7 @@ class _DevMenu extends StatelessWidget {
   const _DevMenu();
 
   static const _pages = [
+    ('Onboarding Welcome', AppRoutes.onboardingWelcome),
     ('Onboarding', AppRoutes.onboardingProfile),
     ('Auth', AppRoutes.auth),
     ('Dashboard', AppRoutes.dashboard),
