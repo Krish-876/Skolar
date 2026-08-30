@@ -76,13 +76,6 @@ class _FeedPostCardState extends ConsumerState<FeedPostCard>
         .read(mockTestProvider.notifier)
         .loadExistingTest(questionIds: widget.post.questionIds, mode: mode);
 
-    final state = ref.read(mockTestProvider);
-    print('hasQuestions: ${state.hasQuestions}');
-    print('openQuestions: ${state.openQuestions.length}');
-    print('isLoading: ${state.isLoading}');
-    print('error: ${state.error}');
-    print('questionIds passed: ${widget.post.questionIds}');
-
     if (!mounted) return;
     context.push('/mock-tests');
   }
@@ -108,22 +101,22 @@ class _FeedPostCardState extends ConsumerState<FeedPostCard>
     final upvoteCount = currentPost.upvotes;
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
       decoration: BoxDecoration(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppTheme.dividerColor, width: 0.25),
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+        border: Border.all(color: AppTheme.onboardingButtonBorder, width: 1),
       ),
-      padding: const EdgeInsets.fromLTRB(13, 13, 13, 28),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _CardTop(post: widget.post),
-          const SizedBox(height: 7),
+          const SizedBox(height: 12),
           _CardTitle(title: widget.post.title),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           _TagRow(tags: widget.post.tags, subject: widget.post.subject),
-          const SizedBox(height: 10),
+          const SizedBox(height: 14),
           _CardFooter(
             post: widget.post,
             upvoted: upvoted,
@@ -152,7 +145,7 @@ class _CardTop extends StatelessWidget {
     return Row(
       children: [
         _Avatar(initials: post.authorInitials),
-        const SizedBox(width: 7),
+        const SizedBox(width: 10),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -160,18 +153,19 @@ class _CardTop extends StatelessWidget {
               Text(
                 post.authorName,
                 style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: FeedColors.textSecondary,
-                  fontFamily: 'DM Sans',
+                  fontFamily: 'GoogleSans',
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.onBackground,
                 ),
               ),
+              const SizedBox(height: 1),
               Text(
                 '${post.authorYear} · ${post.authorBranch}',
                 style: const TextStyle(
-                  fontSize: 10,
-                  color: FeedColors.textHint,
-                  fontFamily: 'DM Sans',
+                  fontFamily: 'GoogleSans',
+                  fontSize: 11,
+                  color: AppTheme.onBackground2,
                 ),
               ),
             ],
@@ -190,20 +184,24 @@ class _Avatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 26,
-      height: 26,
-      decoration: const BoxDecoration(
-        color: Color(0xFF1E1F2A),
+      width: 32,
+      height: 32,
+      decoration: BoxDecoration(
+        color: AppTheme.accentPurple.withValues(alpha: 0.15),
         shape: BoxShape.circle,
+        border: Border.all(
+          color: AppTheme.accentPurple.withValues(alpha: 0.4),
+          width: 1,
+        ),
       ),
       alignment: Alignment.center,
       child: Text(
         initials,
         style: const TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.w500,
-          color: FeedColors.purple,
-          fontFamily: 'DM Sans',
+          fontFamily: 'GoogleSans',
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          color: AppTheme.accentPurple,
         ),
       ),
     );
@@ -215,7 +213,7 @@ class _DifficultyIndicator extends StatelessWidget {
   const _DifficultyIndicator({required this.difficulty});
 
   String get _label {
-    switch (difficulty) {
+    switch (difficulty.toLowerCase()) {
       case 'easy':
         return 'Easy';
       case 'hard':
@@ -227,27 +225,36 @@ class _DifficultyIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 7,
-          height: 7,
-          decoration: BoxDecoration(
-            color: FeedColors.diffDot(difficulty),
-            shape: BoxShape.circle,
+    final dotColor = FeedColors.diffDot(difficulty);
+    final textColor = FeedColors.diffText(difficulty);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
+      decoration: BoxDecoration(
+        color: dotColor.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: dotColor.withValues(alpha: 0.35), width: 1),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
           ),
-        ),
-        const SizedBox(width: 5),
-        Text(
-          _label,
-          style: TextStyle(
-            fontSize: 11,
-            color: FeedColors.diffText(difficulty),
-            fontFamily: 'DM Sans',
+          const SizedBox(width: 5),
+          Text(
+            _label,
+            style: TextStyle(
+              fontFamily: 'GoogleSans',
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: textColor,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -261,11 +268,11 @@ class _CardTitle extends StatelessWidget {
     return Text(
       title,
       style: const TextStyle(
-        fontSize: 13,
-        fontWeight: FontWeight.w500,
-        color: FeedColors.textPrimary,
-        height: 1.45,
-        fontFamily: 'DM Sans',
+        fontFamily: 'GoogleSans',
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        color: AppTheme.onBackground,
+        height: 1.4,
       ),
     );
   }
@@ -279,26 +286,31 @@ class _TagRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Wrap(
-      spacing: 5,
-      runSpacing: 5,
+      spacing: 6,
+      runSpacing: 6,
       children: tags.map((tag) {
         final isSubject = tag == subject;
         return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
           decoration: BoxDecoration(
-            color: isSubject ? FeedColors.tagSubjBg : Colors.transparent,
-            borderRadius: BorderRadius.circular(20),
+            color: isSubject
+                ? AppTheme.accentPurple.withValues(alpha: 0.15)
+                : AppTheme.surfaceLight,
+            borderRadius: BorderRadius.circular(AppTheme.radiusMd),
             border: Border.all(
-              color: isSubject ? FeedColors.borderSubj : FeedColors.borderTag,
-              width: 0.5,
+              color: isSubject
+                  ? AppTheme.accentPurple.withValues(alpha: 0.5)
+                  : AppTheme.onboardingButtonBorder,
+              width: 0.8,
             ),
           ),
           child: Text(
             tag,
             style: TextStyle(
-              fontSize: 10,
-              color: isSubject ? FeedColors.tagSubjText : FeedColors.tagText,
-              fontFamily: 'DM Sans',
+              fontFamily: 'GoogleSans',
+              fontSize: 11,
+              fontWeight: isSubject ? FontWeight.w600 : FontWeight.w500,
+              color: isSubject ? AppTheme.accentPurple : AppTheme.onBackground2,
             ),
           ),
         );
@@ -339,12 +351,18 @@ class _CardFooter extends StatelessWidget {
           scale: upvoteScale,
           child: GestureDetector(
             onTap: onUpvote,
-            child: Padding(
+            child: Container(
               padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: upvoted
+                    ? FeedColors.upvoteOn.withValues(alpha: 0.15)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(8),
+              ),
               child: Icon(
                 Icons.arrow_upward_rounded,
-                size: 26,
-                color: upvoted ? FeedColors.upvoteOn : FeedColors.textMuted,
+                size: 20,
+                color: upvoted ? FeedColors.upvoteOn : AppTheme.onBackground2,
               ),
             ),
           ),
@@ -353,13 +371,14 @@ class _CardFooter extends StatelessWidget {
         Text(
           '$upvoteCount',
           style: TextStyle(
+            fontFamily: 'GoogleSans',
             fontSize: 12,
+            fontWeight: FontWeight.w700,
             color: upvoted
                 ? FeedColors.upvoteOn
                 : downvoted
                 ? FeedColors.downvoteOn
-                : FeedColors.textMuted,
-            fontFamily: 'DM Sans',
+                : AppTheme.onBackground2,
           ),
         ),
         const SizedBox(width: 4),
@@ -368,50 +387,103 @@ class _CardFooter extends StatelessWidget {
           scale: downvoteScale,
           child: GestureDetector(
             onTap: onDownvote,
-            child: Padding(
+            child: Container(
               padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: downvoted
+                    ? FeedColors.downvoteOn.withValues(alpha: 0.15)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(8),
+              ),
               child: Icon(
                 Icons.arrow_downward_rounded,
-                size: 26,
-                color: downvoted ? FeedColors.downvoteOn : FeedColors.textMuted,
+                size: 20,
+                color: downvoted
+                    ? FeedColors.downvoteOn
+                    : AppTheme.onBackground2,
               ),
             ),
           ),
         ),
-        const SizedBox(width: 10),
+        const SizedBox(width: 12),
         // Attempts
-        const Icon(Icons.group_outlined, size: 13, color: FeedColors.textHint),
+        const Icon(
+          Icons.group_outlined,
+          size: 14,
+          color: AppTheme.onBackground2,
+        ),
         const SizedBox(width: 4),
         Text(
-          '${post.attempts} attempted',
+          '${post.attempts}',
           style: const TextStyle(
+            fontFamily: 'GoogleSans',
             fontSize: 11,
-            color: FeedColors.textHint,
-            fontFamily: 'DM Sans',
+            fontWeight: FontWeight.w500,
+            color: AppTheme.onBackground2,
           ),
         ),
         const Spacer(),
-        // Attempt button
-        GestureDetector(
-          onTap: onAttempt,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.transparent,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: FeedColors.attemptBorder, width: 0.5),
-            ),
-            child: const Text(
+        // Attempt Button
+        _MiniAttemptButton(onTap: onAttempt),
+      ],
+    );
+  }
+}
+
+class _MiniAttemptButton extends StatefulWidget {
+  final VoidCallback onTap;
+  const _MiniAttemptButton({required this.onTap});
+
+  @override
+  State<_MiniAttemptButton> createState() => _MiniAttemptButtonState();
+}
+
+class _MiniAttemptButtonState extends State<_MiniAttemptButton> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) => setState(() => _pressed = false),
+      onTapCancel: () => setState(() => _pressed = false),
+      onTap: widget.onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 60),
+        transform: _pressed
+            ? Matrix4.translationValues(0, 2, 0)
+            : Matrix4.identity(),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        decoration: BoxDecoration(
+          color: AppTheme.accentPurple,
+          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+          boxShadow: _pressed
+              ? []
+              : const [
+                  BoxShadow(
+                    color: AppTheme.accentPurpleDark,
+                    blurRadius: 0,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+        ),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.play_arrow_rounded, color: AppTheme.onPrimary, size: 15),
+            SizedBox(width: 3),
+            Text(
               'Attempt',
               style: TextStyle(
-                fontSize: 11,
-                color: FeedColors.attemptText,
-                fontFamily: 'DM Sans',
+                fontFamily: 'GoogleSans',
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.onPrimary,
               ),
             ),
-          ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }
