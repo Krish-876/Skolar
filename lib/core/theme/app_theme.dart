@@ -8,7 +8,9 @@ class AppTheme {
   static const Color secondary = Color(0xFF0F0E17); // Secondary near-black
   static const Color star = Color(0xFFF5C518); // Star / highlight yellow
   static const Color wishlist = Color(0xFFE53935); // Wishlist / danger red
-  static const Color accentPurple = Color(0xFFB388FF); // Skolar brand purple accent
+  static const Color accentPurple = Color(
+    0xFFB388FF,
+  ); // Skolar brand purple accent
 
   // ── Surface & Overlay ─────────────────────────────────────────────────────
   static const Color surface = Color(0xFF1C1C1E); // Surface dark card
@@ -16,9 +18,15 @@ class AppTheme {
   static const Color onSecondary = Color(0xFFFFFFFF); // Text on secondary
   static const Color onPrimary = Color(0xFFFFFFFF); // Text on primary
   static const Color onSurface = Color(0xFFFFFFFF); // Text on surface
-  static const Color onSurfaceDark = Color(0xFF000000); // Dark text on light surface
-  static const Color onBackground2 = Color(0xFFA8C4FF); // Secondary text / soft light lavender-blue
-  static const Color surfaceLight = Color(0xFF2C2C30); // Lighter surface variant
+  static const Color onSurfaceDark = Color(
+    0xFF000000,
+  ); // Dark text on light surface
+  static const Color onBackground2 = Color(
+    0xFFA8C4FF,
+  ); // Secondary text / soft light lavender-blue
+  static const Color surfaceLight = Color(
+    0xFF2C2C30,
+  ); // Lighter surface variant
 
   // ── Gradients (represented as begin color → end color) ────────────────────
   // Use with LinearGradient in widgets
@@ -28,7 +36,9 @@ class AppTheme {
   static const Color bgGradEnd = Color(0xFF0F0E17); // Deep obsidian bottom
   static const Color surfaceGradBegin = Color(0xFF1E1E24); // Surface card top
   static const Color surfaceGradEnd = Color(0xFF16161A); // Surface card bottom
-  static const Color textGradBegin = Color(0xFFE2D6FF); // Text gradient light lavender
+  static const Color textGradBegin = Color(
+    0xFFE2D6FF,
+  ); // Text gradient light lavender
   static const Color textGradEnd = Color(0xFFFFFFFF); // Text gradient white
 
   // ── Utility ────────────────────────────────────────────────────────────────
@@ -170,5 +180,7 @@ class AppTheme {
   static const Color focusBreakOnBackgroundMuted = Color(
     0xFF6B6675,
   ); // muted dark text
-  static const Color focusBreakAccent = Color(0xFF4A2E8F); // dark violet on light
+  static const Color focusBreakAccent = Color(
+    0xFF4A2E8F,
+  ); // dark violet on light
 }

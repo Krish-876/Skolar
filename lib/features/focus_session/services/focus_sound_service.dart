@@ -6,7 +6,8 @@ import 'package:vibration/vibration.dart';
 class FocusSoundService {
   FocusSoundService._();
 
-  static final AudioPlayer _player = AudioPlayer()..setReleaseMode(ReleaseMode.stop);
+  static final AudioPlayer _player = AudioPlayer()
+    ..setReleaseMode(ReleaseMode.stop);
 
   /// Crisp glassy crystal chime when focus begins.
   static Future<void> playStartFocus() async {

@@ -49,11 +49,14 @@ void main() {
       _Note(freq: 659.25, delay: 0.18, volume: 0.4, decay: 2.6), // E5
       _Note(freq: 783.99, delay: 0.36, volume: 0.42, decay: 2.4), // G5
       _Note(freq: 1046.50, delay: 0.54, volume: 0.48, decay: 2.5), // C6
-      _Note(freq: 1567.98, delay: 0.56, volume: 0.22, decay: 1.8), // G6 overtone
+      _Note(
+        freq: 1567.98,
+        delay: 0.56,
+        volume: 0.22,
+        decay: 1.8,
+      ), // G6 overtone
     ],
   );
-
-  print('Sound synthesis complete! Files created in assets/sounds/');
 }
 
 class _Note {
@@ -89,10 +92,15 @@ void _generateGlassyChime({
 
       // Fundamental sine wave + subtle glassy high harmonics
       final fundamental = sin(2 * pi * note.freq * t);
-      final harmonic2 = 0.25 * sin(2 * pi * (note.freq * 2.76) * t); // metallic/glass bell inharmonic
+      final harmonic2 =
+          0.25 *
+          sin(
+            2 * pi * (note.freq * 2.76) * t,
+          ); // metallic/glass bell inharmonic
       final harmonic3 = 0.12 * sin(2 * pi * (note.freq * 5.4) * t);
 
-      final sampleVal = (fundamental + harmonic2 + harmonic3) * envelope * note.volume;
+      final sampleVal =
+          (fundamental + harmonic2 + harmonic3) * envelope * note.volume;
       audioData[i] += sampleVal;
     }
   }
@@ -135,8 +143,16 @@ void _generateGlassyChime({
   byteData.setUint16(20, 1, Endian.little); // PCM = 1
   byteData.setUint16(22, numChannels, Endian.little);
   byteData.setUint32(24, sampleRate, Endian.little);
-  byteData.setUint32(28, sampleRate * numChannels * bytesPerSample, Endian.little); // byte rate
-  byteData.setUint16(32, numChannels * bytesPerSample, Endian.little); // block align
+  byteData.setUint32(
+    28,
+    sampleRate * numChannels * bytesPerSample,
+    Endian.little,
+  ); // byte rate
+  byteData.setUint16(
+    32,
+    numChannels * bytesPerSample,
+    Endian.little,
+  ); // block align
   byteData.setUint16(34, 16, Endian.little); // bits per sample
 
   // data Subchunk

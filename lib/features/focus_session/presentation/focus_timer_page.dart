@@ -170,7 +170,8 @@ class FocusTimerPageState extends State<FocusTimerPage>
             SnackBar(
               content: Text(
                 'Focus session was cancelled because you left the app.',
-                style: TextStyle(fontFamily: 'GoogleSans',
+                style: TextStyle(
+                  fontFamily: 'GoogleSans',
                   fontWeight: FontWeight.w600,
                   color: Colors.white,
                 ),
@@ -308,7 +309,8 @@ class FocusTimerPageState extends State<FocusTimerPage>
     _rollTargetSeconds = _controller.currentPhaseTotalSeconds;
 
     final phaseStartedAt = _controller.phaseStartedAt;
-    final isRecent = phaseStartedAt != null &&
+    final isRecent =
+        phaseStartedAt != null &&
         DateTime.now().difference(phaseStartedAt) < const Duration(seconds: 3);
 
     final canAnimate =
@@ -401,7 +403,8 @@ class FocusTimerPageState extends State<FocusTimerPage>
             const SizedBox(width: 12),
             Text(
               'Deep Focus Mode',
-              style: TextStyle(fontFamily: 'GoogleSans',
+              style: TextStyle(
+                fontFamily: 'GoogleSans',
                 color: Colors.white,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -434,7 +437,8 @@ class FocusTimerPageState extends State<FocusTimerPage>
             onPressed: () => Navigator.of(ctx).pop(),
             child: Text(
               'Got it',
-              style: TextStyle(fontFamily: 'GoogleSans',
+              style: TextStyle(
+                fontFamily: 'GoogleSans',
                 color: AppTheme.primary,
                 fontWeight: FontWeight.bold,
               ),
@@ -454,7 +458,8 @@ class FocusTimerPageState extends State<FocusTimerPage>
         Expanded(
           child: Text(
             text,
-            style: TextStyle(fontFamily: 'GoogleSans',
+            style: TextStyle(
+              fontFamily: 'GoogleSans',
               color: Colors.white70,
               fontSize: 13,
               height: 1.4,
@@ -540,7 +545,8 @@ class FocusTimerPageState extends State<FocusTimerPage>
                       children: [
                         Text(
                           'Break',
-                          style: TextStyle(fontFamily: 'GoogleSans',
+                          style: TextStyle(
+                            fontFamily: 'GoogleSans',
                             color: Colors.white70,
                             fontSize: 10,
                             fontWeight: FontWeight.w600,
@@ -548,7 +554,8 @@ class FocusTimerPageState extends State<FocusTimerPage>
                         ),
                         Text(
                           _controller.formattedTime,
-                          style: TextStyle(fontFamily: 'GoogleSans',
+                          style: TextStyle(
+                            fontFamily: 'GoogleSans',
                             color: Colors.white,
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -580,7 +587,8 @@ class FocusTimerPageState extends State<FocusTimerPage>
                       'Return to the app to continue focusing',
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontFamily: 'GoogleSans',
+                      style: TextStyle(
+                        fontFamily: 'GoogleSans',
                         color: Colors.white,
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
@@ -600,8 +608,9 @@ class FocusTimerPageState extends State<FocusTimerPage>
         _controller.status == FocusTimerStatus.idle ||
         _controller.status == FocusTimerStatus.complete;
     final zen = _zenAnimController.value;
-    final slideProgress =
-        isRunning ? 0.0 : (_knobOffset / 180.0).clamp(0.0, 1.0);
+    final slideProgress = isRunning
+        ? 0.0
+        : (_knobOffset / 180.0).clamp(0.0, 1.0);
     final isBreak = _controller.isBreakPhase;
     final targetBreakProgress = isBreak ? 1.0 : 0.0;
 
@@ -644,7 +653,11 @@ class FocusTimerPageState extends State<FocusTimerPage>
                     ? Color.lerp(Colors.white70, _lightPalette.muted, zen)!
                     : Colors.white70,
                 accent: isAmoledWhite
-                    ? Color.lerp(AppTheme.accentPurple, _lightPalette.accent, zen)!
+                    ? Color.lerp(
+                        AppTheme.accentPurple,
+                        _lightPalette.accent,
+                        zen,
+                      )!
                     : AppTheme.accentPurple,
               )
             : _darkPalette;
@@ -702,90 +715,88 @@ class FocusTimerPageState extends State<FocusTimerPage>
                   // AMOLED pure overlay (black in focus, pure white in break)
                   if (zen > 0.0)
                     Positioned.fill(
-                      child: Container(
-                        color: amoledBg.withValues(alpha: zen),
+                      child: Container(color: amoledBg.withValues(alpha: zen)),
+                    ),
+
+                  // REAL, interactive body
+                  _buildBody(
+                    context,
+                    activePalette,
+                    isRunning: isRunning,
+                    zen: zen,
+                    slideProgress: slideProgress,
+                  ),
+
+                  // ANIMATION 1a: light-theme clone of the same body, revealed by
+                  // a dome-up wipe on focus -> break and held fully open for the
+                  // whole break (rendered at AMOLED zen = 1.0).
+                  if (_showLightOverlay)
+                    Positioned.fill(
+                      child: IgnorePointer(
+                        child: ClipPath(
+                          clipper: PhaseWipeClipper(
+                            progress: Curves.easeInOutCubic.transform(
+                              _entryWipeController.value,
+                            ),
+                            domeUp: true,
+                          ),
+                          child: Container(
+                            color: Colors.white,
+                            child: _buildBody(
+                              context,
+                              _lightPalette,
+                              isRunning: isRunning,
+                              zen: 1.0,
+                              slideProgress: slideProgress,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
 
-              // REAL, interactive body
-              _buildBody(
-                context,
-                activePalette,
-                isRunning: isRunning,
-                zen: zen,
-                slideProgress: slideProgress,
+                  // ANIMATION 1b: dark-theme clone sweeping back over the light
+                  // layer on break -> focus (dome down, rendered at AMOLED zen = 1.0).
+                  if (_showDarkExitOverlay)
+                    Positioned.fill(
+                      child: IgnorePointer(
+                        child: ClipPath(
+                          clipper: PhaseWipeClipper(
+                            progress: Curves.easeInOutCubic.transform(
+                              _exitWipeController.value,
+                            ),
+                            domeUp: false,
+                          ),
+                          child: Container(
+                            color: Colors.black,
+                            child: _buildBody(
+                              context,
+                              _darkPalette,
+                              isRunning: isRunning,
+                              zen: 1.0,
+                              slideProgress: slideProgress,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                  // Tap-to-skip: only intercepts while a wipe is actively
+                  // animating, never during the multi-minute held break.
+                  if (_entryWipeController.isAnimating ||
+                      _exitWipeController.isAnimating)
+                    Positioned.fill(
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: _skipActiveWipe,
+                      ),
+                    ),
+
+                  if (_showGiveUpSheet) _buildGiveUpOverlay(),
+                ],
               ),
-
-              // ANIMATION 1a: light-theme clone of the same body, revealed by
-              // a dome-up wipe on focus -> break and held fully open for the
-              // whole break (rendered at AMOLED zen = 1.0).
-              if (_showLightOverlay)
-                Positioned.fill(
-                  child: IgnorePointer(
-                    child: ClipPath(
-                      clipper: PhaseWipeClipper(
-                        progress: Curves.easeInOutCubic.transform(
-                          _entryWipeController.value,
-                        ),
-                        domeUp: true,
-                      ),
-                      child: Container(
-                        color: Colors.white,
-                        child: _buildBody(
-                          context,
-                          _lightPalette,
-                          isRunning: isRunning,
-                          zen: 1.0,
-                          slideProgress: slideProgress,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-
-              // ANIMATION 1b: dark-theme clone sweeping back over the light
-              // layer on break -> focus (dome down, rendered at AMOLED zen = 1.0).
-              if (_showDarkExitOverlay)
-                Positioned.fill(
-                  child: IgnorePointer(
-                    child: ClipPath(
-                      clipper: PhaseWipeClipper(
-                        progress: Curves.easeInOutCubic.transform(
-                          _exitWipeController.value,
-                        ),
-                        domeUp: false,
-                      ),
-                      child: Container(
-                        color: Colors.black,
-                        child: _buildBody(
-                          context,
-                          _darkPalette,
-                          isRunning: isRunning,
-                          zen: 1.0,
-                          slideProgress: slideProgress,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-
-              // Tap-to-skip: only intercepts while a wipe is actively
-              // animating, never during the multi-minute held break.
-              if (_entryWipeController.isAnimating ||
-                  _exitWipeController.isAnimating)
-                Positioned.fill(
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: _skipActiveWipe,
-                  ),
-                ),
-
-              if (_showGiveUpSheet) _buildGiveUpOverlay(),
-            ],
+            ),
           ),
-        ),
-      ),
-    );
+        );
       },
     );
   }
@@ -843,7 +854,8 @@ class FocusTimerPageState extends State<FocusTimerPage>
                     if (isRunning) ...[
                       Text(
                         _controller.isBreakPhase ? 'Break' : 'Focus',
-                        style: TextStyle(fontFamily: 'GoogleSans',
+                        style: TextStyle(
+                          fontFamily: 'GoogleSans',
                           color: palette.onBackground.withValues(
                             alpha: (0.95 - (zen * 0.15)).clamp(0.75, 0.95),
                           ),
@@ -874,13 +886,12 @@ class FocusTimerPageState extends State<FocusTimerPage>
                       opacity: (1.0 - zen * 3.0).clamp(0.0, 1.0),
                       child: IgnorePointer(
                         ignoring: zen > 0.1,
-                        child:
-                            _controller.status == FocusTimerStatus.complete
-                                ? _buildRestartButton()
-                                : _buildInteractionZone(
-                                    isIdle: !isRunning,
-                                    slideProgress: slideProgress,
-                                  ),
+                        child: _controller.status == FocusTimerStatus.complete
+                            ? _buildRestartButton()
+                            : _buildInteractionZone(
+                                isIdle: !isRunning,
+                                slideProgress: slideProgress,
+                              ),
                       ),
                     ),
                   ],
@@ -979,7 +990,8 @@ class FocusTimerPageState extends State<FocusTimerPage>
           const SizedBox(height: 12),
           Text(
             'Session complete',
-            style: TextStyle(fontFamily: 'GoogleSans',
+            style: TextStyle(
+              fontFamily: 'GoogleSans',
               color: palette.onBackground,
               fontSize: 26,
               fontWeight: FontWeight.bold,
@@ -1009,7 +1021,8 @@ class FocusTimerPageState extends State<FocusTimerPage>
         message: isRunning ? '' : 'Tap to edit time',
         child: Text(
           displayTime,
-          style: TextStyle(fontFamily: 'GoogleSans',
+          style: TextStyle(
+            fontFamily: 'GoogleSans',
             color: palette.onBackground,
             fontSize: 72,
             fontWeight: FontWeight.w700,
@@ -1062,9 +1075,7 @@ class FocusTimerPageState extends State<FocusTimerPage>
                               height: 8,
                               child: Container(
                                 decoration: BoxDecoration(
-                                  color: palette.accent.withValues(
-                                    alpha: 0.6,
-                                  ),
+                                  color: palette.accent.withValues(alpha: 0.6),
                                   borderRadius: BorderRadius.circular(3),
                                   border: Border.all(
                                     color: palette.background,
@@ -1106,7 +1117,8 @@ class FocusTimerPageState extends State<FocusTimerPage>
         if (_controller.isPomodoroEnabled)
           Text(
             _controller.upcomingBreakInfo,
-            style: TextStyle(fontFamily: 'GoogleSans',
+            style: TextStyle(
+              fontFamily: 'GoogleSans',
               color: palette.accent.withValues(
                 alpha: (0.95 - (zen * 0.15)).clamp(0.75, 0.95),
               ),
@@ -1124,7 +1136,11 @@ class FocusTimerPageState extends State<FocusTimerPage>
       children: [
         Text(
           'Target completed. Ready for another session?',
-          style: TextStyle(fontFamily: 'GoogleSans',color: Colors.white60, fontSize: 14),
+          style: TextStyle(
+            fontFamily: 'GoogleSans',
+            color: Colors.white60,
+            fontSize: 14,
+          ),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 20),
@@ -1156,7 +1172,8 @@ class FocusTimerPageState extends State<FocusTimerPage>
             child: Center(
               child: Text(
                 'Start new session',
-                style: TextStyle(fontFamily: 'GoogleSans',
+                style: TextStyle(
+                  fontFamily: 'GoogleSans',
                   color: Colors.white,
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -1273,15 +1290,17 @@ class FocusTimerPageState extends State<FocusTimerPage>
                       }
                     }
 
-                    final finalUnits = effectiveVal
-                        .round()
-                        .clamp(minVal.round(), maxVal.round());
+                    final finalUnits = effectiveVal.round().clamp(
+                      minVal.round(),
+                      maxVal.round(),
+                    );
                     setState(() {
                       _targetSliderMinutes = finalUnits.toDouble();
                       _animatedSliderMinutes = finalUnits.toDouble();
                     });
-                    final targetSeconds =
-                        isTestMode ? finalUnits : (finalUnits * 60);
+                    final targetSeconds = isTestMode
+                        ? finalUnits
+                        : (finalUnits * 60);
                     _controller.setDuration(targetSeconds);
                     _lastSnappedPoint = null;
                     FocusHapticService.snap();
@@ -1339,7 +1358,8 @@ class FocusTimerPageState extends State<FocusTimerPage>
               const SizedBox(width: 8),
               Text(
                 'Pomodoro mode',
-                style: TextStyle(fontFamily: 'GoogleSans',
+                style: TextStyle(
+                  fontFamily: 'GoogleSans',
                   color: enabled ? Colors.white : Colors.white54,
                   fontSize: 13,
                   fontWeight: enabled ? FontWeight.w600 : FontWeight.w500,
@@ -1388,7 +1408,8 @@ class FocusTimerPageState extends State<FocusTimerPage>
                       _controller.breaksSubtitle,
                       key: ValueKey(_controller.breaksSubtitle),
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontFamily: 'GoogleSans',
+                      style: TextStyle(
+                        fontFamily: 'GoogleSans',
                         color: AppTheme.accentPurple.withValues(alpha: 0.85),
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
@@ -1523,7 +1544,8 @@ class FocusTimerPageState extends State<FocusTimerPage>
               Center(
                 child: Text(
                   isRunning ? 'Slide to give up' : 'Slide to lock in',
-                  style: TextStyle(fontFamily: 'GoogleSans',
+                  style: TextStyle(
+                    fontFamily: 'GoogleSans',
                     color: Colors.white.withValues(
                       alpha: isRunning ? 0.7 : 0.5,
                     ),
@@ -1550,10 +1572,11 @@ class FocusTimerPageState extends State<FocusTimerPage>
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: (isRunning
-                                ? const Color(0xFFE53935)
-                                : AppTheme.primary)
-                            .withValues(alpha: 0.4),
+                        color:
+                            (isRunning
+                                    ? const Color(0xFFE53935)
+                                    : AppTheme.primary)
+                                .withValues(alpha: 0.4),
                         blurRadius: 10,
                         offset: const Offset(0, 3),
                       ),
@@ -1663,7 +1686,8 @@ class _TimePickerDialogState extends State<_TimePickerDialog> {
       titlePadding: const EdgeInsets.only(top: 22, bottom: 6),
       title: Text(
         'Set duration',
-        style: TextStyle(fontFamily: 'GoogleSans',
+        style: TextStyle(
+          fontFamily: 'GoogleSans',
           color: Colors.white,
           fontSize: 18,
           fontWeight: FontWeight.bold,
@@ -1713,7 +1737,8 @@ class _TimePickerDialogState extends State<_TimePickerDialog> {
                   padding: const EdgeInsets.only(bottom: 4.0),
                   child: Text(
                     ':',
-                    style: TextStyle(fontFamily: 'GoogleSans',
+                    style: TextStyle(
+                      fontFamily: 'GoogleSans',
                       color: Colors.white54,
                       fontSize: 26,
                       fontWeight: FontWeight.bold,
@@ -1745,7 +1770,7 @@ class _TimePickerDialogState extends State<_TimePickerDialog> {
           onPressed: () => Navigator.pop(context),
           child: Text(
             'Cancel',
-            style: TextStyle(fontFamily: 'GoogleSans',color: Colors.white54),
+            style: TextStyle(fontFamily: 'GoogleSans', color: Colors.white54),
           ),
         ),
         ElevatedButton(
@@ -1765,7 +1790,8 @@ class _TimePickerDialogState extends State<_TimePickerDialog> {
           ),
           child: Text(
             'Set duration',
-            style: TextStyle(fontFamily: 'GoogleSans',
+            style: TextStyle(
+              fontFamily: 'GoogleSans',
               fontWeight: FontWeight.bold,
               fontSize: 14,
             ),
@@ -1808,7 +1834,8 @@ class _TimePickerDialogState extends State<_TimePickerDialog> {
                   children: [
                     Text(
                       index.toString().padLeft(2, '0'),
-                      style: TextStyle(fontFamily: 'GoogleSans',
+                      style: TextStyle(
+                        fontFamily: 'GoogleSans',
                         color: Colors.white,
                         fontSize: 26,
                         fontWeight: FontWeight.bold,
@@ -1818,7 +1845,8 @@ class _TimePickerDialogState extends State<_TimePickerDialog> {
                     const SizedBox(width: 4),
                     Text(
                       unitLabel,
-                      style: TextStyle(fontFamily: 'GoogleSans',
+                      style: TextStyle(
+                        fontFamily: 'GoogleSans',
                         color: isSelected
                             ? AppTheme.accentPurple
                             : Colors.white60,
@@ -1924,7 +1952,8 @@ class _GiveUpSheetView extends StatelessWidget {
           const SizedBox(height: 24),
           Text(
             'Give up this session?',
-            style: TextStyle(fontFamily: 'GoogleSans',
+            style: TextStyle(
+              fontFamily: 'GoogleSans',
               color: Colors.white,
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -1933,7 +1962,11 @@ class _GiveUpSheetView extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             'Remaining focus duration: $timeRemaining',
-            style: TextStyle(fontFamily: 'GoogleSans',color: Colors.white60, fontSize: 14),
+            style: TextStyle(
+              fontFamily: 'GoogleSans',
+              color: Colors.white60,
+              fontSize: 14,
+            ),
           ),
           const SizedBox(height: 28),
           GestureDetector(
@@ -1955,7 +1988,8 @@ class _GiveUpSheetView extends StatelessWidget {
               alignment: Alignment.center,
               child: Text(
                 'Keep focusing',
-                style: TextStyle(fontFamily: 'GoogleSans',
+                style: TextStyle(
+                  fontFamily: 'GoogleSans',
                   color: Colors.white,
                   fontSize: 15,
                   fontWeight: FontWeight.bold,
@@ -1975,7 +2009,8 @@ class _GiveUpSheetView extends StatelessWidget {
             ),
             child: Text(
               'End session',
-              style: TextStyle(fontFamily: 'GoogleSans',
+              style: TextStyle(
+                fontFamily: 'GoogleSans',
                 color: AppTheme.wishlist,
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
@@ -1987,5 +2022,3 @@ class _GiveUpSheetView extends StatelessWidget {
     );
   }
 }
-
-

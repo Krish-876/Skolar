@@ -56,7 +56,8 @@ class PresetChip extends StatelessWidget {
             ],
             Text(
               label,
-              style: TextStyle(fontFamily: 'GoogleSans',
+              style: TextStyle(
+                fontFamily: 'GoogleSans',
                 color: isActive ? Colors.white : Colors.white60,
                 fontSize: 13,
                 fontWeight: isActive ? FontWeight.bold : FontWeight.w500,

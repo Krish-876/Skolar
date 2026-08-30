@@ -9,7 +9,10 @@ enum FocusPhase { focus, breakTime }
 class BreakSegment {
   final double startFraction;
   final double widthFraction;
-  const BreakSegment({required this.startFraction, required this.widthFraction});
+  const BreakSegment({
+    required this.startFraction,
+    required this.widthFraction,
+  });
 }
 
 class FocusTimerController extends ChangeNotifier {
@@ -40,10 +43,12 @@ class FocusTimerController extends ChangeNotifier {
   bool _isPomodoroEnabled = true;
   bool get isPomodoroEnabled => _isPomodoroEnabled;
 
-  int _totalSeconds = initialDefaultDuration; // total focus seconds chosen by user
+  int _totalSeconds =
+      initialDefaultDuration; // total focus seconds chosen by user
   int get totalSeconds => _totalSeconds;
 
-  int _secondsLeft = initialDefaultDuration; // total remaining wall-clock seconds
+  int _secondsLeft =
+      initialDefaultDuration; // total remaining wall-clock seconds
   int get secondsLeft => _secondsLeft;
 
   int _currentPhaseTotalSeconds = initialDefaultDuration;
@@ -245,7 +250,10 @@ class FocusTimerController extends ChangeNotifier {
         } else {
           // Break finished -> Enter next focus session immediately!
           _currentPhase = FocusPhase.focus;
-          _currentPhaseTotalSeconds = min(totalRemaining, pomodoroFocusDuration);
+          _currentPhaseTotalSeconds = min(
+            totalRemaining,
+            pomodoroFocusDuration,
+          );
           _phaseEndTime = now.add(Duration(seconds: _currentPhaseTotalSeconds));
           _phaseStartedAt = now;
           onPhaseChanged?.call(FocusPhase.focus);
@@ -311,10 +319,12 @@ class FocusTimerController extends ChangeNotifier {
     for (int i = 0; i < pomodoroBreakCount; i++) {
       elapsed += pomodoroFocusDuration;
       final start = elapsed / totalDuration;
-      segments.add(BreakSegment(
-        startFraction: start.clamp(0.0, 1.0 - breakWidth),
-        widthFraction: breakWidth,
-      ));
+      segments.add(
+        BreakSegment(
+          startFraction: start.clamp(0.0, 1.0 - breakWidth),
+          widthFraction: breakWidth,
+        ),
+      );
       elapsed += pomodoroBreakDuration;
     }
     return segments;

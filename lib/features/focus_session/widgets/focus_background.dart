@@ -67,11 +67,7 @@ class _FocusBackgroundPainter extends CustomPainter {
       glowRadius,
       Paint()
         ..shader = RadialGradient(
-          colors: [
-            glowCenterColor,
-            glowMidColor,
-            Colors.transparent,
-          ],
+          colors: [glowCenterColor, glowMidColor, Colors.transparent],
           stops: const [0.0, 0.55, 1.0],
         ).createShader(Rect.fromCircle(center: glowCenter, radius: glowRadius)),
     );
