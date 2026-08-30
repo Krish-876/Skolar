@@ -178,7 +178,10 @@ class _SubjectsPageState extends State<SubjectsPage> {
       extendBodyBehindAppBar: true,
       body: const SafeArea(child: SubjectsPageContent()),
       bottomNavigationBar: Container(
-        padding: const EdgeInsets.symmetric(horizontal: AppTheme.lg, vertical: 16),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppTheme.lg,
+          vertical: 16,
+        ),
         decoration: BoxDecoration(
           color: AppTheme.background,
           border: Border(
@@ -248,8 +251,7 @@ class _SubjectsPageContentState extends ConsumerState<SubjectsPageContent> {
         },
         onTap: (id) =>
             ref.read(subjectsProvider.notifier).togglePendingDelete(id),
-        onDelete: (id) =>
-            ref.read(subjectsProvider.notifier).deleteSubject(id),
+        onDelete: (id) => ref.read(subjectsProvider.notifier).deleteSubject(id),
         onAdd: () => _showAddSheet(context),
         onPickHandout: (userSubjectId) => _pickHandout(context, userSubjectId),
         onUnstageHandout: (userSubjectId) =>
@@ -465,7 +467,8 @@ class SubjectsBody extends StatelessWidget {
               AppTheme.sm,
             ),
             child: ChunkyButton(
-              label: 'Generate plans for ${state.stagedHandouts.length} '
+              label:
+                  'Generate plans for ${state.stagedHandouts.length} '
                   '${state.stagedHandouts.length == 1 ? 'subject' : 'subjects'}',
               icon: Icons.cloud_upload_rounded,
               onTap: onSubmitStaged,

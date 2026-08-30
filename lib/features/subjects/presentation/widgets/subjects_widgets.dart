@@ -49,9 +49,13 @@ class _ChunkyButtonState extends State<ChunkyButton> {
       duration: const Duration(milliseconds: 150),
       opacity: widget.enabled ? 1.0 : 0.4,
       child: GestureDetector(
-        onTapDown: isInteractive ? (_) => setState(() => _pressed = true) : null,
+        onTapDown: isInteractive
+            ? (_) => setState(() => _pressed = true)
+            : null,
         onTapUp: isInteractive ? (_) => setState(() => _pressed = false) : null,
-        onTapCancel: isInteractive ? () => setState(() => _pressed = false) : null,
+        onTapCancel: isInteractive
+            ? () => setState(() => _pressed = false)
+            : null,
         onTap: isInteractive ? widget.onTap : null,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 60),
@@ -350,7 +354,11 @@ class SubjectRow extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.delete_sweep_rounded, color: Colors.white, size: 24),
+            const Icon(
+              Icons.delete_sweep_rounded,
+              color: Colors.white,
+              size: 24,
+            ),
             const SizedBox(width: 8),
             Text(
               'Delete',
@@ -605,7 +613,10 @@ class _CreditTargetSheetState extends State<CreditTargetSheet> {
                   ),
                 ),
                 focusedBorder: const UnderlineInputBorder(
-                  borderSide: BorderSide(color: AppTheme.accentPurple, width: 2),
+                  borderSide: BorderSide(
+                    color: AppTheme.accentPurple,
+                    width: 2,
+                  ),
                 ),
                 contentPadding: const EdgeInsets.only(bottom: AppTheme.sm),
               ),
