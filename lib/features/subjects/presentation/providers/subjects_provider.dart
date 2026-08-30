@@ -121,8 +121,10 @@ class SubjectsNotifier extends AutoDisposeAsyncNotifier<SubjectsPageState> {
     _institutionId = user.institutionId ?? '';
     _campusId = user.campusId ?? '';
     _academicYear = user.academicYear;
-    _semester = SemesterUtils.currentSemesterNumber();
-    _semesterLabel = SemesterUtils.currentSemesterLabel();
+    _semester = user.currentSemester ?? SemesterUtils.currentSemesterNumber();
+    _semesterLabel = user.currentSemester != null
+        ? '${DateTime.now().year}-S${user.currentSemester}'
+        : SemesterUtils.currentSemesterLabel();
 
     int? creditTarget;
     bool creditTargetLoaded = false;
@@ -143,13 +145,6 @@ class SubjectsNotifier extends AutoDisposeAsyncNotifier<SubjectsPageState> {
         creditTargetLoaded = true;
       },
     );
-
-    if (_campusId.isEmpty) {
-      return SubjectsPageState(
-        creditTarget: creditTarget,
-        creditTargetLoaded: creditTargetLoaded,
-      );
-    }
 
     final result = await ref
         .read(getSubjectsForUserUseCaseProvider)
@@ -205,6 +200,30 @@ class SubjectsNotifier extends AutoDisposeAsyncNotifier<SubjectsPageState> {
         ? next.remove(userSubjectId)
         : next.add(userSubjectId);
     state = AsyncData(current.copyWith(pendingDelete: next));
+  }
+
+  Future<void> deleteSubject(String userSubjectId) async {
+    final current = state.valueOrNull;
+    if (current == null) return;
+
+    try {
+      await ref
+          .read(deleteUserSubjectUseCaseProvider)
+          .call(userSubjectId: userSubjectId);
+      final remaining = current.subjects
+          .where((s) => s.userSubjectId != userSubjectId)
+          .toList();
+      state = AsyncData(
+        current.copyWith(
+          subjects: remaining,
+          pendingDelete: current.pendingDelete
+              .where((id) => id != userSubjectId)
+              .toSet(),
+        ),
+      );
+    } catch (e) {
+      debugPrint('[SubjectsNotifier] deleteSubject failed: $e');
+    }
   }
 
   Future<void> commitDeletions() async {

@@ -60,26 +60,24 @@ class SubjectsRemoteDataSource implements SubjectsDataSource {
 
     final existingRows = existing as List<dynamic>;
 
-    // Only skip seeding if the user already has at least one CDC
-    // catalog subject (subject_id non-null). A custom-subjects-only
-    // account must not suppress the seed.
+    // If campusId is not set, or user already has enrolled catalog subjects,
+    // return whatever user_subjects already exist (catalog or custom).
     final hasCatalogSubject = existingRows.any((r) => r['subject_id'] != null);
+    final campus = campusId.trim();
 
-    if (hasCatalogSubject) {
+    if (hasCatalogSubject || campus.isEmpty) {
       return existingRows
           .map((e) => SubjectDto.fromUserSubjectJson(e))
           .toList();
     }
 
-    // First load — seed from the campus-scoped catalog.
-    // campus_id is the correct scope: different BITS campuses
-    // (Hyderabad, Pilani, Goa) have different subject catalogs.
+    // First load with campusId set — seed from the campus-scoped catalog.
     final catalog = await _client
         .from('subjects')
         .select(
           'id, name, short_name, academic_year, semester, credits, institution_id',
         )
-        .eq('campus_id', campusId)
+        .eq('campus_id', campus)
         .eq('academic_year', academicYear)
         .eq('semester', semester)
         .order('name');
@@ -159,6 +157,18 @@ class SubjectsRemoteDataSource implements SubjectsDataSource {
     }
 
     if (resolvedInstitutionId.isEmpty) {
+      final campusRow = await _client
+          .from('campuses')
+          .select('institution_id')
+          .limit(1)
+          .maybeSingle();
+
+      if (campusRow != null && campusRow['institution_id'] != null) {
+        resolvedInstitutionId = campusRow['institution_id'] as String;
+      }
+    }
+
+    if (resolvedInstitutionId.isEmpty) {
       final instRow = await _client
           .from('institutions')
           .select('id')
@@ -168,6 +178,10 @@ class SubjectsRemoteDataSource implements SubjectsDataSource {
       if (instRow != null && instRow['id'] != null) {
         resolvedInstitutionId = instRow['id'] as String;
       }
+    }
+
+    if (resolvedInstitutionId.isEmpty) {
+      throw Exception('Could not determine institution ID for custom subject.');
     }
 
     if (institutionId.isEmpty && resolvedInstitutionId.isNotEmpty) {

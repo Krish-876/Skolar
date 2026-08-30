@@ -28,7 +28,7 @@ class _SubjectsPageState extends State<SubjectsPage> {
   Widget build(BuildContext context) {
     if (_showSuccess) {
       return Scaffold(
-        backgroundColor: const Color(0xFF16161A),
+        backgroundColor: AppTheme.background,
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -66,7 +66,7 @@ class _SubjectsPageState extends State<SubjectsPage> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFF16161A), // Onboarding bg color
+      backgroundColor: AppTheme.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -86,42 +86,88 @@ class _SubjectsPageState extends State<SubjectsPage> {
               final asyncState = ref.watch(subjectsProvider);
               return asyncState.whenOrNull(
                     data: (s) => s.editMode
-                        ? TextButton(
-                            onPressed: () => ref
-                                .read(subjectsProvider.notifier)
-                                .commitDeletions(),
-                            child: Text(
-                              'Done',
-                              style: GoogleFonts.googleSans(
-                                color: const Color(0xFF9B4DFF),
-                                fontWeight: FontWeight.bold,
-                                fontSize: 15,
-                              ),
-                            ),
-                          )
-                        : TextButton(
-                            onPressed: () {
-                              showModalBottomSheet(
-                                context: context,
-                                isScrollControlled: true,
-                                backgroundColor: Colors.transparent,
-                                builder: (_) => CreditTargetSheet(
-                                  onConfirm: (value) {
-                                    ref
-                                        .read(subjectsProvider.notifier)
-                                        .setCreditTarget(value);
-                                  },
+                        ? Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              TextButton(
+                                onPressed: () => ref
+                                    .read(subjectsProvider.notifier)
+                                    .exitEditMode(),
+                                child: Text(
+                                  'Cancel',
+                                  style: GoogleFonts.googleSans(
+                                    color: Colors.white60,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 14,
+                                  ),
                                 ),
-                              );
-                            },
-                            child: Text(
-                              'Edit credits',
-                              style: GoogleFonts.googleSans(
-                                color: Colors.white70,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 13,
                               ),
-                            ),
+                              TextButton(
+                                onPressed: () => ref
+                                    .read(subjectsProvider.notifier)
+                                    .commitDeletions(),
+                                child: Text(
+                                  s.pendingDelete.isNotEmpty
+                                      ? 'Delete (${s.pendingDelete.length})'
+                                      : 'Done',
+                                  style: GoogleFonts.googleSans(
+                                    color: s.pendingDelete.isNotEmpty
+                                        ? const Color(0xFFFF5252)
+                                        : AppTheme.accentPurple,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          )
+                        : Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (s.subjects.isNotEmpty)
+                                TextButton.icon(
+                                  onPressed: () => ref
+                                      .read(subjectsProvider.notifier)
+                                      .enterEditMode(),
+                                  icon: const Icon(
+                                    Icons.delete_outline_rounded,
+                                    size: 16,
+                                    color: Colors.white70,
+                                  ),
+                                  label: Text(
+                                    'Delete',
+                                    style: GoogleFonts.googleSans(
+                                      color: Colors.white70,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ),
+                              TextButton(
+                                onPressed: () {
+                                  showModalBottomSheet(
+                                    context: context,
+                                    isScrollControlled: true,
+                                    backgroundColor: Colors.transparent,
+                                    builder: (_) => CreditTargetSheet(
+                                      onConfirm: (value) {
+                                        ref
+                                            .read(subjectsProvider.notifier)
+                                            .setCreditTarget(value);
+                                      },
+                                    ),
+                                  );
+                                },
+                                child: Text(
+                                  'Edit credits',
+                                  style: GoogleFonts.googleSans(
+                                    color: Colors.white70,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                   ) ??
                   const SizedBox.shrink();
@@ -132,9 +178,12 @@ class _SubjectsPageState extends State<SubjectsPage> {
       extendBodyBehindAppBar: true,
       body: const SafeArea(child: SubjectsPageContent()),
       bottomNavigationBar: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppTheme.lg,
+          vertical: 16,
+        ),
         decoration: BoxDecoration(
-          color: const Color(0xFF16161A),
+          color: AppTheme.background,
           border: Border(
             top: BorderSide(
               color: Colors.white.withValues(alpha: 0.08),
@@ -143,54 +192,12 @@ class _SubjectsPageState extends State<SubjectsPage> {
           ),
         ),
         child: SafeArea(
-          child: SizedBox(
-            width: double.infinity,
-            height: 54,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 250),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF9B4DFF), Color(0xFF7428D8)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF8C38E5).withValues(alpha: 0.38),
-                    blurRadius: 20,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: ElevatedButton(
-                onPressed: _onNext,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.transparent,
-                  shadowColor: Colors.transparent,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  elevation: 0,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Continue',
-                      style: GoogleFonts.googleSans(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.3,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    const Icon(Icons.arrow_forward_rounded, size: 20),
-                  ],
-                ),
-              ),
-            ),
+          child: ChunkyButton(
+            label: 'Continue',
+            icon: Icons.arrow_forward_rounded,
+            onTap: _onNext,
+            color: AppTheme.accentPurple,
+            shadow: AppTheme.chunkyButtonShadow,
           ),
         ),
       ),
@@ -244,6 +251,7 @@ class _SubjectsPageContentState extends ConsumerState<SubjectsPageContent> {
         },
         onTap: (id) =>
             ref.read(subjectsProvider.notifier).togglePendingDelete(id),
+        onDelete: (id) => ref.read(subjectsProvider.notifier).deleteSubject(id),
         onAdd: () => _showAddSheet(context),
         onPickHandout: (userSubjectId) => _pickHandout(context, userSubjectId),
         onUnstageHandout: (userSubjectId) =>
@@ -343,6 +351,7 @@ class SubjectsBody extends StatelessWidget {
   final SubjectsPageState state;
   final void Function(String id) onLongPress;
   final void Function(String id) onTap;
+  final void Function(String id) onDelete;
   final VoidCallback onAdd;
   final void Function(String userSubjectId) onPickHandout;
   final void Function(String userSubjectId) onUnstageHandout;
@@ -353,6 +362,7 @@ class SubjectsBody extends StatelessWidget {
     required this.state,
     required this.onLongPress,
     required this.onTap,
+    required this.onDelete,
     required this.onAdd,
     required this.onPickHandout,
     required this.onUnstageHandout,
@@ -436,6 +446,7 @@ class SubjectsBody extends StatelessWidget {
                           ? () => onTap(s.userSubjectId)
                           : null,
                       onLongPress: () => onLongPress(s.userSubjectId),
+                      onDelete: () => onDelete(s.userSubjectId),
                       onPickHandout: state.editMode
                           ? null
                           : () => onPickHandout(s.userSubjectId),
@@ -455,47 +466,14 @@ class SubjectsBody extends StatelessWidget {
               AppTheme.lg,
               AppTheme.sm,
             ),
-            child: GestureDetector(
+            child: ChunkyButton(
+              label:
+                  'Generate plans for ${state.stagedHandouts.length} '
+                  '${state.stagedHandouts.length == 1 ? 'subject' : 'subjects'}',
+              icon: Icons.cloud_upload_rounded,
               onTap: onSubmitStaged,
-              child: Container(
-                width: double.infinity,
-                height: 52,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF9B4DFF), Color(0xFF7428D8)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF8C38E5).withValues(alpha: 0.35),
-                      blurRadius: 16,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.cloud_upload_rounded,
-                      color: Colors.white,
-                      size: 18,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Generate plans for ${state.stagedHandouts.length} '
-                      '${state.stagedHandouts.length == 1 ? 'subject' : 'subjects'}',
-                      style: GoogleFonts.googleSans(
-                        color: Colors.white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              color: AppTheme.accentPurple,
+              shadow: AppTheme.chunkyButtonShadow,
             ),
           ),
 
@@ -506,46 +484,19 @@ class SubjectsBody extends StatelessWidget {
             AppTheme.lg,
             AppTheme.xl,
           ),
-          child: IgnorePointer(
-            ignoring: atCap,
-            child: AnimatedOpacity(
-              opacity: atCap ? 0.4 : 1.0,
-              duration: const Duration(milliseconds: 200),
-              child: GestureDetector(
-                onTap: onAdd,
-                child: Container(
-                  width: double.infinity,
-                  height: 52,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1C1C1E),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.12),
-                      width: 1.2,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.add_rounded,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        atCap ? 'Credit limit reached' : 'Add Subject',
-                        style: GoogleFonts.googleSans(
-                          color: Colors.white,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+          child: ChunkyButton(
+            label: atCap ? 'Credit limit reached' : 'Add Subject',
+            icon: Icons.add_rounded,
+            onTap: atCap ? null : onAdd,
+            enabled: !atCap,
+            color: AppTheme.surface,
+            border: Border.all(
+              color: AppTheme.onboardingButtonBorder,
+              width: 2,
             ),
+            shadow: AppTheme.chunkyButtonShadowOutline,
+            textColor: atCap ? Colors.white38 : AppTheme.onSecondary,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ],
