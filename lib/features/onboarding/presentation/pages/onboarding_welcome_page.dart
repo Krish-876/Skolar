@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:video_player/video_player.dart';
 import 'package:Skolar/core/routing/app_routes.dart';
 import 'package:Skolar/core/theme/app_theme.dart';
+import 'package:Skolar/features/auth/presentation/widgets/preview/auth_mode.dart';
+import 'package:Skolar/features/auth/presentation/widgets/preview/rocket_carryover.dart';
 
 class OnboardingWelcomePage extends StatefulWidget {
   const OnboardingWelcomePage({super.key});
@@ -11,12 +13,34 @@ class OnboardingWelcomePage extends StatefulWidget {
   State<OnboardingWelcomePage> createState() => _OnboardingWelcomePageState();
 }
 
-class _OnboardingWelcomePageState extends State<OnboardingWelcomePage> {
+class _OnboardingWelcomePageState extends State<OnboardingWelcomePage>
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver, RouteAware {
   late final VideoPlayerController _controller;
+
+  // Tracks whether this page is the topmost route, so an OS-level resume
+  // (app switcher, home button) doesn't restart the video underneath
+  // whatever's currently pushed on top of it.
+  bool _isCurrentRoute = true;
+
+  // Plays once, on tap, before navigating — buttons fade + slide down so
+  // they don't just vanish when the route swaps.
+  late final AnimationController _exitCtrl = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 150),
+  );
+  late final Animation<double> _buttonsExitOpacity = Tween<double>(
+    begin: 1,
+    end: 0,
+  ).animate(CurvedAnimation(parent: _exitCtrl, curve: Curves.easeIn));
+  late final Animation<Offset> _buttonsExitSlide = Tween<Offset>(
+    begin: Offset.zero,
+    end: const Offset(0, 0.15),
+  ).animate(CurvedAnimation(parent: _exitCtrl, curve: Curves.easeIn));
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _controller = VideoPlayerController.asset('assets/animations/animation.mp4')
       ..initialize().then((_) {
         if (!mounted) return;
@@ -27,9 +51,73 @@ class _OnboardingWelcomePageState extends State<OnboardingWelcomePage> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route is PageRoute<void>) {
+      routeObserver.subscribe(this, route);
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    routeObserver.unsubscribe(this);
     _controller.dispose();
+    _exitCtrl.dispose();
     super.dispose();
+  }
+
+  // RouteAware — fires on in-app navigation, e.g. pushing/popping the auth
+  // preview page. Generalizes beyond this one screen: any future route
+  // pushed on top of this page pauses the video, and returning to it
+  // (back button, or the pushed route popping itself) resumes it.
+  @override
+  void didPushNext() {
+    _isCurrentRoute = false;
+    if (_controller.value.isInitialized) {
+      _controller.pause();
+    }
+  }
+
+  @override
+  void didPopNext() {
+    _isCurrentRoute = true;
+    if (_controller.value.isInitialized) {
+      _controller.play();
+    }
+    // _exitCtrl stays at its forwarded (buttons-hidden) end state after the
+    // tap that navigated away — nothing ever reversed it, so without this
+    // the buttons would never come back on return. Animate them back in
+    // rather than snapping, matching how they animated out.
+    _exitCtrl.reverse();
+  }
+
+  // WidgetsBindingObserver — OS-level backgrounding (home button, app
+  // switcher, incoming call), not just in-app navigation.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (!_controller.value.isInitialized) return;
+    switch (state) {
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.paused:
+      case AppLifecycleState.hidden:
+        _controller.pause();
+      case AppLifecycleState.resumed:
+        if (_isCurrentRoute) _controller.play();
+      case AppLifecycleState.detached:
+        break;
+    }
+  }
+
+  Future<void> _goToAuthPreview(AuthMode mode) async {
+    // Freeze on the exact frame the auth page's carried-over rocket shows,
+    // then play the buttons out before the route actually swaps.
+    _controller.pause();
+    await _controller.seekTo(Duration.zero);
+    await _exitCtrl.forward();
+    if (!mounted) return;
+    context.push(AppRoutes.authPreview, extra: mode);
   }
 
   @override
@@ -39,16 +127,7 @@ class _OnboardingWelcomePageState extends State<OnboardingWelcomePage> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          ClipRect(
-            child: SizedBox.expand(
-              child: FittedBox(
-                fit: BoxFit.fitHeight,
-                child: Image.asset(
-                  'assets/animations/onboarding_first_frame.png',
-                ),
-              ),
-            ),
-          ),
+          const RocketCarryover(),
           if (_controller.value.isInitialized)
             ClipRect(
               child: SizedBox.expand(
@@ -69,35 +148,41 @@ class _OnboardingWelcomePageState extends State<OnboardingWelcomePage> {
                 AnimatedOpacity(
                   duration: const Duration(milliseconds: 300),
                   opacity: _controller.value.isInitialized ? 1 : 0,
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      AppTheme.lg,
-                      0,
-                      AppTheme.lg,
-                      40,
-                    ),
-                    child: Column(
-                      children: [
-                        _ChunkyButton(
-                          label: 'Get started',
-                          onTap: () => context.push(AppRoutes.auth),
-                          color: AppTheme.accentPurple,
-                          shadow: AppTheme.chunkyButtonShadow,
+                  child: FadeTransition(
+                    opacity: _buttonsExitOpacity,
+                    child: SlideTransition(
+                      position: _buttonsExitSlide,
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(
+                          AppTheme.lg,
+                          0,
+                          AppTheme.lg,
+                          40,
                         ),
-                        const SizedBox(height: AppTheme.smd),
-                        _ChunkyButton(
-                          label: 'I already have an account',
-                          onTap: () => context.push(AppRoutes.auth),
-                          color: AppTheme.background,
-                          border: Border.all(
-                            color: AppTheme.onboardingButtonBorder,
-                            width: 2,
-                          ),
-                          shadow: AppTheme.chunkyButtonShadowOutline,
-                          textColor: AppTheme.onSecondary,
-                          fontWeight: FontWeight.normal,
+                        child: Column(
+                          children: [
+                            _ChunkyButton(
+                              label: 'Get started',
+                              onTap: () => _goToAuthPreview(AuthMode.signup),
+                              color: AppTheme.accentPurple,
+                              shadow: AppTheme.chunkyButtonShadow,
+                            ),
+                            const SizedBox(height: AppTheme.smd),
+                            _ChunkyButton(
+                              label: 'I already have an account',
+                              onTap: () => _goToAuthPreview(AuthMode.login),
+                              color: AppTheme.background,
+                              border: Border.all(
+                                color: AppTheme.onboardingButtonBorder,
+                                width: 2,
+                              ),
+                              shadow: AppTheme.chunkyButtonShadowOutline,
+                              textColor: AppTheme.onSecondary,
+                              fontWeight: FontWeight.normal,
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
                   ),
                 ),
