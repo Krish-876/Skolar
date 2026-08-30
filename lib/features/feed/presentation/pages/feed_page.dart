@@ -127,7 +127,9 @@ class _TopBar extends ConsumerWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  college.isNotEmpty ? college : 'Peer questions & PYQ practice',
+                  college.isNotEmpty
+                      ? college
+                      : 'Peer questions & PYQ practice',
                   style: const TextStyle(
                     fontFamily: 'GoogleSans',
                     fontSize: 12,

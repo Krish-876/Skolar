@@ -105,10 +105,7 @@ class _FeedPostCardState extends ConsumerState<FeedPostCard>
       decoration: BoxDecoration(
         color: AppTheme.surface,
         borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-        border: Border.all(
-          color: AppTheme.onboardingButtonBorder,
-          width: 1,
-        ),
+        border: Border.all(color: AppTheme.onboardingButtonBorder, width: 1),
       ),
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
       child: Column(
@@ -236,10 +233,7 @@ class _DifficultyIndicator extends StatelessWidget {
       decoration: BoxDecoration(
         color: dotColor.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: dotColor.withValues(alpha: 0.35),
-          width: 1,
-        ),
+        border: Border.all(color: dotColor.withValues(alpha: 0.35), width: 1),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -247,10 +241,7 @@ class _DifficultyIndicator extends StatelessWidget {
           Container(
             width: 6,
             height: 6,
-            decoration: BoxDecoration(
-              color: dotColor,
-              shape: BoxShape.circle,
-            ),
+            decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
           ),
           const SizedBox(width: 5),
           Text(
@@ -479,11 +470,7 @@ class _MiniAttemptButtonState extends State<_MiniAttemptButton> {
         child: const Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.play_arrow_rounded,
-              color: AppTheme.onPrimary,
-              size: 15,
-            ),
+            Icon(Icons.play_arrow_rounded, color: AppTheme.onPrimary, size: 15),
             SizedBox(width: 3),
             Text(
               'Attempt',

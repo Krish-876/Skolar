@@ -1,9 +1,6 @@
 import 'dart:async';
 import 'dart:math';
-import 'dart:ui';
 import 'package:Skolar/core/loading/test_page.dart';
-import 'package:Skolar/core/widgets/animated_profile_gradient.dart';
-import 'package:Skolar/features/focus_session/widgets/focus_background.dart';
 import 'package:Skolar/features/mock_tests/domain/entities/mock_test_entity.dart';
 import 'package:Skolar/features/subjects/presentation/providers/subjects_provider.dart';
 import 'package:Skolar/shared/models/exam_type.dart';
@@ -16,15 +13,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:Skolar/core/theme/app_theme.dart';
 import 'package:Skolar/features/mock_tests/presentation/providers/mock_tests_provider.dart';
-
-const _bg = AppTheme.background;
-const _primary = AppTheme.accentPurple;
-const _surface = AppTheme.surface;
-const _accent = AppTheme.accentPurple;
-const _textPrim = AppTheme.onBackground;
-const _textSec = AppTheme.onBackground2;
-const _correct = Color(0xFF4CAF50);
-const _wrong = Color(0xFFFF5252);
 
 Color _marksColor(int marks) {
   if (marks <= 3) return const Color(0xFF4CAF50);
@@ -101,9 +89,7 @@ MarkdownStyleSheet _answerMarkdownStyle() {
     tableHeadAlign: TextAlign.center,
     tableColumnWidth: const FlexColumnWidth(),
     tableCellsPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-    tableCellsDecoration: const BoxDecoration(
-      color: AppTheme.surfaceLight,
-    ),
+    tableCellsDecoration: const BoxDecoration(color: AppTheme.surfaceLight),
     horizontalRuleDecoration: const BoxDecoration(
       border: Border(
         top: BorderSide(color: AppTheme.onboardingButtonBorder, width: 1),
@@ -163,9 +149,7 @@ MarkdownStyleSheet _questionMarkdownStyle() {
     tableHeadAlign: TextAlign.center,
     tableColumnWidth: const FlexColumnWidth(),
     tableCellsPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-    tableCellsDecoration: const BoxDecoration(
-      color: AppTheme.surfaceLight,
-    ),
+    tableCellsDecoration: const BoxDecoration(color: AppTheme.surfaceLight),
   );
 }
 
@@ -859,10 +843,7 @@ class _QuestionCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppTheme.surface,
         borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-        border: Border.all(
-          color: AppTheme.onboardingButtonBorder,
-          width: 1.2,
-        ),
+        border: Border.all(color: AppTheme.onboardingButtonBorder, width: 1.2),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -971,10 +952,7 @@ class _QuestionCard extends StatelessWidget {
             decoration: parts.context.isNotEmpty
                 ? const BoxDecoration(
                     border: Border(
-                      left: BorderSide(
-                        color: AppTheme.accentPurple,
-                        width: 3,
-                      ),
+                      left: BorderSide(color: AppTheme.accentPurple, width: 3),
                     ),
                   )
                 : null,
@@ -1015,10 +993,7 @@ class _ModelAnswerCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppTheme.surface,
         borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-        border: Border.all(
-          color: AppTheme.onboardingButtonBorder,
-          width: 1.2,
-        ),
+        border: Border.all(color: AppTheme.onboardingButtonBorder, width: 1.2),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1206,8 +1181,7 @@ class _McqQuizFlowState extends ConsumerState<_McqQuizFlow> {
                   total: widget.questions.fold(0, (s, q) => s + q.marks),
                   answers: _answers,
                   questions: widget.questions,
-                  onRestart: () =>
-                      ref.read(mockTestProvider.notifier).reset(),
+                  onRestart: () => ref.read(mockTestProvider.notifier).reset(),
                 )
               : _McqQuestionScreen(
                   key: ValueKey(_current),
@@ -1966,9 +1940,7 @@ class _FlashcardViewState extends State<_FlashcardView> {
                           ),
                         ),
                       ),
-                      secondChild: _ModelAnswerCard(
-                        modelAnswer: q.modelAnswer,
-                      ),
+                      secondChild: _ModelAnswerCard(modelAnswer: q.modelAnswer),
                     ),
                     const SizedBox(height: 8),
                   ],
@@ -2472,10 +2444,7 @@ class _GlassContainer extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppTheme.surface,
         borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-        border: Border.all(
-          color: AppTheme.onboardingButtonBorder,
-          width: 1.2,
-        ),
+        border: Border.all(color: AppTheme.onboardingButtonBorder, width: 1.2),
       ),
       child: child,
     );
@@ -2492,10 +2461,7 @@ class _GlassChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppTheme.surfaceLight,
         borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-        border: Border.all(
-          color: AppTheme.onboardingButtonBorder,
-          width: 1,
-        ),
+        border: Border.all(color: AppTheme.onboardingButtonBorder, width: 1),
       ),
       child: child,
     );

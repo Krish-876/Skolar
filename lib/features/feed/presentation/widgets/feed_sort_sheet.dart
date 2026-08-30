@@ -119,7 +119,9 @@ class _SortOptionTile extends StatelessWidget {
               Icon(
                 _icon,
                 size: 18,
-                color: selected ? AppTheme.accentPurple : AppTheme.onBackground2,
+                color: selected
+                    ? AppTheme.accentPurple
+                    : AppTheme.onBackground2,
               ),
               const SizedBox(width: 12),
               Text(
