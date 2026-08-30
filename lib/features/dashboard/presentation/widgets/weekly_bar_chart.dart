@@ -29,13 +29,12 @@ class ChartPoint {
 /// here, once, when the stats finish loading — so every one of those
 /// per-frame rebuilds now just reads the same cached `Map` instead of
 /// recomputing it.
-final weeklyChartDataProvider = Provider<Map<WeeklyChartRange, List<ChartPoint>>>((
-  ref,
-) {
-  final stats = ref.watch(progressStatsProvider).valueOrNull;
-  if (stats == null) return const {};
-  return _bucketChartData(stats.dailyCompletions);
-});
+final weeklyChartDataProvider =
+    Provider<Map<WeeklyChartRange, List<ChartPoint>>>((ref) {
+      final stats = ref.watch(progressStatsProvider).valueOrNull;
+      if (stats == null) return const {};
+      return _bucketChartData(stats.dailyCompletions);
+    });
 
 Map<WeeklyChartRange, List<ChartPoint>> _bucketChartData(
   List<DailyCompletion> days,
@@ -98,7 +97,9 @@ class _WeeklyBarChartState extends State<WeeklyBarChart> {
   @override
   Widget build(BuildContext context) {
     final points = _points;
-    final selectedIndex = _selectedIndex.clamp(0, math.max(points.length - 1, 0)).toInt();
+    final selectedIndex = _selectedIndex
+        .clamp(0, math.max(points.length - 1, 0))
+        .toInt();
     final maxY = points.isEmpty
         ? 1.0
         : points.map((p) => p.value).reduce(math.max) * 1.35;
@@ -113,152 +114,161 @@ class _WeeklyBarChartState extends State<WeeklyBarChart> {
         child: Padding(
           padding: const EdgeInsets.all(20),
           child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            switch (_range) {
-              WeeklyChartRange.week => 'Weekly Progress',
-              WeeklyChartRange.month => 'Monthly Progress',
-              WeeklyChartRange.semester => 'Semester Progress',
-            },
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontFamily: 'GoogleSans',
-              color: AppTheme.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 14),
-          // Horizontally scrollable rather than a plain Row: on narrow
-          // screens/larger text scales the three chips' combined natural
-          // width can exceed the card's content width, and a plain Row (no
-          // Expanded/Wrap) overflows instead of shrinking.
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: WeeklyChartRange.values
-                  .map((r) => Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: _RangeChip(
-                          label: switch (r) {
-                            WeeklyChartRange.week => 'Week',
-                            WeeklyChartRange.month => 'Month',
-                            WeeklyChartRange.semester => 'Semester',
-                          },
-                          selected: r == _range,
-                          onTap: () => _selectRange(r),
-                        ),
-                      ))
-                  .toList(),
-            ),
-          ),
-          const SizedBox(height: 24),
-          if (points.isEmpty)
-            const SizedBox(height: 160)
-          else
-            SizedBox(
-              height: 180,
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final slotWidth = constraints.maxWidth / points.length;
-                  final tooltipLeft = (selectedIndex + 0.5) * slotWidth - 34;
-                  return Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(top: 28),
-                        child: BarChart(
-                          BarChartData(
-                            maxY: maxY,
-                            alignment: BarChartAlignment.spaceAround,
-                            gridData: const FlGridData(show: false),
-                            borderData: FlBorderData(show: false),
-                            barTouchData: BarTouchData(
-                              enabled: true,
-                              touchTooltipData: BarTouchTooltipData(
-                                getTooltipColor: (_) => AppTheme.transparent,
-                                tooltipPadding: EdgeInsets.zero,
-                                getTooltipItem: (_, _, _, _) => null,
-                              ),
-                              touchCallback: (event, response) {
-                                final index = response?.spot?.touchedBarGroupIndex;
-                                if (event.isInterestedForInteractions && index != null) {
-                                  setState(() => _selectedIndex = index);
-                                }
-                              },
-                            ),
-                            titlesData: FlTitlesData(
-                              leftTitles: const AxisTitles(
-                                sideTitles: SideTitles(showTitles: false),
-                              ),
-                              topTitles: const AxisTitles(
-                                sideTitles: SideTitles(showTitles: false),
-                              ),
-                              rightTitles: const AxisTitles(
-                                sideTitles: SideTitles(showTitles: false),
-                              ),
-                              bottomTitles: AxisTitles(
-                                sideTitles: SideTitles(
-                                  showTitles: true,
-                                  getTitlesWidget: (value, _) {
-                                    final idx = value.toInt();
-                                    if (idx < 0 || idx >= points.length) {
-                                      return const SizedBox.shrink();
-                                    }
-                                    final isSelected = idx == selectedIndex;
-                                    return Padding(
-                                      padding: const EdgeInsets.only(top: 8),
-                                      child: Text(
-                                        points[idx].label,
-                                        style: TextStyle(
-                                          fontFamily: 'GoogleSans',
-                                          color: isSelected
-                                              ? AppTheme.textPrimary
-                                              : AppTheme.textSecondary,
-                                          fontSize: 11,
-                                          fontWeight: isSelected
-                                              ? FontWeight.w700
-                                              : FontWeight.w400,
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-                            ),
-                            barGroups: List.generate(points.length, (i) {
-                              final isSelected = i == selectedIndex;
-                              return BarChartGroupData(
-                                x: i,
-                                barRods: [
-                                  BarChartRodData(
-                                    toY: points[i].value,
-                                    width: 14,
-                                    borderRadius: BorderRadius.circular(4),
-                                    color: isSelected
-                                        ? AppTheme.accent
-                                        : AppTheme.surfaceLight,
-                                  ),
-                                ],
-                              );
-                            }),
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                switch (_range) {
+                  WeeklyChartRange.week => 'Weekly Progress',
+                  WeeklyChartRange.month => 'Monthly Progress',
+                  WeeklyChartRange.semester => 'Semester Progress',
+                },
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontFamily: 'GoogleSans',
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 14),
+              // Horizontally scrollable rather than a plain Row: on narrow
+              // screens/larger text scales the three chips' combined natural
+              // width can exceed the card's content width, and a plain Row (no
+              // Expanded/Wrap) overflows instead of shrinking.
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: WeeklyChartRange.values
+                      .map(
+                        (r) => Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: _RangeChip(
+                            label: switch (r) {
+                              WeeklyChartRange.week => 'Week',
+                              WeeklyChartRange.month => 'Month',
+                              WeeklyChartRange.semester => 'Semester',
+                            },
+                            selected: r == _range,
+                            onTap: () => _selectRange(r),
                           ),
                         ),
-                      ),
-                      Positioned(
-                        top: 0,
-                        left: tooltipLeft.clamp(
-                          0.0,
-                          math.max(0.0, constraints.maxWidth - 68),
-                        ),
-                        child: _FloatingTooltip(
-                          value: points[selectedIndex].value.toStringAsFixed(0),
-                        ),
-                      ),
-                    ],
-                  );
-                },
+                      )
+                      .toList(),
+                ),
               ),
-            ),
-        ],
+              const SizedBox(height: 24),
+              if (points.isEmpty)
+                const SizedBox(height: 160)
+              else
+                SizedBox(
+                  height: 180,
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final slotWidth = constraints.maxWidth / points.length;
+                      final tooltipLeft =
+                          (selectedIndex + 0.5) * slotWidth - 34;
+                      return Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(top: 28),
+                            child: BarChart(
+                              BarChartData(
+                                maxY: maxY,
+                                alignment: BarChartAlignment.spaceAround,
+                                gridData: const FlGridData(show: false),
+                                borderData: FlBorderData(show: false),
+                                barTouchData: BarTouchData(
+                                  enabled: true,
+                                  touchTooltipData: BarTouchTooltipData(
+                                    getTooltipColor: (_) =>
+                                        AppTheme.transparent,
+                                    tooltipPadding: EdgeInsets.zero,
+                                    getTooltipItem: (_, _, _, _) => null,
+                                  ),
+                                  touchCallback: (event, response) {
+                                    final index =
+                                        response?.spot?.touchedBarGroupIndex;
+                                    if (event.isInterestedForInteractions &&
+                                        index != null) {
+                                      setState(() => _selectedIndex = index);
+                                    }
+                                  },
+                                ),
+                                titlesData: FlTitlesData(
+                                  leftTitles: const AxisTitles(
+                                    sideTitles: SideTitles(showTitles: false),
+                                  ),
+                                  topTitles: const AxisTitles(
+                                    sideTitles: SideTitles(showTitles: false),
+                                  ),
+                                  rightTitles: const AxisTitles(
+                                    sideTitles: SideTitles(showTitles: false),
+                                  ),
+                                  bottomTitles: AxisTitles(
+                                    sideTitles: SideTitles(
+                                      showTitles: true,
+                                      getTitlesWidget: (value, _) {
+                                        final idx = value.toInt();
+                                        if (idx < 0 || idx >= points.length) {
+                                          return const SizedBox.shrink();
+                                        }
+                                        final isSelected = idx == selectedIndex;
+                                        return Padding(
+                                          padding: const EdgeInsets.only(
+                                            top: 8,
+                                          ),
+                                          child: Text(
+                                            points[idx].label,
+                                            style: TextStyle(
+                                              fontFamily: 'GoogleSans',
+                                              color: isSelected
+                                                  ? AppTheme.textPrimary
+                                                  : AppTheme.textSecondary,
+                                              fontSize: 11,
+                                              fontWeight: isSelected
+                                                  ? FontWeight.w700
+                                                  : FontWeight.w400,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ),
+                                barGroups: List.generate(points.length, (i) {
+                                  final isSelected = i == selectedIndex;
+                                  return BarChartGroupData(
+                                    x: i,
+                                    barRods: [
+                                      BarChartRodData(
+                                        toY: points[i].value,
+                                        width: 14,
+                                        borderRadius: BorderRadius.circular(4),
+                                        color: isSelected
+                                            ? AppTheme.accent
+                                            : AppTheme.surfaceLight,
+                                      ),
+                                    ],
+                                  );
+                                }),
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            top: 0,
+                            left: tooltipLeft.clamp(
+                              0.0,
+                              math.max(0.0, constraints.maxWidth - 68),
+                            ),
+                            child: _FloatingTooltip(
+                              value: points[selectedIndex].value
+                                  .toStringAsFixed(0),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
+            ],
           ),
         ),
       ),
@@ -298,7 +308,11 @@ class _RangeChip extends StatelessWidget {
   final bool selected;
   final VoidCallback onTap;
 
-  const _RangeChip({required this.label, required this.selected, required this.onTap});
+  const _RangeChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {

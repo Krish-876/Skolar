@@ -73,8 +73,10 @@ class _AllRoundDevelopmentCardState
     // `AnimatedSize` expands, in step with this same scroll.
     final target = opening
         ? position.pixels + _detailsRevealScrollDelta
-        : (position.pixels - _detailsRevealScrollDelta)
-              .clamp(position.minScrollExtent, position.maxScrollExtent);
+        : (position.pixels - _detailsRevealScrollDelta).clamp(
+            position.minScrollExtent,
+            position.maxScrollExtent,
+          );
     position.animateTo(
       target,
       duration: const Duration(milliseconds: 380),
@@ -101,7 +103,11 @@ class _AllRoundDevelopmentCardState
                 turns: detailsOpen ? 0.25 : 0,
                 duration: const Duration(milliseconds: 300),
                 curve: Curves.easeOutCubic,
-                child: Icon(Icons.arrow_forward_rounded, color: AppTheme.accent, size: 16),
+                child: Icon(
+                  Icons.arrow_forward_rounded,
+                  color: AppTheme.accent,
+                  size: 16,
+                ),
               ),
               label: Text(
                 detailsOpen ? 'Hide Details' : 'See Details',
@@ -176,8 +182,8 @@ class _AxisRow extends StatelessWidget {
     final deltaColor = delta > 0.001
         ? AppTheme.chartInProgress
         : delta < -0.001
-            ? AppTheme.error
-            : AppTheme.textSecondary;
+        ? AppTheme.error
+        : AppTheme.textSecondary;
     final deltaLabel = delta.abs() < 0.001
         ? '—'
         : '${delta > 0 ? '+' : ''}${(delta * 100).round()}%';

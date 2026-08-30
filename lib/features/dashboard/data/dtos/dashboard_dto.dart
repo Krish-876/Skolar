@@ -12,10 +12,15 @@ class DailyCompletionDto {
         tasksCompleted: json['tasksCompleted'] as int,
       );
 
-  Map<String, dynamic> toJson() => {'date': date, 'tasksCompleted': tasksCompleted};
+  Map<String, dynamic> toJson() => {
+    'date': date,
+    'tasksCompleted': tasksCompleted,
+  };
 
-  DailyCompletion toEntity() =>
-      DailyCompletion(date: DateTime.parse(date), tasksCompleted: tasksCompleted);
+  DailyCompletion toEntity() => DailyCompletion(
+    date: DateTime.parse(date),
+    tasksCompleted: tasksCompleted,
+  );
 }
 
 class ProgressStatsDto {
@@ -31,15 +36,16 @@ class ProgressStatsDto {
     required this.dailyCompletions,
   });
 
-  factory ProgressStatsDto.fromJson(Map<String, dynamic> json) => ProgressStatsDto(
-    tasksCompletedThisWeek: json['tasksCompletedThisWeek'] as int,
-    tasksPlannedThisWeek: json['tasksPlannedThisWeek'] as int,
-    cumulativeHoursThisSemester:
-        (json['cumulativeHoursThisSemester'] as num).toDouble(),
-    dailyCompletions: (json['dailyCompletions'] as List)
-        .map((e) => DailyCompletionDto.fromJson(e as Map<String, dynamic>))
-        .toList(),
-  );
+  factory ProgressStatsDto.fromJson(Map<String, dynamic> json) =>
+      ProgressStatsDto(
+        tasksCompletedThisWeek: json['tasksCompletedThisWeek'] as int,
+        tasksPlannedThisWeek: json['tasksPlannedThisWeek'] as int,
+        cumulativeHoursThisSemester:
+            (json['cumulativeHoursThisSemester'] as num).toDouble(),
+        dailyCompletions: (json['dailyCompletions'] as List)
+            .map((e) => DailyCompletionDto.fromJson(e as Map<String, dynamic>))
+            .toList(),
+      );
 
   Map<String, dynamic> toJson() => {
     'tasksCompletedThisWeek': tasksCompletedThisWeek,
@@ -71,13 +77,14 @@ class DashboardTaskDto {
     this.completed = false,
   });
 
-  factory DashboardTaskDto.fromJson(Map<String, dynamic> json) => DashboardTaskDto(
-    id: json['id'] as String,
-    title: json['title'] as String,
-    subject: json['subject'] as String,
-    timerMinutes: json['timerMinutes'] as int,
-    completed: json['completed'] as bool? ?? false,
-  );
+  factory DashboardTaskDto.fromJson(Map<String, dynamic> json) =>
+      DashboardTaskDto(
+        id: json['id'] as String,
+        title: json['title'] as String,
+        subject: json['subject'] as String,
+        timerMinutes: json['timerMinutes'] as int,
+        completed: json['completed'] as bool? ?? false,
+      );
 
   Map<String, dynamic> toJson() => {
     'id': id,
@@ -105,13 +112,14 @@ class DashboardPlanDto {
 
   const DashboardPlanDto({required this.plan, this.stale = false, this.note});
 
-  factory DashboardPlanDto.fromJson(Map<String, dynamic> json) => DashboardPlanDto(
-    plan: (json['plan'] as List)
-        .map((e) => DashboardTaskDto.fromJson(e as Map<String, dynamic>))
-        .toList(),
-    stale: json['stale'] as bool? ?? false,
-    note: json['note'] as String?,
-  );
+  factory DashboardPlanDto.fromJson(Map<String, dynamic> json) =>
+      DashboardPlanDto(
+        plan: (json['plan'] as List)
+            .map((e) => DashboardTaskDto.fromJson(e as Map<String, dynamic>))
+            .toList(),
+        stale: json['stale'] as bool? ?? false,
+        note: json['note'] as String?,
+      );
 
   Map<String, dynamic> toJson() => {
     'plan': plan.map((e) => e.toJson()).toList(),

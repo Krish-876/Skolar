@@ -29,7 +29,9 @@ class DashboardRepositoryImpl implements DashboardRepository {
   }
 
   @override
-  Future<Either<Failure, DashboardPlan>> toggleTaskCompletion(String taskId) async {
+  Future<Either<Failure, DashboardPlan>> toggleTaskCompletion(
+    String taskId,
+  ) async {
     try {
       final dto = await dataSource.toggleTask(taskId);
       return Right(dto.toEntity());

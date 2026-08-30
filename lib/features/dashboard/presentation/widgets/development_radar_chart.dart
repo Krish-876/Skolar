@@ -22,13 +22,18 @@ class DevelopmentRadarChart extends StatelessWidget {
           radarShape: RadarShape.polygon,
           tickCount: 4,
           radarBackgroundColor: AppTheme.transparent,
-          radarBorderData: BorderSide(color: AppTheme.divider ?? AppTheme.surface),
+          radarBorderData: BorderSide(
+            color: AppTheme.divider ?? AppTheme.surface,
+          ),
           gridBorderData: BorderSide(
             color: AppTheme.surfaceLight.withValues(alpha: 0.5),
             width: 1,
           ),
           tickBorderData: const BorderSide(color: AppTheme.transparent),
-          ticksTextStyle: const TextStyle(color: AppTheme.transparent, fontSize: 0),
+          ticksTextStyle: const TextStyle(
+            color: AppTheme.transparent,
+            fontSize: 0,
+          ),
           titleTextStyle: TextStyle(
             fontFamily: 'GoogleSans',
             color: AppTheme.textSecondary.withValues(alpha: 0.6),
@@ -39,7 +44,9 @@ class DevelopmentRadarChart extends StatelessWidget {
               RadarChartTitle(text: axes[index].label, angle: angle),
           dataSets: [
             RadarDataSet(
-              dataEntries: axes.map((a) => RadarEntry(value: a.startOfSemester)).toList(),
+              dataEntries: axes
+                  .map((a) => RadarEntry(value: a.startOfSemester))
+                  .toList(),
               fillColor: AppTheme.surfaceLight.withValues(alpha: 0.35),
               borderColor: AppTheme.textSecondary,
               borderWidth: 1.5,

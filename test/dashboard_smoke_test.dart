@@ -21,7 +21,9 @@ void main() {
     );
   });
 
-  testWidgets('DashboardPage renders and the expand gesture works', (tester) async {
+  testWidgets('DashboardPage renders and the expand gesture works', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       const ProviderScope(child: MaterialApp(home: DashboardPage())),
     );

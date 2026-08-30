@@ -15,9 +15,11 @@ class DashboardRemoteDataSource implements DashboardDataSource {
   @override
   Future<DashboardPlanDto> getPlan() => throw UnimplementedError();
   @override
-  Future<DashboardPlanDto> toggleTask(String taskId) => throw UnimplementedError();
+  Future<DashboardPlanDto> toggleTask(String taskId) =>
+      throw UnimplementedError();
   @override
-  Future<List<DevelopmentAxisDto>> getDevelopmentAxes() => throw UnimplementedError();
+  Future<List<DevelopmentAxisDto>> getDevelopmentAxes() =>
+      throw UnimplementedError();
 }
 
 /// In-memory dummy data for the preview. No Supabase, no HTTP.
@@ -83,12 +85,32 @@ class DashboardDummyDataSource implements DashboardDataSource {
   Future<List<DevelopmentAxisDto>> getDevelopmentAxes() async {
     await Future.delayed(const Duration(milliseconds: 400));
     return const [
-      DevelopmentAxisDto(label: 'Technical Depth', startOfSemester: 0.35, now: 0.62),
-      DevelopmentAxisDto(label: 'Communication', startOfSemester: 0.5, now: 0.58),
+      DevelopmentAxisDto(
+        label: 'Technical Depth',
+        startOfSemester: 0.35,
+        now: 0.62,
+      ),
+      DevelopmentAxisDto(
+        label: 'Communication',
+        startOfSemester: 0.5,
+        now: 0.58,
+      ),
       DevelopmentAxisDto(label: 'Leadership', startOfSemester: 0.2, now: 0.4),
-      DevelopmentAxisDto(label: 'Research Aptitude', startOfSemester: 0.3, now: 0.45),
-      DevelopmentAxisDto(label: 'Problem Solving', startOfSemester: 0.55, now: 0.7),
-      DevelopmentAxisDto(label: 'Domain Breadth', startOfSemester: 0.4, now: 0.5),
+      DevelopmentAxisDto(
+        label: 'Research Aptitude',
+        startOfSemester: 0.3,
+        now: 0.45,
+      ),
+      DevelopmentAxisDto(
+        label: 'Problem Solving',
+        startOfSemester: 0.55,
+        now: 0.7,
+      ),
+      DevelopmentAxisDto(
+        label: 'Domain Breadth',
+        startOfSemester: 0.4,
+        now: 0.5,
+      ),
     ];
   }
 }

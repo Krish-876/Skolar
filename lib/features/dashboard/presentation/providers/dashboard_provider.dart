@@ -11,7 +11,14 @@ enum StreakViewMode { week, month }
 /// Every visual state the expanded task section can be in — driven by the
 /// on-page debug toggle so each one can be reviewed without waiting on real
 /// async timing or engineering a real error/stale response.
-enum DebugTaskSectionState { real, loading, error, stale, noTasksRemaining, noDataYet }
+enum DebugTaskSectionState {
+  real,
+  loading,
+  error,
+  stale,
+  noTasksRemaining,
+  noDataYet,
+}
 
 final _dashboardDataSourceProvider = Provider<DashboardDataSource>(
   (ref) => DashboardDummyDataSource(),
@@ -36,12 +43,20 @@ final _getDevelopmentAxesProvider = Provider(
 
 final progressStatsProvider = FutureProvider<ProgressStats>((ref) async {
   final result = await ref.read(_getProgressStatsProvider)(const NoParams());
-  return result.fold((failure) => throw Exception(failure.message), (data) => data);
+  return result.fold(
+    (failure) => throw Exception(failure.message),
+    (data) => data,
+  );
 });
 
-final developmentAxesProvider = FutureProvider<List<DevelopmentAxis>>((ref) async {
+final developmentAxesProvider = FutureProvider<List<DevelopmentAxis>>((
+  ref,
+) async {
   final result = await ref.read(_getDevelopmentAxesProvider)(const NoParams());
-  return result.fold((failure) => throw Exception(failure.message), (data) => data);
+  return result.fold(
+    (failure) => throw Exception(failure.message),
+    (data) => data,
+  );
 });
 
 final streakViewModeProvider = StateProvider<StreakViewMode>(
@@ -76,7 +91,10 @@ class DashboardPlanNotifier extends AsyncNotifier<DashboardPlan> {
   @override
   Future<DashboardPlan> build() async {
     final result = await ref.read(_getDashboardPlanProvider)(const NoParams());
-    return result.fold((failure) => throw Exception(failure.message), (data) => data);
+    return result.fold(
+      (failure) => throw Exception(failure.message),
+      (data) => data,
+    );
   }
 
   Future<void> refresh() async {

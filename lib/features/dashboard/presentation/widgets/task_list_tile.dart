@@ -35,7 +35,10 @@ class TaskListTile extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppTheme.white.withValues(alpha: 0.03),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppTheme.white.withValues(alpha: 0.05), width: 1),
+        border: Border.all(
+          color: AppTheme.white.withValues(alpha: 0.05),
+          width: 1,
+        ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -55,7 +58,9 @@ class TaskListTile extends StatelessWidget {
                     fontFamily: 'GoogleSans',
                     color: AppTheme.textPrimary,
                     fontWeight: FontWeight.w600,
-                    decoration: task.completed ? TextDecoration.lineThrough : null,
+                    decoration: task.completed
+                        ? TextDecoration.lineThrough
+                        : null,
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -72,14 +77,16 @@ class TaskListTile extends StatelessWidget {
           const SizedBox(width: 12),
           GestureDetector(
             behavior: HitTestBehavior.opaque,
-            onTap: () => context.push(
-              AppRoutes.focusSession,
-              extra: task.timerDuration,
-            ),
+            onTap: () =>
+                context.push(AppRoutes.focusSession, extra: task.timerDuration),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.timer_outlined, size: 14, color: AppTheme.textSecondary),
+                Icon(
+                  Icons.timer_outlined,
+                  size: 14,
+                  color: AppTheme.textSecondary,
+                ),
                 const SizedBox(width: 4),
                 Text(
                   _formattedDuration,
