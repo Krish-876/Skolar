@@ -7,8 +7,8 @@ import 'package:flutter/material.dart';
 class AppStaticMeshTheme {
   AppStaticMeshTheme._();
 
-  /// Base canvas background — ultra dark slate-indigo.
-  static const Color background = Color(0xFF030306);
+  /// Base canvas background — true black.
+  static const Color background = Color(0xFF000000);
 
   /// Top-Left glow color — Orchid Purple at 35% opacity.
   static const Color topLeftGlow = Color(0x599333EA); // 0x59 = 35% Opacity
