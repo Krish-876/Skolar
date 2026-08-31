@@ -29,7 +29,7 @@ void main() {
     );
     await _settle(tester);
 
-    expect(find.textContaining('Good'), findsOneWidget);
+    expect(find.textContaining('Halo'), findsOneWidget);
     expect(find.text('day streak'), findsWidgets);
     expect(find.text('All-Round Development'), findsOneWidget);
 
