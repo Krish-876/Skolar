@@ -3,3 +3,5 @@ line-length = 120
 
 [tool.ruff.lint.per-file-ignores]
 "backend/tests/*" = ["S101"]
+# git is resolved from PATH deliberately for cross-platform CI (Windows dev box vs Ubuntu runner)
+"backend/bench/report.py" = ["S607"]
