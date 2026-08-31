@@ -7,10 +7,15 @@ class DashboardSectionHeader extends ConsumerWidget {
   final String title;
   final bool showRefresh;
 
+  /// Overrides the default search/refresh icon row entirely when set — e.g.
+  /// a "See Details" button for the radar section.
+  final Widget? trailing;
+
   const DashboardSectionHeader({
     super.key,
     required this.title,
     this.showRefresh = false,
+    this.trailing,
   });
 
   @override
@@ -20,29 +25,36 @@ class DashboardSectionHeader extends ConsumerWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            title,
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(color: AppTheme.textPrimary),
-          ),
-          Row(
-            children: [
-              IconButton(
-                icon: Icon(Icons.search, color: AppTheme.textSecondary),
-                onPressed: () {},
+          Expanded(
+            child: Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontFamily: 'GoogleSans',
+                color: AppTheme.textPrimary,
               ),
-              if (showRefresh)
-                IconButton(
-                  icon: Icon(
-                    Icons.refresh_rounded,
-                    color: AppTheme.textSecondary,
-                  ),
-                  onPressed: () =>
-                      ref.read(dashboardProvider.notifier).refresh(),
-                ),
-            ],
+            ),
           ),
+          const SizedBox(width: 8),
+          trailing ??
+              Row(
+                children: [
+                  IconButton(
+                    icon: Icon(Icons.search, color: AppTheme.textSecondary),
+                    onPressed: () {},
+                  ),
+                  if (showRefresh)
+                    IconButton(
+                      icon: Icon(
+                        Icons.refresh_rounded,
+                        color: AppTheme.textSecondary,
+                      ),
+                      onPressed: () =>
+                          ref.read(dashboardPlanProvider.notifier).refresh(),
+                    ),
+                ],
+              ),
         ],
       ),
     );
