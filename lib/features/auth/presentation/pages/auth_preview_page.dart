@@ -124,14 +124,12 @@ class _AuthPreviewPageState extends State<AuthPreviewPage>
   // Named no-op callbacks, trivial to swap for real usecases later.
 
   // SWAP: wire to AuthProvider (send-magic-link / sign-in-with-password usecase)
-  void onEmailSubmit() =>
+  void onEmailSubmit(String email, String password) =>
       _fireAction(_mode == AuthMode.login ? 'Log in' : 'Sign up');
 
-  // SWAP: wire to AuthProvider (Google OAuth usecase)
   void onGoogleTap() => _fireAction('Continue with Google');
 
-  // SWAP: wire to AuthProvider (send password-reset email usecase)
-  void onForgotPassword() => _fireAction('Forgot password');
+  void onForgotPassword(String email) => _fireAction('Forgot password');
 
   // SWAP: this stays local UI state even after real usecases are wired in —
   // it only flips which form is shown, no request involved.
@@ -265,6 +263,7 @@ class _AuthPreviewPageState extends State<AuthPreviewPage>
                         onEmailSubmit: onEmailSubmit,
                         onGoogleTap: onGoogleTap,
                         onForgotPassword: onForgotPassword,
+                        onReset: () {},
                       ),
                     ),
                   ),

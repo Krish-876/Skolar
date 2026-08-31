@@ -110,14 +110,14 @@ class _OnboardingWelcomePageState extends State<OnboardingWelcomePage>
     }
   }
 
-  Future<void> _goToAuthPreview(AuthMode mode) async {
+  Future<void> _goToAuth(AuthMode mode) async {
     // Freeze on the exact frame the auth page's carried-over rocket shows,
     // then play the buttons out before the route actually swaps.
     _controller.pause();
     await _controller.seekTo(Duration.zero);
     await _exitCtrl.forward();
     if (!mounted) return;
-    context.push(AppRoutes.authPreview, extra: mode);
+    context.push(AppRoutes.auth, extra: mode);
   }
 
   @override
@@ -163,14 +163,14 @@ class _OnboardingWelcomePageState extends State<OnboardingWelcomePage>
                           children: [
                             _ChunkyButton(
                               label: 'Get started',
-                              onTap: () => _goToAuthPreview(AuthMode.signup),
+                              onTap: () => _goToAuth(AuthMode.signup),
                               color: AppTheme.accentPurple,
                               shadow: AppTheme.chunkyButtonShadow,
                             ),
                             const SizedBox(height: AppTheme.smd),
                             _ChunkyButton(
                               label: 'I already have an account',
-                              onTap: () => _goToAuthPreview(AuthMode.login),
+                              onTap: () => _goToAuth(AuthMode.login),
                               color: AppTheme.background,
                               border: Border.all(
                                 color: AppTheme.onboardingButtonBorder,

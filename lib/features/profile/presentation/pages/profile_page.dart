@@ -45,7 +45,7 @@ class ProfilePage extends ConsumerWidget {
             onPressed: () async {
               Navigator.pop(ctx);
               await Supabase.instance.client.auth.signOut();
-              if (context.mounted) context.go(AppRoutes.auth);
+              if (context.mounted) context.go(AppRoutes.onboardingWelcome);
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFCF6679),
