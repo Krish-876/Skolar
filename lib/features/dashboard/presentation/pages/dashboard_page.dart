@@ -27,6 +27,15 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   static const double _collapsedCardHeight = 116;
 
   @override
+  void initState() {
+    super.initState();
+    // Kicks off the "no tasks" empty-state Lottie decode (unzip + JSON
+    // parse) at page load rather than letting it start lazily whenever the
+    // expanded card first renders that state — see `emptyTasksLottieProvider`.
+    ref.read(emptyTasksLottieProvider);
+  }
+
+  @override
   void dispose() {
     _expansionProgress.dispose();
     _scrollController.dispose();

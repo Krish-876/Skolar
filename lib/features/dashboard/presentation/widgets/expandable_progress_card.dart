@@ -1,6 +1,5 @@
 import 'dart:ui' show ImageFilter, lerpDouble;
 
-import 'package:dotlottie_loader/dotlottie_loader.dart';
 import 'package:flutter/gestures.dart' show VelocityTracker;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -1241,6 +1240,14 @@ class _TodaysTasks extends ConsumerWidget {
       data: (plan) {
         final remaining = plan.remainingTasks;
         if (remaining.isEmpty) {
+          // Reads the composition `emptyTasksLottieProvider` already decoded
+          // (kicked off from `DashboardPage.initState`) instead of loading
+          // and parsing the `.lottie` asset here — by the time this empty
+          // state first paints (whether that's the initial dashboard load or
+          // the card's expand reveal), the async unzip+JSON-parse work is
+          // already done, so this only ever hands `Lottie` a ready
+          // `LottieComposition` to draw.
+          final lottieAsync = ref.watch(emptyTasksLottieProvider);
           return Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -1248,17 +1255,14 @@ class _TodaysTasks extends ConsumerWidget {
                 SizedBox(
                   height: 240,
                   width: 240,
-                  child: DotLottieLoader.fromAsset(
-                    'assets/animations/empty_tasks.lottie',
-                    frameBuilder: (context, dotlottie) {
-                      if (dotlottie == null) return const SizedBox.shrink();
-                      return lottie.Lottie.memory(
-                        dotlottie.animations.values.single,
-                        fit: BoxFit.contain,
-                      );
-                    },
-                    errorBuilder: (context, error, stackTrace) =>
-                        const SizedBox.shrink(),
+                  child: lottieAsync.maybeWhen(
+                    data: (composition) => composition == null
+                        ? const SizedBox.shrink()
+                        : lottie.Lottie(
+                            composition: composition,
+                            fit: BoxFit.contain,
+                          ),
+                    orElse: () => const SizedBox.shrink(),
                   ),
                 ),
                 Text(

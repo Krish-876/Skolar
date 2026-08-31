@@ -1,4 +1,7 @@
+import 'package:dotlottie_loader/dotlottie_loader.dart';
+import 'package:flutter/widgets.dart' show SizedBox;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lottie/lottie.dart' as lottie;
 import '../../../../core/utils/usecase.dart';
 import '../../data/datasources/dashboard_datasource.dart';
 import '../../data/repository_impl/dashboard_repository_impl.dart';
@@ -57,6 +60,32 @@ final developmentAxesProvider = FutureProvider<List<DevelopmentAxis>>((
     (failure) => throw Exception(failure.message),
     (data) => data,
   );
+});
+
+/// Pre-decoded composition for the "no tasks remaining" empty-state
+/// animation in the expanded progress card's task list. `DotLottieLoader`
+/// only unzips the `.lottie` archive into raw animation bytes — the actual
+/// `LottieComposition` (JSON parse) still happened lazily inside
+/// `Lottie.memory` at the point the empty state first rendered, i.e. right
+/// as the card's expand reveal needed it on-screen. Decoding it once here
+/// and handing the widget a ready `LottieComposition` (see `_TodaysTasks` in
+/// expandable_progress_card.dart) moves both async steps off the reveal's
+/// critical frame. `DashboardPage.initState` reads this eagerly so the work
+/// starts at page load, not on first expand.
+final emptyTasksLottieProvider = FutureProvider<lottie.LottieComposition?>((
+  ref,
+) async {
+  final loader = DotLottieLoader.fromAsset(
+    'assets/animations/empty_tasks.lottie',
+    frameBuilder: (context, dotLottie) => const SizedBox.shrink(),
+  );
+  try {
+    final dotLottie = await loader.dotlottieLoader.load();
+    final bytes = dotLottie.animations.values.single;
+    return await lottie.LottieComposition.fromBytes(bytes);
+  } catch (_) {
+    return null;
+  }
 });
 
 final streakViewModeProvider = StateProvider<StreakViewMode>(
