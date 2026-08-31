@@ -1,0 +1,27 @@
+# Cheap default sweep -- this is what `python -m bench.sweep` runs with no
+# --config flag. Always run with --estimate first to see exactly what a grid
+# will cost before spending anything:
+#
+#   python -m bench.sweep --estimate
+#
+# See bench/README.md#sweeping for the grid schema and for
+# bench/sweeps/full.yaml, the wider (opt-in, expensive) grid.
+
+# Hard budget: bench/sweep.py refuses to start (and prints the estimate
+# instead) if the expanded grid's net-new call count -- after subtracting
+# response-cache hits -- exceeds this. Comfortably inside Groq's free-tier
+# 1000 requests/day.
+max_calls: 300
+
+model: llama-3.3-70b-versatile
+reasoning_effort: none
+backend: sbert
+pool_multiplier: 3
+limit: 50
+out_dir: bench/results/raw
+
+datasets: [sst2]
+settings: [zero_shot, few_shot, mmr_few_shot]
+k: [4]
+alpha: [0.3, 0.7]
+seeds: [0, 1]

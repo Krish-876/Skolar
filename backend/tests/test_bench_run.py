@@ -20,7 +20,19 @@ BACKEND_DIR = Path(__file__).resolve().parent.parent
 if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
+import bench.cache as cache_mod  # noqa: E402
 import bench.run as run_mod  # noqa: E402
+
+
+@pytest.fixture(autouse=True)
+def _isolated_response_cache(tmp_path, monkeypatch):
+    """Every test here calls run_mod.run() against a fake Groq client, which
+    now consults bench.cache's on-disk response cache -- without this, a
+    prompt-identical config in one test (they mostly share the same cola
+    zero_shot fixture args) would silently reuse another test's fake
+    'acceptable' response instead of exercising the fake client, and would
+    pollute the real gitignored bench/.cache/responses/ on disk."""
+    monkeypatch.setattr(cache_mod, "CACHE_DIR", tmp_path / "response_cache")
 
 
 class _FakeUsage:

@@ -18,3 +18,4 @@ easyocr==1.7.2
 python-docx==1.2.0
 pytesseract==0.3.13
 realtime
+pyyaml==6.0.3

@@ -1,0 +1,24 @@
+# Wide sweep -- expensive, opt-in. Every dataset, the full test split (no
+# --limit), and a much wider k/alpha/seed grid than sweeps/default.yaml.
+#
+# Always run with --estimate first:
+#
+#   python -m bench.sweep --config bench/sweeps/full.yaml --estimate
+#
+# Then raise max_calls below to whatever that command actually prints --
+# don't just bump it blindly to make a refusal go away.
+
+max_calls: 5000
+
+model: llama-3.3-70b-versatile
+reasoning_effort: none
+backend: sbert
+pool_multiplier: 3
+limit: null   # full test split, not just a sample
+out_dir: bench/results/raw
+
+datasets: [sst2, cola, rte, trec]
+settings: [zero_shot, few_shot, mmr_few_shot]
+k: [2, 4, 8]
+alpha: [0.3, 0.5, 0.7, 0.9]
+seeds: [0, 1, 2]
