@@ -72,15 +72,15 @@ cd backend
 # Smoke sequence: zero_shot baseline + few_shot + mmr_few_shot on COLA, capped
 # at 20 samples so it's fast and cheap to sanity-check end to end.
 python bench/run.py --dataset cola --setting zero_shot \\
-    --model llama-3.3-70b-versatile --reasoning-effort none \\
+    --model openai/gpt-oss-120b --reasoning-effort none \\
     --limit 20 --out bench/results/raw/cola_zero_shot.jsonl
 
 python bench/run.py --dataset cola --setting few_shot --k 4 \\
-    --backend sbert --model llama-3.3-70b-versatile --reasoning-effort none \\
+    --backend sbert --model openai/gpt-oss-120b --reasoning-effort none \\
     --limit 20 --out bench/results/raw/cola_few_shot_k4.jsonl
 
 python bench/run.py --dataset cola --setting mmr_few_shot --k 4 --alpha 0.7 \\
-    --backend sbert --model llama-3.3-70b-versatile --reasoning-effort none \\
+    --backend sbert --model openai/gpt-oss-120b --reasoning-effort none \\
     --limit 20 --out bench/results/raw/cola_mmr_k4_a0.7.jsonl
 
 # Turn every raw config under bench/results/raw/ into bench/results/REPORT.md,
@@ -502,6 +502,7 @@ def build_results_table(config_runs: list[ConfigRun]) -> dict:
             "k": cr.meta["k"],
             "alpha": cr.meta["alpha"] if cr.meta["setting"] == "mmr_few_shot" else None,
             "pool_multiplier": cr.meta["pool_multiplier"],
+            "seed": cr.meta["seed"],
             "accuracy": metrics["accuracy"],
             "macro_f1": metrics["macro_f1"],
             "zero_shot_accuracy": baseline["accuracy"] if baseline else None,
@@ -609,6 +610,12 @@ def build_diversity_section(config_runs: list[ConfigRun], selections_by_run: dic
 
 # ── Section 6: verdict ───────────────────────────────────────────────────────
 
+def _config_key(row: dict) -> tuple:
+    """Identifies "the same config run under a different seed": everything
+    that defines a config except seed itself."""
+    return (row["setting"], row["k"], row["alpha"], row["backend"], row["pool_multiplier"])
+
+
 def build_verdict(results: dict, health: dict) -> list:
     lines = []
     if health["grid_completion"]["status"] != "PASS":
@@ -626,22 +633,43 @@ def build_verdict(results: dict, health: dict) -> list:
 
     for dataset, rows in deltas_by_dataset.items():
         best = max(rows, key=lambda r: r["accuracy"])
-        n_seeds = 1  # SEED is fixed in run.py; the harness does not sweep seeds.
+        # Each row's meta.json records the --seed it ran with (bench/sweep.py
+        # sweeps a seeds axis, run.py takes --seed) -- n_seeds is the number
+        # of distinct seeds actually run for *this specific* winning config
+        # (same setting/k/alpha/backend/pool_multiplier), not the whole
+        # sweep, so a sweep mixing single-seed and multi-seed configs for
+        # this dataset doesn't over-claim evidence it doesn't have.
+        same_config_rows = [r for r in rows if _config_key(r) == _config_key(best)]
+        seeds = {r["seed"] for r in same_config_rows}
+        n_seeds = len(seeds)
+
         if n_seeds < 2:
             lines.append(
                 f"{dataset}: best observed config is {best['setting']} "
                 f"(k={best['k']}, alpha={best['alpha']}, backend={best['backend']}) at "
                 f"accuracy={best['accuracy']:.4f} (delta={best['delta_vs_zero_shot']:+.4f} vs zero_shot). "
-                "Not enough evidence to call this significant -- the harness runs a fixed "
-                "seed (SEED=0 in run.py) with no repeated-seed variance measurement, so this "
-                "delta cannot be distinguished from run-to-run noise. Needs multiple seeds "
-                "per config before recommending a default."
+                f"Not enough evidence to call this significant -- only {n_seeds} seed "
+                f"{'was' if n_seeds == 1 else 'were'} run for this config in this sweep, so this "
+                "delta cannot be distinguished from seed-to-seed noise. Re-run it with "
+                "sweep.py's `seeds` axis set to 2+ seeds before recommending a default."
             )
         else:
+            seed_accuracies = [r["accuracy"] for r in same_config_rows]
+            seed_spread = max(seed_accuracies) - min(seed_accuracies)
+            delta = best["delta_vs_zero_shot"]
+            exceeds = abs(delta) > seed_spread
+            verdict_clause = (
+                f"exceeding the observed seed-to-seed accuracy spread "
+                f"({seed_spread:.4f} across {n_seeds} seeds)."
+                if exceeds else
+                f"but within the observed seed-to-seed accuracy spread "
+                f"({seed_spread:.4f} across {n_seeds} seeds) -- not distinguishable from seed "
+                "noise at this sample size."
+            )
             lines.append(
-                f"{dataset}: recommend {best['setting']} (k={best['k']}, alpha={best['alpha']}, "
-                f"backend={best['backend']}) -- accuracy={best['accuracy']:.4f}, "
-                f"delta={best['delta_vs_zero_shot']:+.4f} vs zero_shot, exceeding seed variance."
+                f"{dataset}: {'recommend' if exceeds else 'tentatively favor'} {best['setting']} "
+                f"(k={best['k']}, alpha={best['alpha']}, backend={best['backend']}) -- "
+                f"accuracy={best['accuracy']:.4f}, delta={delta:+.4f} vs zero_shot, {verdict_clause}"
             )
     return lines
 

@@ -13,7 +13,7 @@
 # 1000 requests/day.
 max_calls: 300
 
-model: llama-3.3-70b-versatile
+model: openai/gpt-oss-120b
 reasoning_effort: none
 backend: sbert
 pool_multiplier: 3

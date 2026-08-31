@@ -8,15 +8,15 @@ cd backend
 # Smoke sequence: zero_shot baseline + few_shot + mmr_few_shot on COLA, capped
 # at 20 samples so it's fast and cheap to sanity-check end to end.
 python bench/run.py --dataset cola --setting zero_shot \
-    --model llama-3.3-70b-versatile --reasoning-effort none \
+    --model openai/gpt-oss-120b --reasoning-effort none \
     --limit 20 --out bench/results/raw/cola_zero_shot.jsonl
 
 python bench/run.py --dataset cola --setting few_shot --k 4 \
-    --backend sbert --model llama-3.3-70b-versatile --reasoning-effort none \
+    --backend sbert --model openai/gpt-oss-120b --reasoning-effort none \
     --limit 20 --out bench/results/raw/cola_few_shot_k4.jsonl
 
 python bench/run.py --dataset cola --setting mmr_few_shot --k 4 --alpha 0.7 \
-    --backend sbert --model llama-3.3-70b-versatile --reasoning-effort none \
+    --backend sbert --model openai/gpt-oss-120b --reasoning-effort none \
     --limit 20 --out bench/results/raw/cola_mmr_k4_a0.7.jsonl
 
 # Turn every raw config under bench/results/raw/ into bench/results/REPORT.md,
