@@ -1412,7 +1412,7 @@ class _AcademicStep extends StatelessWidget {
                     activeTrackColor: AppTheme.accentPurple.withValues(
                       alpha: 0.5,
                     ),
-                    activeColor: AppTheme.accentPurple,
+                    activeThumbColor: AppTheme.accentPurple,
                     onChanged: onDualToggle,
                   ),
                 ),
