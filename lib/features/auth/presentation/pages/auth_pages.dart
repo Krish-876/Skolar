@@ -116,8 +116,17 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
 
   void _onEmailSubmit(String email, String password) {
     _lastSubmittedEmail = email;
-    // TODO: Switch to ref.read(authNotifierProvider.notifier).signIn / signUp when password auth is enabled
-    ref.read(authNotifierProvider.notifier).sendMagicLink(email);
+    if (_mode == AuthMode.login) {
+      ref.read(authNotifierProvider.notifier).signIn(
+            email: email,
+            password: password,
+          );
+    } else {
+      ref.read(authNotifierProvider.notifier).signUp(
+            email: email,
+            password: password,
+          );
+    }
   }
 
   void _onGoogleTap() {

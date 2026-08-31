@@ -44,6 +44,8 @@ class _AuthPreviewSheetState extends State<AuthPreviewSheet> {
   bool _rememberMe = false;
   bool _agreeTerms = true;
   String? _emailError;
+  String? _passwordError;
+  String? _confirmPasswordError;
 
   @override
   void dispose() {
@@ -56,23 +58,56 @@ class _AuthPreviewSheetState extends State<AuthPreviewSheet> {
   void _handleSubmit() {
     final email = _emailController.text.trim();
     final password = _passwordController.text;
+    final isLogin = widget.mode == AuthMode.login;
 
     String? emailErr;
+    String? passErr;
+    String? confirmErr;
+
+    // Email validation
     if (email.isEmpty) {
       emailErr = 'Please enter your college email';
     } else if (!email.contains('@') || !email.contains('.')) {
       emailErr = 'Please enter a valid email address';
     }
 
+    // Password validation
+    if (password.isEmpty) {
+      passErr = 'Please enter your password';
+    } else if (!isLogin && password.length < 6) {
+      passErr = 'Password must be at least 6 characters';
+    }
+
+    // Confirm password and terms on Sign Up
+    if (!isLogin) {
+      final confirmPass = _confirmPasswordController.text;
+      if (confirmPass.isEmpty) {
+        confirmErr = 'Please confirm your password';
+      } else if (confirmPass != password) {
+        confirmErr = 'Passwords do not match';
+      }
+
+      if (!_agreeTerms) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please agree to the Terms & Privacy policy'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+        return;
+      }
+    }
+
     setState(() {
       _emailError = emailErr;
+      _passwordError = passErr;
+      _confirmPasswordError = confirmErr;
     });
 
-    if (emailErr != null) {
+    if (emailErr != null || passErr != null || confirmErr != null) {
       return;
     }
 
-    // TODO: Re-enable password authentication & credential validation once backend flow is finalized
     widget.onEmailSubmit(email, password);
   }
 
@@ -146,13 +181,13 @@ class _AuthPreviewSheetState extends State<AuthPreviewSheet> {
             errorText: _emailError,
           ),
           const SizedBox(height: AppTheme.md),
-          // TODO: Password fields kept visible in UI for layout fidelity, ignored on submit
           PreviewTextField(
             controller: _passwordController,
             label: 'Password',
             hint: '••••••••',
             icon: Icons.lock_outline,
             isPassword: true,
+            errorText: _passwordError,
           ),
           AnimatedSize(
             duration: const Duration(milliseconds: 250),
@@ -169,7 +204,7 @@ class _AuthPreviewSheetState extends State<AuthPreviewSheet> {
           ),
           const SizedBox(height: AppTheme.md),
           _ChunkyButton(
-            label: isLogin ? 'Send Magic Link' : 'Sign Up with Magic Link',
+            label: isLogin ? 'Log In' : 'Sign Up',
             isLoading: widget.isLoading,
             onTap: widget.isLoading ? () {} : _handleSubmit,
           ),
@@ -241,7 +276,7 @@ class _AuthPreviewSheetState extends State<AuthPreviewSheet> {
                 height: 1.45,
               ),
               children: [
-                const TextSpan(text: "We've sent a magic login link to\n"),
+                const TextSpan(text: "We've sent a verification link to\n"),
                 TextSpan(
                   text: email.isNotEmpty ? email : 'your college email',
                   style: const TextStyle(
@@ -250,18 +285,21 @@ class _AuthPreviewSheetState extends State<AuthPreviewSheet> {
                   ),
                 ),
                 const TextSpan(
-                  text: '.\nClick the link in your email to instantly sign in.',
+                  text: '.\nClick the link in your email to confirm and sign in.',
                 ),
               ],
             ),
           ),
           const SizedBox(height: 24),
           _ChunkyButton(
-            label: 'Resend Email',
+            label: 'Resend Verification Email',
             isLoading: widget.isLoading,
             onTap: widget.isLoading
                 ? () {}
-                : () => widget.onEmailSubmit(email, ''),
+                : () => widget.onEmailSubmit(
+                      email,
+                      _passwordController.text,
+                    ),
           ),
           const SizedBox(height: 14),
           TextButton(
@@ -367,13 +405,13 @@ class _AuthPreviewSheetState extends State<AuthPreviewSheet> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // TODO: Confirm password field kept for UI fidelity
           PreviewTextField(
             controller: _confirmPasswordController,
             label: 'Confirm Password',
             hint: '••••••••',
             icon: Icons.lock_outline,
             isPassword: true,
+            errorText: _confirmPasswordError,
           ),
           const SizedBox(height: AppTheme.sm),
           Row(
