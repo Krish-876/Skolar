@@ -577,9 +577,7 @@ class _TopBar extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.07),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.08),
-                ),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
               ),
               child: const Icon(
                 Icons.chevron_left,
@@ -618,9 +616,7 @@ class _TopBar extends StatelessWidget {
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.07),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.08),
-              ),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
             ),
             child: const Icon(
               Icons.help_outline_rounded,
@@ -665,15 +661,15 @@ class _ProgressBar extends StatelessWidget {
               child: isPast
                   ? Container(color: AppTheme.accentPurple)
                   : isCurrent
-                      ? AnimatedBuilder(
-                          animation: fillAnim,
-                          builder: (_, _) => FractionallySizedBox(
-                            widthFactor: fillAnim.value,
-                            alignment: Alignment.centerLeft,
-                            child: Container(color: AppTheme.accentPurple),
-                          ),
-                        )
-                      : null,
+                  ? AnimatedBuilder(
+                      animation: fillAnim,
+                      builder: (_, _) => FractionallySizedBox(
+                        widthFactor: fillAnim.value,
+                        alignment: Alignment.centerLeft,
+                        child: Container(color: AppTheme.accentPurple),
+                      ),
+                    )
+                  : null,
             ),
           );
         }),
@@ -945,10 +941,7 @@ class _AvatarStep extends StatelessWidget {
                   selectedTileDecoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: AppTheme.primary,
-                      width: 2.5,
-                    ),
+                    border: Border.all(color: AppTheme.primary, width: 2.5),
                     boxShadow: [
                       BoxShadow(
                         color: AppTheme.primary.withValues(alpha: 0.2),
@@ -1642,7 +1635,9 @@ class _CapacityCard extends StatelessWidget {
                     ),
                     child: Icon(
                       option.icon,
-                      color: isSelected ? AppTheme.accentPurple : Colors.white60,
+                      color: isSelected
+                          ? AppTheme.accentPurple
+                          : Colors.white60,
                       size: 22,
                     ),
                   ),
@@ -1860,7 +1855,9 @@ class _QuestionCard extends StatelessWidget {
                 height: 24,
                 decoration: BoxDecoration(
                   shape: isMultiSelect ? BoxShape.rectangle : BoxShape.circle,
-                  color: isSelected ? AppTheme.accentPurple : Colors.transparent,
+                  color: isSelected
+                      ? AppTheme.accentPurple
+                      : Colors.transparent,
                   borderRadius: isMultiSelect ? BorderRadius.circular(7) : null,
                   border: isSelected
                       ? null

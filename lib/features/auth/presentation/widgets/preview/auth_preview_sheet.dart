@@ -285,7 +285,8 @@ class _AuthPreviewSheetState extends State<AuthPreviewSheet> {
                   ),
                 ),
                 const TextSpan(
-                  text: '.\nClick the link in your email to confirm and sign in.',
+                  text:
+                      '.\nClick the link in your email to confirm and sign in.',
                 ),
               ],
             ),
@@ -296,10 +297,7 @@ class _AuthPreviewSheetState extends State<AuthPreviewSheet> {
             isLoading: widget.isLoading,
             onTap: widget.isLoading
                 ? () {}
-                : () => widget.onEmailSubmit(
-                      email,
-                      _passwordController.text,
-                    ),
+                : () => widget.onEmailSubmit(email, _passwordController.text),
           ),
           const SizedBox(height: 14),
           TextButton(

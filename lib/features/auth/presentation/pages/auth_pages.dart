@@ -117,15 +117,13 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
   void _onEmailSubmit(String email, String password) {
     _lastSubmittedEmail = email;
     if (_mode == AuthMode.login) {
-      ref.read(authNotifierProvider.notifier).signIn(
-            email: email,
-            password: password,
-          );
+      ref
+          .read(authNotifierProvider.notifier)
+          .signIn(email: email, password: password);
     } else {
-      ref.read(authNotifierProvider.notifier).signUp(
-            email: email,
-            password: password,
-          );
+      ref
+          .read(authNotifierProvider.notifier)
+          .signUp(email: email, password: password);
     }
   }
 
@@ -371,8 +369,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                                   isSent
                                       ? "Check your\ninbox!"
                                       : (isLogin
-                                          ? "Let's get you\nsigned in!"
-                                          : 'Create your\naccount'),
+                                            ? "Let's get you\nsigned in!"
+                                            : 'Create your\naccount'),
                                   key: ValueKey('headline_${isSent}_$_mode'),
                                   textAlign: TextAlign.center,
                                 ),

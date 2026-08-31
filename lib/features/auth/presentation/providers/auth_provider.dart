@@ -104,10 +104,7 @@ class AuthNotifier extends Notifier<AuthState> {
     reset();
   }
 
-  Future<void> signIn({
-    required String email,
-    required String password,
-  }) async {
+  Future<void> signIn({required String email, required String password}) async {
     state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
 
     try {
@@ -135,10 +132,7 @@ class AuthNotifier extends Notifier<AuthState> {
       } else if (message.toLowerCase().contains('email not confirmed')) {
         message = 'Please verify your email address before signing in.';
       }
-      state = state.copyWith(
-        status: AuthStatus.error,
-        errorMessage: message,
-      );
+      state = state.copyWith(status: AuthStatus.error, errorMessage: message);
     } catch (e) {
       state = state.copyWith(
         status: AuthStatus.error,
@@ -147,10 +141,7 @@ class AuthNotifier extends Notifier<AuthState> {
     }
   }
 
-  Future<void> signUp({
-    required String email,
-    required String password,
-  }) async {
+  Future<void> signUp({required String email, required String password}) async {
     state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
 
     try {
@@ -175,7 +166,8 @@ class AuthNotifier extends Notifier<AuthState> {
       } else {
         state = state.copyWith(
           status: AuthStatus.magicLinkSent,
-          successMessage: 'Account created! Please check your email to confirm.',
+          successMessage:
+              'Account created! Please check your email to confirm.',
         );
       }
     } on AuthException catch (e) {
@@ -185,10 +177,7 @@ class AuthNotifier extends Notifier<AuthState> {
       } else if (message.toLowerCase().contains('password')) {
         message = 'Password should be at least 6 characters.';
       }
-      state = state.copyWith(
-        status: AuthStatus.error,
-        errorMessage: message,
-      );
+      state = state.copyWith(status: AuthStatus.error, errorMessage: message);
     } catch (e) {
       state = state.copyWith(
         status: AuthStatus.error,
@@ -207,10 +196,7 @@ class AuthNotifier extends Notifier<AuthState> {
         successMessage: 'Password reset email sent! Check your inbox.',
       );
     } on AuthException catch (e) {
-      state = state.copyWith(
-        status: AuthStatus.error,
-        errorMessage: e.message,
-      );
+      state = state.copyWith(status: AuthStatus.error, errorMessage: e.message);
     } catch (e) {
       state = state.copyWith(
         status: AuthStatus.error,
@@ -226,10 +212,7 @@ class AuthNotifier extends Notifier<AuthState> {
       await ref.read(signInWithGoogleUseCaseProvider).call();
       // Browser opens for OAuth
     } on AuthException catch (e) {
-      state = state.copyWith(
-        status: AuthStatus.error,
-        errorMessage: e.message,
-      );
+      state = state.copyWith(status: AuthStatus.error, errorMessage: e.message);
     } catch (e) {
       state = state.copyWith(
         status: AuthStatus.error,
