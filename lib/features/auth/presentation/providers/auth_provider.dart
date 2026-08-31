@@ -87,7 +87,22 @@ class AuthState {
 // ── Auth notifier ────────────────────────────────────────────────────────────
 class AuthNotifier extends Notifier<AuthState> {
   @override
-  AuthState build() => const AuthState();
+  AuthState build() {
+    // Auto-reset state whenever user is signed out
+    ref.listen(authSessionProvider, (previous, next) {
+      next.whenData((session) {
+        if (session == null) {
+          reset();
+        }
+      });
+    });
+    return const AuthState();
+  }
+
+  Future<void> signOut() async {
+    await ref.read(signOutUseCaseProvider).call();
+    reset();
+  }
 
   Future<void> signIn({
     required String email,
