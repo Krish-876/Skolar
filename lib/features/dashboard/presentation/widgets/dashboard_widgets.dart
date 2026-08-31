@@ -1,17 +1,36 @@
 import 'package:flutter/material.dart';
+import 'package:Skolar/core/theme/app_theme.dart';
 
-/// Reusable card for a single Dashboard item.
-class DashboardCard extends StatelessWidget {
-  final String title;
-  const DashboardCard({super.key, required this.title});
+/// Generic "no data yet" empty state — icon + short copy, muted text colour.
+/// Kept as its own widget so a Lottie asset can later replace [icon] without
+/// touching any caller.
+class NoDataPlaceholder extends StatelessWidget {
+  final String message;
+  final IconData icon;
+
+  const NoDataPlaceholder({
+    super.key,
+    required this.message,
+    this.icon = Icons.insights_outlined,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: ListTile(
-        title: Text(title),
-        trailing: const Icon(Icons.chevron_right),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 36, color: AppTheme.textSecondary),
+          const SizedBox(height: 12),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: AppTheme.textSecondary),
+          ),
+        ],
       ),
     );
   }

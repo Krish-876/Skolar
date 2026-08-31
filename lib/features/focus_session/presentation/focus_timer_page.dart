@@ -46,7 +46,12 @@ const _lightPalette = _FocusPalette(
 );
 
 class FocusTimerPage extends StatefulWidget {
-  const FocusTimerPage({super.key});
+  /// Pre-fills the duration slider/controller with this instead of the
+  /// default 25 minutes — used when a task with its own timer duration is
+  /// tapped from the dashboard's task list.
+  final Duration? initialDuration;
+
+  const FocusTimerPage({super.key, this.initialDuration});
 
   @override
   State<FocusTimerPage> createState() => FocusTimerPageState();
@@ -125,6 +130,10 @@ class FocusTimerPageState extends State<FocusTimerPage>
     _exitWipeController.addStatusListener(_onExitWipeStatusChanged);
 
     final isTest = FocusTimerController.kTestMode;
+    final presetDuration = widget.initialDuration;
+    if (presetDuration != null && presetDuration.inSeconds > 0) {
+      _controller.setDuration(presetDuration.inSeconds);
+    }
     _targetSliderMinutes = isTest
         ? _controller.totalSeconds.toDouble().clamp(10.0, 180.0)
         : (_controller.totalSeconds / 60.0).clamp(1.0, 180.0);

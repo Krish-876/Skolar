@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:Skolar/core/theme/app_static_mesh_theme.dart';
+import 'package:Skolar/core/theme/app_theme.dart';
 
 /// A reusable background widget that creates a moody, mesh-gradient effect
 /// with purple and teal glows as seen in the reference image.
@@ -79,26 +80,49 @@ class GlassCard extends StatelessWidget {
   final Widget child;
   final double borderRadius;
 
-  const GlassCard({super.key, required this.child, this.borderRadius = 32});
+  /// `BackdropFilter` re-samples and re-blurs whatever's behind this card on
+  /// every single frame its on-screen position changes — not because the
+  /// card's own content changed, but because the blur is a function of the
+  /// pixels currently behind it, which are different at a new position. A
+  /// card sitting directly below something whose *height* is animating
+  /// (e.g. a header growing/shrinking above it in the same scroll view)
+  /// therefore repositions and re-blurs every frame of that animation, which
+  /// is real, measurable compositing cost for a purely cosmetic effect
+  /// nobody can appreciate mid-motion anyway. Callers in exactly that
+  /// situation can set this to `false` for the animation's duration to skip
+  /// the blur (falling back to the same flat tint/border, no
+  /// `BackdropFilter`) and restore it once things settle.
+  final bool enableBlur;
+
+  const GlassCard({
+    super.key,
+    required this.child,
+    this.borderRadius = 32,
+    this.enableBlur = true,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(borderRadius),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 25, sigmaY: 25),
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.03),
-            borderRadius: BorderRadius.circular(borderRadius),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.08),
-              width: 1.2,
-            ),
-          ),
-          child: child,
+    final content = Container(
+      decoration: BoxDecoration(
+        color: AppTheme.white.withValues(alpha: 0.03),
+        borderRadius: BorderRadius.circular(borderRadius),
+        border: Border.all(
+          color: AppTheme.white.withValues(alpha: 0.08),
+          width: 1.2,
         ),
       ),
+      child: child,
+    );
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(borderRadius),
+      child: enableBlur
+          ? BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 25, sigmaY: 25),
+              child: content,
+            )
+          : content,
     );
   }
 }

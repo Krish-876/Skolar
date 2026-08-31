@@ -1,388 +1,249 @@
-import 'package:Skolar/core/routing/app_routes.dart';
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:Skolar/features/auth/presentation/providers/auth_provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' hide AuthState;
+import 'package:Skolar/core/routing/app_routes.dart';
 import 'package:Skolar/core/theme/app_theme.dart';
+import 'package:Skolar/features/auth/presentation/providers/auth_provider.dart';
+import 'package:Skolar/features/auth/presentation/widgets/preview/auth_mode.dart';
+import 'package:Skolar/features/auth/presentation/widgets/preview/auth_preview_sheet.dart';
+import 'package:Skolar/features/auth/presentation/widgets/preview/drifting_circles.dart';
+import 'package:Skolar/features/auth/presentation/widgets/preview/rocket_carryover.dart';
+import 'package:Skolar/features/auth/presentation/widgets/preview/skolar_wordmark.dart';
+
+export 'package:Skolar/features/auth/presentation/widgets/preview/auth_mode.dart'
+    show AuthMode;
 
 class AuthScreen extends ConsumerStatefulWidget {
-  const AuthScreen({super.key});
+  final AuthMode initialMode;
+
+  const AuthScreen({super.key, this.initialMode = AuthMode.login});
 
   @override
   ConsumerState<AuthScreen> createState() => _AuthScreenState();
 }
 
-class _AuthScreenState extends ConsumerState<AuthScreen> {
-  final _emailController = TextEditingController();
-  bool _justLoggedIn = false;
+class _AuthScreenState extends ConsumerState<AuthScreen>
+    with TickerProviderStateMixin {
+  static const double _kHeroMinHeight = 160;
+  static const double _kHeadlineTopReserve = 72;
+  static const double _kSheetHardCapFraction = 0.68;
+
+  late AuthMode _mode = widget.initialMode;
+  String? _lastSubmittedEmail;
+  bool _navigating = false;
+
+  late final AnimationController _entryCtrl = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 850),
+  );
+
+  late final AnimationController _ambientCtrl = AnimationController(
+    vsync: this,
+    duration: const Duration(seconds: 14),
+  )..repeat();
+
+  late final DriftProgress _circlesProgress = DriftProgress(
+    entry: _entryCtrl,
+    ambient: _ambientCtrl,
+  );
+
+  late final Animation<double> _rocketOpacity = Tween<double>(begin: 1, end: 0)
+      .animate(
+        CurvedAnimation(
+          parent: _entryCtrl,
+          curve: const Interval(0.0, 0.47, curve: Curves.easeOut),
+        ),
+      );
+
+  late final Animation<double> _rocketScale =
+      Tween<double>(begin: 1.0, end: 1.04).animate(
+        CurvedAnimation(
+          parent: _entryCtrl,
+          curve: const Interval(0.0, 0.47, curve: Curves.easeOut),
+        ),
+      );
+
+  late final Animation<double> _wordmarkOpacity =
+      Tween<double>(begin: 0.0, end: 1.0).animate(
+        CurvedAnimation(
+          parent: _entryCtrl,
+          curve: const Interval(0.0, 0.47, curve: Curves.easeOut),
+        ),
+      );
+
+  late final Animation<double> _headlineOpacity =
+      Tween<double>(begin: 0.0, end: 1.0).animate(
+        CurvedAnimation(
+          parent: _entryCtrl,
+          curve: const Interval(0.23, 0.49, curve: Curves.easeOut),
+        ),
+      );
+
+  late final Animation<Offset> _sheetSlide =
+      Tween<Offset>(begin: const Offset(0, 1.0), end: Offset.zero).animate(
+        CurvedAnimation(
+          parent: _entryCtrl,
+          curve: const Interval(0.529, 1.0, curve: Curves.easeOutCubic),
+        ),
+      );
+
+  @override
+  void initState() {
+    super.initState();
+    _entryCtrl.forward();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ref.read(authNotifierProvider.notifier).reset();
+      }
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    precacheImage(const AssetImage(kRocketCarryoverAsset), context);
+  }
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _entryCtrl.dispose();
+    _ambientCtrl.dispose();
     super.dispose();
   }
 
-  void _onSubmit() {
-    final email = _emailController.text.trim();
-    if (email.isEmpty) {
-      _showSnackbar('Please enter your college email');
-      return;
+  void _onEmailSubmit(String email, String password) {
+    _lastSubmittedEmail = email;
+    if (_mode == AuthMode.login) {
+      ref
+          .read(authNotifierProvider.notifier)
+          .signIn(email: email, password: password);
+    } else {
+      ref
+          .read(authNotifierProvider.notifier)
+          .signUp(email: email, password: password);
     }
-    _justLoggedIn = true;
-    ref.read(authNotifierProvider.notifier).sendMagicLink(email);
   }
 
-  void _showSnackbar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), duration: const Duration(seconds: 3)),
-    );
+  void _onGoogleTap() {
+    ref.read(authNotifierProvider.notifier).signInWithGoogle();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final authState = ref.watch(authNotifierProvider);
-
-    ref.listen(authNotifierProvider, (_, next) {
-      if (next.status == AuthStatus.error && next.errorMessage != null) {
-        _showSnackbar(next.errorMessage!);
-        ref.read(authNotifierProvider.notifier).reset();
-      }
-      if (next.status == AuthStatus.magicLinkSent) {
-        _showSnackbar('Magic link sent! Check your college email.');
-      }
-    });
-
-    ref.listen(authSessionProvider, (_, next) {
-      next.whenData((session) async {
-        if (session == null || !mounted || !_justLoggedIn) return;
-        _justLoggedIn = false;
-        final router = GoRouter.of(context); // capture before async gap
-        final isNew = await _isNewUser(session.user.id);
-        if (!mounted) return;
-        if (isNew) {
-          router.go(AppRoutes.onboardingProfile);
-        } else {
-          router.go('/');
-        }
-      });
-    });
-
-    final isLoading = authState.status == AuthStatus.loading;
-    final isSent = authState.status == AuthStatus.magicLinkSent;
-
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(gradient: AppTheme.backgroundGradient),
-        child: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Mascot image
-                  Center(
-                    child: Hero(
-                      tag: 'mascot_hero',
-                      child: Container(
-                        width: 100,
-                        height: 100,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppTheme.accentPurple.withValues(
-                                alpha: 0.3,
-                              ),
-                              blurRadius: 40,
-                              spreadRadius: 10,
-                            ),
-                          ],
-                        ),
-                        child: ClipOval(
-                          child: Image.asset(
-                            'assets/images/mascot.jpeg',
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-
-                  // Title
-                  Center(
-                    child: RichText(
-                      textAlign: TextAlign.center,
-                      text: const TextSpan(
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                        children: [
-                          TextSpan(text: 'Welcome to '),
-                          TextSpan(
-                            text: 'Skolar',
-                            style: TextStyle(color: AppTheme.accentPurple),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Subtitle
-                  const Text(
-                    'Your AI-powered study companion for\nBITS Hyderabad.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: AppTheme.onBackground2,
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(height: 40),
-
-                  if (!isSent) ...[
-                    // INSTITUTIONAL EMAIL label
-                    const Text(
-                      'INSTITUTIONAL EMAIL',
-                      style: TextStyle(
-                        color: AppTheme.onBackground2,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-
-                    // Email Field
-                    TextField(
-                      controller: _emailController,
-                      keyboardType: TextInputType.emailAddress,
-                      onSubmitted: (_) => _onSubmit(),
-                      style: const TextStyle(color: Colors.white),
-                      decoration: InputDecoration(
-                        filled: true,
-                        fillColor: AppTheme.surfaceLight.withValues(alpha: 0.5),
-                        hintText: 'name@campusname.bits-pilani.ac.in',
-                        hintStyle: TextStyle(
-                          color: AppTheme.onBackground2.withValues(alpha: 0.5),
-                        ),
-                        prefixIcon: const Icon(
-                          Icons.mail_outline,
-                          color: AppTheme.onBackground2,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          vertical: 16,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Send Magic Link Button
-                    SizedBox(
-                      height: 56,
-                      child: ElevatedButton(
-                        onPressed: isLoading ? null : _onSubmit,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.accentPurple,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          elevation: 0,
-                        ),
-                        child: isLoading
-                            ? const SizedBox(
-                                width: 24,
-                                height: 24,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : const Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    'Send Magic Link',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  SizedBox(width: 8),
-                                  Icon(Icons.arrow_forward, size: 20),
-                                ],
-                              ),
-                      ),
-                    ),
-                  ] else ...[
-                    const Icon(
-                      Icons.mark_email_read_outlined,
-                      size: 64,
-                      color: AppTheme.accentPurple,
-                    ),
-                    const SizedBox(height: 16),
-                    TextButton(
-                      onPressed: () =>
-                          ref.read(authNotifierProvider.notifier).reset(),
-                      child: const Text(
-                        'Use a different email',
-                        style: TextStyle(color: AppTheme.accentPurple),
-                      ),
-                    ),
-                  ],
-
-                  const SizedBox(height: 40),
-
-                  // Divider
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Divider(
-                          color: AppTheme.onBackground2.withValues(alpha: 0.2),
-                          thickness: 1,
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Text(
-                          'OR CONTINUE WITH',
-                          style: TextStyle(
-                            color: AppTheme.onBackground2.withValues(
-                              alpha: 0.5,
-                            ),
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 1.2,
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        child: Divider(
-                          color: AppTheme.onBackground2.withValues(alpha: 0.2),
-                          thickness: 1,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 32),
-
-                  // Google Workspace Button
-                  SizedBox(
-                    height: 56,
-                    child: OutlinedButton(
-                      onPressed: () {
-                        // TODO: Implement Google Workspace auth logic
-                      },
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(
-                          color: AppTheme.onBackground2.withValues(alpha: 0.2),
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.g_mobiledata,
-                            size: 32,
-                            color: Colors.white,
-                          ),
-                          SizedBox(width: 8),
-                          Text(
-                            'Google Workspace',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 40),
-
-                  // Info Box
-                  const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.info_outline,
-                        color: AppTheme.onBackground2,
-                        size: 14,
-                      ),
-                      SizedBox(width: 6),
-                      Flexible(
-                        child: Text(
-                          'Use your bits-pilani.ac.in email',
-                          style: TextStyle(
-                            color: AppTheme.onBackground2,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w400,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-
-                  // Footer
-                  Center(
-                    child: RichText(
-                      textAlign: TextAlign.center,
-                      text: const TextSpan(
-                        style: TextStyle(
-                          color: AppTheme.onBackground2,
-                          fontSize: 12,
-                          height: 1.5,
-                        ),
-                        children: [
-                          TextSpan(
-                            text: 'By continuing, you agree to Skolar\'s ',
-                          ),
-                          TextSpan(
-                            text: 'Terms of Service',
-                            style: TextStyle(
-                              color: Colors.white,
-                              decoration: TextDecoration.underline,
-                            ),
-                          ),
-                          TextSpan(text: '\nand '),
-                          TextSpan(
-                            text: 'Privacy Policy',
-                            style: TextStyle(
-                              color: Colors.white,
-                              decoration: TextDecoration.underline,
-                            ),
-                          ),
-                          TextSpan(text: '.'),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
+  void _onForgotPassword(String initialEmail) {
+    final emailCtrl = TextEditingController(text: initialEmail);
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppTheme.surface,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppTheme.radiusXxxl),
+        ),
+      ),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.fromLTRB(
+          AppTheme.lg,
+          AppTheme.lg,
+          AppTheme.lg,
+          MediaQuery.of(ctx).viewInsets.bottom + AppTheme.lg,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
             ),
-          ),
+            const SizedBox(height: 20),
+            const Text(
+              'Reset Password',
+              style: TextStyle(
+                fontFamily: 'GoogleSans',
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Enter your college email and we will send you a password reset link.',
+              style: TextStyle(
+                fontFamily: 'GoogleSans',
+                color: AppTheme.onBackground2,
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(height: 20),
+            TextField(
+              controller: emailCtrl,
+              keyboardType: TextInputType.emailAddress,
+              style: const TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                hintText: 'you@bits-pilani.ac.in',
+                hintStyle: const TextStyle(color: Colors.white30),
+                filled: true,
+                fillColor: AppTheme.surfaceLight,
+                prefixIcon: const Icon(
+                  Icons.mail_outline,
+                  color: AppTheme.accentPurple,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton(
+                onPressed: () {
+                  final email = emailCtrl.text.trim();
+                  if (email.isNotEmpty) {
+                    Navigator.pop(ctx);
+                    ref
+                        .read(authNotifierProvider.notifier)
+                        .sendPasswordReset(email);
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.accentPurple,
+                  foregroundColor: AppTheme.onPrimary,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+                  ),
+                ),
+                child: const Text(
+                  'Send Reset Link',
+                  style: TextStyle(
+                    fontFamily: 'GoogleSans',
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  // Returns true if user row doesn't exist or has no full_name yet
+  void _onToggleMode(AuthMode mode) {
+    if (mode == _mode) return;
+    setState(() => _mode = mode);
+  }
+
   Future<bool> _isNewUser(String userId) async {
     try {
       final response = await Supabase.instance.client
@@ -397,5 +258,153 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     } catch (_) {
       return true;
     }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final authState = ref.watch(authNotifierProvider);
+    final keyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+    final safeTop = MediaQuery.paddingOf(context).top;
+    final isLogin = _mode == AuthMode.login;
+    final isSent = authState.status == AuthStatus.magicLinkSent;
+
+    // Listen to error and success state
+    ref.listen<AuthState>(authNotifierProvider, (_, next) {
+      if (next.status == AuthStatus.error && next.errorMessage != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(next.errorMessage!),
+            backgroundColor: Colors.redAccent.shade700,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+        ref.read(authNotifierProvider.notifier).reset();
+      } else if (next.status == AuthStatus.passwordResetSent ||
+          next.status == AuthStatus.authenticated) {
+        if (next.successMessage != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(next.successMessage!),
+              backgroundColor: AppTheme.accentPurpleDark,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
+      }
+    });
+
+    // Listen to session stream and redirect
+    ref.listen<AsyncValue<Session?>>(authSessionProvider, (_, next) {
+      next.whenData((session) async {
+        if (session == null || !mounted || _navigating) return;
+        _navigating = true;
+        final router = GoRouter.of(context);
+        final isNew = await _isNewUser(session.user.id);
+        if (!mounted) return;
+        if (isNew) {
+          router.go(AppRoutes.onboardingProfile);
+        } else {
+          router.go(AppRoutes.dashboard);
+        }
+      });
+    });
+
+    return Scaffold(
+      backgroundColor: AppTheme.background,
+      resizeToAvoidBottomInset: true,
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final totalHeight = constraints.maxHeight;
+          final heroMinHeight = _kHeroMinHeight + safeTop;
+          final targetFraction = isSent ? 0.52 : (isLogin ? 0.55 : 0.65);
+          final sheetMaxHeight = math.min(
+            totalHeight * math.min(targetFraction, _kSheetHardCapFraction),
+            math.max(totalHeight - heroMinHeight, 0.0),
+          );
+
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              DriftingCircles(progress: _circlesProgress),
+              IgnorePointer(
+                child: FadeTransition(
+                  opacity: _rocketOpacity,
+                  child: ScaleTransition(
+                    scale: _rocketScale,
+                    child: const RocketCarryover(),
+                  ),
+                ),
+              ),
+              FadeTransition(
+                opacity: _wordmarkOpacity,
+                child: const SkolarWordmarkHeader(),
+              ),
+              Column(
+                children: [
+                  Expanded(
+                    child: SafeArea(
+                      bottom: false,
+                      child: Padding(
+                        padding: EdgeInsets.only(
+                          top: _kHeadlineTopReserve,
+                          bottom: AppTheme.lg,
+                        ),
+                        child: Center(
+                          child: FadeTransition(
+                            opacity: _headlineOpacity,
+                            child: AnimatedDefaultTextStyle(
+                              duration: const Duration(milliseconds: 200),
+                              curve: Curves.easeOut,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontFamily: 'GoogleSans',
+                                color: AppTheme.onBackground,
+                                fontWeight: FontWeight.bold,
+                                fontSize: keyboardOpen ? 18 : 24,
+                                height: 1.25,
+                              ),
+                              child: AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 200),
+                                child: Text(
+                                  isSent
+                                      ? "Check your\ninbox!"
+                                      : (isLogin
+                                            ? "Let's get you\nsigned in!"
+                                            : 'Create your\naccount'),
+                                  key: ValueKey('headline_${isSent}_$_mode'),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  ConstrainedBox(
+                    constraints: BoxConstraints(maxHeight: sheetMaxHeight),
+                    child: SlideTransition(
+                      position: _sheetSlide,
+                      child: AuthPreviewSheet(
+                        mode: _mode,
+                        isLoading: authState.status == AuthStatus.loading,
+                        isMagicLinkSent: isSent,
+                        sentEmail: _lastSubmittedEmail,
+                        onToggleMode: _onToggleMode,
+                        onEmailSubmit: _onEmailSubmit,
+                        onGoogleTap: _onGoogleTap,
+                        onForgotPassword: _onForgotPassword,
+                        onReset: () =>
+                            ref.read(authNotifierProvider.notifier).reset(),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          );
+        },
+      ),
+    );
   }
 }
