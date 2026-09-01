@@ -8,7 +8,18 @@ from nova.services.clients import get_shadow_clients
 router = APIRouter(tags=["reasoning"])
 
 
-@router.post("/reasoning/{user_id}/run", response_model=ReasoningRunResponse)
+@router.post(
+    "/reasoning/{user_id}/run",
+    response_model=ReasoningRunResponse,
+    summary="Run a reasoning pass and get today's study plan",
+    description=(
+        "Generates (or re-ranks) a student's study plan from their current "
+        "facts snapshot. Use trigger_type='full_pass' for a full scheduled "
+        "run, or 'minor_trigger_rerank' after a single event like a new "
+        "test score. Falls back to yesterday's plan (stale=True) if "
+        "generation fails - never returns a blank plan."
+    ),
+)
 def run_reasoning(
     user_id: str,
     req: ReasoningRunRequest,

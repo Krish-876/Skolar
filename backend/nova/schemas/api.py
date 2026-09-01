@@ -1,31 +1,66 @@
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
-from nova.services.reasoning_service import TriggerType
+TriggerType = Literal["full_pass", "minor_trigger_rerank"]
 
 
 class ChatRequest(BaseModel):
-    question: str
+    """A single free-text question sent to Nova's chat endpoint."""
+    question: str = Field(..., description="Student's question, as typed in the app.")
 
 
 class ChatResponse(BaseModel):
-    answer: str
+    answer: str = Field(..., description="Nova's natural-language reply.")
 
 
 class FactsResponse(BaseModel):
-    snapshot: dict
-    patch: dict  # empty {} unless something changed since the last call
+    snapshot: dict = Field(..., description="Full current facts snapshot for the student.")
+    patch: dict = Field(
+        default_factory=dict,
+        description="Fields changed since the last call. Empty {} if nothing changed.",
+    )
 
 
 class ReasoningRunRequest(BaseModel):
-    trigger_type: TriggerType = "full_pass"
+    """Kicks off one reasoning pass for a student."""
+    trigger_type: TriggerType = Field(
+        default="full_pass",
+        description=(
+            "'full_pass' for a full re-ranked study plan (e.g. daily scheduled run). "
+            "'minor_trigger_rerank' for a lighter re-rank off a single event, "
+            "such as a new test score or a capacity update."
+        ),
+    )
+
+
+class PlanItem(BaseModel):
+    """One actionable item in a student's study plan."""
+    subject: str = Field(..., description="Subject or topic this item covers.")
+    task: str = Field(..., description="What the student should actually do.")
+    priority: int = Field(..., description="Rank within the plan; 1 is highest priority.")
+    reason: str = Field(
+        ..., description="Why this made the cut - urgency, stakes, fixability, or relevance."
+    )
+
+
+class StudyPlan(BaseModel):
+    """Structured output Groq is expected to return. Anything that doesn't
+    fit this shape fails validation instead of silently passing through."""
+    items: list[PlanItem] = Field(default_factory=list)
+    summary: str | None = Field(
+        default=None, description="One-line human summary of today's plan."
+    )
 
 
 class ReasoningRunResponse(BaseModel):
-    plan: dict
-    stale: bool
-    note: str | None = None
+    plan: StudyPlan = Field(..., description="The generated (or carried-over) study plan.")
+    stale: bool = Field(
+        ..., description="True if this is yesterday's plan, carried over because generation failed."
+    )
+    note: str | None = Field(
+        default=None, description="User-visible message explaining a stale/degraded plan."
+    )
 
 
 class HealthResponse(BaseModel):
