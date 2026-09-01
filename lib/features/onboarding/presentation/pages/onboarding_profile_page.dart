@@ -290,10 +290,6 @@ class _OnboardingProfilePageState extends ConsumerState<OnboardingProfilePage>
     }
   }
 
-  /// Steps that ask the user to make a choice get a "Prefer not to choose"
-  /// link under the CTA (in addition to the top-bar Skip).
-  bool _stepAsksForChoice(int step) => const {2, 4, 5, 6, 7}.contains(step);
-
   String _buttonLabel() {
     if (_step == 0) return 'Confirm Avatar →';
     if (_step == 2) return 'Yes, continue →';
@@ -371,24 +367,6 @@ class _OnboardingProfilePageState extends ConsumerState<OnboardingProfilePage>
                 enabled: canAdvance,
                 isLoading: _isLoading,
                 onTap: _advance,
-              ),
-            if (_stepAsksForChoice(_step))
-              Padding(
-                padding: const EdgeInsets.only(bottom: AppTheme.md),
-                child: Center(
-                  child: TextButton(
-                    onPressed: _isLoading ? null : _advance,
-                    child: const Text(
-                      'Prefer not to choose',
-                      style: TextStyle(
-                        fontFamily: _kFontFamily,
-                        color: AppTheme.textMuted,
-                        fontWeight: FontWeight.w500,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ),
-                ),
               ),
           ],
         ),

@@ -40,11 +40,7 @@ class _StreakStripBody extends ConsumerWidget {
   final StreakViewMode mode;
   final List<DailyCompletion> dailyCompletions;
 
-  const _StreakStripBody({
-    super.key,
-    required this.mode,
-    required this.dailyCompletions,
-  });
+  const _StreakStripBody({required this.mode, required this.dailyCompletions});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
