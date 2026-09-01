@@ -12,14 +12,20 @@
 
 import 'package:avatar_maker/avatar_maker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/physics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:Skolar/core/routing/app_routes.dart';
 import 'package:Skolar/core/theme/app_theme.dart';
 import 'package:Skolar/features/onboarding/presentation/providers/onboarding_provider.dart';
+import 'package:Skolar/shared/components/framed_avatar.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+// Bundled asset font (see pubspec.yaml `fonts:` — family `GoogleSans`,
+// assets/fonts/GoogleSans-*.ttf). Referenced by fontFamily string, matching
+// how the auth screens already reference the same bundled family.
+const _kFontFamily = 'GoogleSans';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants & Options
@@ -44,6 +50,15 @@ const _kCareerInterests = [
   'Not sure yet',
 ];
 
+const _kCareerInterestIcons = <String, IconData>{
+  'AI / ML': Icons.psychology_rounded,
+  'Web / App Dev': Icons.web_rounded,
+  'Core CS / Systems': Icons.memory_rounded,
+  'Competitive Programming': Icons.emoji_events_rounded,
+  'Product / Design': Icons.palette_rounded,
+  'Not sure yet': Icons.help_outline_rounded,
+};
+
 const _kPrepStyles = [
   'Steady all semester',
   'Cram near exams',
@@ -52,7 +67,7 @@ const _kPrepStyles = [
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Capacity card data model
+// Capacity option data model
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _CapacityOption {
@@ -314,14 +329,16 @@ class _OnboardingProfilePageState extends ConsumerState<OnboardingProfilePage>
     final canAdvance = _canAdvance();
     return Scaffold(
       backgroundColor: AppTheme.background,
+      resizeToAvoidBottomInset: false,
       body: SafeArea(
         child: Column(
           children: [
-            _TopBar(step: _step, total: _kTotalSteps, onBack: _back),
-            _ProgressBar(
+            _StepTopBar(
               step: _step,
               total: _kTotalSteps,
               fillAnim: _progressFill,
+              onBack: _back,
+              onSkip: _isLoading ? () {} : _advance,
             ),
             Expanded(
               child: AnimatedSwitcher(
@@ -344,12 +361,13 @@ class _OnboardingProfilePageState extends ConsumerState<OnboardingProfilePage>
                 ),
               ),
             ),
-            _FooterButton(
-              label: _buttonLabel(),
-              enabled: canAdvance,
-              isLoading: _isLoading,
-              onTap: _advance,
-            ),
+            if (_step != 4)
+              _FooterButton(
+                label: _buttonLabel(),
+                enabled: canAdvance,
+                isLoading: _isLoading,
+                onTap: _advance,
+              ),
           ],
         ),
       ),
@@ -401,32 +419,27 @@ class _OnboardingProfilePageState extends ConsumerState<OnboardingProfilePage>
           selected: _studyCapacity,
           mascotMessage: _mascotMessage(),
           onSelect: (v) => setState(() => _studyCapacity = v),
+          onConfirm: _advance,
         );
       case 5:
-        return _QuestionStep(
+        return _EndgameStep(
           mascotMessage: _mascotMessage(),
-          options: _kEndgameOptions,
-          isMultiSelect: false,
-          selectedValue: ref.watch(onboardingProvider).endgame,
+          selected: ref.watch(onboardingProvider).endgame,
           onSelect: (val) {
             ref.read(onboardingProvider.notifier).setEndgame(val);
           },
         );
       case 6:
-        return _QuestionStep(
+        return _InterestsStep(
           mascotMessage: _mascotMessage(),
-          options: _kCareerInterests,
-          isMultiSelect: true,
-          selectedValues: ref.watch(onboardingProvider).careerInterests,
-          onSelect: (val) =>
+          selected: ref.watch(onboardingProvider).careerInterests,
+          onToggle: (val) =>
               ref.read(onboardingProvider.notifier).toggleCareerInterest(val),
         );
       case 7:
-        return _QuestionStep(
+        return _PrepStyleStep(
           mascotMessage: _mascotMessage(),
-          options: _kPrepStyles,
-          isMultiSelect: false,
-          selectedValue: ref.watch(onboardingProvider).prepStyle,
+          selected: ref.watch(onboardingProvider).prepStyle,
           onSelect: (val) {
             ref.read(onboardingProvider.notifier).setPrepStyle(val);
           },
@@ -455,15 +468,16 @@ class _OnboardingProfilePageState extends ConsumerState<OnboardingProfilePage>
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.white24,
+                color: AppTheme.onboardingButtonBorder,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
             const SizedBox(height: 20),
-            Text(
+            const Text(
               'Choose Campus',
-              style: GoogleFonts.googleSans(
-                color: Colors.white,
+              style: TextStyle(
+                fontFamily: _kFontFamily,
+                color: AppTheme.onBackground,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
@@ -507,26 +521,28 @@ class _OnboardingProfilePageState extends ConsumerState<OnboardingProfilePage>
         decoration: BoxDecoration(
           color: isCurrent
               ? AppTheme.accentPurple.withValues(alpha: 0.2)
-              : Colors.white.withValues(alpha: 0.05),
+              : AppTheme.surfaceLight,
           borderRadius: BorderRadius.circular(10),
         ),
         child: Icon(
           Icons.business_rounded,
-          color: isCurrent ? AppTheme.accentPurple : Colors.white70,
+          color: isCurrent ? AppTheme.accentPurple : AppTheme.textMuted,
           size: 18,
         ),
       ),
       title: Text(
         '$name, $location',
-        style: GoogleFonts.googleSans(
-          color: Colors.white,
+        style: const TextStyle(
+          fontFamily: _kFontFamily,
+          color: AppTheme.onBackground,
           fontWeight: FontWeight.w600,
         ),
       ),
       subtitle: Text(
         domain,
-        style: GoogleFonts.googleSans(
-          color: AppTheme.onBackground2,
+        style: const TextStyle(
+          fontFamily: _kFontFamily,
+          color: AppTheme.textMuted,
           fontSize: 12,
         ),
       ),
@@ -553,217 +569,158 @@ class _OnboardingProfilePageState extends ConsumerState<OnboardingProfilePage>
 // Shared Widgets
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _TopBar extends StatelessWidget {
-  final int step;
-  final int total;
-  final VoidCallback onBack;
-
-  const _TopBar({
-    required this.step,
-    required this.total,
-    required this.onBack,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-      child: Row(
-        children: [
-          GestureDetector(
-            onTap: onBack,
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.07),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-              ),
-              child: const Icon(
-                Icons.chevron_left,
-                color: Colors.white,
-                size: 22,
-              ),
-            ),
-          ),
-          const SizedBox(width: 14),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'ONBOARDING',
-                style: GoogleFonts.googleSans(
-                  color: AppTheme.accentPurple,
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.6,
-                ),
-              ),
-              Text(
-                'STEP ${step + 1} OF $total',
-                style: GoogleFonts.googleSans(
-                  color: Colors.white54,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-          const Spacer(),
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.07),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-            ),
-            child: const Icon(
-              Icons.help_outline_rounded,
-              color: Colors.white38,
-              size: 18,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ProgressBar extends StatelessWidget {
+/// Top bar: back arrow, segmented progress dashes (centred), plain-text
+/// Skip on the right.
+class _StepTopBar extends StatelessWidget {
   final int step;
   final int total;
   final Animation<double> fillAnim;
+  final VoidCallback onBack;
+  final VoidCallback onSkip;
 
-  const _ProgressBar({
+  const _StepTopBar({
     required this.step,
     required this.total,
     required this.fillAnim,
+    required this.onBack,
+    required this.onSkip,
   });
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
+      padding: const EdgeInsets.fromLTRB(8, 8, 16, 8),
       child: Row(
-        children: List.generate(total, (i) {
-          final isPast = i < step;
-          final isCurrent = i == step;
-          return Expanded(
-            child: Container(
-              margin: EdgeInsets.only(right: i < total - 1 ? 5 : 0),
-              height: 3.5,
-              clipBehavior: Clip.antiAlias,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(2),
-              ),
-              child: isPast
-                  ? Container(color: AppTheme.accentPurple)
-                  : isCurrent
-                  ? AnimatedBuilder(
-                      animation: fillAnim,
-                      builder: (_, _) => FractionallySizedBox(
-                        widthFactor: fillAnim.value,
-                        alignment: Alignment.centerLeft,
-                        child: Container(color: AppTheme.accentPurple),
-                      ),
-                    )
-                  : null,
-            ),
-          );
-        }),
-      ),
-    );
-  }
-}
-
-/// Mascot avatar + animated speech-bubble header used on every step.
-class _MascotHeader extends StatelessWidget {
-  final String message;
-
-  const _MascotHeader({required this.message});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Avatar + online dot
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Container(
-                width: 52,
-                height: 52,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: AppTheme.accentPurple.withValues(alpha: 0.35),
-                    width: 1.5,
-                  ),
-                ),
-                child: ClipOval(
-                  child: Image.asset(
-                    'assets/images/mascot.jpeg',
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ),
-              Positioned(
-                bottom: 1,
-                right: 1,
-                child: Container(
-                  width: 13,
-                  height: 13,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF34C759),
-                    shape: BoxShape.circle,
-                    border: Border.all(color: AppTheme.background, width: 2),
-                  ),
-                ),
-              ),
-            ],
+          IconButton(
+            onPressed: onBack,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+            icon: const Icon(Icons.chevron_left, size: 22),
+            color: AppTheme.onBackground,
           ),
-          const SizedBox(width: 14),
-          // Speech bubble
           Expanded(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              decoration: BoxDecoration(
-                color: const Color(0xFF221A36),
-                borderRadius: const BorderRadius.only(
-                  topRight: Radius.circular(18),
-                  bottomLeft: Radius.circular(18),
-                  bottomRight: Radius.circular(18),
-                ),
-                border: Border.all(
-                  color: AppTheme.accentPurple.withValues(alpha: 0.22),
-                  width: 1,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.25),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
+            child: Row(
+              children: List.generate(total, (i) {
+                final isPast = i < step;
+                final isCurrent = i == step;
+                return Expanded(
+                  child: Container(
+                    margin: EdgeInsets.only(right: i < total - 1 ? 5 : 0),
+                    height: 3.5,
+                    clipBehavior: Clip.antiAlias,
+                    decoration: BoxDecoration(
+                      color: AppTheme.white.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                    child: isPast
+                        ? Container(color: AppTheme.accentPurple)
+                        : isCurrent
+                        ? AnimatedBuilder(
+                            animation: fillAnim,
+                            builder: (_, _) => FractionallySizedBox(
+                              widthFactor: fillAnim.value,
+                              alignment: Alignment.centerLeft,
+                              child: Container(color: AppTheme.accentPurple),
+                            ),
+                          )
+                        : null,
                   ),
-                ],
-              ),
-              child: Text(
-                message,
-                style: GoogleFonts.googleSans(
-                  color: Colors.white,
-                  fontSize: 14,
-                  height: 1.45,
-                  fontWeight: FontWeight.w500,
-                ),
+                );
+              }),
+            ),
+          ),
+          const SizedBox(width: 4),
+          TextButton(
+            onPressed: onSkip,
+            style: TextButton.styleFrom(
+              minimumSize: const Size(44, 44),
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+            ),
+            child: const Text(
+              'Skip',
+              style: TextStyle(
+                fontFamily: _kFontFamily,
+                color: AppTheme.accentPurple,
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
               ),
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Centred illustration + large two-line headline + supporting body copy —
+/// shared header shape for every onboarding step.
+class _StepHeader extends StatelessWidget {
+  final Widget illustration;
+  final String headline;
+  final String body;
+
+  const _StepHeader({
+    required this.illustration,
+    required this.headline,
+    required this.body,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Center(child: illustration),
+        const SizedBox(height: 24),
+        Text(
+          headline,
+          textAlign: TextAlign.center,
+          maxLines: 2,
+          style: const TextStyle(
+            fontFamily: _kFontFamily,
+            color: AppTheme.onBackground,
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            height: 1.25,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Text(
+          body,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontFamily: _kFontFamily,
+            color: AppTheme.textMuted,
+            fontSize: 14,
+            height: 1.45,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Generic icon-in-circle illustration for steps that don't have a bespoke
+/// preview (avatar) of their own.
+class _IconIllustration extends StatelessWidget {
+  final IconData icon;
+
+  const _IconIllustration({required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 96,
+      height: 96,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: AppTheme.accentPurple.withValues(alpha: 0.14),
+        border: Border.all(
+          color: AppTheme.accentPurple.withValues(alpha: 0.5),
+          width: 1.5,
+        ),
+      ),
+      child: Icon(icon, color: AppTheme.accentPurple, size: 40),
     );
   }
 }
@@ -832,14 +789,14 @@ class _FooterButtonState extends State<_FooterButton> {
                       height: 22,
                       child: CircularProgressIndicator(
                         strokeWidth: 2.5,
-                        color: AppTheme.secondary,
+                        color: AppTheme.onPrimary,
                       ),
                     )
                   : Text(
                       widget.label,
                       style: const TextStyle(
-                        fontFamily: 'GoogleSans',
-                        color: AppTheme.secondary,
+                        fontFamily: _kFontFamily,
+                        color: AppTheme.onPrimary,
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                       ),
@@ -858,7 +815,7 @@ class _FooterButtonState extends State<_FooterButton> {
 
 // ── Step 0: Avatar Customisation ─────────────────────────────────────────────
 
-class _AvatarStep extends StatelessWidget {
+class _AvatarStep extends StatefulWidget {
   final AvatarMakerController avatarController;
   final String mascotMessage;
 
@@ -868,16 +825,73 @@ class _AvatarStep extends StatelessWidget {
   });
 
   @override
+  State<_AvatarStep> createState() => _AvatarStepState();
+}
+
+class _AvatarStepState extends State<_AvatarStep> {
+  static const double _customizerCardHeight = 320;
+  final GlobalKey _customizerKey = GlobalKey();
+
+  ScrollableState? _findHorizontalScrollable(BuildContext? rootContext) {
+    if (rootContext == null) return null;
+    ScrollableState? found;
+    void visitor(Element element) {
+      if (found != null) return;
+      final widget = element.widget;
+      if (widget is Scrollable) {
+        if (element is StatefulElement && element.state is ScrollableState) {
+          final state = element.state as ScrollableState;
+          if (state.axisDirection == AxisDirection.left ||
+              state.axisDirection == AxisDirection.right) {
+            found = state;
+            return;
+          }
+        }
+      }
+      element.visitChildren(visitor);
+    }
+
+    if (rootContext is Element) {
+      rootContext.visitChildren(visitor);
+    }
+    return found;
+  }
+
+  void _switchCategory(bool forward) {
+    final scrollable = _findHorizontalScrollable(_customizerKey.currentContext);
+    if (scrollable != null && scrollable.position.hasPixels) {
+      final pos = scrollable.position;
+      final step = pos.viewportDimension > 0 ? pos.viewportDimension : 300.0;
+      final target = forward ? (pos.pixels + step) : (pos.pixels - step);
+
+      double destination;
+      if (forward && target > pos.maxScrollExtent + 1.0) {
+        destination = pos.minScrollExtent;
+      } else if (!forward && target < pos.minScrollExtent - 1.0) {
+        destination = pos.maxScrollExtent;
+      } else {
+        destination = target.clamp(pos.minScrollExtent, pos.maxScrollExtent);
+      }
+
+      if ((destination - pos.pixels).abs() > 0.5) {
+        pos.animateTo(
+          destination,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOutCubic,
+        );
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _MascotHeader(message: mascotMessage),
-          const SizedBox(height: 24),
-          // Avatar preview — always visible with light background for SVG visibility
-          Center(
-            child: Container(
+          _StepHeader(
+            illustration: Container(
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
@@ -892,83 +906,239 @@ class _AvatarStep extends StatelessWidget {
                   ),
                 ],
               ),
-              child: CircleAvatar(
-                radius: 60,
-                backgroundColor: const Color(0xFFF2EFF9),
-                child: ClipOval(
-                  child: AvatarMakerAvatar(
-                    radius: 60,
-                    backgroundColor: const Color(0xFFF2EFF9),
-                    controller: avatarController,
-                  ),
-                ),
+              child: FramedAvatar(
+                size: 104,
+                backgroundColor: AppTheme.white,
+                controller: widget.avatarController,
               ),
             ),
+            headline: 'Create your avatar',
+            body: widget.mascotMessage,
           ),
-          const SizedBox(height: 24),
-          Container(
-            height: 365,
-            margin: const EdgeInsets.symmetric(horizontal: 16),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF4EBFF),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: AppTheme.accentPurple.withValues(alpha: 0.35),
-                width: 1.5,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.25),
-                  blurRadius: 16,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(20),
-              child: AvatarMakerCustomizer(
-                controller: avatarController,
-                theme: AvatarMakerThemeData(
-                  primaryBgColor: Colors.transparent,
-                  secondaryBgColor: Colors.transparent,
-                  iconColor: const Color(0xFF49454F),
-                  selectedIconColor: AppTheme.primary,
-                  unselectedIconColor: const Color(0xFF79747E),
-                  labelTextStyle: GoogleFonts.googleSans(
-                    color: const Color(0xFF1D1B20),
-                    fontWeight: FontWeight.bold,
-                  ),
-                  selectedTileDecoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: AppTheme.primary, width: 2.5),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppTheme.primary.withValues(alpha: 0.2),
-                        blurRadius: 6,
-                        offset: const Offset(0, 2),
+          const SizedBox(height: 20),
+          _GlassCard(
+            height: _customizerCardHeight,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                // The package always renders each choice's icon at a fixed
+                // 80px regardless of column count or theme, and always adds
+                // its own bottom icon strip (a TabBar switching between
+                // categories) below the grid with no way to disable it —
+                // the top title+arrows heading stays, since that's the
+                // only other way to move between categories.
+                //
+                // To make each choice genuinely smaller (not just more
+                // tightly packed, which risks the fixed-size icon
+                // overflowing a too-small cell), the whole picker is laid
+                // out oversized at `1/kTileScale` its real footprint, then
+                // visually shrunk back down with Transform.scale. That
+                // keeps every cell comfortably larger than the 80px icon
+                // pre-scale, while what's on screen ends up smaller.
+                const kTileScale = 0.75;
+                final visibleWidth = constraints.maxWidth;
+                final visibleHeight = constraints.maxHeight;
+                final preScaleWidth = visibleWidth / kTileScale;
+                final preScaleVisibleHeight = visibleHeight / kTileScale;
+                // Same self-referential solve as before (strip height N
+                // such that N == (preScaleVisibleHeight + N) * 0.1 + 16),
+                // just carried out in pre-scale units. Deliberately rounds
+                // down: undershooting just leaves a sliver of blank card
+                // below the grid, but overshooting would clip real choices.
+                final bottomNavEstimate =
+                    ((preScaleVisibleHeight * 0.1 + 16) / 0.9).floorToDouble();
+                final preScaleHeight =
+                    preScaleVisibleHeight + bottomNavEstimate;
+                return ClipRect(
+                  child: SizedBox(
+                    width: visibleWidth,
+                    height: visibleHeight,
+                    child: OverflowBox(
+                      minWidth: preScaleWidth,
+                      maxWidth: preScaleWidth,
+                      minHeight: preScaleHeight,
+                      maxHeight: preScaleHeight,
+                      alignment: Alignment.topLeft,
+                      // Transform.scale must be OverflowBox's child, not
+                      // its parent: OverflowBox's own hit-test rejects any
+                      // touch outside its own (small, pre-transform)
+                      // reported size before it even looks at its child,
+                      // so with Transform on the outside, taps anywhere
+                      // past ~75% across (the inverse-scaled coordinate
+                      // exceeding that small size) were silently dropped —
+                      // exactly the 4th-column dead zone this fixes. With
+                      // OverflowBox outermost, its size-check runs in the
+                      // untransformed (correct, always-in-bounds) screen
+                      // space, and Transform's own hit-test override — one
+                      // level in — correctly remaps the touch into the
+                      // full pre-scale coordinate space the customiser
+                      // actually lays out in.
+                      child: Transform.scale(
+                        scale: kTileScale,
+                        alignment: Alignment.topLeft,
+                        child: Stack(
+                          children: [
+                            KeyedSubtree(
+                              key: _customizerKey,
+                              child: AvatarMakerCustomizer(
+                                controller: widget.avatarController,
+                                scaffoldWidth: preScaleWidth,
+                                scaffoldHeight: preScaleHeight,
+                                theme: AvatarMakerThemeData(
+                                  primaryBgColor: AppTheme.transparent,
+                                  secondaryBgColor: AppTheme.transparent,
+                                  iconColor: AppTheme.onSurfaceDark,
+                                  selectedIconColor: AppTheme.primary,
+                                  unselectedIconColor:
+                                      AppTheme.sheetTextSecondary,
+                                  nbrTilesRow: 4,
+                                  labelTextStyle: const TextStyle(
+                                    fontFamily: _kFontFamily,
+                                    color: AppTheme.onSurfaceDark,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  selectedTileDecoration: BoxDecoration(
+                                    color: AppTheme.white,
+                                    borderRadius: BorderRadius.circular(14),
+                                    border: Border.all(
+                                      color: AppTheme.primary,
+                                      width: 2.5,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: AppTheme.primary.withValues(
+                                          alpha: 0.2,
+                                        ),
+                                        blurRadius: 6,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  unselectedTileDecoration: BoxDecoration(
+                                    color: AppTheme.white,
+                                    borderRadius: BorderRadius.circular(14),
+                                    border: Border.all(
+                                      color: AppTheme.accentPurple.withValues(
+                                        alpha: 0.25,
+                                      ),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  boxDecoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  tileMargin: const EdgeInsets.all(6.0),
+                                  tilePadding: const EdgeInsets.all(6.0),
+                                ),
+                              ),
+                            ),
+                            // Left arrow button to switch to previous customization category
+                            Positioned(
+                              top: 4,
+                              left: 6,
+                              child: _NavArrowButton(
+                                icon: Icons.chevron_left_rounded,
+                                onTap: () => _switchCategory(false),
+                              ),
+                            ),
+                            // Right arrow button to switch to next customization category
+                            Positioned(
+                              top: 4,
+                              right: 6,
+                              child: _NavArrowButton(
+                                icon: Icons.chevron_right_rounded,
+                                onTap: () => _switchCategory(true),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ],
-                  ),
-                  unselectedTileDecoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: const Color(0xFFE4D7F5),
-                      width: 1,
                     ),
                   ),
-                  boxDecoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  tileMargin: const EdgeInsets.all(4.0),
-                  tilePadding: const EdgeInsets.all(4.0),
-                ),
-              ),
+                );
+              },
             ),
           ),
-          const SizedBox(height: 100),
         ],
+      ),
+    );
+  }
+}
+
+class _NavArrowButton extends StatefulWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _NavArrowButton({required this.icon, required this.onTap});
+
+  @override
+  State<_NavArrowButton> createState() => _NavArrowButtonState();
+}
+
+class _NavArrowButtonState extends State<_NavArrowButton> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) => setState(() => _pressed = false),
+      onTapCancel: () => setState(() => _pressed = false),
+      onTap: widget.onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 80),
+        width: 48,
+        height: 48,
+        transform: _pressed
+            ? Matrix4.translationValues(0, 2, 0)
+            : Matrix4.identity(),
+        decoration: BoxDecoration(
+          color: _pressed ? const Color(0xFFF0EBFF) : AppTheme.white,
+          shape: BoxShape.circle,
+        ),
+        alignment: Alignment.center,
+        child: Icon(widget.icon, color: AppTheme.primary, size: 30),
+      ),
+    );
+  }
+}
+
+/// Solid white card housing the avatar customiser — a distinct floating
+/// surface with a soft violet-tinted border and elevation shadow. The
+/// generous inset between the border and the customiser content is
+/// deliberate: the customiser's own background is white too, so without a
+/// visible frame margin the rounded corners have no color contrast to read
+/// against and disappear visually even though they're still geometrically
+/// clipped.
+class _GlassCard extends StatelessWidget {
+  final double height;
+  final Widget child;
+
+  const _GlassCard({required this.height, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: height,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppTheme.white,
+        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+        border: Border.all(
+          color: AppTheme.accentPurple.withValues(alpha: 0.45),
+          width: 2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.dropShadow,
+            blurRadius: 24,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        child: child,
       ),
     );
   }
@@ -994,13 +1164,18 @@ class _BasicInfoStep extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
+      padding: EdgeInsets.fromLTRB(
+        24.0,
+        0,
+        24.0,
+        MediaQuery.of(context).viewInsets.bottom,
+      ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _MascotHeader(message: mascotMessage),
-          const SizedBox(height: 28),
-          Center(
-            child: Container(
+          const SizedBox(height: 20),
+          _StepHeader(
+            illustration: Container(
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
@@ -1015,51 +1190,33 @@ class _BasicInfoStep extends StatelessWidget {
                   ),
                 ],
               ),
-              child: CircleAvatar(
-                radius: 54,
-                backgroundColor: const Color(0xFFF2EFF9),
-                child: ClipOval(
-                  child: AvatarMakerAvatar(
-                    radius: 54,
-                    backgroundColor: const Color(0xFFF2EFF9),
-                    controller: avatarController,
-                  ),
-                ),
+              child: FramedAvatar(
+                size: 108,
+                backgroundColor: AppTheme.white,
+                controller: avatarController,
               ),
             ),
+            headline: 'Basic Info',
+            body: mascotMessage,
           ),
           const SizedBox(height: 28),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Basic Info',
-                  style: GoogleFonts.googleSans(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                _OnboardingTextField(
-                  controller: nameCtrl,
-                  label: 'Full Name',
-                  hint: 'e.g. Arjun Sharma',
-                  onChanged: (_) => onTextChanged(),
-                  textCapitalization: TextCapitalization.words,
-                ),
-                const SizedBox(height: 16),
-                _OnboardingTextField(
-                  controller: idCtrl,
-                  label: 'BITS ID',
-                  hint: 'e.g. 2023A7PSXXXXH',
-                  onChanged: (_) => onTextChanged(),
-                  textCapitalization: TextCapitalization.none,
-                ),
-              ],
-            ),
+          _OnboardingTextField(
+            controller: nameCtrl,
+            label: 'Full Name',
+            hint: 'e.g. Arjun Sharma',
+            onChanged: (_) => onTextChanged(),
+            textCapitalization: TextCapitalization.words,
+            // Extra bottom scroll padding so focusing this field also keeps
+            // the BITS ID field below it in view above the keyboard.
+            scrollPadding: const EdgeInsets.fromLTRB(20, 20, 20, 120),
+          ),
+          const SizedBox(height: 16),
+          _OnboardingTextField(
+            controller: idCtrl,
+            label: 'BITS ID',
+            hint: 'e.g. 2023A7PSXXXXH',
+            onChanged: (_) => onTextChanged(),
+            textCapitalization: TextCapitalization.none,
           ),
           const SizedBox(height: 100),
         ],
@@ -1068,7 +1225,7 @@ class _BasicInfoStep extends StatelessWidget {
   }
 }
 
-// ── Step 1: Institution ──────────────────────────────────────────────────────
+// ── Step 2: Institution ──────────────────────────────────────────────────────
 
 class _InstitutionStep extends StatelessWidget {
   final String campusName;
@@ -1090,214 +1247,20 @@ class _InstitutionStep extends StatelessWidget {
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 24.0),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _MascotHeader(message: mascotMessage),
-          const SizedBox(height: 28),
-
-          // ── Institution card ───────────────────────────────────────────
-          Container(
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: AppTheme.surface,
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-            ),
-            child: Column(
-              children: [
-                // Banner
-                Container(
-                  height: 130,
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [Color(0xFF2E1B4E), Color(0xFF1E1730)],
-                    ),
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(24),
-                      topRight: Radius.circular(24),
-                    ),
-                  ),
-                  child: Stack(
-                    children: [
-                      // Decorative ghost icons
-                      Positioned(
-                        left: -24,
-                        bottom: -16,
-                        child: Icon(
-                          Icons.business_rounded,
-                          color: Colors.white.withValues(alpha: 0.04),
-                          size: 110,
-                        ),
-                      ),
-                      Positioned(
-                        right: -14,
-                        bottom: -16,
-                        child: Icon(
-                          Icons.business_rounded,
-                          color: Colors.white.withValues(alpha: 0.03),
-                          size: 90,
-                        ),
-                      ),
-                      // Centre icon
-                      Center(
-                        child: Stack(
-                          clipBehavior: Clip.none,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(18),
-                              decoration: BoxDecoration(
-                                color: AppTheme.accentPurple.withValues(
-                                  alpha: 0.15,
-                                ),
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: AppTheme.accentPurple.withValues(
-                                    alpha: 0.5,
-                                  ),
-                                  width: 1.5,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: AppTheme.accentPurple.withValues(
-                                      alpha: 0.2,
-                                    ),
-                                    blurRadius: 16,
-                                  ),
-                                ],
-                              ),
-                              child: const Icon(
-                                Icons.business_rounded,
-                                color: AppTheme.accentPurple,
-                                size: 34,
-                              ),
-                            ),
-                            // Verified badge
-                            Positioned(
-                              top: -6,
-                              right: -12,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 3,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: AppTheme.accentPurple,
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(
-                                      Icons.verified_rounded,
-                                      color: AppTheme.secondary,
-                                      size: 10,
-                                    ),
-                                    const SizedBox(width: 3),
-                                    Text(
-                                      'VERIFIED',
-                                      style: GoogleFonts.googleSans(
-                                        color: AppTheme.secondary,
-                                        fontSize: 9,
-                                        fontWeight: FontWeight.bold,
-                                        letterSpacing: 0.5,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Info
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
-                  child: Column(
-                    children: [
-                      Text(
-                        campusName,
-                        style: GoogleFonts.googleSans(
-                          color: Colors.white,
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            Icons.location_on_rounded,
-                            color: AppTheme.onBackground2,
-                            size: 14,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            campusLocation,
-                            style: GoogleFonts.googleSans(
-                              color: AppTheme.onBackground2,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-                      Divider(color: Colors.white.withValues(alpha: 0.08)),
-                      const SizedBox(height: 16),
-                      Text(
-                        'ASSOCIATED DOMAIN',
-                        style: GoogleFonts.googleSans(
-                          color: Colors.white38,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.4,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 18,
-                          vertical: 9,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppTheme.accentPurple.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: AppTheme.accentPurple.withValues(alpha: 0.3),
-                          ),
-                        ),
-                        child: Text(
-                          campusDomain,
-                          style: GoogleFonts.googleSans(
-                            color: AppTheme.accentPurple,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+          const SizedBox(height: 20),
+          _StepHeader(
+            illustration: const _IconIllustration(icon: Icons.business_rounded),
+            headline: 'Confirm your campus',
+            body: mascotMessage,
           ),
-
-          const SizedBox(height: 16),
-          TextButton(
-            onPressed: onChangeCampus,
-            child: Text(
-              'Choose different campus',
-              style: GoogleFonts.googleSans(
-                color: AppTheme.onBackground2,
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
+          const SizedBox(height: 28),
+          _CampusSelectField(
+            campusName: campusName,
+            campusLocation: campusLocation,
+            campusDomain: campusDomain,
+            onTap: onChangeCampus,
           ),
           const SizedBox(height: 100),
         ],
@@ -1306,7 +1269,93 @@ class _InstitutionStep extends StatelessWidget {
   }
 }
 
-// ── Step 2: Academic Details ─────────────────────────────────────────────────
+/// Dropdown-styled tappable field showing the detected/selected campus —
+/// opens the campus picker sheet on tap.
+class _CampusSelectField extends StatelessWidget {
+  final String campusName;
+  final String campusLocation;
+  final String campusDomain;
+  final VoidCallback onTap;
+
+  const _CampusSelectField({
+    required this.campusName,
+    required this.campusLocation,
+    required this.campusDomain,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Campus',
+          style: TextStyle(
+            fontFamily: _kFontFamily,
+            color: AppTheme.textMuted,
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 8),
+        GestureDetector(
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            decoration: BoxDecoration(
+              color: AppTheme.surface,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: AppTheme.accentPurple.withValues(alpha: 0.4),
+              ),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    '$campusName, $campusLocation',
+                    style: const TextStyle(
+                      fontFamily: _kFontFamily,
+                      color: AppTheme.onBackground,
+                      fontSize: 15,
+                    ),
+                  ),
+                ),
+                const Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  color: AppTheme.textMuted,
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+          decoration: BoxDecoration(
+            color: AppTheme.accentPurple.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: AppTheme.accentPurple.withValues(alpha: 0.3),
+            ),
+          ),
+          child: Text(
+            campusDomain,
+            style: const TextStyle(
+              fontFamily: _kFontFamily,
+              color: AppTheme.accentPurple,
+              fontWeight: FontWeight.w600,
+              fontSize: 13,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Step 3: Academic Details ─────────────────────────────────────────────────
 
 class _AcademicStep extends StatelessWidget {
   final String? branch;
@@ -1361,19 +1410,15 @@ class _AcademicStep extends StatelessWidget {
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 24.0),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _MascotHeader(message: mascotMessage),
-          const SizedBox(height: 28),
-          Text(
-            'Academic Details',
-            style: GoogleFonts.googleSans(
-              color: Colors.white,
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
           const SizedBox(height: 20),
+          _StepHeader(
+            illustration: const _IconIllustration(icon: Icons.school_rounded),
+            headline: 'Academic Details',
+            body: mascotMessage,
+          ),
+          const SizedBox(height: 28),
 
           _OnboardingDropdown<String>(
             label: 'Branch / Programme',
@@ -1383,17 +1428,18 @@ class _AcademicStep extends StatelessWidget {
           ),
           const SizedBox(height: 16),
 
-          // Dual-degree toggle
+          // Dual-degree toggle — flips to a light card once enabled, to
+          // match the light MSc-branch dropdown that reveals beneath it.
           AnimatedContainer(
             duration: const Duration(milliseconds: 250),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: AppTheme.surface,
+              color: isDualDegree ? AppTheme.sheetBackground : AppTheme.surface,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
                 color: isDualDegree
                     ? AppTheme.accentPurple.withValues(alpha: 0.5)
-                    : Colors.white.withValues(alpha: 0.08),
+                    : AppTheme.white.withValues(alpha: 0.08),
               ),
             ),
             child: Row(
@@ -1402,10 +1448,10 @@ class _AcademicStep extends StatelessWidget {
                   scale: 0.88,
                   child: Switch(
                     value: isDualDegree,
-                    activeTrackColor: AppTheme.accentPurple.withValues(
+                    activeTrackColor: AppTheme.accentPurpleDark.withValues(
                       alpha: 0.5,
                     ),
-                    activeThumbColor: AppTheme.accentPurple,
+                    activeThumbColor: AppTheme.accentPurpleDark,
                     onChanged: onDualToggle,
                   ),
                 ),
@@ -1415,16 +1461,22 @@ class _AcademicStep extends StatelessWidget {
                   children: [
                     Text(
                       'Dual Degree',
-                      style: GoogleFonts.googleSans(
-                        color: Colors.white,
+                      style: TextStyle(
+                        fontFamily: _kFontFamily,
+                        color: isDualDegree
+                            ? AppTheme.onSurfaceDark
+                            : AppTheme.onBackground,
                         fontWeight: FontWeight.w600,
                         fontSize: 15,
                       ),
                     ),
                     Text(
                       'I have an MSc programme',
-                      style: GoogleFonts.googleSans(
-                        color: Colors.white54,
+                      style: TextStyle(
+                        fontFamily: _kFontFamily,
+                        color: isDualDegree
+                            ? AppTheme.sheetTextSecondary
+                            : AppTheme.textMuted,
                         fontSize: 12,
                       ),
                     ),
@@ -1480,81 +1532,45 @@ class _AcademicStep extends StatelessWidget {
   }
 }
 
-// ── Step 3: Study Capacity ────────────────────────────────────────────────────
+// ── Step 4: Study Capacity ────────────────────────────────────────────────────
 
 class _CapacityStep extends StatelessWidget {
   final String? selected;
   final String mascotMessage;
   final ValueChanged<String> onSelect;
+  final VoidCallback onConfirm;
 
   const _CapacityStep({
     required this.selected,
     required this.mascotMessage,
     required this.onSelect,
+    required this.onConfirm,
   });
 
   @override
   Widget build(BuildContext context) {
+    final illustrationIcon = _kCapacityOptions
+        .firstWhere(
+          (o) => o.value == selected,
+          orElse: () => _kCapacityOptions[1],
+        )
+        .icon;
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 24.0),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _MascotHeader(message: mascotMessage),
-          const SizedBox(height: 28),
-          Text(
-            'How busy are you this semester?',
-            style: GoogleFonts.googleSans(
-              color: Colors.white,
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              height: 1.2,
-            ),
+          const SizedBox(height: 20),
+          _StepHeader(
+            illustration: _IconIllustration(icon: illustrationIcon),
+            headline: 'How busy are you\nthis semester?',
+            body: mascotMessage,
           ),
-          const SizedBox(height: 24),
-
-          ..._kCapacityOptions.asMap().entries.map((e) {
-            final i = e.key;
-            final opt = e.value;
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: _CapacityCard(
-                option: opt,
-                isSelected: selected == opt.value,
-                animDelay: Duration(milliseconds: i * 70),
-                onTap: () => onSelect(opt.value),
-              ),
-            );
-          }),
-
-          // Tip note
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.04),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-            ),
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.info_outline_rounded,
-                  color: AppTheme.onBackground2,
-                  size: 16,
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    "Most CS and Phoenix students choose 'Normal' to balance lab work and exam prep.",
-                    style: GoogleFonts.googleSans(
-                      color: Colors.white54,
-                      fontSize: 12,
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+          const SizedBox(height: 28),
+          _CapacityCarousel(
+            selected: selected,
+            onSelect: onSelect,
+            onConfirm: onConfirm,
           ),
           const SizedBox(height: 100),
         ],
@@ -1563,188 +1579,482 @@ class _CapacityStep extends StatelessWidget {
   }
 }
 
+/// [PageScrollPhysics] variant that lets a fast fling carry through several
+/// cards before settling. Stock [PageScrollPhysics] always nudges the
+/// release point by a fixed +/-0.5 page before rounding, so even a hard
+/// flick only ever advances one page — this instead estimates how far a
+/// friction-based ballistic scroll of the release velocity would travel
+/// (via [FrictionSimulation.finalX]) and lands on the nearest whole page
+/// along that distance. A slow drag/gentle fling falls back to the same
+/// minimum single-page nudge as stock, so it still feels like a normal snap.
+class _MultiFlingPageScrollPhysics extends ScrollPhysics {
+  const _MultiFlingPageScrollPhysics({super.parent});
+
+  // Higher drag = a given velocity travels less distance before settling.
+  // Tuned so a firm flick carries 2-4 cards and only a very hard flick
+  // reaches the cap below.
+  static const double _kFlingDrag = 0.03;
+  // Caps how many pages a single fling can commit to, however hard the
+  // flick, so the carousel never jumps somewhere disorienting in one go.
+  static const double _kMaxFlingPages = 6.0;
+
+  @override
+  _MultiFlingPageScrollPhysics applyTo(ScrollPhysics? ancestor) {
+    return _MultiFlingPageScrollPhysics(parent: buildParent(ancestor));
+  }
+
+  // ScrollPhysics' default spring (mass:0.5, stiffness:100, ratio:1.1) is
+  // tuned for stock PageScrollPhysics' short single-page nudges. Its decay
+  // to the (very tight, sub-pixel) default tolerance is roughly logarithmic
+  // in distance, so reusing it here — where a hard fling travels several
+  // page-widths — measured at ~930-980ms to settle. ratio:1.0 is critical
+  // damping: the fastest decay a spring can have while still never
+  // overshooting the target (ratio>1 is overdamped/slower, ratio<1 would
+  // bounce past it). Empirically, stiffness:1200/ratio:1.0 settles a slow
+  // drag/medium swipe/hard fling in ~190-240ms with zero overshoot and zero
+  // residual, vs. ~290-390ms at stiffness:700/ratio:1.1 and ~720-980ms at
+  // the framework default. This is also why the post-settle highlight fade
+  // (`_settled`, see _CapacityCarouselState) used to feel slow to appear:
+  // it was waiting on this same spring.
+  @override
+  SpringDescription get spring => SpringDescription.withDampingRatio(
+    mass: 0.5,
+    stiffness: 1200,
+    ratio: 1.0,
+  );
+
+  double _getPage(ScrollMetrics position) {
+    if (position is PageMetrics) {
+      return position.page ?? position.pixels / position.viewportDimension;
+    }
+    return position.pixels / position.viewportDimension;
+  }
+
+  double _getPixels(ScrollMetrics position, double page) {
+    // Equivalent to the framework's private `_PagePosition.getPixelsFromPage`
+    // for a viewportFraction <= 1 (our case): the `_initialPageOffset` term
+    // that formula adds is always zero in that range.
+    final double viewportFraction = position is PageMetrics
+        ? position.viewportFraction
+        : 1.0;
+    return page * position.viewportDimension * viewportFraction;
+  }
+
+  double _getTargetPixels(
+    ScrollMetrics position,
+    Tolerance tolerance,
+    double velocity,
+  ) {
+    double page = _getPage(position);
+    if (velocity.abs() > tolerance.velocity) {
+      final double pixelsPerPage = position is PageMetrics
+          ? position.viewportDimension * position.viewportFraction
+          : position.viewportDimension;
+      final double flingDistance = FrictionSimulation(
+        _kFlingDrag,
+        0,
+        velocity,
+      ).finalX;
+      final double flingPages = (flingDistance / pixelsPerPage).clamp(
+        -_kMaxFlingPages,
+        _kMaxFlingPages,
+      );
+      // A release barely over the tolerance still commits to at least one
+      // page — matches stock PageScrollPhysics' minimum nudge.
+      page += flingPages.abs() > 0.5 ? flingPages : 0.5 * velocity.sign;
+    }
+    return _getPixels(position, page.roundToDouble());
+  }
+
+  @override
+  Simulation? createBallisticSimulation(
+    ScrollMetrics position,
+    double velocity,
+  ) {
+    // Out of range and not headed back in range — defer to the parent
+    // physics chain (overscroll bounce, etc.), same as stock PageScrollPhysics.
+    if ((velocity <= 0.0 && position.pixels <= position.minScrollExtent) ||
+        (velocity >= 0.0 && position.pixels >= position.maxScrollExtent)) {
+      return super.createBallisticSimulation(position, velocity);
+    }
+    final Tolerance tolerance = toleranceFor(position);
+    final double target = _getTargetPixels(position, tolerance, velocity);
+    if (target != position.pixels) {
+      return ScrollSpringSimulation(
+        spring,
+        position.pixels,
+        target,
+        velocity,
+        tolerance: tolerance,
+      );
+    }
+    return null;
+  }
+
+  @override
+  bool get allowImplicitScrolling => true;
+}
+
+/// Looping card carousel for study pace — swiping (or tapping a peeking
+/// neighbour) to centre a card selects it. `PageView.builder` is given no
+/// `itemCount` so it scrolls infinitely; each absolute page maps back to one
+/// of the three options via `page % _kOptionCount`. The controller starts
+/// deep into that infinite range (a multiple of 3, offset by the currently
+/// selected option if any) so the user can swipe backwards from the first
+/// card without ever hitting an edge.
+class _CapacityCarousel extends StatefulWidget {
+  final String? selected;
+  final ValueChanged<String> onSelect;
+  final VoidCallback onConfirm;
+
+  const _CapacityCarousel({
+    required this.selected,
+    required this.onSelect,
+    required this.onConfirm,
+  });
+
+  @override
+  State<_CapacityCarousel> createState() => _CapacityCarouselState();
+}
+
+class _CapacityCarouselState extends State<_CapacityCarousel> {
+  static final _kOptionCount = _kCapacityOptions.length;
+  static const _kBasePage = 3000; // multiple of _kOptionCount
+
+  // ── Tunables ────────────────────────────────────────────────────────────
+  // Lower fraction = more of each neighbour peeks in at the screen edges.
+  static const double _kViewportFraction = 0.74;
+  // Centre-card vs. resting-neighbour scale — the gap between these is what
+  // reads as depth as a card slides toward/away from centre. Centre is
+  // scaled past 1.0 so it visibly pops out of the strip; PageView below
+  // uses clipBehavior: Clip.none so that overscale isn't clipped by the
+  // fixed-height viewport.
+  static const double _kCenterScale = 1.08;
+  static const double _kNeighborScale = 0.86;
+  // Paired opacity falloff, kept subtle so it reads as depth, not a glitch.
+  static const double _kCenterOpacity = 1.0;
+  static const double _kNeighborOpacity = 0.65;
+
+  late final PageController _controller;
+  late int _currentPage;
+
+  // Gates the centre card's accent/selected treatment: only true once
+  // scrolling has fully come to rest, so the highlight doesn't flicker
+  // between cards mid-fling. Driven by ScrollNotification, not a debounce
+  // timer, so it can't fire early on a slow pass through several cards.
+  bool _settled = true;
+
+  @override
+  void initState() {
+    super.initState();
+    final selectedIndex = widget.selected == null
+        ? 0
+        : _kCapacityOptions
+              .indexWhere((o) => o.value == widget.selected)
+              .clamp(0, _kOptionCount - 1);
+    _currentPage = _kBasePage + selectedIndex;
+    _controller = PageController(
+      viewportFraction: _kViewportFraction,
+      initialPage: _currentPage,
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _handlePageChanged(int page) {
+    setState(() => _currentPage = page);
+    widget.onSelect(_kCapacityOptions[page % _kOptionCount].value);
+  }
+
+  void _goToPage(int page) {
+    _controller.animateToPage(
+      page,
+      duration: const Duration(milliseconds: 350),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  bool _handleScrollNotification(ScrollNotification notification) {
+    if (notification is ScrollStartNotification && _settled) {
+      setState(() => _settled = false);
+    } else if (notification is ScrollEndNotification && !_settled) {
+      setState(() => _settled = true);
+    }
+    return false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          height: 336,
+          child: NotificationListener<ScrollNotification>(
+            onNotification: _handleScrollNotification,
+            child: PageView.builder(
+              controller: _controller,
+              physics: const _MultiFlingPageScrollPhysics(),
+              // Framework quirk: whenever pageSnapping is true, PageView always
+              // wraps `physics` inside a *fresh* stock PageScrollPhysics via
+              // `_kPagePhysics.applyTo(physics)` (see page_view.dart), which
+              // becomes the effective physics and permanently shadows ours —
+              // its own createBallisticSimulation never delegates to `.parent`
+              // except when out of scroll range, so our multi-fling logic is
+              // never reached. Must stay false, or the carousel silently goes
+              // back to single-page nudges. _MultiFlingPageScrollPhysics
+              // implements the snapping itself (rounds to the nearest page and
+              // settles there via ScrollSpringSimulation), so nothing is lost.
+              pageSnapping: false,
+              // The centre card scales past 1.0 (see _kCenterScale); without
+              // this, the fixed-height viewport would clip its top/bottom.
+              clipBehavior: Clip.none,
+              onPageChanged: _handlePageChanged,
+              itemBuilder: (context, page) {
+                final option = _kCapacityOptions[page % _kOptionCount];
+                final isCentered = page == _currentPage;
+                return AnimatedBuilder(
+                  animation: _controller,
+                  builder: (context, child) {
+                    final rawPage = _controller.hasClients
+                        ? (_controller.page ?? _currentPage.toDouble())
+                        : _currentPage.toDouble();
+                    final distance = (rawPage - page).abs().clamp(0.0, 1.0);
+                    final scale =
+                        _kCenterScale -
+                        (distance * (_kCenterScale - _kNeighborScale));
+                    final opacity =
+                        _kCenterOpacity -
+                        (distance * (_kCenterOpacity - _kNeighborOpacity));
+                    return Transform.scale(
+                      scale: scale,
+                      child: Opacity(opacity: opacity, child: child),
+                    );
+                  },
+                  child: GestureDetector(
+                    onTap: () {
+                      if (page != _currentPage) _goToPage(page);
+                    },
+                    child: _CapacityCard(
+                      option: option,
+                      isSelected: _settled && option.value == widget.selected,
+                      // Centred card's pill commits the pick and advances
+                      // (replaces the removed footer Continue button); a
+                      // peeking card's pill just centres it, same as tapping
+                      // the card body.
+                      onSelectTap: () {
+                        if (isCentered) {
+                          if (widget.selected != option.value) {
+                            widget.onSelect(option.value);
+                          }
+                          widget.onConfirm();
+                        } else {
+                          _goToPage(page);
+                        }
+                      },
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Single pace card shown inside [_CapacityCarousel]. Only reflects the
+/// committed `selected` value (not merely "currently centred") so the violet
+/// accent only appears once the user has actually picked a pace — matching
+/// the dropdown's previous "nothing selected until chosen" behaviour.
 class _CapacityCard extends StatelessWidget {
   final _CapacityOption option;
   final bool isSelected;
-  final Duration animDelay;
-  final VoidCallback onTap;
+  final VoidCallback onSelectTap;
 
   const _CapacityCard({
     required this.option,
     required this.isSelected,
-    required this.animDelay,
-    required this.onTap,
+    required this.onSelectTap,
   });
+
+  static const _cardRadius = 32.0;
+  // Zeroed out so adjacent cards run edge-to-edge as one continuous strip
+  // while scrolling, instead of visibly separated tiles with a gap between
+  // them; the neighbour's reduced scale/opacity is what still reads as
+  // depth, not this margin. The lowered PageView viewportFraction (not this
+  // value) is what produces a real peek of the neighbouring card.
+  static const _cardHorizontalMargin = 0.0;
 
   @override
   Widget build(BuildContext context) {
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.0, end: 1.0),
-      duration: const Duration(milliseconds: 380) + animDelay,
-      curve: Curves.easeOutCubic,
-      builder: (_, v, child) => Opacity(
-        opacity: v,
-        child: Transform.translate(
-          offset: Offset(0, 20 * (1 - v)),
-          child: child,
-        ),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        _cardHorizontalMargin,
+        18,
+        _cardHorizontalMargin,
+        0,
       ),
-      child: GestureDetector(
-        onTap: () {
-          HapticFeedback.selectionClick();
-          onTap();
-        },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 240),
-          curve: Curves.easeOut,
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? AppTheme.accentPurple.withValues(alpha: 0.16)
-                : AppTheme.surface,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: isSelected
-                  ? AppTheme.accentPurple
-                  : Colors.white.withValues(alpha: 0.08),
-              width: isSelected ? 1.5 : 1.0,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: double.infinity,
+        padding: const EdgeInsets.fromLTRB(22, 26, 22, 20),
+        decoration: BoxDecoration(
+          color: isSelected ? AppTheme.accentPurple : AppTheme.surface,
+          borderRadius: BorderRadius.circular(_cardRadius),
+          border: isSelected
+              ? null
+              : Border.all(color: AppTheme.white.withValues(alpha: 0.08)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: isSelected
+                        ? AppTheme.white.withValues(alpha: 0.18)
+                        : AppTheme.surfaceLight,
+                  ),
+                  child: Icon(
+                    option.icon,
+                    color: isSelected ? AppTheme.onPrimary : AppTheme.textMuted,
+                    size: 30,
+                  ),
+                ),
+                if (isSelected)
+                  Positioned(
+                    right: -2,
+                    bottom: -2,
+                    child: Container(
+                      width: 22,
+                      height: 22,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: AppTheme.accentPurpleDark,
+                        border: Border.all(
+                          color: AppTheme.accentPurple,
+                          width: 2,
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.check_rounded,
+                        color: AppTheme.onPrimary,
+                        size: 13,
+                      ),
+                    ),
+                  ),
+              ],
             ),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: AppTheme.accentPurple.withValues(alpha: 0.2),
-                      blurRadius: 18,
-                      offset: const Offset(0, 4),
-                    ),
-                  ]
-                : [],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 240),
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? AppTheme.accentPurple.withValues(alpha: 0.24)
-                          : Colors.white.withValues(alpha: 0.06),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      option.icon,
-                      color: isSelected
-                          ? AppTheme.accentPurple
-                          : Colors.white60,
-                      size: 22,
-                    ),
-                  ),
-                  const Spacer(),
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 220),
-                    transitionBuilder: (child, anim) => ScaleTransition(
-                      scale: anim,
-                      child: FadeTransition(opacity: anim, child: child),
-                    ),
-                    child: isSelected
-                        ? Container(
-                            key: const ValueKey('badge'),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppTheme.accentPurple,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(
-                                  Icons.check_circle_rounded,
-                                  color: AppTheme.secondary,
-                                  size: 11,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  'Selected',
-                                  style: GoogleFonts.googleSans(
-                                    color: AppTheme.secondary,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          )
-                        : const SizedBox.shrink(key: ValueKey('empty')),
-                  ),
-                ],
+            const SizedBox(height: 14),
+            Text(
+              option.title,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: _kFontFamily,
+                color: isSelected ? AppTheme.onPrimary : AppTheme.onBackground,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
               ),
-              const SizedBox(height: 16),
-              Text(
-                option.title,
-                style: GoogleFonts.googleSans(
-                  color: Colors.white,
-                  fontSize: 17,
-                  fontWeight: FontWeight.bold,
+            ),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? AppTheme.white.withValues(alpha: 0.16)
+                    : AppTheme.surfaceLight,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                option.hours,
+                style: TextStyle(
+                  fontFamily: _kFontFamily,
+                  color: isSelected ? AppTheme.onPrimary : AppTheme.textMuted,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.4,
                 ),
               ),
-              const SizedBox(height: 6),
-              Text(
-                option.description,
-                style: GoogleFonts.googleSans(
-                  color: Colors.white60,
-                  fontSize: 13,
-                  height: 1.45,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              option.description,
+              textAlign: TextAlign.center,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontFamily: _kFontFamily,
+                color: isSelected
+                    ? AppTheme.onPrimary.withValues(alpha: 0.85)
+                    : AppTheme.textMuted,
+                fontSize: 12.5,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 18),
+            GestureDetector(
+              onTap: onSelectTap,
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? AppTheme.background
+                      : AppTheme.surfaceLight,
+                  borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (isSelected) ...[
+                      const Icon(
+                        Icons.check_rounded,
+                        color: AppTheme.accentPurple,
+                        size: 15,
+                      ),
+                      const SizedBox(width: 6),
+                    ],
+                    Text(
+                      isSelected ? 'Selected' : 'Select',
+                      style: TextStyle(
+                        fontFamily: _kFontFamily,
+                        color: isSelected ? AppTheme.white : AppTheme.textMuted,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 14),
-              Row(
-                children: [
-                  const Icon(
-                    Icons.schedule_rounded,
-                    color: Colors.white38,
-                    size: 14,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    option.hours,
-                    style: GoogleFonts.googleSans(
-                      color: Colors.white38,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.4,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-// ── Steps 4–6: Questionnaire ─────────────────────────────────────────────────
+// ── Step 5: Endgame goal (single-select) ─────────────────────────────────────
 
-class _QuestionStep extends StatelessWidget {
+class _EndgameStep extends StatelessWidget {
   final String mascotMessage;
-  final List<String> options;
-  final bool isMultiSelect;
-  final String? selectedValue;
-  final List<String>? selectedValues;
+  final String? selected;
   final ValueChanged<String> onSelect;
 
-  const _QuestionStep({
+  const _EndgameStep({
     required this.mascotMessage,
-    required this.options,
-    required this.isMultiSelect,
-    this.selectedValue,
-    this.selectedValues,
+    required this.selected,
     required this.onSelect,
   });
 
@@ -1753,27 +2063,23 @@ class _QuestionStep extends StatelessWidget {
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 24.0),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _MascotHeader(message: mascotMessage),
+          const SizedBox(height: 20),
+          _StepHeader(
+            illustration: const _IconIllustration(icon: Icons.flag_rounded),
+            headline: "What's your endgame?",
+            body: mascotMessage,
+          ),
           const SizedBox(height: 28),
-          ...options.asMap().entries.map((e) {
-            final i = e.key;
-            final option = e.value;
-            final isSelected = isMultiSelect
-                ? (selectedValues?.contains(option) ?? false)
-                : (selectedValue == option);
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 12.0),
-              child: _QuestionCard(
-                label: option,
-                isSelected: isSelected,
-                isMultiSelect: isMultiSelect,
-                animDelay: Duration(milliseconds: i * 55),
-                onTap: () => onSelect(option),
-              ),
-            );
-          }),
+          _OnboardingDropdown<String>(
+            label: 'Endgame',
+            value: selected,
+            items: _kEndgameOptions,
+            onChanged: (v) {
+              if (v != null) onSelect(v);
+            },
+          ),
           const SizedBox(height: 100),
         ],
       ),
@@ -1781,99 +2087,206 @@ class _QuestionStep extends StatelessWidget {
   }
 }
 
-class _QuestionCard extends StatelessWidget {
+// ── Step 6: Career interests (multi-select) ──────────────────────────────────
+
+class _InterestsStep extends StatelessWidget {
+  final String mascotMessage;
+  final List<String> selected;
+  final ValueChanged<String> onToggle;
+
+  const _InterestsStep({
+    required this.mascotMessage,
+    required this.selected,
+    required this.onToggle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const SizedBox(height: 20),
+          _StepHeader(
+            illustration: const _IconIllustration(icon: Icons.explore_rounded),
+            headline: 'Career interests',
+            body: mascotMessage,
+          ),
+          const SizedBox(height: 28),
+          _InterestTileGrid(
+            options: _kCareerInterests,
+            selected: selected,
+            onToggle: onToggle,
+          ),
+          const SizedBox(height: 100),
+        ],
+      ),
+    );
+  }
+}
+
+/// Grid of circular icon tiles with a check badge on selected items.
+class _InterestTileGrid extends StatelessWidget {
+  final List<String> options;
+  final List<String> selected;
+  final ValueChanged<String> onToggle;
+
+  const _InterestTileGrid({
+    required this.options,
+    required this.selected,
+    required this.onToggle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: options.length,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        mainAxisSpacing: 20,
+        crossAxisSpacing: 12,
+        childAspectRatio: 0.8,
+      ),
+      itemBuilder: (context, i) {
+        final option = options[i];
+        final isSelected = selected.contains(option);
+        return _InterestTile(
+          label: option,
+          icon: _kCareerInterestIcons[option] ?? Icons.circle_outlined,
+          isSelected: isSelected,
+          onTap: () => onToggle(option),
+        );
+      },
+    );
+  }
+}
+
+class _InterestTile extends StatelessWidget {
   final String label;
+  final IconData icon;
   final bool isSelected;
-  final bool isMultiSelect;
-  final Duration animDelay;
   final VoidCallback onTap;
 
-  const _QuestionCard({
+  const _InterestTile({
     required this.label,
+    required this.icon,
     required this.isSelected,
-    required this.isMultiSelect,
-    required this.animDelay,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.0, end: 1.0),
-      duration: const Duration(milliseconds: 320) + animDelay,
-      curve: Curves.easeOutCubic,
-      builder: (_, v, child) => Opacity(
-        opacity: v,
-        child: Transform.translate(
-          offset: Offset(0, 14 * (1 - v)),
-          child: child,
-        ),
-      ),
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? AppTheme.accentPurple.withValues(alpha: 0.16)
-                : AppTheme.surface,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: isSelected
-                  ? AppTheme.accentPurple
-                  : Colors.white.withValues(alpha: 0.08),
-              width: isSelected ? 1.5 : 1.0,
-            ),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: AppTheme.accentPurple.withValues(alpha: 0.14),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ]
-                : [],
-          ),
-          child: Row(
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.selectionClick();
+        onTap();
+      },
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Stack(
+            clipBehavior: Clip.none,
             children: [
-              Expanded(
-                child: Text(
-                  label,
-                  style: GoogleFonts.googleSans(
-                    color: isSelected ? Colors.white : Colors.white70,
-                    fontSize: 16,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 16),
-              // Indicator (circle for single, rounded-rect for multi)
               AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                width: 24,
-                height: 24,
+                width: 68,
+                height: 68,
                 decoration: BoxDecoration(
-                  shape: isMultiSelect ? BoxShape.rectangle : BoxShape.circle,
-                  color: isSelected
-                      ? AppTheme.accentPurple
-                      : Colors.transparent,
-                  borderRadius: isMultiSelect ? BorderRadius.circular(7) : null,
-                  border: isSelected
-                      ? null
-                      : Border.all(color: Colors.white38, width: 1.5),
+                  shape: BoxShape.circle,
+                  color: isSelected ? AppTheme.accentPurple : AppTheme.surface,
+                  border: Border.all(
+                    color: isSelected
+                        ? AppTheme.accentPurple
+                        : AppTheme.white.withValues(alpha: 0.08),
+                    width: 1.5,
+                  ),
                 ),
-                child: isSelected
-                    ? const Icon(
-                        Icons.check_rounded,
-                        color: AppTheme.secondary,
-                        size: 15,
-                      )
-                    : null,
+                child: Icon(
+                  icon,
+                  color: isSelected ? AppTheme.onPrimary : AppTheme.textMuted,
+                  size: 28,
+                ),
               ),
+              if (isSelected)
+                Positioned(
+                  right: -2,
+                  top: -2,
+                  child: Container(
+                    width: 20,
+                    height: 20,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppTheme.accentPurple,
+                      border: Border.all(color: AppTheme.background, width: 2),
+                    ),
+                    child: const Icon(
+                      Icons.check_rounded,
+                      color: AppTheme.onPrimary,
+                      size: 12,
+                    ),
+                  ),
+                ),
             ],
           ),
-        ),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontFamily: _kFontFamily,
+              color: isSelected ? AppTheme.onBackground : AppTheme.textMuted,
+              fontSize: 11,
+              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Step 7: Prep style (single-select) ───────────────────────────────────────
+
+class _PrepStyleStep extends StatelessWidget {
+  final String mascotMessage;
+  final String? selected;
+  final ValueChanged<String> onSelect;
+
+  const _PrepStyleStep({
+    required this.mascotMessage,
+    required this.selected,
+    required this.onSelect,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const SizedBox(height: 20),
+          _StepHeader(
+            illustration: const _IconIllustration(icon: Icons.schedule_rounded),
+            headline: 'Prep style',
+            body: mascotMessage,
+          ),
+          const SizedBox(height: 28),
+          _OnboardingDropdown<String>(
+            label: 'Prep style',
+            value: selected,
+            items: _kPrepStyles,
+            onChanged: (v) {
+              if (v != null) onSelect(v);
+            },
+          ),
+          const SizedBox(height: 100),
+        ],
       ),
     );
   }
@@ -1889,6 +2302,7 @@ class _OnboardingTextField extends StatelessWidget {
   final String hint;
   final ValueChanged<String>? onChanged;
   final TextCapitalization textCapitalization;
+  final EdgeInsets scrollPadding;
 
   const _OnboardingTextField({
     required this.controller,
@@ -1896,6 +2310,7 @@ class _OnboardingTextField extends StatelessWidget {
     required this.hint,
     this.onChanged,
     required this.textCapitalization,
+    this.scrollPadding = const EdgeInsets.all(20.0),
   });
 
   @override
@@ -1905,8 +2320,9 @@ class _OnboardingTextField extends StatelessWidget {
       children: [
         Text(
           label,
-          style: GoogleFonts.googleSans(
-            color: AppTheme.onBackground2,
+          style: const TextStyle(
+            fontFamily: _kFontFamily,
+            color: AppTheme.textMuted,
             fontSize: 13,
             fontWeight: FontWeight.w500,
           ),
@@ -1916,10 +2332,17 @@ class _OnboardingTextField extends StatelessWidget {
           controller: controller,
           textCapitalization: textCapitalization,
           onChanged: onChanged,
-          style: GoogleFonts.googleSans(color: Colors.white),
+          scrollPadding: scrollPadding,
+          style: const TextStyle(
+            fontFamily: _kFontFamily,
+            color: AppTheme.onBackground,
+          ),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: GoogleFonts.googleSans(color: Colors.white24),
+            hintStyle: const TextStyle(
+              fontFamily: _kFontFamily,
+              color: AppTheme.textMuted,
+            ),
             filled: true,
             fillColor: AppTheme.surface,
             border: OutlineInputBorder(
@@ -1929,7 +2352,7 @@ class _OnboardingTextField extends StatelessWidget {
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
               borderSide: BorderSide(
-                color: Colors.white.withValues(alpha: 0.08),
+                color: AppTheme.white.withValues(alpha: 0.08),
               ),
             ),
             focusedBorder: OutlineInputBorder(
@@ -1970,8 +2393,9 @@ class _OnboardingDropdown<T> extends StatelessWidget {
       children: [
         Text(
           label,
-          style: GoogleFonts.googleSans(
-            color: AppTheme.onBackground2,
+          style: const TextStyle(
+            fontFamily: _kFontFamily,
+            color: AppTheme.textMuted,
             fontSize: 13,
             fontWeight: FontWeight.w500,
           ),
@@ -1982,26 +2406,34 @@ class _OnboardingDropdown<T> extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           decoration: BoxDecoration(
             color: AppTheme.surface,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(AppTheme.radiusXl),
             border: Border.all(
               color: value != null
                   ? AppTheme.accentPurple.withValues(alpha: 0.4)
-                  : Colors.white.withValues(alpha: 0.08),
+                  : AppTheme.white.withValues(alpha: 0.08),
             ),
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<T>(
               value: value,
               isExpanded: true,
-              dropdownColor: const Color(0xFF1E1E24),
+              dropdownColor: AppTheme.surfaceLight,
+              borderRadius: BorderRadius.circular(AppTheme.radiusXl),
               icon: const Icon(
                 Icons.keyboard_arrow_down_rounded,
-                color: Colors.white54,
+                color: AppTheme.textMuted,
               ),
-              style: GoogleFonts.googleSans(color: Colors.white, fontSize: 15),
-              hint: Text(
-                'Select',
-                style: GoogleFonts.googleSans(color: Colors.white38),
+              style: const TextStyle(
+                fontFamily: _kFontFamily,
+                color: AppTheme.onBackground,
+                fontSize: 15,
+              ),
+              hint: const Text(
+                'Select one',
+                style: TextStyle(
+                  fontFamily: _kFontFamily,
+                  color: AppTheme.textMuted,
+                ),
               ),
               onChanged: onChanged,
               items: items
