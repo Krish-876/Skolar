@@ -36,57 +36,81 @@ Color _tint(int tasksCompleted) {
   return AppTheme.accent.withValues(alpha: alpha);
 }
 
-class _StreakStripBody extends StatelessWidget {
+class _StreakStripBody extends ConsumerWidget {
   final StreakViewMode mode;
   final List<DailyCompletion> dailyCompletions;
 
-  const _StreakStripBody({required this.mode, required this.dailyCompletions});
+  const _StreakStripBody({
+    super.key,
+    required this.mode,
+    required this.dailyCompletions,
+  });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isMonth = mode == StreakViewMode.month;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // The week/month view-mode toggle lives here, beside the heatmap
-        // itself, rather than up in the dashboard header — it's this
-        // widget's own control, not a page-level one. A label describing
-        // the current view sits in the same row, at the same height as the
-        // 3-dot menu, rather than floating unlabeled.
-        Row(
-          children: [
-            Expanded(
-              // Cross-fades instead of popping instantly between "Your
-              // progress this week" and "Month summary" — matches the rest
-              // of this transition, which is otherwise all smooth motion.
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 250),
-                // Default `layoutBuilder` stacks outgoing/incoming children
-                // centered — since "Month summary" is shorter than "Your
-                // progress this week", that centered it within the wider
-                // text's bounding box mid-fade instead of keeping it flush
-                // against the left edge like every other label here.
-                layoutBuilder: (currentChild, previousChildren) => Stack(
-                  alignment: Alignment.centerLeft,
-                  children: [...previousChildren, ?currentChild],
-                ),
-                child: Text(
-                  mode == StreakViewMode.week
-                      ? 'Your progress this week'
-                      : 'Month summary',
-                  key: ValueKey(mode),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontFamily: 'GoogleSans',
-                    color: AppTheme.textMuted,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
+        // The week/month view-mode toggle lives here beside the heatmap
+        // itself. Tapping the row or the dropdown arrow toggles between week
+        // and month view, rotating the arrow up or down.
+        GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () {
+            ref.read(streakViewModeProvider.notifier).state = isMonth
+                ? StreakViewMode.week
+                : StreakViewMode.month;
+          },
+          child: Row(
+            children: [
+              Expanded(
+                // Cross-fades instead of popping instantly between "Your
+                // progress this week" and "Month summary" — matches the rest
+                // of this transition, which is otherwise all smooth motion.
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 250),
+                  // Default `layoutBuilder` stacks outgoing/incoming children
+                  // centered — since "Month summary" is shorter than "Your
+                  // progress this week", that centered it within the wider
+                  // text's bounding box mid-fade instead of keeping it flush
+                  // against the left edge like every other label here.
+                  layoutBuilder: (currentChild, previousChildren) => Stack(
+                    alignment: Alignment.centerLeft,
+                    children: [...previousChildren, ?currentChild],
+                  ),
+                  child: Text(
+                    mode == StreakViewMode.week
+                        ? 'Your progress this week'
+                        : 'Month summary',
+                    key: ValueKey(mode),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontFamily: 'GoogleSans',
+                      color: AppTheme.textMuted,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ),
-            ),
-            const _StreakViewModeToggle(),
-          ],
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: AnimatedRotation(
+                  turns: isMonth ? 0.5 : 0.0,
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeOutCubic,
+                  child: const Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    color: AppTheme.textSecondary,
+                    size: 22,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: 6),
         Align(
@@ -118,114 +142,6 @@ class _StreakStripBody extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-/// Switchable chip-like segmented toggle for [streakViewModeProvider] (week/month view)
-/// consistent with the app's tactile pill design.
-class _StreakViewModeToggle extends ConsumerWidget {
-  const _StreakViewModeToggle();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final mode = ref.watch(streakViewModeProvider);
-    final isWeek = mode == StreakViewMode.week;
-
-    return Container(
-      height: 28,
-      padding: const EdgeInsets.all(2.5),
-      decoration: BoxDecoration(
-        color: AppTheme.surface,
-        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-        border: Border.all(
-          color: AppTheme.white.withValues(alpha: 0.08),
-          width: 1,
-        ),
-      ),
-      child: SizedBox(
-        width: 116,
-        child: Stack(
-          children: [
-            AnimatedAlign(
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeOutCubic,
-              alignment: isWeek ? Alignment.centerLeft : Alignment.centerRight,
-              child: FractionallySizedBox(
-                widthFactor: 0.5,
-                heightFactor: 1,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: AppTheme.accent,
-                    borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                  ),
-                ),
-              ),
-            ),
-            Row(
-              children: [
-                Expanded(
-                  child: _ModeChip(
-                    label: 'Week',
-                    active: isWeek,
-                    onTap: () {
-                      if (!isWeek) {
-                        ref.read(streakViewModeProvider.notifier).state =
-                            StreakViewMode.week;
-                      }
-                    },
-                  ),
-                ),
-                Expanded(
-                  child: _ModeChip(
-                    label: 'Month',
-                    active: !isWeek,
-                    onTap: () {
-                      if (isWeek) {
-                        ref.read(streakViewModeProvider.notifier).state =
-                            StreakViewMode.month;
-                      }
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ModeChip extends StatelessWidget {
-  final String label;
-  final bool active;
-  final VoidCallback onTap;
-
-  const _ModeChip({
-    required this.label,
-    required this.active,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: Center(
-        child: AnimatedDefaultTextStyle(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOutCubic,
-          style: TextStyle(
-            fontFamily: 'GoogleSans',
-            fontSize: 11,
-            fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-            color: active ? AppTheme.onPrimary : AppTheme.textMuted,
-          ),
-          child: Text(label),
-        ),
-      ),
     );
   }
 }

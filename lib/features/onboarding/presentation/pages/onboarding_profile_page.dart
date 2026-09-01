@@ -837,7 +837,7 @@ class _FooterButtonState extends State<_FooterButton> {
 
 // ── Step 0: Avatar Customisation ─────────────────────────────────────────────
 
-class _AvatarStep extends StatelessWidget {
+class _AvatarStep extends StatefulWidget {
   final AvatarMakerController avatarController;
   final String mascotMessage;
 
@@ -846,7 +846,64 @@ class _AvatarStep extends StatelessWidget {
     required this.mascotMessage,
   });
 
+  @override
+  State<_AvatarStep> createState() => _AvatarStepState();
+}
+
+class _AvatarStepState extends State<_AvatarStep> {
   static const double _customizerCardHeight = 320;
+  final GlobalKey _customizerKey = GlobalKey();
+
+  ScrollableState? _findHorizontalScrollable(BuildContext? rootContext) {
+    if (rootContext == null) return null;
+    ScrollableState? found;
+    void visitor(Element element) {
+      if (found != null) return;
+      final widget = element.widget;
+      if (widget is Scrollable) {
+        if (element is StatefulElement && element.state is ScrollableState) {
+          final state = element.state as ScrollableState;
+          if (state.axisDirection == AxisDirection.left ||
+              state.axisDirection == AxisDirection.right) {
+            found = state;
+            return;
+          }
+        }
+      }
+      element.visitChildren(visitor);
+    }
+
+    if (rootContext is Element) {
+      rootContext.visitChildren(visitor);
+    }
+    return found;
+  }
+
+  void _switchCategory(bool forward) {
+    final scrollable = _findHorizontalScrollable(_customizerKey.currentContext);
+    if (scrollable != null && scrollable.position.hasPixels) {
+      final pos = scrollable.position;
+      final step = pos.viewportDimension > 0 ? pos.viewportDimension : 300.0;
+      final target = forward ? (pos.pixels + step) : (pos.pixels - step);
+
+      double destination;
+      if (forward && target > pos.maxScrollExtent + 1.0) {
+        destination = pos.minScrollExtent;
+      } else if (!forward && target < pos.minScrollExtent - 1.0) {
+        destination = pos.maxScrollExtent;
+      } else {
+        destination = target.clamp(pos.minScrollExtent, pos.maxScrollExtent);
+      }
+
+      if ((destination - pos.pixels).abs() > 0.5) {
+        pos.animateTo(
+          destination,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOutCubic,
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -874,11 +931,11 @@ class _AvatarStep extends StatelessWidget {
               child: FramedAvatar(
                 size: 104,
                 backgroundColor: AppTheme.white,
-                controller: avatarController,
+                controller: widget.avatarController,
               ),
             ),
             headline: 'Create your avatar',
-            body: mascotMessage,
+            body: widget.mascotMessage,
           ),
           const SizedBox(height: 20),
           _GlassCard(
@@ -942,92 +999,76 @@ class _AvatarStep extends StatelessWidget {
                         alignment: Alignment.topLeft,
                         child: Stack(
                           children: [
-                            AvatarMakerCustomizer(
-                              controller: avatarController,
-                              scaffoldWidth: preScaleWidth,
-                              scaffoldHeight: preScaleHeight,
-                              theme: AvatarMakerThemeData(
-                                primaryBgColor: AppTheme.transparent,
-                                secondaryBgColor: AppTheme.transparent,
-                                iconColor: AppTheme.onSurfaceDark,
-                                selectedIconColor: AppTheme.primary,
-                                unselectedIconColor:
-                                    AppTheme.sheetTextSecondary,
-                                nbrTilesRow: 4,
-                                labelTextStyle: const TextStyle(
-                                  fontFamily: _kFontFamily,
-                                  color: AppTheme.onSurfaceDark,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                selectedTileDecoration: BoxDecoration(
-                                  color: AppTheme.white,
-                                  borderRadius: BorderRadius.circular(14),
-                                  border: Border.all(
-                                    color: AppTheme.primary,
-                                    width: 2.5,
+                            KeyedSubtree(
+                              key: _customizerKey,
+                              child: AvatarMakerCustomizer(
+                                controller: widget.avatarController,
+                                scaffoldWidth: preScaleWidth,
+                                scaffoldHeight: preScaleHeight,
+                                theme: AvatarMakerThemeData(
+                                  primaryBgColor: AppTheme.transparent,
+                                  secondaryBgColor: AppTheme.transparent,
+                                  iconColor: AppTheme.onSurfaceDark,
+                                  selectedIconColor: AppTheme.primary,
+                                  unselectedIconColor:
+                                      AppTheme.sheetTextSecondary,
+                                  nbrTilesRow: 4,
+                                  labelTextStyle: const TextStyle(
+                                    fontFamily: _kFontFamily,
+                                    color: AppTheme.onSurfaceDark,
+                                    fontWeight: FontWeight.bold,
                                   ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: AppTheme.primary.withValues(
-                                        alpha: 0.2,
+                                  selectedTileDecoration: BoxDecoration(
+                                    color: AppTheme.white,
+                                    borderRadius: BorderRadius.circular(14),
+                                    border: Border.all(
+                                      color: AppTheme.primary,
+                                      width: 2.5,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: AppTheme.primary.withValues(
+                                          alpha: 0.2,
+                                        ),
+                                        blurRadius: 6,
+                                        offset: const Offset(0, 2),
                                       ),
-                                      blurRadius: 6,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                unselectedTileDecoration: BoxDecoration(
-                                  color: AppTheme.white,
-                                  borderRadius: BorderRadius.circular(14),
-                                  border: Border.all(
-                                    color: AppTheme.accentPurple.withValues(
-                                      alpha: 0.25,
-                                    ),
-                                    width: 1,
+                                    ],
                                   ),
-                                ),
-                                boxDecoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                tileMargin: const EdgeInsets.all(6.0),
-                                tilePadding: const EdgeInsets.all(6.0),
-                              ),
-                            ),
-                            // The package's arrow buttons in the heading
-                            // (left/right, to move between categories)
-                            // don't reliably work — the bottom icon strip
-                            // already covered category switching before it
-                            // was cropped out, and there's no theme flag to
-                            // disable just these two buttons while keeping
-                            // the title text, so they're covered with a
-                            // plain white tile (matching the card/appbar
-                            // background) that also absorbs the tap instead
-                            // of forwarding it to the broken button
-                            // underneath. `kToolbarHeight` is the AppBar's
-                            // real (pre-scale) height and, by Material's
-                            // own convention, also the width of its default
-                            // leading/action icon slots — no estimation
-                            // needed here, unlike the bottom strip's height.
-                            Positioned(
-                              top: 0,
-                              left: 0,
-                              child: AbsorbPointer(
-                                child: Container(
-                                  width: kToolbarHeight,
-                                  height: kToolbarHeight,
-                                  color: AppTheme.white,
+                                  unselectedTileDecoration: BoxDecoration(
+                                    color: AppTheme.white,
+                                    borderRadius: BorderRadius.circular(14),
+                                    border: Border.all(
+                                      color: AppTheme.accentPurple.withValues(
+                                        alpha: 0.25,
+                                      ),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  boxDecoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  tileMargin: const EdgeInsets.all(6.0),
+                                  tilePadding: const EdgeInsets.all(6.0),
                                 ),
                               ),
                             ),
+                            // Left arrow button to switch to previous customization category
                             Positioned(
-                              top: 0,
-                              right: 0,
-                              child: AbsorbPointer(
-                                child: Container(
-                                  width: kToolbarHeight,
-                                  height: kToolbarHeight,
-                                  color: AppTheme.white,
-                                ),
+                              top: 4,
+                              left: 6,
+                              child: _NavArrowButton(
+                                icon: Icons.chevron_left_rounded,
+                                onTap: () => _switchCategory(false),
+                              ),
+                            ),
+                            // Right arrow button to switch to next customization category
+                            Positioned(
+                              top: 4,
+                              right: 6,
+                              child: _NavArrowButton(
+                                icon: Icons.chevron_right_rounded,
+                                onTap: () => _switchCategory(true),
                               ),
                             ),
                           ],
@@ -1040,6 +1081,45 @@ class _AvatarStep extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _NavArrowButton extends StatefulWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _NavArrowButton({required this.icon, required this.onTap});
+
+  @override
+  State<_NavArrowButton> createState() => _NavArrowButtonState();
+}
+
+class _NavArrowButtonState extends State<_NavArrowButton> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) => setState(() => _pressed = false),
+      onTapCancel: () => setState(() => _pressed = false),
+      onTap: widget.onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 80),
+        width: 48,
+        height: 48,
+        transform: _pressed
+            ? Matrix4.translationValues(0, 2, 0)
+            : Matrix4.identity(),
+        decoration: BoxDecoration(
+          color: _pressed ? const Color(0xFFF0EBFF) : AppTheme.white,
+          shape: BoxShape.circle,
+        ),
+        alignment: Alignment.center,
+        child: Icon(widget.icon, color: AppTheme.primary, size: 30),
       ),
     );
   }
