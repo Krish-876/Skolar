@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 /// Application theme configuration
 class AppTheme {
   // ── Core Brand Colors ──────────────────────────────────────────────────────
-  static const Color background = Color(0xFF16161A); // Deep space background
+  static const Color background = Color(0xFF000000); // True black background
   static const Color primary = Color(0xFF8C38E5); // Vibrant brand purple
   static const Color secondary = Color(0xFF0F0E17); // Secondary near-black
   static const Color star = Color(0xFFF5C518); // Star / highlight yellow
@@ -48,9 +48,16 @@ class AppTheme {
   // visible color on the black background, not a translucent tint.
   static const Color outlineButtonEdge = Color(0xFF2A2740);
 
-  // ── Preview sheet (light surfaces) ────────────────────────────────────────
-  // Light card/sheet on the otherwise all-dark theme, e.g. the auth preview
-  // screen's bottom sheet.
+  // ── Status ─────────────────────────────────────────────────────────────────
+  static const Color onlineIndicator = Color(
+    0xFF34C759,
+  ); // "online" presence dot
+
+  // ── Light surfaces (auth sheet + onboarding) ──────────────────────────────
+  // Light card/sheet on the otherwise all-dark theme — the auth sheet
+  // (login/signup form + its modals) and the onboarding questionnaire flow
+  // share this same white/near-white surface so the hand-off between the two
+  // doesn't clash.
   static const Color sheetBackground = Color(0xFFFFFFFF); // White sheet bg
   static const Color sheetFieldFill = Color(0xFFF3F3F6); // Input fill on sheet
   static const Color sheetTextSecondary = Color(
