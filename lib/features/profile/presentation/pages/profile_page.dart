@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:Skolar/core/routing/app_routes.dart';
 import 'package:Skolar/features/profile/presentation/providers/profile_provider.dart';
+import 'package:Skolar/shared/components/framed_avatar.dart';
 import 'package:Skolar/shared/models/user_model.dart';
 import 'package:Skolar/shared/providers/global_providers.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -266,11 +266,10 @@ class _UserHeaderCard extends StatelessWidget {
             alignment: Alignment.center,
             child:
                 (user.avatarData != null && user.avatarData!.trim().isNotEmpty)
-                ? SvgPicture.string(
-                    user.avatarData!,
-                    width: 72,
-                    height: 72,
-                    fit: BoxFit.cover,
+                ? FramedAvatar(
+                    size: 72,
+                    backgroundColor: const Color(0xFFF2F2F5),
+                    svgString: user.avatarData!,
                   )
                 : Text(
                     initial,
