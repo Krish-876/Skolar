@@ -3,6 +3,9 @@ import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:Skolar/features/nova_chat/domain/entities/chat_message_entity.dart';
 import 'package:Skolar/features/nova_chat/domain/entities/study_plan_entity.dart';
+import 'package:Skolar/features/nova_chat/presentation/widgets/nova_flashcard_deck.dart';
+import 'package:Skolar/features/nova_chat/presentation/widgets/nova_practice_problem_card.dart';
+import 'package:Skolar/features/nova_chat/presentation/widgets/nova_quiz_card.dart';
 import 'package:Skolar/features/nova_chat/presentation/widgets/nova_study_plan_card.dart';
 import 'package:Skolar/features/nova_chat/presentation/widgets/nova_thinking_indicator.dart';
 import 'package:Skolar/shared/components/framed_avatar.dart';
@@ -51,7 +54,6 @@ class NovaChatBubble extends StatelessWidget {
             margin: const EdgeInsets.only(left: 48, right: 8),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
-              // Solid lighter purple (no gradient) as requested
               color: const Color(0xFF8C5BE8),
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(20),
@@ -79,7 +81,7 @@ class NovaChatBubble extends StatelessWidget {
           ),
         ),
 
-        // User SVG Avatar at the bottom-right
+        // User SVG Avatar at bottom-right
         Padding(
           padding: const EdgeInsets.only(bottom: 2),
           child: _buildUserAvatar(),
@@ -89,13 +91,11 @@ class NovaChatBubble extends StatelessWidget {
   }
 
   Widget _buildAssistantRow(BuildContext context) {
-    final hasStructuredPlan = message.structuredData is StudyPlanEntity;
-
     return Row(
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        // Nova Mascot Avatar on the bottom-left
+        // Mascot Avatar on bottom-left
         const Padding(
           padding: EdgeInsets.only(bottom: 2, right: 8),
           child: NovaMascotAvatar(size: 26),
@@ -104,68 +104,139 @@ class NovaChatBubble extends StatelessWidget {
         Flexible(
           child: Container(
             margin: const EdgeInsets.only(right: 24),
-            padding: hasStructuredPlan
-                ? EdgeInsets.zero
-                : const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            decoration: BoxDecoration(
-              // Glassmorphic dark card matching screenshot
-              color: const Color(0xFF1E1E26).withValues(alpha: 0.9),
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(20),
-                topRight: Radius.circular(20),
-                bottomRight: Radius.circular(20),
-                bottomLeft: Radius.circular(6),
-              ),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.08),
-                width: 1,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.3),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: hasStructuredPlan
-                ? NovaStudyPlanCard(
-                    plan: message.structuredData as StudyPlanEntity,
-                  )
-                : MarkdownBody(
-                    data: message.content,
-                    selectable: true,
-                    styleSheet: MarkdownStyleSheet(
-                      p: GoogleFonts.googleSans(
-                        color: const Color(0xFFF3F2F7),
-                        fontSize: 15,
-                        height: 1.45,
-                      ),
-                      strong: GoogleFonts.googleSans(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      em: GoogleFonts.googleSans(
-                        color: const Color(0xFFA8C4FF),
-                        fontStyle: FontStyle.italic,
-                      ),
-                      code: GoogleFonts.googleSans(
-                        backgroundColor: const Color(0xFF14131A),
-                        color: const Color(0xFFE2D6FF),
-                        fontSize: 13.5,
-                      ),
-                      codeblockDecoration: BoxDecoration(
-                        color: const Color(0xFF14131A),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      listBullet: GoogleFonts.googleSans(
-                        color: const Color(0xFF8C5BE8),
-                      ),
-                    ),
-                  ),
+            child: _buildPolymorphicContent(context),
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildPolymorphicContent(BuildContext context) {
+    switch (message.responseType) {
+      case NovaResponseType.quiz:
+        if (message.structuredData is QuizEntity) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (message.content.isNotEmpty) ...[
+                _buildStandardMessageBubble(message.content),
+                const SizedBox(height: 8),
+              ],
+              NovaQuizCard(quiz: message.structuredData as QuizEntity),
+            ],
+          );
+        }
+        break;
+
+      case NovaResponseType.plan:
+        if (message.structuredData is StudyPlanEntity) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (message.content.isNotEmpty &&
+                  !message.content.startsWith('**Here is your')) ...[
+                _buildStandardMessageBubble(message.content),
+                const SizedBox(height: 8),
+              ],
+              NovaStudyPlanCard(plan: message.structuredData as StudyPlanEntity),
+            ],
+          );
+        }
+        break;
+
+      case NovaResponseType.flashcard:
+        if (message.structuredData is FlashcardEntity) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (message.content.isNotEmpty) ...[
+                _buildStandardMessageBubble(message.content),
+                const SizedBox(height: 8),
+              ],
+              NovaFlashcardDeck(deck: message.structuredData as FlashcardEntity),
+            ],
+          );
+        }
+        break;
+
+      case NovaResponseType.practiceProblem:
+        if (message.structuredData is PracticeProblemEntity) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (message.content.isNotEmpty) ...[
+                _buildStandardMessageBubble(message.content),
+                const SizedBox(height: 8),
+              ],
+              NovaPracticeProblemCard(
+                problem: message.structuredData as PracticeProblemEntity,
+              ),
+            ],
+          );
+        }
+        break;
+
+      case NovaResponseType.chat:
+        break;
+    }
+
+    return _buildStandardMessageBubble(message.content);
+  }
+
+  Widget _buildStandardMessageBubble(String content) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E1E26).withValues(alpha: 0.9),
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(20),
+          topRight: Radius.circular(20),
+          bottomRight: Radius.circular(20),
+          bottomLeft: Radius.circular(6),
+        ),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.08),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: MarkdownBody(
+        data: content,
+        selectable: true,
+        styleSheet: MarkdownStyleSheet(
+          p: GoogleFonts.googleSans(
+            color: const Color(0xFFF3F2F7),
+            fontSize: 15,
+            height: 1.45,
+          ),
+          strong: GoogleFonts.googleSans(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+          em: GoogleFonts.googleSans(
+            color: const Color(0xFFA8C4FF),
+            fontStyle: FontStyle.italic,
+          ),
+          code: GoogleFonts.googleSans(
+            backgroundColor: const Color(0xFF14131A),
+            color: const Color(0xFFE2D6FF),
+            fontSize: 13.5,
+          ),
+          codeblockDecoration: BoxDecoration(
+            color: const Color(0xFF14131A),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          listBullet: GoogleFonts.googleSans(
+            color: const Color(0xFF8C5BE8),
+          ),
+        ),
+      ),
     );
   }
 

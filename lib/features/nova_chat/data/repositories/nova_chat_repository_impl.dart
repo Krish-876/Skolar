@@ -19,18 +19,12 @@ class NovaChatRepositoryImpl implements INovaChatRepository {
     required String userId,
     required String question,
   }) async {
-    final answer = await _remoteDatasource.sendMessage(
+    final responseDto = await _remoteDatasource.sendMessage(
       userId: userId,
       question: question,
     );
 
-    return ChatMessageEntity(
-      id: _uuid.v4(),
-      role: MessageRole.assistant,
-      content: answer,
-      timestamp: DateTime.now(),
-      status: MessageStatus.sent,
-    );
+    return responseDto.toEntity(id: _uuid.v4());
   }
 
   @override
@@ -50,6 +44,13 @@ class NovaChatRepositoryImpl implements INovaChatRepository {
     required String userId,
   }) async {
     return _remoteDatasource.getFacts(userId: userId);
+  }
+
+  @override
+  Future<List<String>> getInitialSuggestions({
+    required String userId,
+  }) async {
+    return _remoteDatasource.getInitialSuggestions(userId: userId);
   }
 
   @override

@@ -16,5 +16,9 @@ abstract class INovaChatRepository {
     required String userId,
   });
 
+  Future<List<String>> getInitialSuggestions({
+    required String userId,
+  });
+
   Future<bool> checkBackendHealth();
 }

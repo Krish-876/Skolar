@@ -1,81 +1,112 @@
+import 'package:Skolar/features/nova_chat/data/models/study_plan_dto.dart';
 import 'package:Skolar/features/nova_chat/domain/entities/chat_message_entity.dart';
 
-class ChatMessageDto {
-  final String id;
-  final String role;
-  final String content;
-  final String timestamp;
-  final String status;
+class NovaChatResponseDto {
+  final String type;
+  final String message;
+  final Map<String, dynamic>? data;
+  final List<String> suggestions;
 
-  const ChatMessageDto({
-    required this.id,
-    required this.role,
-    required this.content,
-    required this.timestamp,
-    required this.status,
+  const NovaChatResponseDto({
+    required this.type,
+    required this.message,
+    this.data,
+    this.suggestions = const [],
   });
 
-  factory ChatMessageDto.fromJson(Map<String, dynamic> json) {
-    return ChatMessageDto(
-      id: json['id'] as String? ?? '',
-      role: json['role'] as String? ?? 'user',
-      content: json['content'] as String? ?? '',
-      timestamp: json['timestamp'] as String? ?? DateTime.now().toIso8601String(),
-      status: json['status'] as String? ?? 'sent',
+  factory NovaChatResponseDto.fromJson(Map<String, dynamic> json) {
+    // Handle both old schema { "answer": "..." } and new polymorphic schema
+    final type = json['type'] as String? ?? 'chat';
+    final message = json['message'] as String? ?? json['answer'] as String? ?? '';
+    final data = json['data'] as Map<String, dynamic>?;
+    final rawSuggestions = json['suggestions'] as List<dynamic>? ?? [];
+    final suggestions = rawSuggestions.map((s) => s.toString()).toList();
+
+    return NovaChatResponseDto(
+      type: type,
+      message: message,
+      data: data,
+      suggestions: suggestions,
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'role': role,
-      'content': content,
-      'timestamp': timestamp,
-      'status': status,
-    };
-  }
+  ChatMessageEntity toEntity({required String id}) {
+    NovaResponseType responseType;
+    dynamic structuredData;
 
-  ChatMessageEntity toEntity() {
-    MessageRole mappedRole;
-    switch (role) {
-      case 'assistant':
-        mappedRole = MessageRole.assistant;
+    switch (type) {
+      case 'quiz':
+        responseType = NovaResponseType.quiz;
+        if (data != null) {
+          final title = data!['title'] as String? ?? 'Quick Quiz';
+          final questionsRaw = data!['questions'] as List<dynamic>? ?? [];
+          final questions = questionsRaw.map((q) {
+            final qMap = q as Map<String, dynamic>;
+            final optionsRaw = qMap['options'] as List<dynamic>? ?? [];
+            return QuizQuestionEntity(
+              question: qMap['question'] as String? ?? '',
+              options: optionsRaw.map((o) => o.toString()).toList(),
+              correctIndex: qMap['correct_index'] as int? ?? 0,
+              explanation: qMap['explanation'] as String? ?? '',
+            );
+          }).toList();
+          structuredData = QuizEntity(title: title, questions: questions);
+        }
         break;
-      case 'system':
-        mappedRole = MessageRole.system;
-        break;
-      default:
-        mappedRole = MessageRole.user;
-    }
 
-    MessageStatus mappedStatus;
-    switch (status) {
-      case 'sending':
-        mappedStatus = MessageStatus.sending;
+      case 'plan':
+        responseType = NovaResponseType.plan;
+        if (data != null) {
+          structuredData = StudyPlanDto.fromJson(data!).toEntity();
+        }
         break;
-      case 'error':
-        mappedStatus = MessageStatus.error;
+
+      case 'flashcard':
+        responseType = NovaResponseType.flashcard;
+        if (data != null) {
+          final title = data!['title'] as String? ?? 'Key Concepts';
+          final cardsRaw = data!['cards'] as List<dynamic>? ?? [];
+          final cards = cardsRaw.map((c) {
+            final cMap = c as Map<String, dynamic>;
+            return FlashcardItemEntity(
+              front: cMap['front'] as String? ?? '',
+              back: cMap['back'] as String? ?? '',
+              keyTakeaway: cMap['key_takeaway'] as String?,
+            );
+          }).toList();
+          structuredData = FlashcardEntity(title: title, cards: cards);
+        }
         break;
+
+      case 'practice_problem':
+        responseType = NovaResponseType.practiceProblem;
+        if (data != null) {
+          final hintsRaw = data!['hints'] as List<dynamic>? ?? [];
+          structuredData = PracticeProblemEntity(
+            title: data!['title'] as String? ?? 'Practice Problem',
+            topic: data!['topic'] as String? ?? 'General',
+            difficulty: data!['difficulty'] as String? ?? 'Medium',
+            problemStatement: data!['problem_statement'] as String? ?? '',
+            hints: hintsRaw.map((h) => h.toString()).toList(),
+            solution: data!['solution'] as String? ?? '',
+          );
+        }
+        break;
+
       default:
-        mappedStatus = MessageStatus.sent;
+        responseType = NovaResponseType.chat;
+        structuredData = null;
     }
 
     return ChatMessageEntity(
       id: id,
-      role: mappedRole,
-      content: content,
-      timestamp: DateTime.tryParse(timestamp) ?? DateTime.now(),
-      status: mappedStatus,
-    );
-  }
-
-  factory ChatMessageDto.fromEntity(ChatMessageEntity entity) {
-    return ChatMessageDto(
-      id: entity.id,
-      role: entity.role.name,
-      content: entity.content,
-      timestamp: entity.timestamp.toIso8601String(),
-      status: entity.status.name,
+      role: MessageRole.assistant,
+      content: message,
+      timestamp: DateTime.now(),
+      status: MessageStatus.sent,
+      responseType: responseType,
+      structuredData: structuredData,
+      suggestions: suggestions,
     );
   }
 }

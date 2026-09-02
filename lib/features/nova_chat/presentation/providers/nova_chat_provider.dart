@@ -40,6 +40,22 @@ class NovaChatNotifier extends StateNotifier<NovaChatState> {
       status: MessageStatus.sent,
     );
     state = state.copyWith(messages: [welcomeMsg]);
+
+    // Fetch dynamic initial suggestions from the model asynchronously
+    _fetchInitialSuggestions();
+  }
+
+  Future<void> _fetchInitialSuggestions() async {
+    try {
+      final suggestions = await _repository.getInitialSuggestions(
+        userId: _getUserId(),
+      );
+      if (suggestions.isNotEmpty && state.messages.length <= 1) {
+        state = state.copyWith(suggestions: suggestions);
+      }
+    } catch (e) {
+      debugPrint('🔴 [NovaChatNotifier] _fetchInitialSuggestions error: $e');
+    }
   }
 
   String _getUserId() {
@@ -116,6 +132,13 @@ class NovaChatNotifier extends StateNotifier<NovaChatState> {
         messages: [...state.messages, assistantMessage],
         isThinking: false,
         mascotState: MascotState.idle,
+        suggestions: assistantMessage.suggestions.isNotEmpty
+            ? assistantMessage.suggestions
+            : const [
+                'Can you explain this further?',
+                'Give me a quick quiz on this',
+                'Show a practice problem',
+              ],
       );
     } catch (e, st) {
       debugPrint('🔴 [NovaChatNotifier] sendMessage Error: $e\n$st');
@@ -150,26 +173,19 @@ class NovaChatNotifier extends StateNotifier<NovaChatState> {
 
       debugPrint('🟢 [NovaChatNotifier] Study plan received: ${plan.items.length} items');
 
-      String content = "**Here is your customized study plan for today:**\n\n";
-      if (plan.summary != null && plan.summary!.isNotEmpty) {
-        content += "> *${plan.summary}*\n\n";
-      }
-
-      for (final item in plan.items) {
-        content += "• **Priority ${item.priority} (${item.subject})**: ${item.task}\n  *Why: ${item.reason}*\n\n";
-      }
-
-      if (plan.stale && plan.note != null) {
-        content += "\n*Note: ${plan.note}*";
-      }
-
       final assistantMsg = ChatMessageEntity(
         id: _uuid.v4(),
         role: MessageRole.assistant,
-        content: content.trim(),
+        content: plan.summary ?? 'Here is your daily study roadmap:',
         timestamp: DateTime.now(),
         status: MessageStatus.sent,
+        responseType: NovaResponseType.plan,
         structuredData: plan,
+        suggestions: const [
+          'How should I tackle Priority 1 first?',
+          'Give me a practice quiz on Priority 1',
+          'Adjust my study capacity',
+        ],
       );
 
       state = state.copyWith(
@@ -177,6 +193,11 @@ class NovaChatNotifier extends StateNotifier<NovaChatState> {
         isThinking: false,
         latestStudyPlan: plan,
         mascotState: MascotState.idle,
+        suggestions: const [
+          'How should I tackle Priority 1 first?',
+          'Give me a practice quiz on Priority 1',
+          'Adjust my study capacity',
+        ],
       );
     } catch (e, st) {
       debugPrint('🔴 [NovaChatNotifier] generateStudyPlan Error: $e\n$st');

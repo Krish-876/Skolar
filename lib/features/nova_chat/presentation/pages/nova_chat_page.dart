@@ -18,6 +18,7 @@ class NovaChatPage extends ConsumerStatefulWidget {
 
 class _NovaChatPageState extends ConsumerState<NovaChatPage> {
   late final ScrollController _scrollCtrl;
+  final GlobalKey _inputDockKey = GlobalKey();
 
   @override
   void initState() {
@@ -106,7 +107,7 @@ class _NovaChatPageState extends ConsumerState<NovaChatPage> {
             controller: _scrollCtrl,
             padding: EdgeInsets.only(
               top: topPadding + 10,
-              bottom: bottomPadding + MediaQuery.of(context).viewInsets.bottom,
+              bottom: bottomPadding,
             ),
             physics: const BouncingScrollPhysics(),
             itemCount: chatState.messages.length +
@@ -145,17 +146,23 @@ class _NovaChatPageState extends ConsumerState<NovaChatPage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Suggestions Pills (disappears once chat is sent)
+                // Suggestions Pills (Loads question into input dock on click)
                 if (chatState.suggestions.isNotEmpty)
                   NovaQuickSuggestions(
                     suggestions: chatState.suggestions,
                     onSelectSuggestion: (suggestion) {
-                      chatNotifier.sendMessage(suggestion);
+                      final state = _inputDockKey.currentState;
+                      if (state != null) {
+                        (state as dynamic).setInputText(suggestion);
+                      } else {
+                        chatNotifier.sendMessage(suggestion);
+                      }
                     },
                   ),
 
                 // Frosted Input Dock
                 NovaChatInputDock(
+                  key: _inputDockKey,
                   isThinking: chatState.isThinking,
                   onSendMessage: (text) => chatNotifier.sendMessage(text),
                   onFocusChanged: (hasFocus) {

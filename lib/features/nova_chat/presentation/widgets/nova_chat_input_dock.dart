@@ -40,10 +40,20 @@ class _NovaChatInputDockState extends State<NovaChatInputDock> {
     super.dispose();
   }
 
+  void setInputText(String text) {
+    _textCtrl.text = text;
+    _textCtrl.selection = TextSelection.fromPosition(
+      TextPosition(offset: text.length),
+    );
+    _focusNode.requestFocus();
+  }
+
   void _handleSend() {
     final text = _textCtrl.text.trim();
     if (text.isEmpty || widget.isThinking) return;
     _textCtrl.clear();
+    _focusNode.unfocus();
+    FocusScope.of(context).unfocus();
     widget.onSendMessage(text);
   }
 

@@ -1,10 +1,11 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:Skolar/core/config/environment.dart';
+import 'package:Skolar/features/nova_chat/data/models/chat_message_dto.dart';
 import 'package:Skolar/features/nova_chat/data/models/study_plan_dto.dart';
 
 abstract class INovaChatRemoteDatasource {
-  Future<String> sendMessage({
+  Future<NovaChatResponseDto> sendMessage({
     required String userId,
     required String question,
   });
@@ -18,6 +19,10 @@ abstract class INovaChatRemoteDatasource {
     required String userId,
   });
 
+  Future<List<String>> getInitialSuggestions({
+    required String userId,
+  });
+
   Future<bool> checkHealth();
 }
 
@@ -25,8 +30,10 @@ class NovaChatRemoteDatasource implements INovaChatRemoteDatasource {
   final Dio _dio;
   final String _baseUrl;
 
-  NovaChatRemoteDatasource({Dio? dio, String? baseUrl})
-      : _baseUrl = baseUrl ?? Environment.development.apiBaseUrl,
+  NovaChatRemoteDatasource({
+    Dio? dio,
+    String? baseUrl,
+  })  : _baseUrl = baseUrl ?? Environment.development.apiBaseUrl,
         _dio = dio ??
             Dio(
               BaseOptions(
@@ -38,7 +45,7 @@ class NovaChatRemoteDatasource implements INovaChatRemoteDatasource {
             );
 
   @override
-  Future<String> sendMessage({
+  Future<NovaChatResponseDto> sendMessage({
     required String userId,
     required String question,
   }) async {
@@ -58,10 +65,12 @@ class NovaChatRemoteDatasource implements INovaChatRemoteDatasource {
 
       if (response.statusCode == 200 && response.data != null) {
         final data = response.data;
-        if (data is Map && data.containsKey('answer')) {
-          return data['answer'] as String;
+        if (data is Map) {
+          return NovaChatResponseDto.fromJson(
+            Map<String, dynamic>.from(data),
+          );
         }
-        return data.toString();
+        return NovaChatResponseDto(type: 'chat', message: data.toString());
       }
 
       throw Exception('Unexpected server response: ${response.statusCode}');
@@ -133,6 +142,30 @@ class NovaChatRemoteDatasource implements INovaChatRemoteDatasource {
       debugPrint('🔴 [NovaChatDatasource] getFacts Error: $e');
       return {};
     }
+  }
+
+  @override
+  Future<List<String>> getInitialSuggestions({
+    required String userId,
+  }) async {
+    final effectiveUserId = userId.isNotEmpty ? userId : 'dev-user-001';
+    try {
+      final response = await _dio.get('/chat/$effectiveUserId/suggestions');
+      if (response.statusCode == 200 && response.data is Map) {
+        final rawList = response.data['suggestions'] as List<dynamic>? ?? [];
+        final list = rawList.map((s) => s.toString()).toList();
+        if (list.isNotEmpty) return list;
+      }
+    } catch (e) {
+      debugPrint('🔴 [NovaChatDatasource] getInitialSuggestions Error: $e');
+    }
+
+    return const [
+      'What should I study today?',
+      'Explain Quantum Tunneling in simple terms',
+      'Review my weak areas in Thermodynamics',
+      'Give me a 30-minute high-yield practice quiz',
+    ];
   }
 
   @override

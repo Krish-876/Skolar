@@ -17,12 +17,7 @@ class NovaChatState {
     this.isBackendOnline = true,
     this.mascotState = MascotState.idle,
     this.errorMessage,
-    this.suggestions = const [
-      'What should I study today?',
-      'Explain Quantum Tunneling in simple terms',
-      'Review my weak areas in Thermodynamics',
-      'Give me a 30-minute high-yield practice quiz',
-    ],
+    this.suggestions = const [],
     this.latestStudyPlan,
   });
 
