@@ -42,9 +42,7 @@ class _CgPullCardState extends State<CgPullCard>
       child: Material(
         color: AppTheme.transparent,
         child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-          ),
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(20)),
           clipBehavior: Clip.antiAlias,
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 25, sigmaY: 25),
@@ -78,8 +76,8 @@ class _CgPullCardState extends State<CgPullCard>
                             const trimEndMs = 5000;
                             final effectiveEndMs =
                                 totalMs > (trimStartMs + trimEndMs)
-                                    ? totalMs - trimEndMs
-                                    : totalMs;
+                                ? totalMs - trimEndMs
+                                : totalMs;
                             final startProgress = totalMs > 0
                                 ? (trimStartMs / totalMs).clamp(0.0, 0.95)
                                 : 0.0;
@@ -91,11 +89,11 @@ class _CgPullCardState extends State<CgPullCard>
                                 : 1.0;
                             final remainingDuration =
                                 totalMs > (trimStartMs + trimEndMs)
-                                    ? Duration(
-                                        milliseconds:
-                                            totalMs - trimStartMs - trimEndMs,
-                                      )
-                                    : composition.duration;
+                                ? Duration(
+                                    milliseconds:
+                                        totalMs - trimStartMs - trimEndMs,
+                                  )
+                                : composition.duration;
 
                             setState(() {
                               _animation =
