@@ -153,7 +153,10 @@ class _NovaQuizCardState extends State<NovaQuizCard> {
                 const SizedBox(width: 4),
                 IconButton(
                   padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                  constraints: const BoxConstraints(
+                    minWidth: 28,
+                    minHeight: 28,
+                  ),
                   icon: const Icon(
                     Icons.fullscreen_rounded,
                     color: Colors.white70,
@@ -379,9 +382,7 @@ class _NovaQuizCardState extends State<NovaQuizCard> {
               decoration: BoxDecoration(
                 color: const Color(0xFF22202E),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.15),
-                ),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
               ),
               child: Text(
                 'Try Again',
@@ -446,9 +447,15 @@ class _QuizOptionTileState extends State<_QuizOptionTile> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: GestureDetector(
-        onTapDown: widget.answered ? null : (_) => setState(() => _pressed = true),
-        onTapUp: widget.answered ? null : (_) => setState(() => _pressed = false),
-        onTapCancel: widget.answered ? null : () => setState(() => _pressed = false),
+        onTapDown: widget.answered
+            ? null
+            : (_) => setState(() => _pressed = true),
+        onTapUp: widget.answered
+            ? null
+            : (_) => setState(() => _pressed = false),
+        onTapCancel: widget.answered
+            ? null
+            : () => setState(() => _pressed = false),
         onTap: widget.answered ? null : widget.onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 60),

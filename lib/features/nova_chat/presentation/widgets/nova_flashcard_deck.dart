@@ -128,7 +128,10 @@ class _NovaFlashcardDeckState extends State<NovaFlashcardDeck> {
                 const SizedBox(width: 4),
                 IconButton(
                   padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                  constraints: const BoxConstraints(
+                    minWidth: 28,
+                    minHeight: 28,
+                  ),
                   icon: const Icon(
                     Icons.fullscreen_rounded,
                     color: Colors.white70,
@@ -140,7 +143,10 @@ class _NovaFlashcardDeckState extends State<NovaFlashcardDeck> {
                       context,
                       title: widget.deck.title,
                       subtitle: 'Flashcard Deck (${cards.length} cards)',
-                      child: NovaFlashcardDeck(deck: widget.deck, isFullScreen: true),
+                      child: NovaFlashcardDeck(
+                        deck: widget.deck,
+                        isFullScreen: true,
+                      ),
                     );
                   },
                 ),

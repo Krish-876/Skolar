@@ -89,7 +89,8 @@ class _NovaThinkingIndicatorState extends State<NovaThinkingIndicator>
                   children: List.generate(4, (index) {
                     final delay = index * 0.18;
                     final progress = (_animCtrl.value - delay) % 1.0;
-                    final scale = 0.5 + (0.5 * (1 - (progress - 0.5).abs() * 2));
+                    final scale =
+                        0.5 + (0.5 * (1 - (progress - 0.5).abs() * 2));
                     return Container(
                       margin: const EdgeInsets.symmetric(horizontal: 3),
                       width: 6,

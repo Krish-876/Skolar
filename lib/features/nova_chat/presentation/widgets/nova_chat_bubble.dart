@@ -14,11 +14,7 @@ class NovaChatBubble extends StatelessWidget {
   final ChatMessageEntity message;
   final String? userAvatarSvg;
 
-  const NovaChatBubble({
-    super.key,
-    required this.message,
-    this.userAvatarSvg,
-  });
+  const NovaChatBubble({super.key, required this.message, this.userAvatarSvg});
 
   @override
   Widget build(BuildContext context) {
@@ -138,7 +134,9 @@ class NovaChatBubble extends StatelessWidget {
                 _buildStandardMessageBubble(message.content),
                 const SizedBox(height: 8),
               ],
-              NovaStudyPlanCard(plan: message.structuredData as StudyPlanEntity),
+              NovaStudyPlanCard(
+                plan: message.structuredData as StudyPlanEntity,
+              ),
             ],
           );
         }
@@ -153,7 +151,9 @@ class NovaChatBubble extends StatelessWidget {
                 _buildStandardMessageBubble(message.content),
                 const SizedBox(height: 8),
               ],
-              NovaFlashcardDeck(deck: message.structuredData as FlashcardEntity),
+              NovaFlashcardDeck(
+                deck: message.structuredData as FlashcardEntity,
+              ),
             ],
           );
         }
@@ -232,9 +232,7 @@ class NovaChatBubble extends StatelessWidget {
             color: const Color(0xFF14131A),
             borderRadius: BorderRadius.circular(8),
           ),
-          listBullet: GoogleFonts.googleSans(
-            color: const Color(0xFF8C5BE8),
-          ),
+          listBullet: GoogleFonts.googleSans(color: const Color(0xFF8C5BE8)),
         ),
       ),
     );
@@ -261,11 +259,7 @@ class NovaChatBubble extends StatelessWidget {
         ),
       ),
       child: const Center(
-        child: Icon(
-          Icons.person_rounded,
-          color: Colors.white70,
-          size: 15,
-        ),
+        child: Icon(Icons.person_rounded, color: Colors.white70, size: 15),
       ),
     );
   }

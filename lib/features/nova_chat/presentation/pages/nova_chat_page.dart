@@ -50,7 +50,8 @@ class _NovaChatPageState extends ConsumerState<NovaChatPage> {
     final chatNotifier = ref.read(novaChatProvider.notifier);
     final user = ref.watch(userProvider);
     final topPadding = MediaQuery.of(context).padding.top + 64;
-    final bottomPadding = (chatState.suggestions.isNotEmpty ? 190.0 : 120.0) +
+    final bottomPadding =
+        (chatState.suggestions.isNotEmpty ? 190.0 : 120.0) +
         MediaQuery.of(context).padding.bottom;
 
     // Scroll to bottom whenever messages list grows or thinking state updates
@@ -110,8 +111,8 @@ class _NovaChatPageState extends ConsumerState<NovaChatPage> {
               bottom: bottomPadding,
             ),
             physics: const BouncingScrollPhysics(),
-            itemCount: chatState.messages.length +
-                (chatState.isThinking ? 1 : 0),
+            itemCount:
+                chatState.messages.length + (chatState.isThinking ? 1 : 0),
             itemBuilder: (context, index) {
               if (index < chatState.messages.length) {
                 final msg = chatState.messages[index];

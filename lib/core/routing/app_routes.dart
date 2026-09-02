@@ -173,10 +173,7 @@ final goRouterProvider = GoRouter(
         modelPath: 'assets/models/knowledge_tree.glb',
       ),
     ),
-    GoRoute(
-      path: AppRoutes.novaChat,
-      builder: (_, _) => const NovaChatPage(),
-    ),
+    GoRoute(path: AppRoutes.novaChat, builder: (_, _) => const NovaChatPage()),
   ],
 );
 

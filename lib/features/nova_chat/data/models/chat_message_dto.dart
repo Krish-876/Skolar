@@ -17,7 +17,8 @@ class NovaChatResponseDto {
   factory NovaChatResponseDto.fromJson(Map<String, dynamic> json) {
     // Handle both old schema { "answer": "..." } and new polymorphic schema
     final type = json['type'] as String? ?? 'chat';
-    final message = json['message'] as String? ?? json['answer'] as String? ?? '';
+    final message =
+        json['message'] as String? ?? json['answer'] as String? ?? '';
     final data = json['data'] as Map<String, dynamic>?;
     final rawSuggestions = json['suggestions'] as List<dynamic>? ?? [];
     final suggestions = rawSuggestions.map((s) => s.toString()).toList();

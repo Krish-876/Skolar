@@ -115,7 +115,9 @@ class _NovaChatInputDockState extends State<NovaChatInputDock> {
                         ),
                         isDense: true,
                         border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: 12,
+                        ),
                       ),
                     ),
                   ),
@@ -143,9 +145,12 @@ class _NovaChatInputDockState extends State<NovaChatInputDock> {
 
                       if (hasText) {
                         return GestureDetector(
-                          onTapDown: (_) => setState(() => _sendBtnPressed = true),
-                          onTapUp: (_) => setState(() => _sendBtnPressed = false),
-                          onTapCancel: () => setState(() => _sendBtnPressed = false),
+                          onTapDown: (_) =>
+                              setState(() => _sendBtnPressed = true),
+                          onTapUp: (_) =>
+                              setState(() => _sendBtnPressed = false),
+                          onTapCancel: () =>
+                              setState(() => _sendBtnPressed = false),
                           onTap: _handleSend,
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 60),

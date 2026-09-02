@@ -16,7 +16,8 @@ class NovaPracticeProblemCard extends StatefulWidget {
   });
 
   @override
-  State<NovaPracticeProblemCard> createState() => _NovaPracticeProblemCardState();
+  State<NovaPracticeProblemCard> createState() =>
+      _NovaPracticeProblemCardState();
 }
 
 class _NovaPracticeProblemCardState extends State<NovaPracticeProblemCard> {
@@ -131,7 +132,10 @@ class _NovaPracticeProblemCardState extends State<NovaPracticeProblemCard> {
                 const SizedBox(width: 4),
                 IconButton(
                   padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                  constraints: const BoxConstraints(
+                    minWidth: 28,
+                    minHeight: 28,
+                  ),
                   icon: const Icon(
                     Icons.fullscreen_rounded,
                     color: Colors.white70,
@@ -142,7 +146,8 @@ class _NovaPracticeProblemCardState extends State<NovaPracticeProblemCard> {
                     NovaFullScreenModal.show(
                       context,
                       title: widget.problem.title,
-                      subtitle: '${widget.problem.topic} • ${widget.problem.difficulty}',
+                      subtitle:
+                          '${widget.problem.topic} • ${widget.problem.difficulty}',
                       child: NovaPracticeProblemCard(
                         problem: widget.problem,
                         isFullScreen: true,

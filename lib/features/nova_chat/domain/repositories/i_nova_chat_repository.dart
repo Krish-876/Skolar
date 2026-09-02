@@ -12,13 +12,9 @@ abstract class INovaChatRepository {
     String triggerType = 'full_pass',
   });
 
-  Future<Map<String, dynamic>> getStudentFacts({
-    required String userId,
-  });
+  Future<Map<String, dynamic>> getStudentFacts({required String userId});
 
-  Future<List<String>> getInitialSuggestions({
-    required String userId,
-  });
+  Future<List<String>> getInitialSuggestions({required String userId});
 
   Future<bool> checkBackendHealth();
 }

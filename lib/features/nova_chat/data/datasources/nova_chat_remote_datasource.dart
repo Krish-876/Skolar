@@ -15,13 +15,9 @@ abstract class INovaChatRemoteDatasource {
     String triggerType = 'full_pass',
   });
 
-  Future<Map<String, dynamic>> getFacts({
-    required String userId,
-  });
+  Future<Map<String, dynamic>> getFacts({required String userId});
 
-  Future<List<String>> getInitialSuggestions({
-    required String userId,
-  });
+  Future<List<String>> getInitialSuggestions({required String userId});
 
   Future<bool> checkHealth();
 }
@@ -30,19 +26,18 @@ class NovaChatRemoteDatasource implements INovaChatRemoteDatasource {
   final Dio _dio;
   final String _baseUrl;
 
-  NovaChatRemoteDatasource({
-    Dio? dio,
-    String? baseUrl,
-  })  : _baseUrl = baseUrl ?? Environment.development.apiBaseUrl,
-        _dio = dio ??
-            Dio(
-              BaseOptions(
-                baseUrl: baseUrl ?? Environment.development.apiBaseUrl,
-                connectTimeout: const Duration(seconds: 25),
-                receiveTimeout: const Duration(seconds: 45),
-                headers: {'Content-Type': 'application/json'},
-              ),
-            );
+  NovaChatRemoteDatasource({Dio? dio, String? baseUrl})
+    : _baseUrl = baseUrl ?? Environment.development.apiBaseUrl,
+      _dio =
+          dio ??
+          Dio(
+            BaseOptions(
+              baseUrl: baseUrl ?? Environment.development.apiBaseUrl,
+              connectTimeout: const Duration(seconds: 25),
+              receiveTimeout: const Duration(seconds: 45),
+              headers: {'Content-Type': 'application/json'},
+            ),
+          );
 
   @override
   Future<NovaChatResponseDto> sendMessage({
@@ -60,15 +55,15 @@ class NovaChatRemoteDatasource implements INovaChatRemoteDatasource {
         data: {'question': question},
       );
 
-      debugPrint('🟢 [NovaChatDatasource] Response status: ${response.statusCode}');
+      debugPrint(
+        '🟢 [NovaChatDatasource] Response status: ${response.statusCode}',
+      );
       debugPrint('🟢 [NovaChatDatasource] Response data: ${response.data}');
 
       if (response.statusCode == 200 && response.data != null) {
         final data = response.data;
         if (data is Map) {
-          return NovaChatResponseDto.fromJson(
-            Map<String, dynamic>.from(data),
-          );
+          return NovaChatResponseDto.fromJson(Map<String, dynamic>.from(data));
         }
         return NovaChatResponseDto(type: 'chat', message: data.toString());
       }
@@ -79,15 +74,21 @@ class NovaChatRemoteDatasource implements INovaChatRemoteDatasource {
       debugPrint('🔴 [NovaChatDatasource] DioException message: ${e.message}');
       debugPrint('🔴 [NovaChatDatasource] DioException error: ${e.error}');
       if (e.response != null) {
-        debugPrint('🔴 [NovaChatDatasource] Response status: ${e.response?.statusCode}');
-        debugPrint('🔴 [NovaChatDatasource] Response body: ${e.response?.data}');
+        debugPrint(
+          '🔴 [NovaChatDatasource] Response status: ${e.response?.statusCode}',
+        );
+        debugPrint(
+          '🔴 [NovaChatDatasource] Response body: ${e.response?.data}',
+        );
         final data = e.response?.data;
         final errorMsg = data is Map
             ? (data['detail']?.toString() ?? data.toString())
             : (data?.toString() ?? e.message);
         throw Exception('Nova Error ($errorMsg)');
       }
-      throw Exception('Unable to reach Nova backend at $_baseUrl. Check if uvicorn is running and adb reverse is active.');
+      throw Exception(
+        'Unable to reach Nova backend at $_baseUrl. Check if uvicorn is running and adb reverse is active.',
+      );
     } catch (e, st) {
       debugPrint('🔴 [NovaChatDatasource] Error: $e\n$st');
       rethrow;
@@ -100,7 +101,9 @@ class NovaChatRemoteDatasource implements INovaChatRemoteDatasource {
     String triggerType = 'full_pass',
   }) async {
     final effectiveUserId = userId.isNotEmpty ? userId : 'dev-user-001';
-    debugPrint('🔵 [NovaChatDatasource] runReasoning for $effectiveUserId with trigger: $triggerType');
+    debugPrint(
+      '🔵 [NovaChatDatasource] runReasoning for $effectiveUserId with trigger: $triggerType',
+    );
 
     try {
       final response = await _dio.post(
@@ -108,15 +111,21 @@ class NovaChatRemoteDatasource implements INovaChatRemoteDatasource {
         data: {'trigger_type': triggerType},
       );
 
-      debugPrint('🟢 [NovaChatDatasource] Reasoning status: ${response.statusCode}');
+      debugPrint(
+        '🟢 [NovaChatDatasource] Reasoning status: ${response.statusCode}',
+      );
       if (response.statusCode == 200 && response.data != null) {
         return StudyPlanDto.fromJson(response.data as Map<String, dynamic>);
       }
       throw Exception('Failed to generate reasoning study plan.');
     } on DioException catch (e) {
-      debugPrint('🔴 [NovaChatDatasource] Reasoning DioException: ${e.message}');
+      debugPrint(
+        '🔴 [NovaChatDatasource] Reasoning DioException: ${e.message}',
+      );
       if (e.response != null) {
-        debugPrint('🔴 [NovaChatDatasource] Reasoning response data: ${e.response?.data}');
+        debugPrint(
+          '🔴 [NovaChatDatasource] Reasoning response data: ${e.response?.data}',
+        );
         final data = e.response?.data;
         final detail = data is Map
             ? (data['detail']?.toString() ?? data.toString())
@@ -128,9 +137,7 @@ class NovaChatRemoteDatasource implements INovaChatRemoteDatasource {
   }
 
   @override
-  Future<Map<String, dynamic>> getFacts({
-    required String userId,
-  }) async {
+  Future<Map<String, dynamic>> getFacts({required String userId}) async {
     final effectiveUserId = userId.isNotEmpty ? userId : 'dev-user-001';
     try {
       final response = await _dio.get('/facts/$effectiveUserId');
@@ -145,9 +152,7 @@ class NovaChatRemoteDatasource implements INovaChatRemoteDatasource {
   }
 
   @override
-  Future<List<String>> getInitialSuggestions({
-    required String userId,
-  }) async {
+  Future<List<String>> getInitialSuggestions({required String userId}) async {
     final effectiveUserId = userId.isNotEmpty ? userId : 'dev-user-001';
     try {
       final response = await _dio.get('/chat/$effectiveUserId/suggestions');
@@ -173,7 +178,9 @@ class NovaChatRemoteDatasource implements INovaChatRemoteDatasource {
     try {
       debugPrint('🔵 [NovaChatDatasource] Checking health at $_baseUrl/health');
       final response = await _dio.get('/health');
-      debugPrint('🟢 [NovaChatDatasource] Health status: ${response.statusCode}, data: ${response.data}');
+      debugPrint(
+        '🟢 [NovaChatDatasource] Health status: ${response.statusCode}, data: ${response.data}',
+      );
       return response.statusCode == 200;
     } catch (e) {
       debugPrint('🔴 [NovaChatDatasource] Health check failed: $e');

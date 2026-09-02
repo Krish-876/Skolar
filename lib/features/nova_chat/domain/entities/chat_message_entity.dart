@@ -2,13 +2,7 @@ enum MessageRole { user, assistant, system }
 
 enum MessageStatus { sending, sent, error }
 
-enum NovaResponseType {
-  chat,
-  quiz,
-  plan,
-  flashcard,
-  practiceProblem,
-}
+enum NovaResponseType { chat, quiz, plan, flashcard, practiceProblem }
 
 // ── Quiz Entities ─────────────────────────────────────────────────────────────
 class QuizQuestionEntity {
@@ -29,10 +23,7 @@ class QuizEntity {
   final String title;
   final List<QuizQuestionEntity> questions;
 
-  const QuizEntity({
-    required this.title,
-    required this.questions,
-  });
+  const QuizEntity({required this.title, required this.questions});
 }
 
 // ── Flashcard Entities ────────────────────────────────────────────────────────
@@ -52,10 +43,7 @@ class FlashcardEntity {
   final String title;
   final List<FlashcardItemEntity> cards;
 
-  const FlashcardEntity({
-    required this.title,
-    required this.cards,
-  });
+  const FlashcardEntity({required this.title, required this.cards});
 }
 
 // ── Practice Problem Entities ────────────────────────────────────────────────
@@ -86,7 +74,8 @@ class ChatMessageEntity {
   final MessageStatus status;
   final String? errorMessage;
   final NovaResponseType responseType;
-  final dynamic structuredData; // QuizEntity | StudyPlanEntity | FlashcardEntity | PracticeProblemEntity
+  final dynamic
+  structuredData; // QuizEntity | StudyPlanEntity | FlashcardEntity | PracticeProblemEntity
   final List<String> suggestions;
 
   const ChatMessageEntity({

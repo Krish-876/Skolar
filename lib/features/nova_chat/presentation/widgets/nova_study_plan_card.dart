@@ -116,7 +116,10 @@ class NovaStudyPlanCard extends StatelessWidget {
                 const SizedBox(width: 4),
                 IconButton(
                   padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                  constraints: const BoxConstraints(
+                    minWidth: 28,
+                    minHeight: 28,
+                  ),
                   icon: const Icon(
                     Icons.fullscreen_rounded,
                     color: Colors.white70,
@@ -127,7 +130,8 @@ class NovaStudyPlanCard extends StatelessWidget {
                     NovaFullScreenModal.show(
                       context,
                       title: "Today's Study Plan",
-                      subtitle: 'AI Optimized Daily Roadmap (${plan.items.length} tasks)',
+                      subtitle:
+                          'AI Optimized Daily Roadmap (${plan.items.length} tasks)',
                       child: NovaStudyPlanCard(plan: plan, isFullScreen: true),
                     );
                   },
@@ -149,10 +153,7 @@ class NovaStudyPlanCard extends StatelessWidget {
           ],
 
           const SizedBox(height: 14),
-          Divider(
-            color: Colors.white.withValues(alpha: 0.08),
-            height: 1,
-          ),
+          Divider(color: Colors.white.withValues(alpha: 0.08), height: 1),
           const SizedBox(height: 14),
 
           // Actionable Items List

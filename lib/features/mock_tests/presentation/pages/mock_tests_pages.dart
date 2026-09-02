@@ -1125,11 +1125,7 @@ class McqQuizFlow extends ConsumerStatefulWidget {
   final List<QuizQuestion> questions;
   final VoidCallback? onRestart;
 
-  const McqQuizFlow({
-    super.key,
-    required this.questions,
-    this.onRestart,
-  });
+  const McqQuizFlow({super.key, required this.questions, this.onRestart});
 
   @override
   ConsumerState<McqQuizFlow> createState() => _McqQuizFlowState();
@@ -1188,7 +1184,8 @@ class _McqQuizFlowState extends ConsumerState<McqQuizFlow> {
                   total: widget.questions.fold(0, (s, q) => s + q.marks),
                   answers: _answers,
                   questions: widget.questions,
-                  onRestart: widget.onRestart ??
+                  onRestart:
+                      widget.onRestart ??
                       () => ref.read(mockTestProvider.notifier).reset(),
                 )
               : _McqQuestionScreen(

@@ -11,8 +11,8 @@ class NovaChatRepositoryImpl implements INovaChatRepository {
   NovaChatRepositoryImpl({
     INovaChatRemoteDatasource? remoteDatasource,
     Uuid? uuid,
-  })  : _remoteDatasource = remoteDatasource ?? NovaChatRemoteDatasource(),
-        _uuid = uuid ?? const Uuid();
+  }) : _remoteDatasource = remoteDatasource ?? NovaChatRemoteDatasource(),
+       _uuid = uuid ?? const Uuid();
 
   @override
   Future<ChatMessageEntity> sendMessage({
@@ -40,16 +40,12 @@ class NovaChatRepositoryImpl implements INovaChatRepository {
   }
 
   @override
-  Future<Map<String, dynamic>> getStudentFacts({
-    required String userId,
-  }) async {
+  Future<Map<String, dynamic>> getStudentFacts({required String userId}) async {
     return _remoteDatasource.getFacts(userId: userId);
   }
 
   @override
-  Future<List<String>> getInitialSuggestions({
-    required String userId,
-  }) async {
+  Future<List<String>> getInitialSuggestions({required String userId}) async {
     return _remoteDatasource.getInitialSuggestions(userId: userId);
   }
 

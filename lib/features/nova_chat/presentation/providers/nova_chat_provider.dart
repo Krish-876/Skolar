@@ -10,16 +10,14 @@ import 'package:Skolar/features/nova_chat/domain/repositories/i_nova_chat_reposi
 import 'package:Skolar/features/nova_chat/presentation/providers/nova_chat_state.dart';
 
 final novaChatRepositoryProvider = Provider<INovaChatRepository>((ref) {
-  return NovaChatRepositoryImpl(
-    remoteDatasource: NovaChatRemoteDatasource(),
-  );
+  return NovaChatRepositoryImpl(remoteDatasource: NovaChatRemoteDatasource());
 });
 
 final novaChatProvider =
     StateNotifierProvider.autoDispose<NovaChatNotifier, NovaChatState>((ref) {
-  final repo = ref.watch(novaChatRepositoryProvider);
-  return NovaChatNotifier(repo);
-});
+      final repo = ref.watch(novaChatRepositoryProvider);
+      return NovaChatNotifier(repo);
+    });
 
 class NovaChatNotifier extends StateNotifier<NovaChatState> {
   final INovaChatRepository _repository;
@@ -103,7 +101,8 @@ class NovaChatNotifier extends StateNotifier<NovaChatState> {
     try {
       // Special trigger detection if user asks for study plan
       final lower = trimmed.toLowerCase();
-      final isStudyPlanRequest = lower.contains('study plan') ||
+      final isStudyPlanRequest =
+          lower.contains('study plan') ||
           lower.contains('what should i study') ||
           lower.contains('what do i study') ||
           lower.contains('what to study') ||
@@ -115,7 +114,9 @@ class NovaChatNotifier extends StateNotifier<NovaChatState> {
           lower.contains('study roadmap');
 
       if (isStudyPlanRequest) {
-        debugPrint('🔵 [NovaChatNotifier] Routing to reasoning engine for study plan...');
+        debugPrint(
+          '🔵 [NovaChatNotifier] Routing to reasoning engine for study plan...',
+        );
         await generateStudyPlan(directPrompt: trimmed);
         return;
       }
@@ -126,7 +127,9 @@ class NovaChatNotifier extends StateNotifier<NovaChatState> {
         question: trimmed,
       );
 
-      debugPrint('🟢 [NovaChatNotifier] Received assistant response: ${assistantMessage.content}');
+      debugPrint(
+        '🟢 [NovaChatNotifier] Received assistant response: ${assistantMessage.content}',
+      );
 
       state = state.copyWith(
         messages: [...state.messages, assistantMessage],
@@ -171,7 +174,9 @@ class NovaChatNotifier extends StateNotifier<NovaChatState> {
         triggerType: 'full_pass',
       );
 
-      debugPrint('🟢 [NovaChatNotifier] Study plan received: ${plan.items.length} items');
+      debugPrint(
+        '🟢 [NovaChatNotifier] Study plan received: ${plan.items.length} items',
+      );
 
       final assistantMsg = ChatMessageEntity(
         id: _uuid.v4(),

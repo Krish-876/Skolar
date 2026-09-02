@@ -32,11 +32,11 @@ class PlanItemDto {
   }
 
   PlanItemEntity toEntity() => PlanItemEntity(
-        subject: subject,
-        task: task,
-        priority: priority,
-        reason: reason,
-      );
+    subject: subject,
+    task: task,
+    priority: priority,
+    reason: reason,
+  );
 }
 
 class StudyPlanDto {
@@ -68,9 +68,9 @@ class StudyPlanDto {
   }
 
   StudyPlanEntity toEntity() => StudyPlanEntity(
-        items: items.map((e) => e.toEntity()).toList(),
-        summary: summary,
-        stale: stale,
-        note: note,
-      );
+    items: items.map((e) => e.toEntity()).toList(),
+    summary: summary,
+    stale: stale,
+    note: note,
+  );
 }
