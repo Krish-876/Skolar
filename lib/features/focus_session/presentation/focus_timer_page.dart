@@ -13,6 +13,7 @@ import 'package:flutter/services.dart';
 import '../controllers/focus_timer_controller.dart';
 import '../widgets/focus_background.dart';
 import '../widgets/phase_takeover.dart';
+import '../widgets/analog_clock_painter.dart';
 
 /// Colors that differ between the real (dark) body and its light-theme
 /// break clone. Everything structural (layout, sizing, which widgets exist)
@@ -400,12 +401,12 @@ class FocusTimerPageState extends State<FocusTimerPage>
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: AppTheme.primary.withValues(alpha: 0.15),
+                color: AppTheme.accentPurple.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(
                 Icons.spa_rounded,
-                color: AppTheme.primary,
+                color: AppTheme.accentPurple,
                 size: 20,
               ),
             ),
@@ -448,7 +449,7 @@ class FocusTimerPageState extends State<FocusTimerPage>
               'Got it',
               style: TextStyle(
                 fontFamily: 'GoogleSans',
-                color: AppTheme.primary,
+                color: AppTheme.accentPurple,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -530,11 +531,11 @@ class FocusTimerPageState extends State<FocusTimerPage>
     final accentColor = AppTheme.accentPurple;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF13131A),
+      backgroundColor: AppTheme.secondary,
       body: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: const Color(0xFF13131A),
+          color: AppTheme.secondary,
           border: Border.all(
             color: accentColor.withValues(alpha: 0.6),
             width: 1.5,
@@ -634,7 +635,7 @@ class FocusTimerPageState extends State<FocusTimerPage>
         // Smoothly lightened Non-AMOLED base background
         final nonAmoledBg = Color.lerp(
           AppTheme.background,
-          const Color(0xFF1D162B),
+          AppTheme.bgGradBegin,
           breakVal,
         )!;
         final isEntryWiping = _entryWipeController.isAnimating;
@@ -810,7 +811,7 @@ class FocusTimerPageState extends State<FocusTimerPage>
     );
   }
 
-  /// The entire visible content column — top bar, bonsai hero, phase label,
+  /// The entire visible content column — top bar, clock hero, phase label,
   /// timer readout, progress bar, and interaction zone — parameterized by
   /// [palette]. Called twice (dark = real, light = decorative clone) so the
   /// two are structurally identical by construction; only leaf colors that
@@ -954,18 +955,38 @@ class FocusTimerPageState extends State<FocusTimerPage>
   }
 
   Widget _buildBonsaiHero(bool isRunning) {
-    return Center(
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 400),
-        curve: Curves.easeInOut,
-        padding: EdgeInsets.only(top: isRunning ? 12 : 0),
-        child: Image.asset(
-          'assets/images/bonsai.png',
-          width: 215,
-          height: 215,
-          fit: BoxFit.contain,
-        ),
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Size relative to the slot instead of a fixed pixel size — a fixed
+        // 300 could exceed the flex area's actual height on smaller screens
+        // and get clipped/overlap the timer readout below it.
+        final shortestSide = min(constraints.maxWidth, constraints.maxHeight);
+        final clockSize = shortestSide.isFinite
+            ? (shortestSide * 0.78).clamp(160.0, 260.0)
+            : 220.0;
+
+        return Center(
+          child: Transform.translate(
+            // Nudges just the clock down a little within its own slot —
+            // doesn't affect the flex allocation or any other element's
+            // position.
+            offset: const Offset(0, -6),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 400),
+              curve: Curves.easeInOut,
+              padding: EdgeInsets.only(top: isRunning ? 12 : 0),
+              child: AnalogClock(
+                size: clockSize,
+                isIdle: !isRunning,
+                elapsedSeconds: (_controller.currentPhaseTotalSeconds -
+                        _controller.currentPhaseSecondsLeft)
+                    .toDouble(),
+                progress: _controller.currentIntervalProgress,
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -987,7 +1008,7 @@ class FocusTimerPageState extends State<FocusTimerPage>
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AppTheme.primary.withValues(alpha: 0.18),
+              color: AppTheme.accentPurple.withValues(alpha: 0.18),
               shape: BoxShape.circle,
             ),
             child: const Icon(
@@ -1104,11 +1125,18 @@ class FocusTimerPageState extends State<FocusTimerPage>
                     child: Container(
                       height: 6,
                       decoration: BoxDecoration(
-                        gradient: AppTheme.primaryGradient,
+                        // Solid accentPurple to match the "Slide to lock
+                        // in" bar / "Keep focusing" button color.
+                        gradient: const LinearGradient(
+                          colors: [
+                            AppTheme.accentPurple,
+                            AppTheme.accentPurple,
+                          ],
+                        ),
                         borderRadius: BorderRadius.circular(3),
                         boxShadow: [
                           BoxShadow(
-                            color: AppTheme.primary.withValues(alpha: 0.35),
+                            color: AppTheme.accentPurple.withValues(alpha: 0.35),
                             blurRadius: 6,
                           ),
                         ],
@@ -1128,9 +1156,9 @@ class FocusTimerPageState extends State<FocusTimerPage>
             _controller.upcomingBreakInfo,
             style: TextStyle(
               fontFamily: 'GoogleSans',
-              color: palette.accent.withValues(
-                alpha: (0.95 - (zen * 0.15)).clamp(0.75, 0.95),
-              ),
+              // Solid AppTheme.accentPurple — matches the "Slide to lock
+              // in" / "Keep focusing" button exactly, in both themes.
+              color: AppTheme.accentPurple,
               fontSize: 13,
               fontWeight: FontWeight.w600,
             ),
@@ -1168,11 +1196,15 @@ class FocusTimerPageState extends State<FocusTimerPage>
             height: _trackHeight,
             width: double.infinity,
             decoration: BoxDecoration(
-              gradient: AppTheme.primaryGradient,
+              // Solid accentPurple to match the "Slide to lock in" bar /
+              // "Keep focusing" button color.
+              gradient: const LinearGradient(
+                colors: [AppTheme.accentPurple, AppTheme.accentPurple],
+              ),
               borderRadius: BorderRadius.circular(_trackHeight / 2),
               boxShadow: [
                 BoxShadow(
-                  color: AppTheme.primary.withValues(alpha: 0.38),
+                  color: AppTheme.accentPurple.withValues(alpha: 0.38),
                   blurRadius: 20,
                   offset: const Offset(0, 6),
                 ),
@@ -1252,7 +1284,7 @@ class FocusTimerPageState extends State<FocusTimerPage>
                   trackShape: const RoundedRectSliderTrackShape(),
                   thumbShape: const GlowThumbShape(),
                   overlayShape: SliderComponentShape.noOverlay,
-                  activeTrackColor: AppTheme.primary,
+                  activeTrackColor: AppTheme.accentPurple,
                   inactiveTrackColor: Colors.white.withValues(alpha: 0.12),
                   thumbColor: Colors.white,
                 ),
@@ -1382,8 +1414,8 @@ class FocusTimerPageState extends State<FocusTimerPage>
                   fit: BoxFit.contain,
                   child: Switch(
                     value: enabled,
-                    activeThumbColor: AppTheme.primary,
-                    activeTrackColor: AppTheme.primary.withValues(alpha: 0.4),
+                    activeThumbColor: AppTheme.accentPurple,
+                    activeTrackColor: AppTheme.accentPurple.withValues(alpha: 0.4),
                     inactiveThumbColor: Colors.white38,
                     inactiveTrackColor: Colors.white.withValues(alpha: 0.08),
                     onChanged: (val) => _controller.setPomodoroEnabled(val),
@@ -1505,7 +1537,10 @@ class FocusTimerPageState extends State<FocusTimerPage>
                     gradient: LinearGradient(
                       begin: Alignment.centerLeft,
                       end: Alignment.centerRight,
-                      colors: [Color(0xFF262433), Color(0xFF181622)],
+                      colors: [
+                        AppTheme.surfaceGradBegin,
+                        AppTheme.surfaceGradEnd,
+                      ],
                     ),
                   ),
                 ),
@@ -1523,12 +1558,23 @@ class FocusTimerPageState extends State<FocusTimerPage>
                   child: Container(
                     decoration: BoxDecoration(
                       gradient: isRunning
-                          ? const LinearGradient(
+                          ? LinearGradient(
                               begin: Alignment.centerLeft,
                               end: Alignment.centerRight,
-                              colors: [Color(0xFF521C2B), Color(0xFF2B0E17)],
+                              colors: [
+                                AppTheme.wishlist.withValues(alpha: 0.75),
+                                AppTheme.wishlist.withValues(alpha: 0.45),
+                              ],
                             )
-                          : AppTheme.primaryGradient,
+                          // Solid accentPurple to match the "Keep focusing"
+                          // chunky button instead of the deeper primary
+                          // gradient.
+                          : const LinearGradient(
+                              colors: [
+                                AppTheme.accentPurple,
+                                AppTheme.accentPurple,
+                              ],
+                            ),
                     ),
                   ),
                 ),
@@ -1576,15 +1622,15 @@ class FocusTimerPageState extends State<FocusTimerPage>
                   height: _knobSize,
                   decoration: BoxDecoration(
                     color: isRunning
-                        ? const Color(0xFFE53935)
-                        : AppTheme.primary,
+                        ? AppTheme.wishlist
+                        : AppTheme.accentPurple,
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
                         color:
                             (isRunning
-                                    ? const Color(0xFFE53935)
-                                    : AppTheme.primary)
+                                    ? AppTheme.wishlist
+                                    : AppTheme.accentPurple)
                                 .withValues(alpha: 0.4),
                         blurRadius: 10,
                         offset: const Offset(0, 3),
@@ -1715,10 +1761,10 @@ class _TimePickerDialogState extends State<_TimePickerDialog> {
               height: itemHeight,
               width: double.infinity,
               decoration: BoxDecoration(
-                color: AppTheme.primary.withValues(alpha: 0.14),
+                color: AppTheme.accentPurple.withValues(alpha: 0.14),
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
-                  color: AppTheme.primary.withValues(alpha: 0.4),
+                  color: AppTheme.accentPurple.withValues(alpha: 0.4),
                   width: 1.2,
                 ),
               ),
@@ -1790,7 +1836,7 @@ class _TimePickerDialogState extends State<_TimePickerDialog> {
             Navigator.pop(context);
           },
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppTheme.primary,
+            backgroundColor: AppTheme.accentPurple,
             foregroundColor: Colors.white,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
@@ -1978,34 +2024,7 @@ class _GiveUpSheetView extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 28),
-          GestureDetector(
-            onTap: onResume,
-            child: Container(
-              width: double.infinity,
-              height: 52,
-              decoration: BoxDecoration(
-                gradient: AppTheme.primaryGradient,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppTheme.primary.withValues(alpha: 0.35),
-                    blurRadius: 16,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                'Keep focusing',
-                style: TextStyle(
-                  fontFamily: 'GoogleSans',
-                  color: Colors.white,
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
+          _ChunkyButton(label: 'Keep focusing', onTap: onResume),
           const SizedBox(height: 12),
           OutlinedButton(
             onPressed: onClear,
@@ -2027,6 +2046,56 @@ class _GiveUpSheetView extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Matches `_ChunkyButton` in onboarding_welcome_page.dart / auth_preview_sheet.dart:
+/// solid accent-purple fill, 4px translate down on press, shadow removed
+/// while pressed — instead of a plain gradient button with no press feedback.
+class _ChunkyButton extends StatefulWidget {
+  final String label;
+  final VoidCallback onTap;
+
+  const _ChunkyButton({required this.label, required this.onTap});
+
+  @override
+  State<_ChunkyButton> createState() => _ChunkyButtonState();
+}
+
+class _ChunkyButtonState extends State<_ChunkyButton> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) => setState(() => _pressed = false),
+      onTapCancel: () => setState(() => _pressed = false),
+      onTap: widget.onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 60),
+        transform: _pressed
+            ? Matrix4.translationValues(0, 4, 0)
+            : Matrix4.identity(),
+        width: double.infinity,
+        height: 52,
+        decoration: BoxDecoration(
+          color: AppTheme.accentPurple,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: _pressed ? [] : AppTheme.chunkyButtonShadow,
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          widget.label,
+          style: TextStyle(
+            fontFamily: 'GoogleSans',
+            color: AppTheme.onPrimary,
+            fontWeight: FontWeight.bold,
+            fontSize: 15,
+          ),
+        ),
       ),
     );
   }

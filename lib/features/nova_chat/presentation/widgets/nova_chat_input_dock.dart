@@ -1,16 +1,19 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:Skolar/core/theme/app_theme.dart';
 
 class NovaChatInputDock extends StatefulWidget {
   final ValueChanged<String> onSendMessage;
   final ValueChanged<bool> onFocusChanged;
+  final ValueChanged<bool>? onHasTextChanged;
   final bool isThinking;
 
   const NovaChatInputDock({
     super.key,
     required this.onSendMessage,
     required this.onFocusChanged,
+    this.onHasTextChanged,
     this.isThinking = false,
   });
 
@@ -22,11 +25,19 @@ class _NovaChatInputDockState extends State<NovaChatInputDock> {
   late final TextEditingController _textCtrl;
   late final FocusNode _focusNode;
   bool _sendBtnPressed = false;
+  bool _hasText = false;
 
   @override
   void initState() {
     super.initState();
-    _textCtrl = TextEditingController();
+    _textCtrl = TextEditingController()
+      ..addListener(() {
+        final hasText = _textCtrl.text.trim().isNotEmpty;
+        if (hasText != _hasText) {
+          _hasText = hasText;
+          widget.onHasTextChanged?.call(hasText);
+        }
+      });
     _focusNode = FocusNode()
       ..addListener(() {
         widget.onFocusChanged(_focusNode.hasFocus);
@@ -137,7 +148,7 @@ class _NovaChatInputDockState extends State<NovaChatInputDock> {
                             height: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: Color(0xFF8C5BE8),
+                              color: AppTheme.accentPurple,
                             ),
                           ),
                         );
@@ -160,13 +171,13 @@ class _NovaChatInputDockState extends State<NovaChatInputDock> {
                             width: 36,
                             height: 36,
                             decoration: BoxDecoration(
-                              color: const Color(0xFF8C5BE8),
+                              color: AppTheme.accentPurple,
                               shape: BoxShape.circle,
                               boxShadow: _sendBtnPressed
                                   ? []
                                   : const [
                                       BoxShadow(
-                                        color: Color(0xFF6B3FBF),
+                                        color: AppTheme.accentPurpleDark,
                                         offset: Offset(0, 3),
                                         blurRadius: 0,
                                       ),
