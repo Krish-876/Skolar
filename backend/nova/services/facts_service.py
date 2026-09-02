@@ -209,6 +209,18 @@ def _fetch_topics(supabase: Client, topic_ids: list[str]) -> list[dict]:
     )
 
 
+def _fetch_topics_for_subjects(supabase: Client, user_subjects: list[dict]) -> list[dict]:
+    subject_ids = [s["subject_id"] for s in user_subjects if s.get("subject_id")]
+    custom_ids = [s["custom_subject_id"] for s in user_subjects if s.get("custom_subject_id")]
+    
+    topics = []
+    if subject_ids:
+        topics.extend(supabase.table("topics").select("*").in_("subject_id", subject_ids).execute().data)
+    if custom_ids:
+        topics.extend(supabase.table("topics").select("*").in_("custom_subject_id", custom_ids).execute().data)
+    return topics
+
+
 def get_facts_snapshot(supabase: Client, user_id: str) -> FactsSnapshot:
     profile = _fetch_own_profile(supabase, user_id)
     user_subjects = _fetch_user_subjects(supabase, user_id)
@@ -222,6 +234,13 @@ def get_facts_snapshot(supabase: Client, user_id: str) -> FactsSnapshot:
     topic_ids = _collect_topic_ids(
         question_results, staleness_tracker, user_topic_weights
     )
+    topics = _fetch_topics_for_subjects(supabase, user_subjects)
+    if topic_ids:
+        more_topics = _fetch_topics(supabase, topic_ids)
+        seen = {t["id"] for t in topics}
+        for t in more_topics:
+            if t["id"] not in seen:
+                topics.append(t)
 
     return FactsSnapshot(
         snapshot_taken_at=datetime.now(timezone.utc),
@@ -242,7 +261,7 @@ def get_facts_snapshot(supabase: Client, user_id: str) -> FactsSnapshot:
         question_results=question_results,
         user_topic_weights=user_topic_weights,
         study_plans=_fetch_study_plans(supabase, user_id),
-        topics=_fetch_topics(supabase, topic_ids),
+        topics=topics,
     )
 
 
@@ -259,7 +278,7 @@ def fetch_partial(
         for field in table_to_fields["users"]:
             patch[field] = profile.get(field)
 
-    if "user_subjects" in dirty_tables:
+    if any(t in dirty_tables for t in ["user_subjects", "subjects", "custom_subjects"]):
         patch["user_subjects"] = _fetch_user_subjects(supabase, user_id)
 
     if "user_subject_exams" in dirty_tables:
@@ -297,9 +316,7 @@ def fetch_partial(
     if "study_plans" in dirty_tables:
         patch["study_plans"] = _fetch_study_plans(supabase, user_id)
 
-    # topics is derived from whatever rows carry a topic_id - only worth
-    # refreshing if one of those source tables actually changed
-    topic_sources = {"question_results", "staleness_tracker", "user_topic_weights"}
+    topic_sources = {"question_results", "staleness_tracker", "user_topic_weights", "topics", "user_subjects", "subjects", "custom_subjects"}
     if dirty_tables & topic_sources:
         sources = [
             patch.get("question_results", []),
@@ -307,7 +324,14 @@ def fetch_partial(
             patch.get("user_topic_weights", []),
         ]
         topic_ids = _collect_topic_ids(*sources)
+        subjects = patch.get("user_subjects") or _fetch_user_subjects(supabase, user_id)
+        topics = _fetch_topics_for_subjects(supabase, subjects)
         if topic_ids:
-            patch["topics"] = _fetch_topics(supabase, topic_ids)
+            more_topics = _fetch_topics(supabase, topic_ids)
+            seen = {t["id"] for t in topics}
+            for t in more_topics:
+                if t["id"] not in seen:
+                    topics.append(t)
+        patch["topics"] = topics
 
     return patch

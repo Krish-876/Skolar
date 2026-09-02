@@ -16,6 +16,7 @@ _TABLE_TO_FIELDS = {
     "user_subjects": ["user_subjects"],
     "subjects": ["user_subjects"],  # name/short_name change on the FK side still needs a re-embed
     "custom_subjects": ["user_subjects"],
+    "topics": ["topics"],
     "user_subject_exams": ["user_subject_exams"],
     "nova_capacity_log": ["capacity_today"],
     "staleness_tracker": ["staleness_tracker"],
@@ -69,6 +70,7 @@ class FactsState:
                 return self._snapshot, {}
 
             pending = set(self._dirty)
+            self._dirty.clear()
 
         patch = fs.fetch_partial(self._supabase, self._user_id, pending, _TABLE_TO_FIELDS)
         with self._lock:
@@ -82,7 +84,9 @@ class FactsState:
         get() call - anything marked dirty afterward (e.g. mid-flight) stays
         dirty for the next turn."""
         with self._lock:
-            pending = self._pending_commit
-            if pending:
-                self._dirty -= pending
+            self._pending_commit = set()
+            
+    def rollback(self) -> None:
+        with self._lock:
+            self._dirty |= self._pending_commit
             self._pending_commit = set()

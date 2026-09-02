@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 
 from nova.api.deps import get_session, get_supabase_and_groq
 from nova.schemas.api import ChatRequest, ChatResponse
@@ -27,8 +27,9 @@ def chat(
             groq_backup,
             GROQ_MODEL,
         )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        session.facts_state.rollback()
+        raise
 
     session.facts_state.commit()
     session.history.append(ChatTurn(role="user", content=req.question))

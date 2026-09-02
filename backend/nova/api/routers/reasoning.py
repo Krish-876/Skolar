@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 
 from nova.api.deps import get_session, get_supabase_and_groq
 from nova.schemas.api import ReasoningRunRequest, ReasoningRunResponse
+from nova.schemas.reasoning_why_log import DeferredPassEntry
 from nova.services.reasoning_service import GROQ_MODEL, run_reasoning_pass
 from nova.services.clients import get_shadow_clients
 
@@ -25,9 +26,20 @@ def run_reasoning(
     req: ReasoningRunRequest,
     clients: tuple = Depends(get_supabase_and_groq),
 ):
-    _supabase, groq, _groq_backup = clients
+    _supabase, groq, groq_backup = clients
     session = get_session(user_id, clients)
     shadow = get_shadow_clients()
+
+    def _log_deferred_pass(entry: DeferredPassEntry):
+        try:
+            # Map entry to nova_why_log schema
+            _supabase.table("nova_why_log").insert({
+                "user_id": entry.user_id,
+                "entry_type": req.trigger_type,
+                "reasoning_summary": f"Deferred: {entry.reason}",
+            }).execute()
+        except Exception:
+            pass  # Best effort logging
 
     try:
         snapshot, _patch = session.facts_state.get()
@@ -39,9 +51,12 @@ def run_reasoning(
             openrouter=shadow.get("openrouter"),
             model=GROQ_MODEL,
             user_id=user_id,
+            log_deferred_pass=_log_deferred_pass,
+            groq_backup=groq_backup,
         )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        session.facts_state.rollback()
+        raise
 
     session.facts_state.commit()
     if not result.stale:

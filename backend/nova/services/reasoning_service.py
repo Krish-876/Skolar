@@ -21,6 +21,8 @@ from nova.schemas.reasoning_why_log import DeferredPassEntry
 
 GROQ_MODEL = "openai/gpt-oss-120b"
 NEMOTRON_MODEL = "nvidia/nemotron-3-ultra-550b-a55b:free"
+# From model_tiers.yaml reasoning_layer.full_pass
+ALT_MODEL = "qwen/qwen3.6-27b"
 GROQ_TPM_CAP = 8000
 
 # Matches Groq's Completions.create() reasoning_effort overload exactly, so
@@ -28,7 +30,7 @@ GROQ_TPM_CAP = 8000
 # when a plain str is passed in.
 ReasoningEffort = Literal["none", "default", "low", "medium", "high"]
 
-# v3 §2/§4: same model/tier, two effort profiles routed by trigger type -
+# v3 A 2/A 4: same model/tier, two effort profiles routed by trigger type -
 # not by call-site guesswork. full_pass is the multi-factor tradeoff
 # (urgency vs stakes vs fixability vs relevance) this model tier exists
 # for. minor_trigger_rerank is a single test score / capacity update that
@@ -75,6 +77,7 @@ def _try_groq(
     messages: list[dict],
     model: str,
     reasoning_effort: ReasoningEffort,
+    groq_backup: Groq | None = None,
 ) -> dict | None:
     try:
         resp = groq.chat.completions.create(
@@ -88,15 +91,30 @@ def _try_groq(
         if not content:
             return None
         parsed = json.loads(content)
-        # reject anything that doesn't match the plan shape instead of
-        # passing garbage through to the client - counts as a Groq failure
         return StudyPlan.model_validate(parsed).model_dump()
     except Exception:
+        if groq_backup is not None:
+            try:
+                # Try fallback with alt_model
+                resp = groq_backup.chat.completions.create(
+                    model=ALT_MODEL,
+                    messages=cast(list[ChatCompletionMessageParam], messages),
+                    reasoning_effort=reasoning_effort,
+                    temperature=0.4,
+                    response_format={"type": "json_object"},
+                )
+                content = resp.choices[0].message.content
+                if not content:
+                    return None
+                parsed = json.loads(content)
+                return StudyPlan.model_validate(parsed).model_dump()
+            except Exception:
+                return None
         return None
 
 
 def _try_nemotron_shadow(openrouter, messages: list[dict]) -> dict | None:
-    """Shadow-eval only per MD §2/§4 - untested thinkingFormat response shape,
+    """Shadow-eval only per MD A 2/A 4 - untested thinkingFormat response shape,
     unconfirmed daily cap. Not promoted to a trusted fallback until both are
     validated. Kept isolated so a Nemotron failure never blocks the pass."""
     if openrouter is None:
@@ -121,37 +139,20 @@ def run_reasoning_pass(
     model: str = GROQ_MODEL,
     user_id: str | None = None,
     log_deferred_pass=None,
+    groq_backup: Groq | None = None,
 ) -> ReasoningResult:
-    """One scheduled reasoning pass. Falls back to the last good plan with an
-    explicit staleness flag if the primary tier fails - never blank, never a
-    silent retry loop (MD §2).
-
-    trigger_type selects the effort profile (v3 §2/§4), NOT a different
-    model or tier: "full_pass" for a genuine new multi-factor tradeoff,
-    "minor_trigger_rerank" for a single test score / capacity update that
-    only needs a lighter re-rank. Same Groq tier, same rate limits either
-    way - callers decide which trigger fired, this function just maps that
-    to the right reasoning_effort.
-
-    log_deferred_pass is an optional callable(DeferredPassEntry) -> None -
-    left as an injection point since no why-log persistence exists yet.
-    Defaults to None so nothing calling this today is affected."""
     messages = _build_messages(facts)
     reasoning_effort = _REASONING_EFFORT[trigger_type]
     reason = None
 
     if _estimate_tokens(messages) > GROQ_TPM_CAP:
-        # payload itself is over the TPM gate - this is a deferred pass too,
-        # same fallback path as a provider outage
         reason = "tpm_cap_exceeded"
     else:
-        plan = _try_groq(groq, messages, model, reasoning_effort)
+        plan = _try_groq(groq, messages, model, reasoning_effort, groq_backup=groq_backup)
         if plan is not None:
             return ReasoningResult(plan=plan, stale=False)
         reason = "groq_unavailable"
 
-    # tier 1 (and its config alt) failed or was skipped - shadow tier is
-    # informational only per MD, so it does not become a live fallback here
     _try_nemotron_shadow(openrouter, messages)
 
     if log_deferred_pass is not None and user_id is not None:
@@ -170,7 +171,6 @@ def run_reasoning_pass(
             note="Couldn't refresh today's plan, showing yesterday's.",
         )
 
-    # no prior plan to fall back to - still never silently blank
     return ReasoningResult(
         plan={},
         stale=True,
