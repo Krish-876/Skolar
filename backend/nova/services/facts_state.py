@@ -13,6 +13,9 @@ from nova.services import facts_service as fs
 # maps table name (as it appears in a Realtime payload) -> snapshot field(s)
 # it feeds, and the single-table fetcher to call for a targeted refresh.
 _TABLE_TO_FIELDS = {
+    "user_subjects": ["user_subjects"],
+    "subjects": ["user_subjects"],  # name/short_name change on the FK side still needs a re-embed
+    "custom_subjects": ["user_subjects"],
     "user_subject_exams": ["user_subject_exams"],
     "nova_capacity_log": ["capacity_today"],
     "staleness_tracker": ["staleness_tracker"],
