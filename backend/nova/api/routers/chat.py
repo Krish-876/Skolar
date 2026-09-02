@@ -28,6 +28,9 @@ def chat(
             GROQ_MODEL,
         )
     except Exception as e:
+        print(f"🔴 [Chat Router Error]: {e}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
     session.facts_state.commit()

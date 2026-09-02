@@ -76,22 +76,28 @@ def _try_groq(
     model: str,
     reasoning_effort: ReasoningEffort,
 ) -> dict | None:
+    kwargs = {
+        "model": model,
+        "messages": cast(list[ChatCompletionMessageParam], messages),
+        "temperature": 0.4,
+        "response_format": {"type": "json_object"},
+    }
     try:
-        resp = groq.chat.completions.create(
-            model=model,
-            messages=cast(list[ChatCompletionMessageParam], messages),
-            reasoning_effort=reasoning_effort,
-            temperature=0.4,
-            response_format={"type": "json_object"},
-        )
+        try:
+            resp = groq.chat.completions.create(
+                **kwargs,
+                reasoning_effort=reasoning_effort,
+            )
+        except Exception:
+            resp = groq.chat.completions.create(**kwargs)
+
         content = resp.choices[0].message.content
         if not content:
             return None
         parsed = json.loads(content)
-        # reject anything that doesn't match the plan shape instead of
-        # passing garbage through to the client - counts as a Groq failure
         return StudyPlan.model_validate(parsed).model_dump()
-    except Exception:
+    except Exception as e:
+        print(f"🔴 [Groq Reasoning Error]: {e}")
         return None
 
 
@@ -172,7 +178,7 @@ def run_reasoning_pass(
 
     # no prior plan to fall back to - still never silently blank
     return ReasoningResult(
-        plan={},
+        plan={"items": [], "summary": "No study plan available yet."},
         stale=True,
         note="Couldn't generate today's plan and no earlier plan exists yet.",
     )

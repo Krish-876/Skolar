@@ -27,7 +27,7 @@ class AppConfig {
 
   factory AppConfig.development() => const AppConfig(
     environment: AppEnvironment.dev,
-    apiBaseUrl: 'https://api-dev.nova.com',
+    apiBaseUrl: 'http://127.0.0.1:8080',
     enableLogging: true,
   );
 

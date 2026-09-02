@@ -42,18 +42,24 @@ def get_shadow_clients() -> dict[str, object | None]:
     cerebras = None
     cerebras_key = os.environ.get("CEREBRAS_API_KEY")
     if cerebras_key:
-        from cerebras.cloud.sdk import Cerebras
-
-        cerebras = Cerebras(api_key=cerebras_key)
+        try:
+            from cerebras.cloud.sdk import Cerebras
+            cerebras = Cerebras(api_key=cerebras_key)
+        except (ImportError, Exception) as e:
+            logger.warning(f"Could not initialize Cerebras shadow client: {e}")
+            cerebras = None
 
     openrouter = None
     openrouter_key = os.environ.get("OPENROUTER_API_KEY")
     if openrouter_key:
-        from openai import OpenAI
-
-        openrouter = OpenAI(
-            api_key=openrouter_key, base_url="https://openrouter.ai/api/v1"
-        )
+        try:
+            from openai import OpenAI
+            openrouter = OpenAI(
+                api_key=openrouter_key, base_url="https://openrouter.ai/api/v1"
+            )
+        except (ImportError, Exception) as e:
+            logger.warning(f"Could not initialize OpenRouter shadow client: {e}")
+            openrouter = None
 
     return {"cerebras": cerebras, "openrouter": openrouter}
 

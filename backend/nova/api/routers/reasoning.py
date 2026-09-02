@@ -25,11 +25,10 @@ def run_reasoning(
     req: ReasoningRunRequest,
     clients: tuple = Depends(get_supabase_and_groq),
 ):
-    _supabase, groq, _groq_backup = clients
-    session = get_session(user_id, clients)
-    shadow = get_shadow_clients()
-
     try:
+        _supabase, groq, _groq_backup = clients
+        session = get_session(user_id, clients)
+        shadow = get_shadow_clients()
         snapshot, _patch = session.facts_state.get()
         result = run_reasoning_pass(
             groq,
@@ -41,6 +40,9 @@ def run_reasoning(
             user_id=user_id,
         )
     except Exception as e:
+        print(f"🔴 [Reasoning Router Error]: {e}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
     session.facts_state.commit()
