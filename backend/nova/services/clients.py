@@ -42,18 +42,24 @@ def get_shadow_clients() -> dict[str, object | None]:
     cerebras = None
     cerebras_key = os.environ.get("CEREBRAS_API_KEY")
     if cerebras_key:
-        from cerebras.cloud.sdk import Cerebras
-
-        cerebras = Cerebras(api_key=cerebras_key)
+        try:
+            from cerebras.cloud.sdk import Cerebras
+            cerebras = Cerebras(api_key=cerebras_key)
+        except (ImportError, Exception) as e:
+            logger.warning(f"Could not initialize Cerebras shadow client: {e}")
+            cerebras = None
 
     openrouter = None
     openrouter_key = os.environ.get("OPENROUTER_API_KEY")
     if openrouter_key:
-        from openai import OpenAI
-
-        openrouter = OpenAI(
-            api_key=openrouter_key, base_url="https://openrouter.ai/api/v1"
-        )
+        try:
+            from openai import OpenAI
+            openrouter = OpenAI(
+                api_key=openrouter_key, base_url="https://openrouter.ai/api/v1"
+            )
+        except (ImportError, Exception) as e:
+            logger.warning(f"Could not initialize OpenRouter shadow client: {e}")
+            openrouter = None
 
     return {"cerebras": cerebras, "openrouter": openrouter}
 
@@ -63,6 +69,10 @@ def get_shadow_clients() -> dict[str, object | None]:
 # just which tables to listen on.
 FACTS_TABLES = [
     "users",
+    "user_subjects",
+    "subjects",
+    "custom_subjects",
+    "topics",
     "user_subject_exams",
     "nova_capacity_log",
     "staleness_tracker",
@@ -116,6 +126,7 @@ async def _subscribe_async(supabase_url: str, supabase_key: str, user_id: str, o
     channel = async_supabase.channel(f"facts-{user_id}")
 
     direct_filter_tables = [
+        "user_subjects",
         "nova_capacity_log",
         "staleness_tracker",
         "standing_flags",
@@ -169,7 +180,7 @@ async def _subscribe_async(supabase_url: str, supabase_key: str, user_id: str, o
     # exposure issue. Fixing this for real needs either a denormalized
     # user_id column on these tables or a different delivery mechanism
     # (e.g. a Postgres trigger writing to a per-user notify table).
-    for table in ("user_subject_exams", "question_results"):
+    for table in ("user_subject_exams", "question_results", "subjects", "custom_subjects", "topics"):
         channel.on_postgres_changes(
             event=all_events, schema="public", table=table,
             callback=_make_table_callback(table),

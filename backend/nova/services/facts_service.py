@@ -13,168 +13,199 @@ from supabase import Client
 
 
 def _fetch_own_profile(supabase: Client, user_id: str) -> dict:
-    """Manually scoped to a single row: id == user_id. We're on an admin key
-    here (bypasses RLS), so this filter is the only thing stopping Nova from
-    seeing any student other than the one it was invoked for."""
-    rows = cast(
-        list[dict[str, Any]],
-        (
-            supabase.table("users")
-            .select("full_name, academic_year, branch, current_semester, dual_branch, study_capacity")
-            .eq("id", user_id)
-            .limit(1)
-            .execute()
-            .data
-        ),
-    )
-    return rows[0] if rows else {}
+    try:
+        rows = cast(
+            list[dict[str, Any]],
+            (
+                supabase.table("users")
+                .select("full_name, academic_year, branch, current_semester, dual_branch, study_capacity")
+                .eq("id", user_id)
+                .limit(1)
+                .execute()
+                .data
+            ),
+        )
+        return rows[0] if rows else {}
+    except Exception:
+        return {}
 
 
-def _user_subject_ids(supabase: Client, user_id: str) -> list[str]:
-    rows = cast(
+def _fetch_user_subjects(supabase: Client, user_id: str) -> list[dict]:
+    """Full user_subjects rows, with subject/custom_subject name resolved
+    via embedded FK select - name is what Nova actually needs, the raw
+    subject_id/custom_subject_id are opaque to it."""
+    return cast(
         list[dict[str, Any]],
         (
             supabase.table("user_subjects")
-            .select("id")
+            .select("*, subjects(name, short_name), custom_subjects(name)")
             .eq("user_id", user_id)
             .execute()
             .data
         ),
     )
+
+
+def _user_subject_ids(rows: list[dict]) -> list[str]:
     return [row["id"] for row in rows]
 
 
 def _test_attempt_ids(supabase: Client, user_id: str) -> list[str]:
-    rows = cast(
-        list[dict[str, Any]],
-        (
-            supabase.table("test_attempts")
-            .select("id")
-            .eq("user_id", user_id)
-            .execute()
-            .data
-        ),
-    )
-    return [row["id"] for row in rows]
+    try:
+        rows = cast(
+            list[dict[str, Any]],
+            (
+                supabase.table("test_attempts")
+                .select("id")
+                .eq("user_id", user_id)
+                .execute()
+                .data
+            ),
+        )
+        return [row["id"] for row in rows]
+    except Exception:
+        return []
 
 
 def _fetch_exams(supabase: Client, user_subject_ids: list[str]) -> list[dict]:
     if not user_subject_ids:
         return []
-    return cast(
-        list[dict[str, Any]],
-        (
-            supabase.table("user_subject_exams")
-            .select("*")
-            .in_("user_subject_id", user_subject_ids)
-            .execute()
-            .data
-        ),
-    )
+    try:
+        return cast(
+            list[dict[str, Any]],
+            (
+                supabase.table("user_subject_exams")
+                .select("*")
+                .in_("user_subject_id", user_subject_ids)
+                .execute()
+                .data
+            ),
+        )
+    except Exception:
+        return []
 
 
 def _fetch_capacity_today(supabase: Client, user_id: str) -> list[dict]:
     today = datetime.now(timezone.utc).date().isoformat()
-    return cast(
-        list[dict[str, Any]],
-        (
-            supabase.table("nova_capacity_log")
-            .select("*")
-            .eq("user_id", user_id)
-            .eq("logged_for_date", today)
-            .execute()
-            .data
-        ),
-    )
+    try:
+        return cast(
+            list[dict[str, Any]],
+            (
+                supabase.table("nova_capacity_log")
+                .select("*")
+                .eq("user_id", user_id)
+                .eq("logged_for_date", today)
+                .execute()
+                .data
+            ),
+        )
+    except Exception:
+        return []
 
 
 def _fetch_staleness(supabase: Client, user_id: str) -> list[dict]:
-    return cast(
-        list[dict[str, Any]],
-        (
-            supabase.table("staleness_tracker")
-            .select("*")
-            .eq("user_id", user_id)
-            .execute()
-            .data
-        ),
-    )
+    try:
+        return cast(
+            list[dict[str, Any]],
+            (
+                supabase.table("staleness_tracker")
+                .select("*")
+                .eq("user_id", user_id)
+                .execute()
+                .data
+            ),
+        )
+    except Exception:
+        return []
 
 
 def _fetch_confirmed_active(supabase: Client, table: str, user_id: str) -> list[dict]:
-    """Shared shape: standing_flags, situation_flags, nova_history all use
-    confirmed_at / superseded_at the same way."""
-    return cast(
-        list[dict[str, Any]],
-        (
-            supabase.table(table)
-            .select("*")
-            .eq("user_id", user_id)
-            .is_("superseded_at", "null")
-            .not_.is_("confirmed_at", "null")
-            .execute()
-            .data
-        ),
-    )
+    try:
+        return cast(
+            list[dict[str, Any]],
+            (
+                supabase.table(table)
+                .select("*")
+                .eq("user_id", user_id)
+                .is_("superseded_at", "null")
+                .not_.is_("confirmed_at", "null")
+                .execute()
+                .data
+            ),
+        )
+    except Exception:
+        return []
 
 
 def _fetch_career_units(supabase: Client, user_id: str) -> list[dict]:
-    return cast(
-        list[dict[str, Any]],
-        (
-            supabase.table("career_units")
-            .select("*")
-            .eq("user_id", user_id)
-            .is_("paused_at", "null")
-            .not_.is_("confirmed_at", "null")
-            .execute()
-            .data
-        ),
-    )
+    try:
+        return cast(
+            list[dict[str, Any]],
+            (
+                supabase.table("career_units")
+                .select("*")
+                .eq("user_id", user_id)
+                .is_("paused_at", "null")
+                .not_.is_("confirmed_at", "null")
+                .execute()
+                .data
+            ),
+        )
+    except Exception:
+        return []
 
 
 def _fetch_question_results(supabase: Client, test_attempt_ids: list[str]) -> list[dict]:
     if not test_attempt_ids:
         return []
-    return cast(
-        list[dict[str, Any]],
-        (
-            supabase.table("question_results")
-            .select("*")
-            .in_("attempt_id", test_attempt_ids)
-            .order("created_at", desc=True)
-            .limit(200)
-            .execute()
-            .data
-        ),
-    )
+    try:
+        return cast(
+            list[dict[str, Any]],
+            (
+                supabase.table("question_results")
+                .select("*")
+                .in_("attempt_id", test_attempt_ids)
+                .order("created_at", desc=True)
+                .limit(200)
+                .execute()
+                .data
+            ),
+        )
+    except Exception:
+        return []
 
 
 def _fetch_topic_weights(supabase: Client, user_id: str) -> list[dict]:
-    return cast(
-        list[dict[str, Any]],
-        (
-            supabase.table("user_topic_weights")
-            .select("*")
-            .eq("user_id", user_id)
-            .execute()
-            .data
-        ),
-    )
+    try:
+        return cast(
+            list[dict[str, Any]],
+            (
+                supabase.table("user_topic_weights")
+                .select("*")
+                .eq("user_id", user_id)
+                .execute()
+                .data
+            ),
+        )
+    except Exception:
+        return []
 
 
 def _fetch_study_plans(supabase: Client, user_id: str) -> list[dict]:
-    return cast(
-        list[dict[str, Any]],
-        (
-            supabase.table("study_plans")
-            .select("*")
-            .eq("user_id", user_id)
-            .eq("is_active", True)
-            .execute()
-            .data
-        ),
-    )
+    try:
+        return cast(
+            list[dict[str, Any]],
+            (
+                supabase.table("study_plans")
+                .select("*")
+                .eq("user_id", user_id)
+                .eq("is_active", True)
+                .execute()
+                .data
+            ),
+        )
+    except Exception:
+        return []
 
 
 def _collect_topic_ids(*row_lists: list[dict]) -> list[str]:
@@ -191,21 +222,37 @@ def _collect_topic_ids(*row_lists: list[dict]) -> list[str]:
 def _fetch_topics(supabase: Client, topic_ids: list[str]) -> list[dict]:
     if not topic_ids:
         return []
-    return cast(
-        list[dict[str, Any]],
-        (
-            supabase.table("topics")
-            .select("*")
-            .in_("id", topic_ids)
-            .execute()
-            .data
-        ),
-    )
+    try:
+        return cast(
+            list[dict[str, Any]],
+            (
+                supabase.table("topics")
+                .select("*")
+                .in_("id", topic_ids)
+                .execute()
+                .data
+            ),
+        )
+    except Exception:
+        return []
+
+
+def _fetch_topics_for_subjects(supabase: Client, user_subjects: list[dict]) -> list[dict]:
+    subject_ids = [s["subject_id"] for s in user_subjects if s.get("subject_id")]
+    custom_ids = [s["custom_subject_id"] for s in user_subjects if s.get("custom_subject_id")]
+
+    topics = []
+    if subject_ids:
+        topics.extend(supabase.table("topics").select("*").in_("subject_id", subject_ids).execute().data)
+    if custom_ids:
+        topics.extend(supabase.table("topics").select("*").in_("custom_subject_id", custom_ids).execute().data)
+    return topics
 
 
 def get_facts_snapshot(supabase: Client, user_id: str) -> FactsSnapshot:
     profile = _fetch_own_profile(supabase, user_id)
-    user_subject_ids = _user_subject_ids(supabase, user_id)
+    user_subjects = _fetch_user_subjects(supabase, user_id)
+    user_subject_ids = _user_subject_ids(user_subjects)
     test_attempt_ids = _test_attempt_ids(supabase, user_id)
 
     question_results = _fetch_question_results(supabase, test_attempt_ids)
@@ -215,6 +262,13 @@ def get_facts_snapshot(supabase: Client, user_id: str) -> FactsSnapshot:
     topic_ids = _collect_topic_ids(
         question_results, staleness_tracker, user_topic_weights
     )
+    topics = _fetch_topics_for_subjects(supabase, user_subjects)
+    if topic_ids:
+        more_topics = _fetch_topics(supabase, topic_ids)
+        seen = {t["id"] for t in topics}
+        for t in more_topics:
+            if t["id"] not in seen:
+                topics.append(t)
 
     return FactsSnapshot(
         snapshot_taken_at=datetime.now(timezone.utc),
@@ -224,6 +278,7 @@ def get_facts_snapshot(supabase: Client, user_id: str) -> FactsSnapshot:
         current_semester=profile.get("current_semester"),
         dual_branch=profile.get("dual_branch"),
         study_capacity=profile.get("study_capacity"),
+        user_subjects=user_subjects,
         user_subject_exams=_fetch_exams(supabase, user_subject_ids),
         capacity_today=_fetch_capacity_today(supabase, user_id),
         staleness_tracker=staleness_tracker,
@@ -234,7 +289,7 @@ def get_facts_snapshot(supabase: Client, user_id: str) -> FactsSnapshot:
         question_results=question_results,
         user_topic_weights=user_topic_weights,
         study_plans=_fetch_study_plans(supabase, user_id),
-        topics=_fetch_topics(supabase, topic_ids),
+        topics=topics,
     )
 
 
@@ -251,9 +306,13 @@ def fetch_partial(
         for field in table_to_fields["users"]:
             patch[field] = profile.get(field)
 
+    if any(t in dirty_tables for t in ["user_subjects", "subjects", "custom_subjects"]):
+        patch["user_subjects"] = _fetch_user_subjects(supabase, user_id)
+
     if "user_subject_exams" in dirty_tables:
+        subject_rows = patch.get("user_subjects") or _fetch_user_subjects(supabase, user_id)
         patch["user_subject_exams"] = _fetch_exams(
-            supabase, _user_subject_ids(supabase, user_id)
+            supabase, _user_subject_ids(subject_rows)
         )
 
     if "nova_capacity_log" in dirty_tables:
@@ -285,9 +344,7 @@ def fetch_partial(
     if "study_plans" in dirty_tables:
         patch["study_plans"] = _fetch_study_plans(supabase, user_id)
 
-    # topics is derived from whatever rows carry a topic_id - only worth
-    # refreshing if one of those source tables actually changed
-    topic_sources = {"question_results", "staleness_tracker", "user_topic_weights"}
+    topic_sources = {"question_results", "staleness_tracker", "user_topic_weights", "topics", "user_subjects", "subjects", "custom_subjects"}
     if dirty_tables & topic_sources:
         sources = [
             patch.get("question_results", []),
@@ -295,7 +352,14 @@ def fetch_partial(
             patch.get("user_topic_weights", []),
         ]
         topic_ids = _collect_topic_ids(*sources)
+        subjects = patch.get("user_subjects") or _fetch_user_subjects(supabase, user_id)
+        topics = _fetch_topics_for_subjects(supabase, subjects)
         if topic_ids:
-            patch["topics"] = _fetch_topics(supabase, topic_ids)
+            more_topics = _fetch_topics(supabase, topic_ids)
+            seen = {t["id"] for t in topics}
+            for t in more_topics:
+                if t["id"] not in seen:
+                    topics.append(t)
+        patch["topics"] = topics
 
     return patch
