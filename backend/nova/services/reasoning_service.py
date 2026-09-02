@@ -15,14 +15,13 @@ from groq import Groq
 from groq.types.chat import ChatCompletionMessageParam
 
 from nova.prompts.nova_system_prompt import NOVA_SYSTEM_PROMPT
+from nova.schemas.api import StudyPlan, TriggerType
 from nova.schemas.facts_snapshot import FactsSnapshot
 from nova.schemas.reasoning_why_log import DeferredPassEntry
 
 GROQ_MODEL = "openai/gpt-oss-120b"
 NEMOTRON_MODEL = "nvidia/nemotron-3-ultra-550b-a55b:free"
 GROQ_TPM_CAP = 8000
-
-TriggerType = Literal["full_pass", "minor_trigger_rerank"]
 
 # Matches Groq's Completions.create() reasoning_effort overload exactly, so
 # mypy can select the right overload instead of falling back to "no match"
@@ -61,7 +60,10 @@ def _build_messages(facts: FactsSnapshot) -> list[dict]:
             "content": (
                 "Generate today's study plan from this student's facts "
                 "snapshot. Weigh urgency, stakes, fixability, and industry "
-                "relevance. Respond with structured JSON only.\n"
+                "relevance. Respond with JSON matching exactly this shape, "
+                "no extra top-level keys:\n"
+                '{"items": [{"subject": str, "task": str, "priority": int, '
+                '"reason": str}], "summary": str | null}\n'
                 f"{json.dumps(facts.model_dump(), default=str)}"
             ),
         },
@@ -83,7 +85,12 @@ def _try_groq(
             response_format={"type": "json_object"},
         )
         content = resp.choices[0].message.content
-        return json.loads(content) if content else None
+        if not content:
+            return None
+        parsed = json.loads(content)
+        # reject anything that doesn't match the plan shape instead of
+        # passing garbage through to the client - counts as a Groq failure
+        return StudyPlan.model_validate(parsed).model_dump()
     except Exception:
         return None
 
