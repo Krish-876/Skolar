@@ -1,10 +1,16 @@
+import json
+import logging
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, Depends, HTTPException
 
 from nova.api.deps import get_session, get_supabase_and_groq
 from nova.schemas.api import ReasoningRunRequest, ReasoningRunResponse
+from nova.schemas.reasoning_why_log import DeferredPassEntry
 from nova.services.reasoning_service import GROQ_MODEL, run_reasoning_pass
 from nova.services.clients import get_shadow_clients
 
+logger = logging.getLogger(__name__)
 router = APIRouter(tags=["reasoning"])
 
 
@@ -25,10 +31,25 @@ def run_reasoning(
     req: ReasoningRunRequest,
     clients: tuple = Depends(get_supabase_and_groq),
 ):
+    supabase, groq, groq_backup = clients
+    session = get_session(user_id, clients)
+    shadow = get_shadow_clients()
+
+    def _log_deferred_pass(entry: DeferredPassEntry):
+        """Persists a failed/deferred reasoning pass to nova_why_log."""
+        try:
+            supabase.table("nova_why_log").insert({
+                "user_id": entry.user_id,
+                "triggered_by": req.trigger_type,
+                "snapshot_summary": None,  # could be wired up later
+                "reasoning_output": None,
+                "passed": False,
+                "failure_reason": entry.reason,
+            }).execute()
+        except Exception as e:
+            logger.error(f"Failed to log deferred pass to nova_why_log: {e}")
+
     try:
-        _supabase, groq, _groq_backup = clients
-        session = get_session(user_id, clients)
-        shadow = get_shadow_clients()
         snapshot, _patch = session.facts_state.get()
         result = run_reasoning_pass(
             groq,
@@ -38,14 +59,51 @@ def run_reasoning(
             openrouter=shadow.get("openrouter"),
             model=GROQ_MODEL,
             user_id=user_id,
+            log_deferred_pass=_log_deferred_pass,
+            groq_backup=groq_backup,
         )
     except Exception as e:
-        print(f"🔴 [Reasoning Router Error]: {e}")
-        import traceback
-        traceback.print_exc()
+        session.facts_state.rollback()
+        logger.error(f"🔴 [Reasoning Router Error]: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
     session.facts_state.commit()
+
     if not result.stale:
         session.last_good_plan = result.plan
-    return ReasoningRunResponse(plan=result.plan, stale=result.stale, note=result.note)
+        plan = result.plan
+
+        # Deactivate any existing active plans for this student first
+        try:
+            supabase.table("study_plans").update({"is_active": False}).eq(
+                "user_id", user_id
+            ).eq("is_active", True).execute()
+        except Exception as e:
+            logger.error(f"Failed to deactivate old study plans: {e}")
+
+        # Persist the freshly generated plan
+        plan_dump = plan.model_dump() if hasattr(plan, "model_dump") else plan
+        supabase.table("study_plans").insert({
+            "user_id": user_id,
+            "plan_date": datetime.now(timezone.utc).date().isoformat(),
+            "items": json.dumps(plan_dump.get("items", [])),
+            "summary": plan_dump.get("summary"),
+            "is_active": True,
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "trigger_type": req.trigger_type,
+        }).execute()
+
+        # Log the successful pass to nova_why_log
+        try:
+            supabase.table("nova_why_log").insert({
+                "user_id": user_id,
+                "triggered_by": req.trigger_type,
+                "snapshot_summary": None,
+                "reasoning_output": plan_dump.get("summary"),
+                "passed": True,
+                "failure_reason": None,
+            }).execute()
+        except Exception as e:
+            logger.error(f"Failed to log successful pass to nova_why_log: {e}")
+
+    return ReasoningRunResponse(plan=result.plan, stale=result.stale, note=result.note, compression_tier=getattr(result, 'compression_tier', 1))

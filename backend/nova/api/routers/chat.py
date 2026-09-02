@@ -62,6 +62,7 @@ def chat(
             GROQ_MODEL,
         )
     except Exception as e:
+        session.facts_state.rollback()
         print(f"🔴 [Chat Router Error]: {e}")
         import traceback
         traceback.print_exc()

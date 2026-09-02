@@ -104,6 +104,13 @@ class ReasoningRunResponse(BaseModel):
     note: str | None = Field(
         default=None, description="User-visible message explaining a stale/degraded plan."
     )
+    compression_tier: int = Field(
+        default=1,
+        description=(
+            "Which snapshot compression tier was used: 1=full, 2=compressed, 3=skeleton. "
+            "Higher tier means the snapshot was too large and was trimmed before sending to the model."
+        ),
+    )
 
 
 class HealthResponse(BaseModel):
