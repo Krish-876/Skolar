@@ -978,9 +978,10 @@ class FocusTimerPageState extends State<FocusTimerPage>
               child: AnalogClock(
                 size: clockSize,
                 isIdle: !isRunning,
-                elapsedSeconds: (_controller.currentPhaseTotalSeconds -
-                        _controller.currentPhaseSecondsLeft)
-                    .toDouble(),
+                elapsedSeconds:
+                    (_controller.currentPhaseTotalSeconds -
+                            _controller.currentPhaseSecondsLeft)
+                        .toDouble(),
                 progress: _controller.currentIntervalProgress,
               ),
             ),
@@ -1136,7 +1137,9 @@ class FocusTimerPageState extends State<FocusTimerPage>
                         borderRadius: BorderRadius.circular(3),
                         boxShadow: [
                           BoxShadow(
-                            color: AppTheme.accentPurple.withValues(alpha: 0.35),
+                            color: AppTheme.accentPurple.withValues(
+                              alpha: 0.35,
+                            ),
                             blurRadius: 6,
                           ),
                         ],
@@ -1415,7 +1418,9 @@ class FocusTimerPageState extends State<FocusTimerPage>
                   child: Switch(
                     value: enabled,
                     activeThumbColor: AppTheme.accentPurple,
-                    activeTrackColor: AppTheme.accentPurple.withValues(alpha: 0.4),
+                    activeTrackColor: AppTheme.accentPurple.withValues(
+                      alpha: 0.4,
+                    ),
                     inactiveThumbColor: Colors.white38,
                     inactiveTrackColor: Colors.white.withValues(alpha: 0.08),
                     onChanged: (val) => _controller.setPomodoroEnabled(val),

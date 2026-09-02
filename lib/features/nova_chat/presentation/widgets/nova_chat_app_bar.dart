@@ -86,9 +86,7 @@ class NovaChatAppBar extends StatelessWidget implements PreferredSizeWidget {
                               TextSpan(text: title),
                               const TextSpan(
                                 text: '.',
-                                style: TextStyle(
-                                  color: AppTheme.accentPurple,
-                                ),
+                                style: TextStyle(color: AppTheme.accentPurple),
                               ),
                             ],
                           ),
