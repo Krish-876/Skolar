@@ -1,6 +1,4 @@
-import json
 import logging
-from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -72,26 +70,8 @@ def run_reasoning(
     if not result.stale:
         session.last_good_plan = result.plan
         plan = result.plan
-
-        # Deactivate any existing active plans for this student first
-        try:
-            supabase.table("study_plans").update({"is_active": False}).eq(
-                "user_id", user_id
-            ).eq("is_active", True).execute()
-        except Exception as e:
-            logger.error(f"Failed to deactivate old study plans: {e}")
-
-        # Persist the freshly generated plan
         plan_dump = plan.model_dump() if hasattr(plan, "model_dump") else plan
-        supabase.table("study_plans").insert({
-            "user_id": user_id,
-            "plan_date": datetime.now(timezone.utc).date().isoformat(),
-            "items": json.dumps(plan_dump.get("items", [])),
-            "summary": plan_dump.get("summary"),
-            "is_active": True,
-            "generated_at": datetime.now(timezone.utc).isoformat(),
-            "trigger_type": req.trigger_type,
-        }).execute()
+        summary = plan_dump.get("summary") if isinstance(plan_dump, dict) else str(plan_dump)
 
         # Log the successful pass to nova_why_log
         try:
@@ -99,11 +79,16 @@ def run_reasoning(
                 "user_id": user_id,
                 "triggered_by": req.trigger_type,
                 "snapshot_summary": None,
-                "reasoning_output": plan_dump.get("summary"),
+                "reasoning_output": summary,
                 "passed": True,
                 "failure_reason": None,
             }).execute()
         except Exception as e:
             logger.error(f"Failed to log successful pass to nova_why_log: {e}")
 
-    return ReasoningRunResponse(plan=result.plan, stale=result.stale, note=result.note, compression_tier=getattr(result, 'compression_tier', 1))
+    return ReasoningRunResponse(
+        plan=result.plan,
+        stale=result.stale,
+        note=result.note,
+        compression_tier=getattr(result, "compression_tier", 1),
+    )

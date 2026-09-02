@@ -224,8 +224,8 @@ def generate_initial_suggestions(
                 suggestions = parsed.get("suggestions", [])
                 if isinstance(suggestions, list) and suggestions:
                     return [str(s) for s in suggestions[:4]]
-            except Exception:
-                pass
+            except Exception as e_backup:
+                logger.warning(f"Failed to generate initial suggestions from backup model: {e_backup}")
 
     return [
         "What should I study today?",
