@@ -916,8 +916,7 @@ class FocusTimerPageState extends State<FocusTimerPage>
                                     instruction:
                                         'Swipe DOWN anytime to return. You are all set!',
                                     pointsDown: true,
-                                    swipeIndicator:
-                                        TutorialSwipeIndicator.down,
+                                    swipeIndicator: TutorialSwipeIndicator.down,
                                     onNext: _dismissTutorial,
                                   ),
                                 ),
@@ -933,7 +932,8 @@ class FocusTimerPageState extends State<FocusTimerPage>
                     AnimatedOpacity(
                       duration: const Duration(milliseconds: 250),
                       curve: Curves.easeInOut,
-                      opacity: (!isRunning && _showTutorial && _tutorialStep != 0)
+                      opacity:
+                          (!isRunning && _showTutorial && _tutorialStep != 0)
                           ? 0.22
                           : 1.0,
                       child: Transform.scale(
