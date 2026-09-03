@@ -9,13 +9,13 @@ enum MathQuestionType {
   String get displayName {
     switch (this) {
       case MathQuestionType.addition:
-        return 'ADDITION';
+        return 'Addition';
       case MathQuestionType.subtraction:
-        return 'SUBTRACTION';
+        return 'Subtraction';
       case MathQuestionType.multiplication:
-        return 'MULTIPLICATION';
+        return 'Multiplication';
       case MathQuestionType.division:
-        return 'DIVISION';
+        return 'Division';
       case MathQuestionType.lcm:
         return 'LCM';
       case MathQuestionType.hcf:
@@ -39,21 +39,48 @@ enum MathQuestionType {
         return 'HCF';
     }
   }
+
+  int get baseDifficultyWeight {
+    switch (this) {
+      case MathQuestionType.addition:
+        return 100;
+      case MathQuestionType.subtraction:
+        return 130;
+      case MathQuestionType.multiplication:
+        return 170;
+      case MathQuestionType.division:
+        return 220;
+      case MathQuestionType.lcm:
+        return 280;
+      case MathQuestionType.hcf:
+        return 350;
+    }
+  }
 }
 
 class MathQuestion {
+  final String? topOperand;
+  final String? bottomOperand;
+  final String? operatorSymbol;
   final String displayText;
   final String? subtitleText;
   final int answer;
   final MathQuestionType type;
   final int difficultyLevel;
+  final int basePoints;
+  final bool isVertical;
 
   const MathQuestion({
+    this.topOperand,
+    this.bottomOperand,
+    this.operatorSymbol,
     required this.displayText,
     this.subtitleText,
     required this.answer,
     required this.type,
     required this.difficultyLevel,
+    required this.basePoints,
+    this.isVertical = false,
   });
 
   bool checkAnswer(int userAnswer) => userAnswer == answer;
