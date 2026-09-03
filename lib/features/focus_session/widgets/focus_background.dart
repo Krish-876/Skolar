@@ -23,6 +23,38 @@ class FocusBackground extends StatelessWidget {
   }
 }
 
+/// One scattered purple orb in the ambient background — mirrors the auth
+/// screen's `DriftingCircles` (a soft `accentPurple` radial gradient fading
+/// to transparent), scaled to fractions of the canvas instead of DP so it
+/// composes at any screen size.
+class _AmbientOrb {
+  final double dx; // fraction of width
+  final double dy; // fraction of height
+  final double radiusFraction; // fraction of width
+  final double baseOpacity;
+
+  const _AmbientOrb({
+    required this.dx,
+    required this.dy,
+    required this.radiusFraction,
+    required this.baseOpacity,
+  });
+}
+
+// Scattered soft purple orbs across the black canvas — the same visual
+// language as the auth screen's black hero + DriftingCircles, in place of
+// one large diffuse wash.
+const List<_AmbientOrb> _ambientOrbs = [
+  _AmbientOrb(dx: 0.14, dy: 0.10, radiusFraction: 0.09, baseOpacity: 0.20),
+  _AmbientOrb(dx: 0.78, dy: 0.16, radiusFraction: 0.07, baseOpacity: 0.16),
+  _AmbientOrb(dx: 0.32, dy: 0.24, radiusFraction: 0.05, baseOpacity: 0.22),
+  _AmbientOrb(dx: 0.62, dy: 0.30, radiusFraction: 0.11, baseOpacity: 0.14),
+  _AmbientOrb(dx: 0.20, dy: 0.42, radiusFraction: 0.06, baseOpacity: 0.18),
+  _AmbientOrb(dx: 0.85, dy: 0.46, radiusFraction: 0.08, baseOpacity: 0.15),
+  _AmbientOrb(dx: 0.50, dy: 0.58, radiusFraction: 0.15, baseOpacity: 0.17),
+  _AmbientOrb(dx: 0.40, dy: 0.14, radiusFraction: 0.045, baseOpacity: 0.24),
+];
+
 class _FocusBackgroundPainter extends CustomPainter {
   final double slideProgress;
   final double breakProgress;
@@ -37,7 +69,7 @@ class _FocusBackgroundPainter extends CustomPainter {
     // 1. Solid base (smoothly lightens during break)
     final bgColor = Color.lerp(
       AppTheme.background,
-      const Color(0xFF1D162B),
+      AppTheme.bgGradBegin,
       breakProgress,
     )!;
     canvas.drawRect(
@@ -45,32 +77,25 @@ class _FocusBackgroundPainter extends CustomPainter {
       Paint()..color = bgColor,
     );
 
-    // 2. Ambient glow (tasteful, subtle expansion and lightening during break)
-    final cx = size.width * (0.20 + 0.06 * breakProgress);
-    final cy = size.height * (0.50 - 0.02 * breakProgress);
-    final glowCenter = Offset(cx, cy);
-    final glowRadius = size.width * (1.10 + 0.15 * breakProgress);
-
-    final glowCenterColor = Color.lerp(
-      AppTheme.primary.withValues(alpha: 0.35),
-      const Color(0xFFA78BFA).withValues(alpha: 0.48),
-      breakProgress,
-    )!;
-    final glowMidColor = Color.lerp(
-      AppTheme.primary.withValues(alpha: 0.08),
-      const Color(0xFF8B5CF6).withValues(alpha: 0.18),
-      breakProgress,
-    )!;
-
-    canvas.drawCircle(
-      glowCenter,
-      glowRadius,
-      Paint()
-        ..shader = RadialGradient(
-          colors: [glowCenterColor, glowMidColor, Colors.transparent],
-          stops: const [0.0, 0.55, 1.0],
-        ).createShader(Rect.fromCircle(center: glowCenter, radius: glowRadius)),
-    );
+    // 2. Ambient glow — scattered soft purple orbs (matching the auth
+    // screen's DriftingCircles), brightening slightly during break.
+    final orbAlphaBoost = 1.0 + breakProgress * 0.4;
+    for (final orb in _ambientOrbs) {
+      final center = Offset(orb.dx * size.width, orb.dy * size.height);
+      final radius = orb.radiusFraction * size.width;
+      final alpha = (orb.baseOpacity * orbAlphaBoost).clamp(0.0, 1.0);
+      canvas.drawCircle(
+        center,
+        radius,
+        Paint()
+          ..shader = RadialGradient(
+            colors: [
+              AppTheme.accentPurple.withValues(alpha: alpha),
+              AppTheme.accentPurple.withValues(alpha: 0),
+            ],
+          ).createShader(Rect.fromCircle(center: center, radius: radius)),
+      );
+    }
 
     // 3. Surface panel
     _paintWave(canvas, size);
@@ -95,12 +120,12 @@ class _FocusBackgroundPainter extends CustomPainter {
 
     final topWaveColor = Color.lerp(
       AppTheme.surfaceGrad2Begin,
-      const Color(0xFF382A54),
+      Color.lerp(AppTheme.surfaceGrad2Begin, AppTheme.accentPurple, 0.3),
       breakProgress,
     )!;
     final botWaveColor = Color.lerp(
       AppTheme.bgGradEnd,
-      const Color(0xFF201633),
+      Color.lerp(AppTheme.bgGradEnd, AppTheme.accentPurple, 0.25),
       breakProgress,
     )!;
 
@@ -123,11 +148,7 @@ class _FocusBackgroundPainter extends CustomPainter {
     canvas.drawPath(path, paint);
 
     // Sheen along arc edge
-    final sheenAccent = Color.lerp(
-      AppTheme.accentPurple,
-      const Color(0xFFC084FC),
-      breakProgress,
-    )!;
+    final sheenAccent = AppTheme.accentPurple;
 
     canvas.drawPath(
       Path()

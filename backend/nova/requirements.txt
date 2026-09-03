@@ -1,0 +1,8 @@
+cerebras-cloud-sdk==1.91.0
+fastapi==0.141.1
+groq==1.7.0
+openai==1.105.0
+pydantic==2.13.5
+python-dotenv==1.2.3
+supabase==2.31.0
+tiktoken==0.13.0
