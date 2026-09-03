@@ -802,22 +802,32 @@ class FocusTimerPageState extends State<FocusTimerPage>
     return SafeArea(
       child: Column(
         children: [
-          // Top bar (fades out first or when sliding to lock in)
-          Opacity(
-            opacity: isRunning
-                ? (1.0 - zen * 3.0).clamp(0.0, 1.0)
-                : (1.0 - slideProgress * 2.0).clamp(0.0, 1.0),
-            child: _buildTopBar(isRunning),
+          // Top bar (fades out first or when sliding to lock in, dimmed during tutorial)
+          AnimatedOpacity(
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeInOut,
+            opacity: _showTutorial ? 0.22 : 1.0,
+            child: Opacity(
+              opacity: isRunning
+                  ? (1.0 - zen * 3.0).clamp(0.0, 1.0)
+                  : (1.0 - slideProgress * 2.0).clamp(0.0, 1.0),
+              child: _buildTopBar(isRunning),
+            ),
           ),
 
-          // Bonsai hero art (fades and moves up out of view)
+          // Bonsai hero art (fades and moves up out of view, dimmed during tutorial)
           Expanded(
             flex: 44,
-            child: Transform.translate(
-              offset: Offset(0, -60 * zen),
-              child: Opacity(
-                opacity: (1.0 - zen * 2.5).clamp(0.0, 1.0),
-                child: _buildBonsaiHero(isRunning),
+            child: AnimatedOpacity(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeInOut,
+              opacity: _showTutorial ? 0.22 : 1.0,
+              child: Transform.translate(
+                offset: Offset(0, -60 * zen),
+                child: Opacity(
+                  opacity: (1.0 - zen * 2.5).clamp(0.0, 1.0),
+                  child: _buildBonsaiHero(isRunning),
+                ),
               ),
             ),
           ),
@@ -879,6 +889,7 @@ class FocusTimerPageState extends State<FocusTimerPage>
                                   child: const TutorialCallout(
                                     instruction: 'Swipe UP for AMOLED mode',
                                     pointsDown: true,
+                                    swipeIndicator: TutorialSwipeIndicator.up,
                                   ),
                                 ),
                               ),
@@ -905,6 +916,7 @@ class FocusTimerPageState extends State<FocusTimerPage>
                                     instruction:
                                         'Swipe DOWN anytime to return. You are all set!',
                                     pointsDown: true,
+                                    swipeIndicator: TutorialSwipeIndicator.down,
                                     onNext: _dismissTutorial,
                                   ),
                                 ),
@@ -917,15 +929,28 @@ class FocusTimerPageState extends State<FocusTimerPage>
                     ],
 
                     // Enlarging & centered timer readout
-                    Transform.scale(
-                      scale: 1.0 + (zen * 0.40),
-                      child: _buildTimerReadout(isRunning, palette),
+                    AnimatedOpacity(
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeInOut,
+                      opacity:
+                          (!isRunning && _showTutorial && _tutorialStep != 0)
+                          ? 0.22
+                          : 1.0,
+                      child: Transform.scale(
+                        scale: 1.0 + (zen * 0.40),
+                        child: _buildTimerReadout(isRunning, palette),
+                      ),
                     ),
 
                     // Progress indicators
                     if (isRunning) ...[
                       SizedBox(height: 14.0 - (4.0 * zen)),
-                      _buildProgressIndicators(palette, zen: zen),
+                      AnimatedOpacity(
+                        duration: const Duration(milliseconds: 250),
+                        curve: Curves.easeInOut,
+                        opacity: _showTutorial ? 0.22 : 1.0,
+                        child: _buildProgressIndicators(palette, zen: zen),
+                      ),
                     ],
 
                     const SizedBox(height: 20),
@@ -1290,9 +1315,23 @@ class FocusTimerPageState extends State<FocusTimerPage>
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      _buildDurationSlider(),
+                      AnimatedOpacity(
+                        duration: const Duration(milliseconds: 250),
+                        curve: Curves.easeInOut,
+                        opacity: (_showTutorial && _tutorialStep != 0)
+                            ? 0.22
+                            : 1.0,
+                        child: _buildDurationSlider(),
+                      ),
                       const SizedBox(height: 10),
-                      _buildPomodoroModeToggle(),
+                      AnimatedOpacity(
+                        duration: const Duration(milliseconds: 250),
+                        curve: Curves.easeInOut,
+                        opacity: (_showTutorial && _tutorialStep != 1)
+                            ? 0.22
+                            : 1.0,
+                        child: _buildPomodoroModeToggle(),
+                      ),
                       const SizedBox(height: 16),
                     ],
                   ),
@@ -1300,7 +1339,14 @@ class FocusTimerPageState extends State<FocusTimerPage>
               : const SizedBox.shrink(),
         ),
         LayoutBuilder(
-          builder: (context, constraints) => _buildSliderTrackBar(constraints),
+          builder: (context, constraints) => AnimatedOpacity(
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeInOut,
+            opacity: (_showTutorial && isIdle && _tutorialStep != 2)
+                ? 0.22
+                : 1.0,
+            child: _buildSliderTrackBar(constraints),
+          ),
         ),
       ],
     );
