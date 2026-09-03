@@ -15,7 +15,7 @@ class Environment {
 
   /// Development environment
   static const Environment development = Environment(
-    apiBaseUrl: 'https://dev-api.nova.local',
+    apiBaseUrl: 'http://localhost:8080',
     environment: 'development',
     enableLogging: true,
     enableCrashReporting: false,
