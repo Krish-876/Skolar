@@ -2,12 +2,7 @@ import 'package:Skolar/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import '../services/focus_preferences_service.dart';
 
-enum TutorialStep {
-  setTime,
-  pomodoro,
-  normalMode,
-  amoledMode,
-}
+enum TutorialStep { setTime, pomodoro, normalMode, amoledMode }
 
 class FocusTutorialOverlay extends StatefulWidget {
   final VoidCallback onDismiss;
@@ -86,9 +81,7 @@ class _FocusTutorialOverlayState extends State<FocusTutorialOverlay>
           Positioned.fill(
             child: GestureDetector(
               onTap: () {}, // Prevent taps falling through
-              child: Container(
-                color: Colors.black.withValues(alpha: 0.78),
-              ),
+              child: Container(color: Colors.black.withValues(alpha: 0.78)),
             ),
           ),
 
@@ -388,10 +381,7 @@ class _FocusTutorialOverlayState extends State<FocusTutorialOverlay>
                     decoration: BoxDecoration(
                       color: Colors.black.withValues(alpha: 0.8),
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: Colors.white24,
-                        width: 1,
-                      ),
+                      border: Border.all(color: Colors.white24, width: 1),
                     ),
                     child: const Text(
                       'Swipe UP to enter AMOLED Mode\nSwipe DOWN to exit anytime',
