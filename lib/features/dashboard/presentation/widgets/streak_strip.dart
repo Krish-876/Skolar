@@ -335,12 +335,6 @@ class _MonthGrid extends ConsumerStatefulWidget {
 }
 
 class _MonthGridState extends ConsumerState<_MonthGrid> {
-  // Every month's grid always reserves 6 rows regardless of how many it
-  // actually needs (a month never spans more than 6 — 31 days plus at most
-  // 6 leading blanks is 37 cells, i.e. always ≤ 42) so every page in the
-  // PageView below has the same fixed height: PageView lays every page out
-  // at the same extent, it doesn't size itself to each page's own content.
-  static const _rowCount = 6;
   // Arbitrary large starting index so the user can swipe backwards for
   // "years" before hitting page 0 — pages are addressed relative to this,
   // not absolute, so there's no meaningful upper bound either.
@@ -357,6 +351,13 @@ class _MonthGridState extends ConsumerState<_MonthGrid> {
 
   DateTime _monthForPage(int page) =>
       DateTime(_anchorMonth.year, _anchorMonth.month + (page - _initialPage));
+
+  static int _rowCountFor(DateTime month) {
+    final daysInMonth = DateUtils.getDaysInMonth(month.year, month.month);
+    final firstDay = DateTime(month.year, month.month, 1);
+    final leadingBlanks = firstDay.weekday % 7;
+    return ((leadingBlanks + daysInMonth) / 7).ceil();
+  }
 
   @override
   void dispose() {
@@ -394,6 +395,7 @@ class _MonthGridState extends ConsumerState<_MonthGrid> {
     final headerLabel = isCurrentMonth
         ? DateFormat('d MMMM y').format(today)
         : DateFormat('MMMM y').format(viewedMonth);
+    final rowCount = _rowCountFor(viewedMonth);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -450,8 +452,10 @@ class _MonthGridState extends ConsumerState<_MonthGrid> {
                   }),
                 ),
                 const SizedBox(height: 4),
-                SizedBox(
-                  height: blockSize * _rowCount,
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeOutCubic,
+                  height: blockSize * rowCount,
                   child: PageView.builder(
                     controller: _pageController,
                     onPageChanged: (page) =>
@@ -467,8 +471,9 @@ class _MonthGridState extends ConsumerState<_MonthGrid> {
                       // so the grid starts its first row on Sunday, matching
                       // the week strip above it.
                       final leadingBlanks = firstDay.weekday % 7;
+                      final pageRowCount = _rowCountFor(month);
                       final trailingBlanks =
-                          _rowCount * 7 - leadingBlanks - daysInMonth;
+                          pageRowCount * 7 - leadingBlanks - daysInMonth;
                       return Wrap(
                         spacing: 0,
                         runSpacing: 0,
