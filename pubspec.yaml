@@ -48,6 +48,7 @@ dependencies:
   flutter_heatmap_calendar: ^1.0.5
   shimmer: ^4.0.0
   dotlottie_loader: ^0.0.6
+  wakelock_plus: ^1.5.2
 dev_dependencies:
   flutter_test:
     sdk: flutter

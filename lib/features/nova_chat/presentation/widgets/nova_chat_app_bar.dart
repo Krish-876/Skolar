@@ -10,7 +10,6 @@ class NovaChatAppBar extends StatelessWidget implements PreferredSizeWidget {
   final bool isThinking;
   final VoidCallback onClearChat;
   final String title;
-  final String subtitle;
   final MascotState mascotState;
 
   const NovaChatAppBar({
@@ -19,8 +18,7 @@ class NovaChatAppBar extends StatelessWidget implements PreferredSizeWidget {
     required this.isThinking,
     required this.onClearChat,
     this.mascotState = MascotState.idle,
-    this.title = 'Nova AI',
-    this.subtitle = 'AI Academic Copilot',
+    this.title = 'skolar',
   });
 
   @override
@@ -68,38 +66,48 @@ class NovaChatAppBar extends StatelessWidget implements PreferredSizeWidget {
                   NovaMascotAvatar(size: 36, state: activeMascotState),
                   const SizedBox(width: 12),
 
-                  // Title & Subtitle in Google Sans
+                  // Title in Google Sans, centered in the bar — "skolar."
+                  // with the brand purple full stop, matching the period
+                  // accent used on the onboarding welcome buttons.
                   Expanded(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Text(
-                          title,
-                          style: GoogleFonts.googleSans(
-                            color: Colors.white,
-                            fontSize: 17,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 0.2,
+                        Text.rich(
+                          TextSpan(
+                            style: GoogleFonts.googleSans(
+                              color: Colors.white,
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.2,
+                            ),
+                            children: [
+                              TextSpan(text: title),
+                              const TextSpan(
+                                text: '.',
+                                style: TextStyle(color: AppTheme.accentPurple),
+                              ),
+                            ],
                           ),
+                          textAlign: TextAlign.center,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          isThinking ? 'Thinking...' : subtitle,
-                          style: GoogleFonts.googleSans(
-                            color: isThinking
-                                ? const Color(0xFF8C5BE8)
-                                : AppTheme.textMuted,
-                            fontSize: 12,
-                            fontWeight: isThinking
-                                ? FontWeight.w600
-                                : FontWeight.normal,
+                        if (isThinking) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            'Thinking...',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.googleSans(
+                              color: const Color(0xFF8C5BE8),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                        ],
                       ],
                     ),
                   ),
