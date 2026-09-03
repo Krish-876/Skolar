@@ -204,6 +204,14 @@ def _fetch_topics(supabase: Client, topic_ids: list[str]) -> list[dict]:
 
 
 def get_facts_snapshot(supabase: Client, user_id: str) -> FactsSnapshot:
+    if not user_id or not isinstance(user_id, str):
+        raise ValueError('A valid user_id string is required to fetch facts snapshot.')
+    try:
+        import uuid
+        uuid.UUID(str(user_id))
+    except ValueError as e:
+        raise ValueError(f'Invalid user_id UUID: {user_id}') from e
+
     profile = _fetch_own_profile(supabase, user_id)
     user_subject_ids = _user_subject_ids(supabase, user_id)
     test_attempt_ids = _test_attempt_ids(supabase, user_id)
