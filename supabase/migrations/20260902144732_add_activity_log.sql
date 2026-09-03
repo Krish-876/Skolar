@@ -26,7 +26,7 @@ CREATE TABLE public.activity_log (
 -- subject deletion, task edits) should ever touch this table.
 
 CREATE INDEX activity_log_user_date_idx ON public.activity_log
-    USING btree (user_id, completed_on);
+    USING btree (user_id, completed_on) INCLUDE (duration_seconds);
 -- Backs: semester total time (SUM(duration_seconds) over a date range),
 -- tasks-completed-per-week (COUNT(*) grouped by week), and the
 -- login/work heatmap (DISTINCT completed_on per user) — all computed at
@@ -37,6 +37,10 @@ ALTER TABLE public.activity_log ENABLE ROW LEVEL SECURITY;
 -- (select auth.uid()) rather than a bare auth.uid() so Postgres init-plans
 -- it once per statement instead of re-evaluating per row (Supabase's
 -- documented RLS performance pattern).
-CREATE POLICY activity_log_own ON public.activity_log
-    USING ((user_id = (select auth.uid())))
+CREATE POLICY activity_log_select ON public.activity_log
+    FOR SELECT
+    USING ((user_id = (select auth.uid())));
+
+CREATE POLICY activity_log_insert ON public.activity_log
+    FOR INSERT
     WITH CHECK ((user_id = (select auth.uid())));
