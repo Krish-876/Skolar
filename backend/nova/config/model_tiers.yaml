@@ -30,12 +30,26 @@ reasoning_layer:
       max_tokens_per_minute: 8000
       cacheable_segment: reasoning_instructions
       alt_model: qwen/qwen3.6-27b   # named config alternative, not an ad hoc runtime swap
+      key: primary
+    - provider: groq
+      model: qwen/qwen3.6-27b
+      reasoning_effort: high
+      max_tokens_per_minute: 8000
+      cacheable_segment: reasoning_instructions
+      key: backup
   minor_trigger_rerank:                       # single test score / capacity update - doesn't warrant a full re-derive
     - provider: groq
       model: openai/gpt-oss-120b
       reasoning_effort: medium   # start at medium; only drop to low if quality holds under real measurement (open item 4)
       max_tokens_per_minute: 8000
       cacheable_segment: reasoning_instructions
+      key: primary
+    - provider: groq
+      model: qwen/qwen3.6-27b
+      reasoning_effort: medium
+      max_tokens_per_minute: 8000
+      cacheable_segment: reasoning_instructions
+      key: backup
   shadow:
     - provider: openrouter
       model: nvidia/nemotron-3-ultra-550b-a55b:free

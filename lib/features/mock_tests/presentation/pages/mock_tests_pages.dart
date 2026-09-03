@@ -238,7 +238,7 @@ class _MockTestPageState extends ConsumerState<MockTestPage> {
     }
     if (mockState.hasQuestions) {
       return mockState.mode == ExamMode.mcqBlitz
-          ? _McqQuizFlow(questions: mockState.mcqQuestions)
+          ? McqQuizFlow(questions: mockState.mcqQuestions)
           : _WrittenPracticeFlow(questions: mockState.openQuestions);
     }
 
@@ -1121,14 +1121,17 @@ class _MarkdownWithAccentHeadings extends StatelessWidget {
 // MCQ BLITZ FLOW
 // ═════════════════════════════════════════════════════════════════════════════
 
-class _McqQuizFlow extends ConsumerStatefulWidget {
+class McqQuizFlow extends ConsumerStatefulWidget {
   final List<QuizQuestion> questions;
-  const _McqQuizFlow({required this.questions});
+  final VoidCallback? onRestart;
+
+  const McqQuizFlow({super.key, required this.questions, this.onRestart});
+
   @override
-  ConsumerState<_McqQuizFlow> createState() => _McqQuizFlowState();
+  ConsumerState<McqQuizFlow> createState() => _McqQuizFlowState();
 }
 
-class _McqQuizFlowState extends ConsumerState<_McqQuizFlow> {
+class _McqQuizFlowState extends ConsumerState<McqQuizFlow> {
   int _current = 0;
   int _score = 0;
   bool _done = false;
@@ -1181,7 +1184,9 @@ class _McqQuizFlowState extends ConsumerState<_McqQuizFlow> {
                   total: widget.questions.fold(0, (s, q) => s + q.marks),
                   answers: _answers,
                   questions: widget.questions,
-                  onRestart: () => ref.read(mockTestProvider.notifier).reset(),
+                  onRestart:
+                      widget.onRestart ??
+                      () => ref.read(mockTestProvider.notifier).reset(),
                 )
               : _McqQuestionScreen(
                   key: ValueKey(_current),

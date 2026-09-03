@@ -11,6 +11,7 @@ class FactsSnapshot(BaseModel):
     current_semester: str | int | None
     dual_branch: str | None
     study_capacity: str | int | None
+    user_subjects: list[dict]
     user_subject_exams: list[dict]
     capacity_today: list[dict]
     staleness_tracker: list[dict]
