@@ -7,7 +7,6 @@ import 'package:Skolar/features/nova_chat/presentation/widgets/nova_flashcard_de
 import 'package:Skolar/features/nova_chat/presentation/widgets/nova_practice_problem_card.dart';
 import 'package:Skolar/features/nova_chat/presentation/widgets/nova_quiz_card.dart';
 import 'package:Skolar/features/nova_chat/presentation/widgets/nova_study_plan_card.dart';
-import 'package:Skolar/features/nova_chat/presentation/widgets/nova_thinking_indicator.dart';
 
 class NovaChatBubble extends StatelessWidget {
   final ChatMessageEntity message;
@@ -193,9 +192,7 @@ class NovaChatBubble extends StatelessWidget {
         codeblockDecoration: BoxDecoration(
           color: const Color(0xFF181720),
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.08),
-          ),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
         ),
         listBullet: GoogleFonts.googleSans(
           color: const Color(0xFFB388FF),
