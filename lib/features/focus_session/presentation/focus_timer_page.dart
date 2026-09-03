@@ -12,9 +12,11 @@ import 'package:flutter/physics.dart';
 import 'package:flutter/services.dart';
 
 import '../controllers/focus_timer_controller.dart';
+import '../services/focus_preferences_service.dart';
 import '../widgets/focus_background.dart';
 import '../widgets/phase_takeover.dart';
 import '../widgets/analog_clock_painter.dart';
+import '../widgets/focus_tutorial_callout.dart';
 
 /// Colors that differ between the real (dark) body and its light-theme
 /// break clone. Everything structural (layout, sizing, which widgets exist)
@@ -92,6 +94,9 @@ class FocusTimerPageState extends State<FocusTimerPage>
 
   double _knobOffset = 0;
   bool _dragging = false;
+  bool _showTutorial = false;
+  int _tutorialStep = 0;
+  bool _tutorialDontShowAgain = true;
   static const double _trackHorizontalPadding = 6.0;
   static const double _knobSize = 48.0;
   static const double _trackHeight = 62.0;
@@ -152,10 +157,31 @@ class FocusTimerPageState extends State<FocusTimerPage>
     _controller.onPhaseChanged = _onPhaseChanged;
 
     WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final shouldShow = await FocusPreferencesService.shouldShowTutorial();
+      if (shouldShow &&
+          mounted &&
+          _controller.status == FocusTimerStatus.idle) {
+        setState(() {
+          _showTutorial = true;
+          _tutorialStep = 0;
+        });
+      }
+    });
+  }
+
+  void _dismissTutorial() async {
+    if (_tutorialDontShowAgain) {
+      await FocusPreferencesService.setTutorialSeen(true);
+    }
+    if (mounted) {
+      setState(() => _showTutorial = false);
+    }
   }
 
   void _updateAmoledWakelock({bool? forceState}) {
-    final shouldKeepAwake = forceState ??
+    final shouldKeepAwake =
+        forceState ??
         (mounted &&
             _isAppInForeground &&
             _controller.status == FocusTimerStatus.running &&
@@ -410,104 +436,6 @@ class FocusTimerPageState extends State<FocusTimerPage>
     }
   }
 
-  void _showHelpDialog() {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-          side: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
-        ),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppTheme.accentPurple.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(
-                Icons.spa_rounded,
-                color: AppTheme.accentPurple,
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Text(
-              'Deep Focus Mode',
-              style: TextStyle(
-                fontFamily: 'GoogleSans',
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHelpItem(
-              Icons.notifications_active_rounded,
-              'Stay within the app while focusing. Leaving the app will issue a warning and automatically cancel after 10 seconds.',
-            ),
-            const SizedBox(height: 12),
-            _buildHelpItem(
-              Icons.coffee_rounded,
-              'During breaks, you can freely exit the app or use Picture-in-Picture mode.',
-            ),
-            const SizedBox(height: 12),
-            _buildHelpItem(
-              Icons.dark_mode_rounded,
-              'Swipe up during focus to enter AMOLED mode. Keeps your screen on with an ultra-minimal pure black canvas.',
-            ),
-            const SizedBox(height: 12),
-            _buildHelpItem(
-              Icons.lock_clock_rounded,
-              'Your timer continues accurately even if your device screen turns off.',
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: Text(
-              'Got it',
-              style: TextStyle(
-                fontFamily: 'GoogleSans',
-                color: AppTheme.accentPurple,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHelpItem(IconData icon, String text) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, size: 16, color: AppTheme.accentPurple),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Text(
-            text,
-            style: TextStyle(
-              fontFamily: 'GoogleSans',
-              color: Colors.white70,
-              fontSize: 13,
-              height: 1.4,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
   void _showEditTimeDialog() {
     if (_controller.status != FocusTimerStatus.idle) return;
 
@@ -520,6 +448,9 @@ class FocusTimerPageState extends State<FocusTimerPage>
           setState(() {
             _targetSliderMinutes = mins;
             _animatedSliderMinutes = mins;
+            if (_showTutorial && _tutorialStep == 0) {
+              _tutorialStep = 1;
+            }
           });
           _controller.setDuration(totalSeconds);
         },
@@ -723,15 +654,27 @@ class FocusTimerPageState extends State<FocusTimerPage>
                 if (velocity > 200) {
                   _zenAnimController.animateTo(0.0, curve: Curves.easeOutCubic);
                   _updateAmoledWakelock(forceState: false);
+                  if (_showTutorial && _tutorialStep == 4) {
+                    _dismissTutorial();
+                  }
                 } else if (velocity < -200) {
                   _zenAnimController.animateTo(1.0, curve: Curves.easeOutCubic);
                   _updateAmoledWakelock(forceState: true);
+                  if (_showTutorial && _tutorialStep == 3) {
+                    setState(() => _tutorialStep = 4);
+                  }
                 } else if (_zenAnimController.value > 0.5) {
                   _zenAnimController.animateTo(1.0, curve: Curves.easeOutCubic);
                   _updateAmoledWakelock(forceState: true);
+                  if (_showTutorial && _tutorialStep == 3) {
+                    setState(() => _tutorialStep = 4);
+                  }
                 } else {
                   _zenAnimController.animateTo(0.0, curve: Curves.easeOutCubic);
                   _updateAmoledWakelock(forceState: false);
+                  if (_showTutorial && _tutorialStep == 4) {
+                    _dismissTutorial();
+                  }
                 }
               }
             },
@@ -834,6 +777,7 @@ class FocusTimerPageState extends State<FocusTimerPage>
                     ),
 
                   if (_showGiveUpSheet) _buildGiveUpOverlay(),
+                  _buildTutorialBottomBar(),
                 ],
               ),
             ),
@@ -893,18 +837,81 @@ class FocusTimerPageState extends State<FocusTimerPage>
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     // Phase title: "Focus" / "Break" (Always visible in AMOLED mode)
+                    // Phase title: "Focus" / "Break" (Always visible in AMOLED mode)
                     if (isRunning) ...[
-                      Text(
-                        _controller.isBreakPhase ? 'Break' : 'Focus',
-                        style: TextStyle(
-                          fontFamily: 'GoogleSans',
-                          color: palette.onBackground.withValues(
-                            alpha: (0.95 - (zen * 0.15)).clamp(0.75, 0.95),
+                      OverflowHitTestStack(
+                        clipBehavior: Clip.none,
+                        alignment: Alignment.center,
+                        children: [
+                          Text(
+                            _controller.isBreakPhase ? 'Break' : 'Focus',
+                            style: TextStyle(
+                              fontFamily: 'GoogleSans',
+                              color: palette.onBackground.withValues(
+                                alpha: (0.95 - (zen * 0.15)).clamp(0.75, 0.95),
+                              ),
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.3,
+                            ),
                           ),
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.3,
-                        ),
+
+                          Positioned(
+                            bottom: 28,
+                            child: SizedBox(
+                              width: MediaQuery.of(context).size.width - 48,
+                              child: AnimatedOpacity(
+                                opacity:
+                                    (isRunning &&
+                                        _showTutorial &&
+                                        _tutorialStep == 3 &&
+                                        zen < 0.5)
+                                    ? 1.0
+                                    : 0.0,
+                                duration: const Duration(milliseconds: 250),
+                                curve: Curves.easeInOut,
+                                child: IgnorePointer(
+                                  ignoring:
+                                      !(isRunning &&
+                                          _showTutorial &&
+                                          _tutorialStep == 3 &&
+                                          zen < 0.5),
+                                  child: const TutorialCallout(
+                                    instruction: 'Swipe UP for AMOLED mode',
+                                    pointsDown: true,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+
+                          Positioned(
+                            bottom: 28,
+                            child: SizedBox(
+                              width: MediaQuery.of(context).size.width - 48,
+                              child: AnimatedOpacity(
+                                opacity:
+                                    (isRunning && _showTutorial && zen >= 0.5)
+                                    ? 1.0
+                                    : 0.0,
+                                duration: const Duration(milliseconds: 250),
+                                curve: Curves.easeInOut,
+                                child: IgnorePointer(
+                                  ignoring:
+                                      !(isRunning &&
+                                          _showTutorial &&
+                                          zen >= 0.5),
+                                  child: TutorialCallout(
+                                    instruction:
+                                        'Swipe DOWN anytime to return. You are all set!',
+                                    pointsDown: true,
+                                    onNext: _dismissTutorial,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 10),
                     ],
@@ -957,7 +964,12 @@ class FocusTimerPageState extends State<FocusTimerPage>
           child: Align(
             alignment: Alignment.topRight,
             child: GestureDetector(
-              onTap: _showHelpDialog,
+              onTap: () {
+                setState(() {
+                  _showTutorial = true;
+                  _tutorialStep = 0;
+                });
+              },
               child: Container(
                 width: 32,
                 height: 32,
@@ -1266,7 +1278,7 @@ class FocusTimerPageState extends State<FocusTimerPage>
     required bool isIdle,
     double slideProgress = 0.0,
   }) {
-    return Column(
+    final controls = Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         AnimatedSize(
@@ -1289,6 +1301,76 @@ class FocusTimerPageState extends State<FocusTimerPage>
         ),
         LayoutBuilder(
           builder: (context, constraints) => _buildSliderTrackBar(constraints),
+        ),
+      ],
+    );
+
+    return OverflowHitTestStack(
+      clipBehavior: Clip.none,
+      alignment: Alignment.topCenter,
+      children: [
+        // Base layer: controls (slider, toggle, trackbar)
+        controls,
+
+        // Overlay layer: tutorial cards painted strictly on top of all controls
+        Positioned(
+          top: 36,
+          left: 0,
+          right: 0,
+          child: AnimatedOpacity(
+            opacity: (_showTutorial && _tutorialStep == 0 && isIdle)
+                ? 1.0
+                : 0.0,
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeInOut,
+            child: IgnorePointer(
+              ignoring: !(_showTutorial && _tutorialStep == 0 && isIdle),
+              child: const TutorialCallout(
+                instruction: 'Drag slider or tap digits to set focus time',
+                pointsDown: false,
+              ),
+            ),
+          ),
+        ),
+
+        Positioned(
+          top: 78,
+          left: 0,
+          right: 0,
+          child: AnimatedOpacity(
+            opacity: (_showTutorial && _tutorialStep == 1 && isIdle)
+                ? 1.0
+                : 0.0,
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeInOut,
+            child: IgnorePointer(
+              ignoring: !(_showTutorial && _tutorialStep == 1 && isIdle),
+              child: const TutorialCallout(
+                instruction: 'Toggle Pomodoro for 25m focus + 5m breaks',
+                pointsDown: false,
+              ),
+            ),
+          ),
+        ),
+
+        Positioned(
+          bottom: _trackHeight + 8,
+          left: 0,
+          right: 0,
+          child: AnimatedOpacity(
+            opacity: (_showTutorial && _tutorialStep == 2 && isIdle)
+                ? 1.0
+                : 0.0,
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeInOut,
+            child: IgnorePointer(
+              ignoring: !(_showTutorial && _tutorialStep == 2 && isIdle),
+              child: const TutorialCallout(
+                instruction: 'Slide knob to lock in & start',
+                pointsDown: true,
+              ),
+            ),
+          ),
         ),
       ],
     );
@@ -1358,6 +1440,9 @@ class FocusTimerPageState extends State<FocusTimerPage>
                     _controller.setDuration(targetSeconds);
                   },
                   onChangeEnd: (finalVal) {
+                    if (_showTutorial && _tutorialStep == 0) {
+                      setState(() => _tutorialStep = 1);
+                    }
                     double effectiveVal = finalVal;
                     for (final point in snapPoints) {
                       if ((finalVal - point).abs() <= snapThreshold) {
@@ -1420,7 +1505,12 @@ class FocusTimerPageState extends State<FocusTimerPage>
       mainAxisSize: MainAxisSize.min,
       children: [
         GestureDetector(
-          onTap: () => _controller.setPomodoroEnabled(!enabled),
+          onTap: () {
+            if (_showTutorial && _tutorialStep == 1) {
+              setState(() => _tutorialStep = 2);
+            }
+            _controller.setPomodoroEnabled(!enabled);
+          },
           behavior: HitTestBehavior.opaque,
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -1455,7 +1545,12 @@ class FocusTimerPageState extends State<FocusTimerPage>
                     ),
                     inactiveThumbColor: Colors.white38,
                     inactiveTrackColor: Colors.white.withValues(alpha: 0.08),
-                    onChanged: (val) => _controller.setPomodoroEnabled(val),
+                    onChanged: (val) {
+                      if (_showTutorial && _tutorialStep == 1) {
+                        setState(() => _tutorialStep = 2);
+                      }
+                      _controller.setPomodoroEnabled(val);
+                    },
                   ),
                 ),
               ),
@@ -1522,6 +1617,9 @@ class FocusTimerPageState extends State<FocusTimerPage>
         if (progressFraction >= _triggerFraction) {
           setState(() => _dragging = false);
           if (!isRunning) {
+            if (_showTutorial && _tutorialStep == 2) {
+              setState(() => _tutorialStep = 3);
+            }
             _appExitWarningCount = 0;
             _wasCancelledDueToAppExit = false;
             _gracePeriodTimer?.cancel();
@@ -1717,6 +1815,99 @@ class FocusTimerPageState extends State<FocusTimerPage>
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildTutorialBottomBar() {
+    return Positioned(
+      left: 0,
+      right: 0,
+      bottom: 12,
+      child: AnimatedOpacity(
+        opacity: _showTutorial ? 1.0 : 0.0,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeInOut,
+        child: IgnorePointer(
+          ignoring: !_showTutorial,
+          child: SafeArea(
+            top: false,
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 7,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1B1926).withValues(alpha: 0.94),
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.14),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.5),
+                      blurRadius: 14,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    GestureDetector(
+                      onTap: () => setState(
+                        () => _tutorialDontShowAgain = !_tutorialDontShowAgain,
+                      ),
+                      behavior: HitTestBehavior.opaque,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            _tutorialDontShowAgain
+                                ? Icons.check_box_rounded
+                                : Icons.check_box_outline_blank_rounded,
+                            size: 17,
+                            color: _tutorialDontShowAgain
+                                ? AppTheme.accentPurple
+                                : Colors.white54,
+                          ),
+                          const SizedBox(width: 6),
+                          const Text(
+                            "Don't show again",
+                            style: TextStyle(
+                              fontFamily: 'GoogleSans',
+                              fontSize: 12,
+                              color: Colors.white70,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      height: 12,
+                      width: 1,
+                      color: Colors.white24,
+                      margin: const EdgeInsets.symmetric(horizontal: 12),
+                    ),
+                    GestureDetector(
+                      onTap: _dismissTutorial,
+                      child: const Text(
+                        'Skip Tutorial',
+                        style: TextStyle(
+                          fontFamily: 'GoogleSans',
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.accentPurple,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

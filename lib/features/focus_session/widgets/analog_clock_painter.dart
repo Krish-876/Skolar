@@ -47,19 +47,7 @@ class _AnalogClockState extends State<AnalogClock> {
   @override
   void initState() {
     super.initState();
-    if (widget.isIdle) _startWallClockTimer();
-  }
-
-  @override
-  void didUpdateWidget(covariant AnalogClock oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.isIdle && !oldWidget.isIdle) {
-      _now = DateTime.now();
-      _startWallClockTimer();
-    } else if (!widget.isIdle && oldWidget.isIdle) {
-      _wallClockTimer?.cancel();
-      _wallClockTimer = null;
-    }
+    _startWallClockTimer();
   }
 
   void _startWallClockTimer() {
@@ -77,12 +65,7 @@ class _AnalogClockState extends State<AnalogClock> {
 
   @override
   Widget build(BuildContext context) {
-    final painter = widget.isIdle
-        ? AnalogClockPainter.wallClock(now: _now)
-        : AnalogClockPainter.session(
-            elapsedSeconds: widget.elapsedSeconds,
-            progress: widget.progress,
-          );
+    final painter = AnalogClockPainter.wallClock(now: _now);
 
     return SizedBox(
       width: widget.size,
