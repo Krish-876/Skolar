@@ -64,7 +64,7 @@ class _NovaChatPageState extends ConsumerState<NovaChatPage> {
     );
     final topPadding = MediaQuery.of(context).padding.top + 64;
     final bottomPadding =
-        (chatState.suggestions.isNotEmpty ? 190.0 : 120.0) +
+        (chatState.suggestions.isNotEmpty ? 120.0 : 72.0) +
         MediaQuery.of(context).padding.bottom;
 
     // Scroll to bottom whenever messages list grows or thinking state updates
@@ -248,7 +248,7 @@ class _NovaChatGreetingState extends State<_NovaChatGreeting> {
           child: ConstrainedBox(
             constraints: BoxConstraints(minHeight: constraints.maxHeight),
             child: Align(
-              alignment: const Alignment(0, -0.25),
+              alignment: Alignment.center,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [

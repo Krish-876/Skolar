@@ -8,7 +8,6 @@ import 'package:Skolar/features/nova_chat/presentation/widgets/nova_practice_pro
 import 'package:Skolar/features/nova_chat/presentation/widgets/nova_quiz_card.dart';
 import 'package:Skolar/features/nova_chat/presentation/widgets/nova_study_plan_card.dart';
 import 'package:Skolar/features/nova_chat/presentation/widgets/nova_thinking_indicator.dart';
-import 'package:Skolar/shared/components/framed_avatar.dart';
 
 class NovaChatBubble extends StatelessWidget {
   final ChatMessageEntity message;
@@ -34,76 +33,43 @@ class NovaChatBubble extends StatelessWidget {
         );
       },
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         child: isUser ? _buildUserRow(context) : _buildAssistantRow(context),
       ),
     );
   }
 
   Widget _buildUserRow(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.end,
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        Flexible(
-          child: Container(
-            margin: const EdgeInsets.only(left: 48, right: 8),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            decoration: BoxDecoration(
-              color: const Color(0xFF8C5BE8),
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(20),
-                topRight: Radius.circular(20),
-                bottomLeft: Radius.circular(20),
-                bottomRight: Radius.circular(6),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF8C5BE8).withValues(alpha: 0.35),
-                  blurRadius: 14,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-            ),
-            child: SelectableText(
-              message.content,
-              style: GoogleFonts.googleSans(
-                color: Colors.white,
-                fontSize: 15,
-                fontWeight: FontWeight.normal,
-                height: 1.4,
-              ),
-            ),
+    return Align(
+      alignment: Alignment.centerRight,
+      child: Container(
+        margin: const EdgeInsets.only(top: 8, bottom: 8, left: 36),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: const Color(0xFF221F2D),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.08),
+            width: 1,
           ),
         ),
-
-        // User SVG Avatar at bottom-right
-        Padding(
-          padding: const EdgeInsets.only(bottom: 2),
-          child: _buildUserAvatar(),
+        child: SelectableText(
+          message.content,
+          style: GoogleFonts.googleSans(
+            color: Colors.white,
+            fontSize: 15,
+            fontWeight: FontWeight.w400,
+            height: 1.45,
+          ),
         ),
-      ],
+      ),
     );
   }
 
   Widget _buildAssistantRow(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.start,
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        // Mascot Avatar on bottom-left
-        const Padding(
-          padding: EdgeInsets.only(bottom: 2, right: 8),
-          child: NovaMascotAvatar(size: 26),
-        ),
-
-        Flexible(
-          child: Container(
-            margin: const EdgeInsets.only(right: 24),
-            child: _buildPolymorphicContent(context),
-          ),
-        ),
-      ],
+    return Padding(
+      padding: const EdgeInsets.only(top: 6, bottom: 12),
+      child: _buildPolymorphicContent(context),
     );
   }
 
@@ -116,7 +82,7 @@ class NovaChatBubble extends StatelessWidget {
             children: [
               if (message.content.isNotEmpty) ...[
                 _buildStandardMessageBubble(message.content),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
               ],
               NovaQuizCard(quiz: message.structuredData as QuizEntity),
             ],
@@ -132,7 +98,7 @@ class NovaChatBubble extends StatelessWidget {
               if (message.content.isNotEmpty &&
                   !message.content.startsWith('**Here is your')) ...[
                 _buildStandardMessageBubble(message.content),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
               ],
               NovaStudyPlanCard(
                 plan: message.structuredData as StudyPlanEntity,
@@ -149,7 +115,7 @@ class NovaChatBubble extends StatelessWidget {
             children: [
               if (message.content.isNotEmpty) ...[
                 _buildStandardMessageBubble(message.content),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
               ],
               NovaFlashcardDeck(
                 deck: message.structuredData as FlashcardEntity,
@@ -166,7 +132,7 @@ class NovaChatBubble extends StatelessWidget {
             children: [
               if (message.content.isNotEmpty) ...[
                 _buildStandardMessageBubble(message.content),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
               ],
               NovaPracticeProblemCard(
                 problem: message.structuredData as PracticeProblemEntity,
@@ -184,82 +150,65 @@ class NovaChatBubble extends StatelessWidget {
   }
 
   Widget _buildStandardMessageBubble(String content) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E1E26).withValues(alpha: 0.9),
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
-          bottomRight: Radius.circular(20),
-          bottomLeft: Radius.circular(6),
+    return MarkdownBody(
+      data: content,
+      selectable: true,
+      styleSheet: MarkdownStyleSheet(
+        p: GoogleFonts.googleSans(
+          color: const Color(0xFFECEBEE),
+          fontSize: 15.5,
+          height: 1.55,
         ),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.08),
-          width: 1,
+        strong: GoogleFonts.googleSans(
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: MarkdownBody(
-        data: content,
-        selectable: true,
-        styleSheet: MarkdownStyleSheet(
-          p: GoogleFonts.googleSans(
-            color: const Color(0xFFF3F2F7),
-            fontSize: 15,
-            height: 1.45,
-          ),
-          strong: GoogleFonts.googleSans(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-          em: GoogleFonts.googleSans(
-            color: const Color(0xFFA8C4FF),
-            fontStyle: FontStyle.italic,
-          ),
-          code: GoogleFonts.googleSans(
-            backgroundColor: const Color(0xFF14131A),
-            color: const Color(0xFFE2D6FF),
-            fontSize: 13.5,
-          ),
-          codeblockDecoration: BoxDecoration(
-            color: const Color(0xFF14131A),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          listBullet: GoogleFonts.googleSans(color: const Color(0xFF8C5BE8)),
+        em: GoogleFonts.googleSans(
+          color: const Color(0xFFA8C4FF),
+          fontStyle: FontStyle.italic,
         ),
-      ),
-    );
-  }
-
-  Widget _buildUserAvatar() {
-    if (userAvatarSvg != null && userAvatarSvg!.isNotEmpty) {
-      return FramedAvatar(
-        size: 26,
-        svgString: userAvatarSvg!,
-        backgroundColor: Colors.transparent,
-      );
-    }
-
-    return Container(
-      width: 26,
-      height: 26,
-      decoration: BoxDecoration(
-        color: const Color(0xFF2C2B36),
-        shape: BoxShape.circle,
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.15),
-          width: 1,
+        h1: GoogleFonts.googleSans(
+          color: Colors.white,
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+          height: 1.4,
         ),
-      ),
-      child: const Center(
-        child: Icon(Icons.person_rounded, color: Colors.white70, size: 15),
+        h2: GoogleFonts.googleSans(
+          color: Colors.white,
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+          height: 1.4,
+        ),
+        h3: GoogleFonts.googleSans(
+          color: Colors.white,
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+          height: 1.4,
+        ),
+        code: GoogleFonts.googleSans(
+          backgroundColor: const Color(0xFF181720),
+          color: const Color(0xFFE2D6FF),
+          fontSize: 13.5,
+        ),
+        codeblockDecoration: BoxDecoration(
+          color: const Color(0xFF181720),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.08),
+          ),
+        ),
+        listBullet: GoogleFonts.googleSans(
+          color: const Color(0xFFB388FF),
+          fontSize: 15,
+        ),
+        listBulletPadding: const EdgeInsets.only(right: 6),
+        blockquoteDecoration: BoxDecoration(
+          color: const Color(0xFF1C1A24),
+          borderRadius: BorderRadius.circular(8),
+          border: const Border(
+            left: BorderSide(color: Color(0xFFB388FF), width: 3),
+          ),
+        ),
       ),
     );
   }

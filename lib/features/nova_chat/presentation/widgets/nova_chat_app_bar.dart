@@ -48,111 +48,129 @@ class NovaChatAppBar extends StatelessWidget implements PreferredSizeWidget {
             bottom: false,
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-              child: Row(
+              child: Stack(
+                alignment: Alignment.center,
                 children: [
-                  // Back Button
-                  IconButton(
-                    icon: const Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                    onPressed: () => Navigator.of(context).maybePop(),
-                    tooltip: 'Back',
-                  ),
-                  const SizedBox(width: 2),
-
-                  // Mascot Avatar Badge
-                  NovaMascotAvatar(size: 36, state: activeMascotState),
-                  const SizedBox(width: 12),
-
-                  // Title in Google Sans, centered in the bar — "skolar."
-                  // with the brand purple full stop, matching the period
-                  // accent used on the onboarding welcome buttons.
-                  Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Text.rich(
-                          TextSpan(
-                            style: GoogleFonts.googleSans(
-                              color: Colors.white,
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.2,
-                            ),
+                  // Unified Back Button + Mascot Avatar Badge
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(24),
+                        onTap: () => Navigator.of(context).maybePop(),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 4,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              TextSpan(text: title),
-                              const TextSpan(
-                                text: '.',
-                                style: TextStyle(color: AppTheme.accentPurple),
+                              const Icon(
+                                Icons.arrow_back_ios_new_rounded,
+                                color: Colors.white,
+                                size: 18,
+                              ),
+                              const SizedBox(width: 6),
+                              NovaMascotAvatar(
+                                size: 34,
+                                state: activeMascotState,
                               ),
                             ],
                           ),
-                          textAlign: TextAlign.center,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                         ),
-                        if (isThinking) ...[
-                          const SizedBox(height: 2),
-                          Text(
-                            'Thinking...',
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.googleSans(
-                              color: const Color(0xFF8C5BE8),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ],
+                      ),
                     ),
                   ),
 
-                  // 3-dots Menu Button
-                  PopupMenuButton<String>(
-                    icon: const Icon(
-                      Icons.more_vert_rounded,
-                      color: Colors.white,
-                      size: 22,
-                    ),
-                    color: const Color(0xFF1E1E24),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      side: BorderSide(
-                        color: Colors.white.withValues(alpha: 0.08),
-                      ),
-                    ),
-                    onSelected: (value) {
-                      if (value == 'clear') {
-                        onClearChat();
-                      }
-                    },
-                    itemBuilder: (context) => [
-                      PopupMenuItem(
-                        value: 'clear',
-                        child: Row(
+                  // Title in Google Sans, perfectly centered in the bar
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text.rich(
+                        TextSpan(
+                          style: GoogleFonts.googleSans(
+                            color: Colors.white,
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.2,
+                          ),
                           children: [
-                            const Icon(
-                              Icons.cleaning_services_rounded,
-                              color: Colors.white70,
-                              size: 18,
-                            ),
-                            const SizedBox(width: 10),
-                            Text(
-                              'Clear conversation',
-                              style: GoogleFonts.googleSans(
-                                color: Colors.white,
-                                fontSize: 14,
-                              ),
+                            TextSpan(text: title),
+                            const TextSpan(
+                              text: '.',
+                              style: TextStyle(color: AppTheme.accentPurple),
                             ),
                           ],
                         ),
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
+                      if (isThinking) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          'Thinking...',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.googleSans(
+                            color: const Color(0xFF8C5BE8),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
                     ],
+                  ),
+
+                  // 3-dots Menu Button
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: PopupMenuButton<String>(
+                      icon: const Icon(
+                        Icons.more_vert_rounded,
+                        color: Colors.white,
+                        size: 22,
+                      ),
+                      color: const Color(0xFF1E1E24),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(
+                          color: Colors.white.withValues(alpha: 0.08),
+                        ),
+                      ),
+                      onSelected: (value) {
+                        if (value == 'clear') {
+                          onClearChat();
+                        }
+                      },
+                      itemBuilder: (context) => [
+                        PopupMenuItem(
+                          value: 'clear',
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.cleaning_services_rounded,
+                                color: Colors.white70,
+                                size: 18,
+                              ),
+                              const SizedBox(width: 10),
+                              Text(
+                                'Clear conversation',
+                                style: GoogleFonts.googleSans(
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
