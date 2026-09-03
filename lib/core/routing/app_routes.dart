@@ -19,6 +19,7 @@ import 'package:Skolar/features/splash%20screen/splash_screen.dart';
 import 'package:Skolar/core/loading/test_page.dart';
 
 import 'package:Skolar/features/profile/presentation/pages/profile_page.dart';
+import 'package:Skolar/features/nova_chat/presentation/pages/nova_chat_page.dart';
 
 import 'dart:async';
 
@@ -75,6 +76,7 @@ class AppRoutes {
   static const String subjects = '/subjects';
   static const String test = '/test';
   static const String knowledgeTree = '/knowledge-tree';
+  static const String novaChat = '/nova-chat';
 }
 
 final goRouterProvider = GoRouter(
@@ -171,6 +173,7 @@ final goRouterProvider = GoRouter(
         modelPath: 'assets/models/knowledge_tree.glb',
       ),
     ),
+    GoRoute(path: AppRoutes.novaChat, builder: (_, _) => const NovaChatPage()),
   ],
 );
 
@@ -178,6 +181,7 @@ class _DevMenu extends StatelessWidget {
   const _DevMenu();
 
   static const _pages = [
+    ('Nova AI Chat Window (Dev)', AppRoutes.novaChat),
     ('Onboarding Welcome', AppRoutes.onboardingWelcome),
     ('Onboarding', AppRoutes.onboardingProfile),
     ('Auth', AppRoutes.auth),
