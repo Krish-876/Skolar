@@ -5,6 +5,7 @@ import 'package:Skolar/features/focus_session/services/focus_haptic_service.dart
 import 'package:Skolar/features/focus_session/services/focus_notification_service.dart';
 import 'package:Skolar/features/focus_session/services/focus_pip_service.dart';
 import 'package:Skolar/features/focus_session/services/focus_sound_service.dart';
+import 'package:Skolar/features/focus_session/services/focus_wakelock_service.dart';
 import 'package:Skolar/features/focus_session/widgets/glow_thumb_shape.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
@@ -112,6 +113,13 @@ class FocusTimerPageState extends State<FocusTimerPage>
       duration: const Duration(milliseconds: 280),
     );
     _zenAnimController.addListener(() => setState(() {}));
+    _zenAnimController.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        _updateAmoledWakelock(forceState: true);
+      } else if (status == AnimationStatus.dismissed) {
+        _updateAmoledWakelock(forceState: false);
+      }
+    });
     _startRollController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 340),
@@ -146,9 +154,19 @@ class FocusTimerPageState extends State<FocusTimerPage>
     WidgetsBinding.instance.addObserver(this);
   }
 
+  void _updateAmoledWakelock({bool? forceState}) {
+    final shouldKeepAwake = forceState ??
+        (mounted &&
+            _isAppInForeground &&
+            _controller.status == FocusTimerStatus.running &&
+            _zenAnimController.value >= 0.5);
+    FocusWakelockService.setEnabled(shouldKeepAwake);
+  }
+
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    FocusWakelockService.disable();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     _gracePeriodTimer?.cancel();
     FocusPipService.setPipEnabled(false);
@@ -167,6 +185,7 @@ class FocusTimerPageState extends State<FocusTimerPage>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _isAppInForeground = true;
+      _updateAmoledWakelock();
       _appExitWarningCount = 0;
       _gracePeriodTimer?.cancel();
       _gracePeriodTimer = null;
@@ -197,6 +216,7 @@ class FocusTimerPageState extends State<FocusTimerPage>
         state == AppLifecycleState.hidden) {
       if (_isAppInForeground) {
         _isAppInForeground = false;
+        FocusWakelockService.disable();
 
         if (_controller.status == FocusTimerStatus.running) {
           if (_controller.isBreakPhase) {
@@ -222,6 +242,7 @@ class FocusTimerPageState extends State<FocusTimerPage>
         }
       }
     } else if (state == AppLifecycleState.detached) {
+      FocusWakelockService.disable();
       if (_controller.status == FocusTimerStatus.running) {
         _cancelSessionDueToAppExit();
       }
@@ -229,6 +250,7 @@ class FocusTimerPageState extends State<FocusTimerPage>
   }
 
   void _cancelSessionDueToAppExit() {
+    FocusWakelockService.disable();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     _zenAnimController.animateTo(0.0);
     _gracePeriodTimer?.cancel();
@@ -271,6 +293,7 @@ class FocusTimerPageState extends State<FocusTimerPage>
   }
 
   void _onTimerComplete() {
+    FocusWakelockService.disable();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     _zenAnimController.animateTo(0.0);
     _resetPhaseTakeoverState();
@@ -434,6 +457,11 @@ class FocusTimerPageState extends State<FocusTimerPage>
             _buildHelpItem(
               Icons.coffee_rounded,
               'During breaks, you can freely exit the app or use Picture-in-Picture mode.',
+            ),
+            const SizedBox(height: 12),
+            _buildHelpItem(
+              Icons.dark_mode_rounded,
+              'Swipe up during focus to enter AMOLED mode. Keeps your screen on with an ultra-minimal pure black canvas.',
             ),
             const SizedBox(height: 12),
             _buildHelpItem(
@@ -694,12 +722,16 @@ class FocusTimerPageState extends State<FocusTimerPage>
                 // Negative velocity means dragging UP (towards AMOLED)
                 if (velocity > 200) {
                   _zenAnimController.animateTo(0.0, curve: Curves.easeOutCubic);
+                  _updateAmoledWakelock(forceState: false);
                 } else if (velocity < -200) {
                   _zenAnimController.animateTo(1.0, curve: Curves.easeOutCubic);
+                  _updateAmoledWakelock(forceState: true);
                 } else if (_zenAnimController.value > 0.5) {
                   _zenAnimController.animateTo(1.0, curve: Curves.easeOutCubic);
+                  _updateAmoledWakelock(forceState: true);
                 } else {
                   _zenAnimController.animateTo(0.0, curve: Curves.easeOutCubic);
+                  _updateAmoledWakelock(forceState: false);
                 }
               }
             },
@@ -1670,6 +1702,7 @@ class FocusTimerPageState extends State<FocusTimerPage>
             onResume: () => setState(() => _showGiveUpSheet = false),
             onClear: () {
               setState(() => _showGiveUpSheet = false);
+              FocusWakelockService.disable();
               SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
               _zenAnimController.animateTo(0.0);
               _appExitWarningCount = 0;
