@@ -39,7 +39,7 @@ class ExamPredictionRemoteDataSourceImpl
     implements ExamPredictionRemoteDataSource {
   final Dio _dio;
 
-  static const String _baseUrl = 'http://10.92.131.220:8000';
+  static const String _baseUrl = 'http://localhost:8090';
 
   ExamPredictionRemoteDataSourceImpl({Dio? dio})
     : _dio =

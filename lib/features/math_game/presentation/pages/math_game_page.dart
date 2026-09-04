@@ -5,13 +5,16 @@ import 'package:go_router/go_router.dart';
 
 import '../../logic/question_generator.dart';
 import '../../models/math_question.dart';
+import '../widgets/cg_pull_intro_overlay.dart';
 import '../widgets/math_game_results_view.dart';
 import '../widgets/math_game_stats_bar.dart';
 import '../widgets/math_grid_painter.dart';
 import '../widgets/math_keypad.dart';
 
 class MathGamePage extends StatefulWidget {
-  const MathGamePage({super.key});
+  final bool showIntro;
+
+  const MathGamePage({super.key, this.showIntro = true});
 
   @override
   State<MathGamePage> createState() => _MathGamePageState();
@@ -25,6 +28,7 @@ class _MathGamePageState extends State<MathGamePage>
   final FocusNode _keyboardFocusNode = FocusNode();
 
   // Game state
+  bool _showIntro = true;
   bool _isPlaying = false;
   bool _isGameOver = false;
   double _remainingSeconds = _gameDurationSeconds;
@@ -48,11 +52,12 @@ class _MathGamePageState extends State<MathGamePage>
   @override
   void initState() {
     super.initState();
+    _showIntro = widget.showIntro;
     _shakeController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),
     );
-    _startNewGame();
+    _initGame();
   }
 
   @override
@@ -63,10 +68,10 @@ class _MathGamePageState extends State<MathGamePage>
     super.dispose();
   }
 
-  void _startNewGame() {
+  void _initGame() {
     _gameTimer?.cancel();
     setState(() {
-      _isPlaying = true;
+      _isPlaying = !_showIntro;
       _isGameOver = false;
       _remainingSeconds = _gameDurationSeconds;
       _score = 0;
@@ -76,6 +81,18 @@ class _MathGamePageState extends State<MathGamePage>
       _enteredInput = '';
       _lastAnswerCorrect = null;
       _currentQuestion = _generator.generate(questionIndex: 0);
+      _questionStartTime = DateTime.now();
+    });
+
+    if (!_showIntro) {
+      _startTimer();
+    }
+  }
+
+  void _startTimer() {
+    _gameTimer?.cancel();
+    setState(() {
+      _isPlaying = true;
       _questionStartTime = DateTime.now();
     });
 
@@ -98,6 +115,13 @@ class _MathGamePageState extends State<MathGamePage>
         _keyboardFocusNode.requestFocus();
       }
     });
+  }
+
+  void _onIntroComplete() {
+    setState(() {
+      _showIntro = false;
+    });
+    _startTimer();
   }
 
   void _endGame() {
@@ -226,7 +250,7 @@ class _MathGamePageState extends State<MathGamePage>
   }
 
   Future<void> _confirmExit() async {
-    if (_isGameOver) {
+    if (_isGameOver || _showIntro) {
       if (context.canPop()) {
         context.pop();
       } else {
@@ -403,123 +427,136 @@ class _MathGamePageState extends State<MathGamePage>
       child: Scaffold(
         backgroundColor: const Color(0xFF0F0F13),
         body: SafeArea(
-          child: _isGameOver
-              ? MathGameResultsView(
-                  finalScore: _score,
-                  totalAnswered: _totalAnswered,
-                  totalCorrect: _totalCorrect,
-                  elapsedSeconds: _gameDurationSeconds - _remainingSeconds,
-                  onPlayAgain: _startNewGame,
-                  onExit: () {
-                    if (context.canPop()) {
-                      context.pop();
-                    } else {
-                      context.go('/');
-                    }
-                  },
-                )
-              : Column(
-                  children: [
-                    const SizedBox(height: 4),
-
-                    // Sleek Minimal Top Stats Row
-                    MathGameStatsBar(
-                      score: _score,
-                      solvedCount: _totalCorrect,
-                      remainingSeconds: _remainingSeconds,
-                      onExit: _confirmExit,
-                    ),
-
-                    const Spacer(),
-
-                    // Central Question Math Board with subtle grid
-                    AnimatedBuilder(
-                      animation: _shakeController,
-                      builder: (context, child) {
-                        final sine = (_shakeController.value * 3 * 3.14159);
-                        final offset =
-                            (_shakeController.value > 0 &&
-                                _shakeController.value < 1)
-                            ? (10.0 *
-                                  (1 - _shakeController.value) *
-                                  (sine).abs() *
-                                  (_shakeController.value > 0.5 ? -1 : 1))
-                            : 0.0;
-                        return Transform.translate(
-                          offset: Offset(offset, 0),
-                          child: child,
-                        );
+          child: Stack(
+            children: [
+              // Main Game View
+              _isGameOver
+                  ? MathGameResultsView(
+                      finalScore: _score,
+                      totalAnswered: _totalAnswered,
+                      totalCorrect: _totalCorrect,
+                      elapsedSeconds: _gameDurationSeconds - _remainingSeconds,
+                      onPlayAgain: () {
+                        setState(() {
+                          _showIntro = false;
+                        });
+                        _initGame();
                       },
-                      child: _buildMathBoard(),
-                    ),
+                      onExit: () {
+                        if (context.canPop()) {
+                          context.pop();
+                        } else {
+                          context.go('/');
+                        }
+                      },
+                    )
+                  : Column(
+                      children: [
+                        const SizedBox(height: 4),
 
-                    const SizedBox(height: 18),
-
-                    // "TYPE OUT YOUR ANSWER" label
-                    const Text(
-                      'TYPE OUT YOUR ANSWER',
-                      style: TextStyle(
-                        fontFamily: 'GoogleSans',
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 1.5,
-                        color: Color(0xFF6E6E78),
-                      ),
-                    ),
-
-                    const SizedBox(height: 8),
-
-                    // Rounded Answer Input Field
-                    Container(
-                      height: 52,
-                      width: double.infinity,
-                      margin: const EdgeInsets.symmetric(horizontal: 48),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF23232A),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: _enteredInput.isNotEmpty
-                              ? const Color(0xFF4A4A58)
-                              : const Color(0xFF2C2C35),
-                          width: 1,
+                        // Sleek Minimal Top Stats Row
+                        MathGameStatsBar(
+                          score: _score,
+                          solvedCount: _totalCorrect,
+                          remainingSeconds: _remainingSeconds,
+                          onExit: _confirmExit,
                         ),
-                      ),
-                      alignment: Alignment.center,
-                      child: _enteredInput.isEmpty
-                          ? const Text(
-                              'Enter Answer',
-                              style: TextStyle(
-                                fontFamily: 'GoogleSans',
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                                color: Color(0xFF5A5A66),
-                              ),
-                            )
-                          : Text(
-                              _enteredInput,
-                              style: const TextStyle(
-                                fontFamily: 'GoogleSans',
-                                fontSize: 20,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFFFFFFFF),
-                                letterSpacing: 2,
-                              ),
+
+                        const Spacer(),
+
+                        // Central Question Math Board with subtle grid
+                        AnimatedBuilder(
+                          animation: _shakeController,
+                          builder: (context, child) {
+                            final sine = (_shakeController.value * 3 * 3.14159);
+                            final offset =
+                                (_shakeController.value > 0 &&
+                                    _shakeController.value < 1)
+                                ? (10.0 *
+                                      (1 - _shakeController.value) *
+                                      (sine).abs() *
+                                      (_shakeController.value > 0.5 ? -1 : 1))
+                                : 0.0;
+                            return Transform.translate(
+                              offset: Offset(offset, 0),
+                              child: child,
+                            );
+                          },
+                          child: _buildMathBoard(),
+                        ),
+
+                        const SizedBox(height: 18),
+
+                        // "TYPE OUT YOUR ANSWER" label
+                        const Text(
+                          'TYPE OUT YOUR ANSWER',
+                          style: TextStyle(
+                            fontFamily: 'GoogleSans',
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 1.5,
+                            color: Color(0xFF6E6E78),
+                          ),
+                        ),
+
+                        const SizedBox(height: 8),
+
+                        // Rounded Answer Input Field
+                        Container(
+                          height: 52,
+                          width: double.infinity,
+                          margin: const EdgeInsets.symmetric(horizontal: 48),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF23232A),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: _enteredInput.isNotEmpty
+                                  ? const Color(0xFF4A4A58)
+                                  : const Color(0xFF2C2C35),
+                              width: 1,
                             ),
+                          ),
+                          alignment: Alignment.center,
+                          child: _enteredInput.isEmpty
+                              ? const Text(
+                                  'Enter Answer',
+                                  style: TextStyle(
+                                    fontFamily: 'GoogleSans',
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                    color: Color(0xFF5A5A66),
+                                  ),
+                                )
+                              : Text(
+                                  _enteredInput,
+                                  style: const TextStyle(
+                                    fontFamily: 'GoogleSans',
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFFFFFFFF),
+                                    letterSpacing: 2,
+                                  ),
+                                ),
+                        ),
+
+                        const Spacer(),
+
+                        // Minimal 3x4 Numeric Keypad
+                        MathKeypad(
+                          onDigitPressed: _handleDigitInput,
+                          onBackspace: _handleBackspace,
+                          onClear: _handleClear,
+                          onSubmit: _handleSubmit,
+                        ),
+
+                        const SizedBox(height: 10),
+                      ],
                     ),
 
-                    const Spacer(),
-
-                    // Minimal 3x4 Numeric Keypad
-                    MathKeypad(
-                      onDigitPressed: _handleDigitInput,
-                      onBackspace: _handleBackspace,
-                      onClear: _handleClear,
-                      onSubmit: _handleSubmit,
-                    ),
-
-                    const SizedBox(height: 10),
-                  ],
-                ),
+              // Expanding Lottie Intro Overlay
+              if (_showIntro) CgPullIntroOverlay(onComplete: _onIntroComplete),
+            ],
+          ),
         ),
       ),
     );
