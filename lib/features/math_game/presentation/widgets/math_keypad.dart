@@ -6,6 +6,7 @@ class MathKeypad extends StatelessWidget {
   final VoidCallback onBackspace;
   final VoidCallback onClear;
   final VoidCallback onSubmit;
+  final bool isSubmitEnabled;
 
   const MathKeypad({
     super.key,
@@ -13,19 +14,22 @@ class MathKeypad extends StatelessWidget {
     required this.onBackspace,
     required this.onClear,
     required this.onSubmit,
+    this.isSubmitEnabled = true,
   });
 
-  Widget _buildButton({
+  Widget _buildKey({
     required Widget child,
     required VoidCallback onTap,
     VoidCallback? onLongPress,
+    Color? backgroundColor,
+    Color? borderColor,
+    Color? splashColor,
   }) {
     return Expanded(
       child: Padding(
-        padding: const EdgeInsets.all(4.0),
+        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
         child: Material(
-          color: const Color(0xFF2B2B33),
-          borderRadius: BorderRadius.circular(10),
+          color: Colors.transparent,
           child: InkWell(
             onTap: () {
               HapticFeedback.selectionClick();
@@ -37,13 +41,27 @@ class MathKeypad extends StatelessWidget {
                     onLongPress();
                   }
                 : null,
-            borderRadius: BorderRadius.circular(10),
-            splashColor: Colors.white.withValues(alpha: 0.12),
-            highlightColor: Colors.white.withValues(alpha: 0.06),
-            child: Container(
-              height: 58,
-              alignment: Alignment.center,
-              child: child,
+            borderRadius: BorderRadius.circular(16),
+            splashColor: splashColor ?? Colors.white.withValues(alpha: 0.15),
+            highlightColor: Colors.white.withValues(alpha: 0.08),
+            child: Ink(
+              height: 64,
+              decoration: BoxDecoration(
+                color: backgroundColor ?? const Color(0xFF181724),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: borderColor ?? Colors.white.withValues(alpha: 0.08),
+                  width: 1.2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.4),
+                    offset: const Offset(0, 3),
+                    blurRadius: 4,
+                  ),
+                ],
+              ),
+              child: Center(child: child),
             ),
           ),
         ),
@@ -51,16 +69,17 @@ class MathKeypad extends StatelessWidget {
     );
   }
 
-  Widget _buildDigit(String digit) {
-    return _buildButton(
+  Widget _buildDigitKey(String digit) {
+    return _buildKey(
       onTap: () => onDigitPressed(digit),
       child: Text(
         digit,
         style: const TextStyle(
-          fontFamily: 'GoogleSans',
-          fontSize: 22,
-          fontWeight: FontWeight.w500,
-          color: Color(0xFFEBEBF0),
+          fontFamily: 'ClashDisplay',
+          fontSize: 28,
+          fontWeight: FontWeight.w600,
+          color: Colors.white,
+          letterSpacing: 0.5,
         ),
       ),
     );
@@ -73,34 +92,63 @@ class MathKeypad extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Row(children: [_buildDigit('1'), _buildDigit('2'), _buildDigit('3')]),
-          Row(children: [_buildDigit('4'), _buildDigit('5'), _buildDigit('6')]),
-          Row(children: [_buildDigit('7'), _buildDigit('8'), _buildDigit('9')]),
           Row(
             children: [
-              // Clear key
-              _buildButton(
-                onTap: onClear,
-                child: const Text(
-                  'C',
-                  style: TextStyle(
-                    fontFamily: 'GoogleSans',
-                    fontSize: 20,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF9E9EA8),
-                  ),
-                ),
-              ),
-              // 0
-              _buildDigit('0'),
-              // Backspace icon
-              _buildButton(
+              _buildDigitKey('1'),
+              _buildDigitKey('2'),
+              _buildDigitKey('3'),
+            ],
+          ),
+          Row(
+            children: [
+              _buildDigitKey('4'),
+              _buildDigitKey('5'),
+              _buildDigitKey('6'),
+            ],
+          ),
+          Row(
+            children: [
+              _buildDigitKey('7'),
+              _buildDigitKey('8'),
+              _buildDigitKey('9'),
+            ],
+          ),
+          Row(
+            children: [
+              // Backspace / Clear key
+              _buildKey(
                 onTap: onBackspace,
                 onLongPress: onClear,
+                backgroundColor: const Color(0xFF221F33),
+                borderColor: Colors.white.withValues(alpha: 0.12),
                 child: const Icon(
                   Icons.backspace_outlined,
-                  size: 20,
-                  color: Color(0xFFEBEBF0),
+                  color: Color(0xFFE2D6FF),
+                  size: 24,
+                ),
+              ),
+              // 0 Digit
+              _buildDigitKey('0'),
+              // Submit key
+              _buildKey(
+                onTap: isSubmitEnabled ? onSubmit : () {},
+                backgroundColor: isSubmitEnabled
+                    ? const Color(0xFF8C38E5)
+                    : const Color(0xFF2C243B),
+                borderColor: isSubmitEnabled
+                    ? const Color(0xFFB388FF).withValues(alpha: 0.5)
+                    : Colors.transparent,
+                splashColor: const Color(0xFFB388FF).withValues(alpha: 0.3),
+                child: AnimatedScale(
+                  scale: isSubmitEnabled ? 1.05 : 0.95,
+                  duration: const Duration(milliseconds: 150),
+                  child: Icon(
+                    Icons.check_rounded,
+                    color: isSubmitEnabled
+                        ? Colors.white
+                        : Colors.white.withValues(alpha: 0.3),
+                    size: 30,
+                  ),
                 ),
               ),
             ],

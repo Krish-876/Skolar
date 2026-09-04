@@ -2,137 +2,187 @@ import 'package:flutter/material.dart';
 
 class MathGameStatsBar extends StatelessWidget {
   final int score;
-  final int solvedCount;
+  final int currentStreak;
   final double remainingSeconds;
+  final double totalSeconds;
   final VoidCallback onExit;
 
   const MathGameStatsBar({
     super.key,
     required this.score,
-    required this.solvedCount,
+    required this.currentStreak,
     required this.remainingSeconds,
+    required this.totalSeconds,
     required this.onExit,
   });
 
-  String _formatTime(double seconds) {
-    final s = seconds.ceil();
-    final mins = s ~/ 60;
-    final remSecs = s % 60;
-    return '${mins.toString().padLeft(1, '0')}:${remSecs.toString().padLeft(2, '0')}';
+  Color _getTimerColor() {
+    if (remainingSeconds > 20) {
+      return const Color(0xFF34C759); // Green
+    } else if (remainingSeconds > 10) {
+      return const Color(0xFFFF9500); // Amber
+    } else {
+      return const Color(0xFFFF3B30); // Crimson Red
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final progress = (remainingSeconds / totalSeconds).clamp(0.0, 1.0);
+    final timerColor = _getTimerColor();
     final isWarning = remainingSeconds <= 10 && remainingSeconds > 0;
-    final timeStr = _formatTime(remainingSeconds);
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // Left: Exit Button & Score
           Row(
-            mainAxisSize: MainAxisSize.min,
             children: [
-              GestureDetector(
-                onTap: onExit,
+              // Exit button
+              IconButton(
+                onPressed: onExit,
+                icon: const Icon(Icons.close_rounded, color: Colors.white70),
+                tooltip: 'Exit Game',
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.white.withValues(alpha: 0.08),
+                  padding: const EdgeInsets.all(8),
+                ),
+              ),
+              const SizedBox(width: 12),
+
+              // Score badge
+              Expanded(
                 child: Container(
-                  width: 34,
-                  height: 34,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1E1E24),
-                    borderRadius: BorderRadius.circular(10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 8,
                   ),
-                  child: const Icon(
-                    Icons.close_rounded,
-                    size: 16,
-                    color: Color(0xFF9E9EA8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF161522),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.08),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.stars_rounded,
+                        color: Color(0xFFF5C518),
+                        size: 20,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        '$score',
+                        style: const TextStyle(
+                          fontFamily: 'ClashDisplay',
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
+
+              const SizedBox(width: 10),
+
+              // Streak badge
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: currentStreak >= 3
+                      ? const Color(0xFFFF9500).withValues(alpha: 0.18)
+                      : const Color(0xFF161522),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: currentStreak >= 3
+                        ? const Color(0xFFFF9500).withValues(alpha: 0.4)
+                        : Colors.white.withValues(alpha: 0.08),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      currentStreak >= 5
+                          ? '⚡'
+                          : currentStreak >= 3
+                          ? '🔥'
+                          : '✨',
+                      style: const TextStyle(fontSize: 18),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      '$currentStreak',
+                      style: TextStyle(
+                        fontFamily: 'ClashDisplay',
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: currentStreak >= 3
+                            ? const Color(0xFFFFB340)
+                            : Colors.white70,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(width: 10),
+
+              // Timer Digital Display
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 12,
-                  vertical: 7,
+                  vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1E1E24),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  '$score',
-                  style: const TextStyle(
-                    fontFamily: 'GoogleSans',
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFFEBEBF0),
+                  color: isWarning
+                      ? const Color(0xFFFF3B30).withValues(alpha: 0.18)
+                      : const Color(0xFF161522),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: isWarning
+                        ? const Color(0xFFFF3B30).withValues(alpha: 0.5)
+                        : Colors.white.withValues(alpha: 0.08),
                   ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.timer_outlined, size: 18, color: timerColor),
+                    const SizedBox(width: 6),
+                    Text(
+                      '${remainingSeconds.ceil()}s',
+                      style: TextStyle(
+                        fontFamily: 'ClashDisplay',
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: timerColor,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
+          const SizedBox(height: 10),
 
-          // Center: Cyan Timer Pill
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-            decoration: BoxDecoration(
-              color: isWarning
-                  ? const Color(0xFFFF3B30).withValues(alpha: 0.15)
-                  : const Color(0xFF16252B),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: isWarning
-                    ? const Color(0xFFFF3B30).withValues(alpha: 0.4)
-                    : const Color(0xFF00E5FF).withValues(alpha: 0.25),
-                width: 1,
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 6,
-                  height: 6,
-                  decoration: BoxDecoration(
-                    color: isWarning
-                        ? const Color(0xFFFF3B30)
-                        : const Color(0xFF00E5FF),
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  timeStr,
-                  style: TextStyle(
-                    fontFamily: 'GoogleSans',
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: isWarning
-                        ? const Color(0xFFFF5252)
-                        : const Color(0xFF00E5FF),
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Right: Solved Count pill
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-            decoration: BoxDecoration(
-              color: const Color(0xFF1E1E24),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Text(
-              'Solved $solvedCount',
-              style: const TextStyle(
-                fontFamily: 'GoogleSans',
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFFB0B0BD),
+          // Animated linear progress gauge
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: SizedBox(
+              height: 5,
+              child: LinearProgressIndicator(
+                value: progress,
+                backgroundColor: Colors.white.withValues(alpha: 0.1),
+                valueColor: AlwaysStoppedAnimation<Color>(timerColor),
               ),
             ),
           ),

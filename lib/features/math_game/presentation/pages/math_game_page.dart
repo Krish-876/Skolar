@@ -1,20 +1,17 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../logic/question_generator.dart';
 import '../../models/math_question.dart';
-import '../widgets/cg_pull_intro_overlay.dart';
 import '../widgets/math_game_results_view.dart';
 import '../widgets/math_game_stats_bar.dart';
-import '../widgets/math_grid_painter.dart';
 import '../widgets/math_keypad.dart';
 
 class MathGamePage extends StatefulWidget {
-  final bool showIntro;
-
-  const MathGamePage({super.key, this.showIntro = true});
+  const MathGamePage({super.key});
 
   @override
   State<MathGamePage> createState() => _MathGamePageState();
@@ -28,7 +25,6 @@ class _MathGamePageState extends State<MathGamePage>
   final FocusNode _keyboardFocusNode = FocusNode();
 
   // Game state
-  bool _showIntro = true;
   bool _isPlaying = false;
   bool _isGameOver = false;
   double _remainingSeconds = _gameDurationSeconds;
@@ -36,6 +32,8 @@ class _MathGamePageState extends State<MathGamePage>
 
   // Stats
   int _score = 0;
+  int _currentStreak = 0;
+  int _highestStreak = 0;
   int _totalAnswered = 0;
   int _totalCorrect = 0;
 
@@ -47,17 +45,17 @@ class _MathGamePageState extends State<MathGamePage>
 
   // Feedback animation state
   bool? _lastAnswerCorrect; // null = idle, true = correct, false = wrong
+  int _lastScoreGained = 0;
   late AnimationController _shakeController;
 
   @override
   void initState() {
     super.initState();
-    _showIntro = widget.showIntro;
     _shakeController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 300),
+      duration: const Duration(milliseconds: 350),
     );
-    _initGame();
+    _startNewGame();
   }
 
   @override
@@ -68,31 +66,25 @@ class _MathGamePageState extends State<MathGamePage>
     super.dispose();
   }
 
-  void _initGame() {
+  void _startNewGame() {
     _gameTimer?.cancel();
     setState(() {
-      _isPlaying = !_showIntro;
+      _isPlaying = true;
       _isGameOver = false;
       _remainingSeconds = _gameDurationSeconds;
       _score = 0;
+      _currentStreak = 0;
+      _highestStreak = 0;
       _totalAnswered = 0;
       _totalCorrect = 0;
       _questionIndex = 0;
       _enteredInput = '';
       _lastAnswerCorrect = null;
-      _currentQuestion = _generator.generate(questionIndex: 0);
-      _questionStartTime = DateTime.now();
-    });
-
-    if (!_showIntro) {
-      _startTimer();
-    }
-  }
-
-  void _startTimer() {
-    _gameTimer?.cancel();
-    setState(() {
-      _isPlaying = true;
+      _lastScoreGained = 0;
+      _currentQuestion = _generator.generate(
+        questionIndex: 0,
+        currentStreak: 0,
+      );
       _questionStartTime = DateTime.now();
     });
 
@@ -117,13 +109,6 @@ class _MathGamePageState extends State<MathGamePage>
     });
   }
 
-  void _onIntroComplete() {
-    setState(() {
-      _showIntro = false;
-    });
-    _startTimer();
-  }
-
   void _endGame() {
     _gameTimer?.cancel();
     setState(() {
@@ -135,18 +120,10 @@ class _MathGamePageState extends State<MathGamePage>
 
   void _handleDigitInput(String digit) {
     if (!_isPlaying || _isGameOver || _lastAnswerCorrect != null) return;
-    if (_enteredInput.length >= 6) return;
-
-    final newInput = _enteredInput + digit;
+    if (_enteredInput.length >= 6) return; // Prevent excessive input
     setState(() {
-      _enteredInput = newInput;
+      _enteredInput += digit;
     });
-
-    // Auto-check if input matches the expected answer
-    final parsed = int.tryParse(newInput);
-    if (parsed != null && parsed == _currentQuestion.answer) {
-      _evaluateAnswer(true, parsed);
-    }
   }
 
   void _handleBackspace() {
@@ -177,10 +154,6 @@ class _MathGamePageState extends State<MathGamePage>
     if (parsed == null) return;
 
     final isCorrect = _currentQuestion.checkAnswer(parsed);
-    _evaluateAnswer(isCorrect, parsed);
-  }
-
-  void _evaluateAnswer(bool isCorrect, int parsedAnswer) {
     final now = DateTime.now();
     final elapsedSec = _questionStartTime != null
         ? (now.difference(_questionStartTime!).inMilliseconds / 1000.0)
@@ -189,39 +162,56 @@ class _MathGamePageState extends State<MathGamePage>
     _totalAnswered++;
 
     if (isCorrect) {
-      HapticFeedback.lightImpact();
+      HapticFeedback.mediumImpact();
       _totalCorrect++;
+      _currentStreak++;
+      if (_currentStreak > _highestStreak) {
+        _highestStreak = _currentStreak;
+      }
 
-      final basePoints = _currentQuestion.basePoints;
-      final speedBonus =
-          ((basePoints * 0.3) - (elapsedSec * (basePoints * 0.06)))
-              .clamp(0.0, (basePoints * 0.3))
-              .toInt();
-      _score += basePoints + speedBonus;
+      // Calculate speed and streak bonuses
+      const basePoints = 100;
+      final speedBonus = (50 - (elapsedSec * 12)).clamp(0, 50).toInt();
+      final streakBonus = _currentStreak * 15;
+      final gained = basePoints + speedBonus + streakBonus;
+
+      _score += gained;
+      _lastScoreGained = gained;
       _lastAnswerCorrect = true;
 
-      // Auto-advance quickly to next question
-      Future.delayed(const Duration(milliseconds: 140), () {
+      // Advance to next question quickly
+      Future.delayed(const Duration(milliseconds: 180), () {
         if (!mounted || !_isPlaying) return;
         setState(() {
           _questionIndex++;
           _enteredInput = '';
           _lastAnswerCorrect = null;
-          _currentQuestion = _generator.generate(questionIndex: _questionIndex);
+          _currentQuestion = _generator.generate(
+            questionIndex: _questionIndex,
+            currentStreak: _currentStreak,
+          );
           _questionStartTime = DateTime.now();
         });
       });
     } else {
       HapticFeedback.vibrate();
+      _currentStreak = 0;
+      _lastScoreGained = 0;
       _lastAnswerCorrect = false;
       _shakeController.forward(from: 0.0);
 
-      // Reset input for retry or advance quickly
-      Future.delayed(const Duration(milliseconds: 220), () {
+      // Advance to next question
+      Future.delayed(const Duration(milliseconds: 260), () {
         if (!mounted || !_isPlaying) return;
         setState(() {
+          _questionIndex++;
           _enteredInput = '';
           _lastAnswerCorrect = null;
+          _currentQuestion = _generator.generate(
+            questionIndex: _questionIndex,
+            currentStreak: _currentStreak,
+          );
+          _questionStartTime = DateTime.now();
         });
       });
     }
@@ -250,7 +240,7 @@ class _MathGamePageState extends State<MathGamePage>
   }
 
   Future<void> _confirmExit() async {
-    if (_isGameOver || _showIntro) {
+    if (_isGameOver) {
       if (context.canPop()) {
         context.pop();
       } else {
@@ -262,29 +252,26 @@ class _MathGamePageState extends State<MathGamePage>
     final shouldExit = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1C1A24),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        backgroundColor: const Color(0xFF1C1A2E),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text(
-          'Exit Game?',
+          'Quit Game?',
           style: TextStyle(
-            fontFamily: 'GoogleSans',
+            fontFamily: 'ClashDisplay',
             fontWeight: FontWeight.w700,
             color: Colors.white,
           ),
         ),
         content: const Text(
-          'Your current progress will be lost.',
-          style: TextStyle(fontFamily: 'GoogleSans', color: Color(0xFF9E9EA8)),
+          'Your current 60s session progress will be lost.',
+          style: TextStyle(color: Colors.white70),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
             child: const Text(
-              'Cancel',
-              style: TextStyle(
-                fontFamily: 'GoogleSans',
-                color: Color(0xFF9E9EA8),
-              ),
+              'Keep Playing',
+              style: TextStyle(color: Color(0xFFB388FF)),
             ),
           ),
           ElevatedButton(
@@ -293,10 +280,7 @@ class _MathGamePageState extends State<MathGamePage>
               backgroundColor: const Color(0xFFFF3B30),
               foregroundColor: Colors.white,
             ),
-            child: const Text(
-              'Exit',
-              style: TextStyle(fontFamily: 'GoogleSans'),
-            ),
+            child: const Text('Quit'),
           ),
         ],
       ),
@@ -312,108 +296,152 @@ class _MathGamePageState extends State<MathGamePage>
     }
   }
 
-  Widget _buildMathBoard() {
-    return Container(
+  Widget _buildQuestionCard() {
+    Color borderColor = Colors.white.withValues(alpha: 0.1);
+    Color cardBg = const Color(0xFF141320);
+
+    if (_lastAnswerCorrect == true) {
+      borderColor = const Color(0xFF34C759);
+      cardBg = const Color(0xFF0F2618);
+    } else if (_lastAnswerCorrect == false) {
+      borderColor = const Color(0xFFFF3B30);
+      cardBg = const Color(0xFF2B1216);
+    }
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 150),
       width: double.infinity,
-      constraints: const BoxConstraints(minHeight: 220),
-      margin: const EdgeInsets.symmetric(horizontal: 20),
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       decoration: BoxDecoration(
-        color: const Color(0xFF141419),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: _lastAnswerCorrect == true
-              ? const Color(0xFF34C759).withValues(alpha: 0.8)
-              : _lastAnswerCorrect == false
-              ? const Color(0xFFFF3B30).withValues(alpha: 0.8)
-              : const Color(0xFF22222B),
-          width: 1.5,
-        ),
+        color: cardBg,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: borderColor, width: 2),
+        boxShadow: [
+          if (_lastAnswerCorrect == true)
+            BoxShadow(
+              color: const Color(0xFF34C759).withValues(alpha: 0.35),
+              blurRadius: 24,
+              spreadRadius: 2,
+            )
+          else if (_lastAnswerCorrect == false)
+            BoxShadow(
+              color: const Color(0xFFFF3B30).withValues(alpha: 0.35),
+              blurRadius: 24,
+              spreadRadius: 2,
+            )
+          else
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.5),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+        ],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(15),
-        child: CustomPaint(
-          painter: const MathGridPainter(
-            lineColor: Color(0xFF1C1C24),
-            spacing: 48.0,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Question Type Tag
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+            decoration: BoxDecoration(
+              color: const Color(0xFF8C38E5).withValues(alpha: 0.22),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: const Color(0xFFB388FF).withValues(alpha: 0.35),
+              ),
+            ),
+            child: Text(
+              _currentQuestion.type.displayName,
+              style: const TextStyle(
+                fontFamily: 'ClashDisplay',
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFFB388FF),
+                letterSpacing: 1.5,
+              ),
+            ),
           ),
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
-              child:
-                  _currentQuestion.isVertical &&
-                      _currentQuestion.topOperand != null &&
-                      _currentQuestion.bottomOperand != null
-                  ? Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          _currentQuestion.topOperand!,
-                          style: const TextStyle(
-                            fontFamily: 'GoogleSans',
-                            fontSize: 40,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFFF0F0F5),
-                            height: 1.1,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Text(
-                              '${_currentQuestion.operatorSymbol ?? '+'} ',
-                              style: const TextStyle(
-                                fontFamily: 'GoogleSans',
-                                fontSize: 34,
-                                fontWeight: FontWeight.w500,
-                                color: Color(0xFFB0B0BD),
-                              ),
-                            ),
-                            Text(
-                              _currentQuestion.bottomOperand!,
-                              style: const TextStyle(
-                                fontFamily: 'GoogleSans',
-                                fontSize: 40,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFFF0F0F5),
-                                height: 1.1,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+
+          if (_currentQuestion.subtitleText != null) ...[
+            const SizedBox(height: 6),
+            Text(
+              _currentQuestion.subtitleText!,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w400,
+                color: Colors.white54,
+              ),
+            ),
+          ],
+
+          const SizedBox(height: 18),
+
+          // Main Big Math Prompt
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 140),
+            transitionBuilder: (child, animation) => ScaleTransition(
+              scale: CurvedAnimation(
+                parent: animation,
+                curve: Curves.easeOutBack,
+              ),
+              child: child,
+            ),
+            child: Text(
+              _currentQuestion.displayText,
+              key: ValueKey(_currentQuestion.displayText),
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontFamily: 'ClashDisplay',
+                fontSize: 44,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+                letterSpacing: 1.2,
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
+          // Answer Input Display Box
+          Container(
+            height: 62,
+            constraints: const BoxConstraints(minWidth: 150),
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            decoration: BoxDecoration(
+              color: const Color(0xFF0C0B14),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: _enteredInput.isNotEmpty
+                    ? const Color(0xFF8C38E5)
+                    : Colors.white.withValues(alpha: 0.15),
+                width: 1.5,
+              ),
+            ),
+            child: Center(
+              child: _enteredInput.isEmpty
+                  ? Text(
+                      '?',
+                      style: TextStyle(
+                        fontFamily: 'ClashDisplay',
+                        fontSize: 34,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white.withValues(alpha: 0.25),
+                      ),
                     )
-                  : Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          _currentQuestion.displayText,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontFamily: 'GoogleSans',
-                            fontSize: 34,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFFF0F0F5),
-                          ),
-                        ),
-                        if (_currentQuestion.subtitleText != null) ...[
-                          const SizedBox(height: 6),
-                          Text(
-                            _currentQuestion.subtitleText!,
-                            style: const TextStyle(
-                              fontFamily: 'GoogleSans',
-                              fontSize: 12,
-                              color: Color(0xFF7A7A85),
-                            ),
-                          ),
-                        ],
-                      ],
+                  : Text(
+                      _enteredInput,
+                      style: const TextStyle(
+                        fontFamily: 'ClashDisplay',
+                        fontSize: 34,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                        letterSpacing: 2,
+                      ),
                     ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -425,138 +453,92 @@ class _MathGamePageState extends State<MathGamePage>
       autofocus: true,
       onKeyEvent: _onKeyEvent,
       child: Scaffold(
-        backgroundColor: const Color(0xFF0F0F13),
+        backgroundColor: Colors.black,
         body: SafeArea(
-          child: Stack(
-            children: [
-              // Main Game View
-              _isGameOver
-                  ? MathGameResultsView(
-                      finalScore: _score,
-                      totalAnswered: _totalAnswered,
-                      totalCorrect: _totalCorrect,
-                      elapsedSeconds: _gameDurationSeconds - _remainingSeconds,
-                      onPlayAgain: () {
-                        setState(() {
-                          _showIntro = false;
-                        });
-                        _initGame();
-                      },
-                      onExit: () {
-                        if (context.canPop()) {
-                          context.pop();
-                        } else {
-                          context.go('/');
-                        }
-                      },
-                    )
-                  : Column(
-                      children: [
-                        const SizedBox(height: 4),
-
-                        // Sleek Minimal Top Stats Row
-                        MathGameStatsBar(
-                          score: _score,
-                          solvedCount: _totalCorrect,
-                          remainingSeconds: _remainingSeconds,
-                          onExit: _confirmExit,
-                        ),
-
-                        const Spacer(),
-
-                        // Central Question Math Board with subtle grid
-                        AnimatedBuilder(
-                          animation: _shakeController,
-                          builder: (context, child) {
-                            final sine = (_shakeController.value * 3 * 3.14159);
-                            final offset =
-                                (_shakeController.value > 0 &&
-                                    _shakeController.value < 1)
-                                ? (10.0 *
-                                      (1 - _shakeController.value) *
-                                      (sine).abs() *
-                                      (_shakeController.value > 0.5 ? -1 : 1))
-                                : 0.0;
-                            return Transform.translate(
-                              offset: Offset(offset, 0),
-                              child: child,
-                            );
-                          },
-                          child: _buildMathBoard(),
-                        ),
-
-                        const SizedBox(height: 18),
-
-                        // "TYPE OUT YOUR ANSWER" label
-                        const Text(
-                          'TYPE OUT YOUR ANSWER',
-                          style: TextStyle(
-                            fontFamily: 'GoogleSans',
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 1.5,
-                            color: Color(0xFF6E6E78),
-                          ),
-                        ),
-
-                        const SizedBox(height: 8),
-
-                        // Rounded Answer Input Field
-                        Container(
-                          height: 52,
-                          width: double.infinity,
-                          margin: const EdgeInsets.symmetric(horizontal: 48),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF23232A),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: _enteredInput.isNotEmpty
-                                  ? const Color(0xFF4A4A58)
-                                  : const Color(0xFF2C2C35),
-                              width: 1,
-                            ),
-                          ),
-                          alignment: Alignment.center,
-                          child: _enteredInput.isEmpty
-                              ? const Text(
-                                  'Enter Answer',
-                                  style: TextStyle(
-                                    fontFamily: 'GoogleSans',
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w500,
-                                    color: Color(0xFF5A5A66),
-                                  ),
-                                )
-                              : Text(
-                                  _enteredInput,
-                                  style: const TextStyle(
-                                    fontFamily: 'GoogleSans',
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.w600,
-                                    color: Color(0xFFFFFFFF),
-                                    letterSpacing: 2,
-                                  ),
-                                ),
-                        ),
-
-                        const Spacer(),
-
-                        // Minimal 3x4 Numeric Keypad
-                        MathKeypad(
-                          onDigitPressed: _handleDigitInput,
-                          onBackspace: _handleBackspace,
-                          onClear: _handleClear,
-                          onSubmit: _handleSubmit,
-                        ),
-
-                        const SizedBox(height: 10),
-                      ],
+          child: _isGameOver
+              ? MathGameResultsView(
+                  finalScore: _score,
+                  totalAnswered: _totalAnswered,
+                  totalCorrect: _totalCorrect,
+                  highestStreak: _highestStreak,
+                  elapsedSeconds: _gameDurationSeconds - _remainingSeconds,
+                  onPlayAgain: _startNewGame,
+                  onExit: () {
+                    if (context.canPop()) {
+                      context.pop();
+                    } else {
+                      context.go('/');
+                    }
+                  },
+                )
+              : Column(
+                  children: [
+                    // Top stats header & 60s countdown bar
+                    MathGameStatsBar(
+                      score: _score,
+                      currentStreak: _currentStreak,
+                      remainingSeconds: _remainingSeconds,
+                      totalSeconds: _gameDurationSeconds,
+                      onExit: _confirmExit,
                     ),
 
-              // Expanding Lottie Intro Overlay
-              if (_showIntro) CgPullIntroOverlay(onComplete: _onIntroComplete),
-            ],
-          ),
+                    const Spacer(flex: 1),
+
+                    // Floating Score / Combo animation
+                    if (_lastAnswerCorrect == true && _lastScoreGained > 0)
+                      Text(
+                            '+$_lastScoreGained',
+                            style: const TextStyle(
+                              fontFamily: 'ClashDisplay',
+                              fontSize: 24,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF34C759),
+                            ),
+                          )
+                          .animate()
+                          .fadeIn(duration: 100.ms)
+                          .moveY(begin: 10, end: -20, duration: 250.ms)
+                          .fadeOut(delay: 150.ms, duration: 150.ms)
+                    else
+                      const SizedBox(height: 28),
+
+                    // Central Question Card with shake animation on wrong answer
+                    AnimatedBuilder(
+                      animation: _shakeController,
+                      builder: (context, child) {
+                        final sine = (_shakeController.value * 3 * 3.14159);
+                        final offset =
+                            (_shakeController.value > 0 &&
+                                _shakeController.value < 1)
+                            ? (12.0 *
+                                  (1 - _shakeController.value) *
+                                  (sine).abs() *
+                                  (_shakeController.value > 0.5 ? -1 : 1))
+                            : 0.0;
+                        return Transform.translate(
+                          offset: Offset(offset, 0),
+                          child: child,
+                        );
+                      },
+                      child: _buildQuestionCard(),
+                    ),
+
+                    const Spacer(flex: 2),
+
+                    // Tactile 3x4 Keypad
+                    MathKeypad(
+                      onDigitPressed: _handleDigitInput,
+                      onBackspace: _handleBackspace,
+                      onClear: _handleClear,
+                      onSubmit: _handleSubmit,
+                      isSubmitEnabled:
+                          _enteredInput.isNotEmpty &&
+                          _lastAnswerCorrect == null,
+                    ),
+
+                    const SizedBox(height: 8),
+                  ],
+                ),
         ),
       ),
     );

@@ -177,24 +177,7 @@ final goRouterProvider = GoRouter(
       ),
     ),
     GoRoute(path: AppRoutes.novaChat, builder: (_, _) => const NovaChatPage()),
-    GoRoute(
-      path: AppRoutes.mathGame,
-      pageBuilder: (context, state) => CustomTransitionPage(
-        key: state.pageKey,
-        child: const MathGamePage(),
-        transitionDuration: const Duration(milliseconds: 450),
-        reverseTransitionDuration: const Duration(milliseconds: 350),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return FadeTransition(
-            opacity: CurvedAnimation(
-              parent: animation,
-              curve: Curves.easeInOutCubic,
-            ),
-            child: child,
-          );
-        },
-      ),
-    ),
+    GoRoute(path: AppRoutes.mathGame, builder: (_, _) => const MathGamePage()),
   ],
 );
 
