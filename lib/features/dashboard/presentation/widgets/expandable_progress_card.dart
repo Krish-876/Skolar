@@ -5,6 +5,8 @@ import 'package:flutter/gestures.dart' show VelocityTracker;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lottie/lottie.dart' as lottie;
+import 'package:go_router/go_router.dart';
+import 'package:Skolar/core/routing/app_routes.dart';
 import 'package:Skolar/core/theme/app_theme.dart';
 import 'package:Skolar/core/widgets/glass_background.dart';
 import 'package:Skolar/features/dashboard/domain/entities/dashboard_entity.dart';
@@ -59,6 +61,24 @@ class ExpandableProgressCard extends ConsumerStatefulWidget {
       _ExpandableProgressCardState();
 }
 
+class _CardAnchors {
+  final Rect? collapsedRing;
+  final Rect? expandedRing;
+  final Rect? collapsedStreak;
+  final Rect? expandedStreak;
+  final Rect? collapsedHours;
+  final Rect? expandedHours;
+
+  const _CardAnchors({
+    this.collapsedRing,
+    this.expandedRing,
+    this.collapsedStreak,
+    this.expandedStreak,
+    this.collapsedHours,
+    this.expandedHours,
+  });
+}
+
 class _ExpandableProgressCardState extends ConsumerState<ExpandableProgressCard>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller = AnimationController(
@@ -76,6 +96,14 @@ class _ExpandableProgressCardState extends ConsumerState<ExpandableProgressCard>
   // week-month transition" this was causing. A ValueNotifier lets only the
   // cheap positioning wrapper in `build()` react to it.
   final ValueNotifier<Rect?> _collapsedRectNotifier = ValueNotifier(null);
+
+  // Holds the measured anchor rects for the ring and stat badges. Held in a
+  // ValueNotifier so `cardSurface`'s AnimatedBuilder can rebuild immediately
+  // once the anchors are measured after first mount, rather than staying null
+  // until the user touches/drags the card to tick `_controller`.
+  final ValueNotifier<_CardAnchors> _ringAnchorsNotifier = ValueNotifier(
+    const _CardAnchors(),
+  );
 
   // How many more animation frames to keep re-measuring the anchor for
   // after the header's week/month toggle. The heatmap's AnimatedSwitcher
@@ -97,8 +125,6 @@ class _ExpandableProgressCardState extends ConsumerState<ExpandableProgressCard>
   final _surfaceKey = GlobalKey();
   final _collapsedRingAnchorKey = GlobalKey();
   final _expandedRingAnchorKey = GlobalKey();
-  Rect? _collapsedRingRect;
-  Rect? _expandedRingRect;
 
   // The expanded view's own content (bar chart, ring, task list) scrolls in
   // its own SingleChildScrollView once it's taller than the screen. That
@@ -122,15 +148,14 @@ class _ExpandableProgressCardState extends ConsumerState<ExpandableProgressCard>
   final _expandedStreakAnchorKey = GlobalKey();
   final _collapsedHoursAnchorKey = GlobalKey();
   final _expandedHoursAnchorKey = GlobalKey();
-  Rect? _collapsedStreakRect;
-  Rect? _expandedStreakRect;
-  Rect? _collapsedHoursRect;
-  Rect? _expandedHoursRect;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _measure());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _measure();
+      _measureRingAnchors();
+    });
     // The anchor now scrolls with the page, so its global rect changes on
     // every scroll tick — re-measure continuously rather than only once.
     widget.scrollController?.addListener(_measure);
@@ -158,24 +183,25 @@ class _ExpandableProgressCardState extends ConsumerState<ExpandableProgressCard>
     final collapsedHours = readAnchor(_collapsedHoursAnchorKey);
     final expandedHours = readAnchor(_expandedHoursAnchorKey);
 
-    bool differs(Rect? next, Rect? current) => next != null && next != current;
+    final current = _ringAnchorsNotifier.value;
+    bool differs(Rect? next, Rect? cur) => next != null && next != cur;
     final changed =
-        differs(collapsedRing, _collapsedRingRect) ||
-        differs(expandedRing, _expandedRingRect) ||
-        differs(collapsedStreak, _collapsedStreakRect) ||
-        differs(expandedStreak, _expandedStreakRect) ||
-        differs(collapsedHours, _collapsedHoursRect) ||
-        differs(expandedHours, _expandedHoursRect);
+        differs(collapsedRing, current.collapsedRing) ||
+        differs(expandedRing, current.expandedRing) ||
+        differs(collapsedStreak, current.collapsedStreak) ||
+        differs(expandedStreak, current.expandedStreak) ||
+        differs(collapsedHours, current.collapsedHours) ||
+        differs(expandedHours, current.expandedHours);
     if (!changed) return;
 
-    setState(() {
-      if (collapsedRing != null) _collapsedRingRect = collapsedRing;
-      if (expandedRing != null) _expandedRingRect = expandedRing;
-      if (collapsedStreak != null) _collapsedStreakRect = collapsedStreak;
-      if (expandedStreak != null) _expandedStreakRect = expandedStreak;
-      if (collapsedHours != null) _collapsedHoursRect = collapsedHours;
-      if (expandedHours != null) _expandedHoursRect = expandedHours;
-    });
+    _ringAnchorsNotifier.value = _CardAnchors(
+      collapsedRing: collapsedRing ?? current.collapsedRing,
+      expandedRing: expandedRing ?? current.expandedRing,
+      collapsedStreak: collapsedStreak ?? current.collapsedStreak,
+      expandedStreak: expandedStreak ?? current.expandedStreak,
+      collapsedHours: collapsedHours ?? current.collapsedHours,
+      expandedHours: expandedHours ?? current.expandedHours,
+    );
   }
 
   void _measure() {
@@ -198,6 +224,7 @@ class _ExpandableProgressCardState extends ConsumerState<ExpandableProgressCard>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _measure();
+      _measureRingAnchors();
       _remeasureFramesLeft--;
       if (_remeasureFramesLeft > 0) _remeasureNextFrame();
     });
@@ -217,6 +244,7 @@ class _ExpandableProgressCardState extends ConsumerState<ExpandableProgressCard>
     widget.scrollController?.removeListener(_measure);
     _expandedScrollController.dispose();
     _collapsedRectNotifier.dispose();
+    _ringAnchorsNotifier.dispose();
     _controller.dispose();
     super.dispose();
   }
@@ -375,8 +403,9 @@ class _ExpandableProgressCardState extends ConsumerState<ExpandableProgressCard>
     // the off-screen expanded task list, shimmer, and Lottie animations —
     // which is what read as lag during the week/month transition.
     final cardSurface = AnimatedBuilder(
-      animation: _controller,
+      animation: Listenable.merge([_controller, _ringAnchorsNotifier]),
       builder: (context, _) {
+        final anchors = _ringAnchorsNotifier.value;
         // Scheduled every controller tick so the ring/streak/hours anchors
         // stay current through the whole drag/expand animation, exactly
         // like `radius`/`lineWidth` already are — a plain drag mutates
@@ -395,16 +424,16 @@ class _ExpandableProgressCardState extends ConsumerState<ExpandableProgressCard>
           surfaceKey: _surfaceKey,
           collapsedRingAnchorKey: _collapsedRingAnchorKey,
           expandedRingAnchorKey: _expandedRingAnchorKey,
-          collapsedRingRect: _collapsedRingRect,
-          expandedRingRect: _expandedRingRect,
+          collapsedRingRect: anchors.collapsedRing,
+          expandedRingRect: anchors.expandedRing,
           collapsedStreakAnchorKey: _collapsedStreakAnchorKey,
           expandedStreakAnchorKey: _expandedStreakAnchorKey,
-          collapsedStreakRect: _collapsedStreakRect,
-          expandedStreakRect: _expandedStreakRect,
+          collapsedStreakRect: anchors.collapsedStreak,
+          expandedStreakRect: anchors.expandedStreak,
           collapsedHoursAnchorKey: _collapsedHoursAnchorKey,
           expandedHoursAnchorKey: _expandedHoursAnchorKey,
-          collapsedHoursRect: _collapsedHoursRect,
-          expandedHoursRect: _expandedHoursRect,
+          collapsedHoursRect: anchors.collapsedHours,
+          expandedHoursRect: anchors.expandedHours,
         );
       },
     );
@@ -1267,6 +1296,37 @@ class _TodaysTasks extends ConsumerWidget {
                     fontFamily: 'GoogleSans',
                     color: AppTheme.textPrimary,
                     fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: () => context.push(AppRoutes.novaChat),
+                  icon: const Icon(
+                    Icons.auto_awesome_rounded,
+                    size: 16,
+                    color: AppTheme.accentPurple,
+                  ),
+                  label: const Text(
+                    'Edit with Nova',
+                    style: TextStyle(
+                      fontFamily: 'GoogleSans',
+                      color: AppTheme.textPrimary,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    backgroundColor: AppTheme.surface.withValues(alpha: 0.6),
+                    side: BorderSide(
+                      color: AppTheme.white.withValues(alpha: 0.12),
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
                   ),
                 ),
               ],

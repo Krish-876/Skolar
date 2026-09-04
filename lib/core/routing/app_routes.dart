@@ -23,6 +23,8 @@ import 'package:Skolar/features/nova_chat/presentation/pages/nova_chat_page.dart
 
 import 'dart:async';
 
+import 'package:Skolar/features/math_game/presentation/pages/math_game_page.dart';
+
 /// Lets a page know when it's covered by another route (didPushNext) or
 /// becomes the topmost route again (didPopNext) — used by
 /// OnboardingWelcomePage to pause/resume its background video.
@@ -77,6 +79,7 @@ class AppRoutes {
   static const String test = '/test';
   static const String knowledgeTree = '/knowledge-tree';
   static const String novaChat = '/nova-chat';
+  static const String mathGame = '/math-game';
 }
 
 final goRouterProvider = GoRouter(
@@ -174,6 +177,7 @@ final goRouterProvider = GoRouter(
       ),
     ),
     GoRoute(path: AppRoutes.novaChat, builder: (_, _) => const NovaChatPage()),
+    GoRoute(path: AppRoutes.mathGame, builder: (_, _) => const MathGamePage()),
   ],
 );
 
@@ -181,6 +185,7 @@ class _DevMenu extends StatelessWidget {
   const _DevMenu();
 
   static const _pages = [
+    ('Matiks Mental Math Game (Dev)', AppRoutes.mathGame),
     ('Nova AI Chat Window (Dev)', AppRoutes.novaChat),
     ('Onboarding Welcome', AppRoutes.onboardingWelcome),
     ('Onboarding', AppRoutes.onboardingProfile),
