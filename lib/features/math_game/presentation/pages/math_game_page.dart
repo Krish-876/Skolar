@@ -1,13 +1,14 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../logic/question_generator.dart';
 import '../../models/math_question.dart';
+import '../../services/math_game_high_score_service.dart';
 import '../widgets/math_game_results_view.dart';
 import '../widgets/math_game_stats_bar.dart';
+import '../widgets/math_grid_painter.dart';
 import '../widgets/math_keypad.dart';
 
 class MathGamePage extends StatefulWidget {
@@ -17,8 +18,7 @@ class MathGamePage extends StatefulWidget {
   State<MathGamePage> createState() => _MathGamePageState();
 }
 
-class _MathGamePageState extends State<MathGamePage>
-    with SingleTickerProviderStateMixin {
+class _MathGamePageState extends State<MathGamePage> {
   static const double _gameDurationSeconds = 60.0;
 
   final QuestionGenerator _generator = QuestionGenerator();
@@ -43,27 +43,28 @@ class _MathGamePageState extends State<MathGamePage>
   String _enteredInput = '';
   DateTime? _questionStartTime;
 
-  // Feedback animation state
-  bool? _lastAnswerCorrect; // null = idle, true = correct, false = wrong
-  int _lastScoreGained = 0;
-  late AnimationController _shakeController;
+  // Best score (persisted locally, shown in the header's right badge)
+  int _bestScore = 0;
 
   @override
   void initState() {
     super.initState();
-    _shakeController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 350),
-    );
     _startNewGame();
+    _loadBestScore();
   }
 
   @override
   void dispose() {
     _gameTimer?.cancel();
     _keyboardFocusNode.dispose();
-    _shakeController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadBestScore() async {
+    final best = await MathGameHighScoreService.getBestScore();
+    if (mounted) {
+      setState(() => _bestScore = best);
+    }
   }
 
   void _startNewGame() {
@@ -79,8 +80,6 @@ class _MathGamePageState extends State<MathGamePage>
       _totalCorrect = 0;
       _questionIndex = 0;
       _enteredInput = '';
-      _lastAnswerCorrect = null;
-      _lastScoreGained = 0;
       _currentQuestion = _generator.generate(
         questionIndex: 0,
         currentStreak: 0,
@@ -119,15 +118,16 @@ class _MathGamePageState extends State<MathGamePage>
   }
 
   void _handleDigitInput(String digit) {
-    if (!_isPlaying || _isGameOver || _lastAnswerCorrect != null) return;
+    if (!_isPlaying || _isGameOver) return;
     if (_enteredInput.length >= 6) return; // Prevent excessive input
     setState(() {
       _enteredInput += digit;
     });
+    _maybeAutoAdvance();
   }
 
   void _handleBackspace() {
-    if (!_isPlaying || _isGameOver || _lastAnswerCorrect != null) return;
+    if (!_isPlaying || _isGameOver) return;
     if (_enteredInput.isNotEmpty) {
       setState(() {
         _enteredInput = _enteredInput.substring(0, _enteredInput.length - 1);
@@ -136,97 +136,61 @@ class _MathGamePageState extends State<MathGamePage>
   }
 
   void _handleClear() {
-    if (!_isPlaying || _isGameOver || _lastAnswerCorrect != null) return;
+    if (!_isPlaying || _isGameOver) return;
     setState(() {
       _enteredInput = '';
     });
   }
 
-  void _handleSubmit() {
-    if (!_isPlaying ||
-        _isGameOver ||
-        _enteredInput.isEmpty ||
-        _lastAnswerCorrect != null) {
-      return;
-    }
+  /// Checks the current input against the answer and, if it matches, scores
+  /// the question and instantly jumps to the next one — no manual submit
+  /// step, no delay, no intermediate feedback state.
+  void _maybeAutoAdvance() {
+    if (!_isPlaying || _isGameOver) return;
+    if (_enteredInput != _currentQuestion.answer.toString()) return;
 
-    final parsed = int.tryParse(_enteredInput);
-    if (parsed == null) return;
+    HapticFeedback.mediumImpact();
 
-    final isCorrect = _currentQuestion.checkAnswer(parsed);
     final now = DateTime.now();
     final elapsedSec = _questionStartTime != null
         ? (now.difference(_questionStartTime!).inMilliseconds / 1000.0)
         : 2.0;
 
     _totalAnswered++;
-
-    if (isCorrect) {
-      HapticFeedback.mediumImpact();
-      _totalCorrect++;
-      _currentStreak++;
-      if (_currentStreak > _highestStreak) {
-        _highestStreak = _currentStreak;
-      }
-
-      // Calculate speed and streak bonuses
-      const basePoints = 100;
-      final speedBonus = (50 - (elapsedSec * 12)).clamp(0, 50).toInt();
-      final streakBonus = _currentStreak * 15;
-      final gained = basePoints + speedBonus + streakBonus;
-
-      _score += gained;
-      _lastScoreGained = gained;
-      _lastAnswerCorrect = true;
-
-      // Advance to next question quickly
-      Future.delayed(const Duration(milliseconds: 180), () {
-        if (!mounted || !_isPlaying) return;
-        setState(() {
-          _questionIndex++;
-          _enteredInput = '';
-          _lastAnswerCorrect = null;
-          _currentQuestion = _generator.generate(
-            questionIndex: _questionIndex,
-            currentStreak: _currentStreak,
-          );
-          _questionStartTime = DateTime.now();
-        });
-      });
-    } else {
-      HapticFeedback.vibrate();
-      _currentStreak = 0;
-      _lastScoreGained = 0;
-      _lastAnswerCorrect = false;
-      _shakeController.forward(from: 0.0);
-
-      // Advance to next question
-      Future.delayed(const Duration(milliseconds: 260), () {
-        if (!mounted || !_isPlaying) return;
-        setState(() {
-          _questionIndex++;
-          _enteredInput = '';
-          _lastAnswerCorrect = null;
-          _currentQuestion = _generator.generate(
-            questionIndex: _questionIndex,
-            currentStreak: _currentStreak,
-          );
-          _questionStartTime = DateTime.now();
-        });
-      });
+    _totalCorrect++;
+    _currentStreak++;
+    if (_currentStreak > _highestStreak) {
+      _highestStreak = _currentStreak;
     }
 
-    setState(() {});
+    // Calculate speed and streak bonuses
+    const basePoints = 100;
+    final speedBonus = (50 - (elapsedSec * 12)).clamp(0, 50).toInt();
+    final streakBonus = _currentStreak * 15;
+    final gained = basePoints + speedBonus + streakBonus;
+
+    _score += gained;
+    if (_score > _bestScore) {
+      _bestScore = _score;
+    }
+    MathGameHighScoreService.setBestScoreIfHigher(_score);
+
+    _questionIndex++;
+    setState(() {
+      _enteredInput = '';
+      _currentQuestion = _generator.generate(
+        questionIndex: _questionIndex,
+        currentStreak: _currentStreak,
+      );
+      _questionStartTime = DateTime.now();
+    });
   }
 
   void _onKeyEvent(KeyEvent event) {
     if (event is! KeyDownEvent) return;
 
     final key = event.logicalKey;
-    if (key == LogicalKeyboardKey.enter ||
-        key == LogicalKeyboardKey.numpadEnter) {
-      _handleSubmit();
-    } else if (key == LogicalKeyboardKey.backspace ||
+    if (key == LogicalKeyboardKey.backspace ||
         key == LogicalKeyboardKey.delete) {
       _handleBackspace();
     } else if (key == LogicalKeyboardKey.escape) {
@@ -257,7 +221,7 @@ class _MathGamePageState extends State<MathGamePage>
         title: const Text(
           'Quit Game?',
           style: TextStyle(
-            fontFamily: 'ClashDisplay',
+            fontFamily: 'GoogleSans',
             fontWeight: FontWeight.w700,
             color: Colors.white,
           ),
@@ -297,152 +261,68 @@ class _MathGamePageState extends State<MathGamePage>
   }
 
   Widget _buildQuestionCard() {
-    Color borderColor = Colors.white.withValues(alpha: 0.1);
-    Color cardBg = const Color(0xFF141320);
+    final lines = _currentQuestion.stackedLines;
 
-    if (_lastAnswerCorrect == true) {
-      borderColor = const Color(0xFF34C759);
-      cardBg = const Color(0xFF0F2618);
-    } else if (_lastAnswerCorrect == false) {
-      borderColor = const Color(0xFFFF3B30);
-      cardBg = const Color(0xFF2B1216);
-    }
-
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 150),
-      width: double.infinity,
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: borderColor, width: 2),
-        boxShadow: [
-          if (_lastAnswerCorrect == true)
-            BoxShadow(
-              color: const Color(0xFF34C759).withValues(alpha: 0.35),
-              blurRadius: 24,
-              spreadRadius: 2,
-            )
-          else if (_lastAnswerCorrect == false)
-            BoxShadow(
-              color: const Color(0xFFFF3B30).withValues(alpha: 0.35),
-              blurRadius: 24,
-              spreadRadius: 2,
-            )
-          else
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.5),
-              blurRadius: 16,
-              offset: const Offset(0, 6),
-            ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Question Type Tag
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
-            decoration: BoxDecoration(
-              color: const Color(0xFF8C38E5).withValues(alpha: 0.22),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: const Color(0xFFB388FF).withValues(alpha: 0.35),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            for (final line in lines)
+              Text(
+                line,
+                textAlign: TextAlign.right,
+                style: const TextStyle(
+                  fontFamily: 'GoogleSans',
+                  fontSize: 24,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                  height: 1.15,
+                ),
               ),
-            ),
-            child: Text(
-              _currentQuestion.type.displayName,
-              style: const TextStyle(
-                fontFamily: 'ClashDisplay',
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFFB388FF),
-                letterSpacing: 1.5,
-              ),
-            ),
-          ),
-
-          if (_currentQuestion.subtitleText != null) ...[
-            const SizedBox(height: 6),
-            Text(
-              _currentQuestion.subtitleText!,
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w400,
-                color: Colors.white54,
-              ),
-            ),
           ],
+        ),
 
-          const SizedBox(height: 18),
+        const SizedBox(height: 32),
 
-          // Main Big Math Prompt
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 140),
-            transitionBuilder: (child, animation) => ScaleTransition(
-              scale: CurvedAnimation(
-                parent: animation,
-                curve: Curves.easeOutBack,
-              ),
-              child: child,
-            ),
+        const Text(
+          'TYPE OUT YOUR ANSWER',
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: Colors.white38,
+            letterSpacing: 2,
+          ),
+        ),
+
+        const SizedBox(height: 12),
+
+        // Read-only answer display, driven entirely by the keypad
+        Container(
+          width: double.infinity,
+          height: 54,
+          margin: const EdgeInsets.symmetric(horizontal: 32),
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1C1C1E),
+            borderRadius: BorderRadius.circular(27),
+          ),
+          child: Center(
             child: Text(
-              _currentQuestion.displayText,
-              key: ValueKey(_currentQuestion.displayText),
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontFamily: 'ClashDisplay',
-                fontSize: 44,
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
-                letterSpacing: 1.2,
+              _enteredInput.isEmpty ? 'Enter Answer' : _enteredInput,
+              style: TextStyle(
+                fontFamily: 'GoogleSans',
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: _enteredInput.isEmpty ? Colors.white38 : Colors.white,
+                letterSpacing: 1,
               ),
             ),
           ),
-
-          const SizedBox(height: 20),
-
-          // Answer Input Display Box
-          Container(
-            height: 62,
-            constraints: const BoxConstraints(minWidth: 150),
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            decoration: BoxDecoration(
-              color: const Color(0xFF0C0B14),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: _enteredInput.isNotEmpty
-                    ? const Color(0xFF8C38E5)
-                    : Colors.white.withValues(alpha: 0.15),
-                width: 1.5,
-              ),
-            ),
-            child: Center(
-              child: _enteredInput.isEmpty
-                  ? Text(
-                      '?',
-                      style: TextStyle(
-                        fontFamily: 'ClashDisplay',
-                        fontSize: 34,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white.withValues(alpha: 0.25),
-                      ),
-                    )
-                  : Text(
-                      _enteredInput,
-                      style: const TextStyle(
-                        fontFamily: 'ClashDisplay',
-                        fontSize: 34,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                        letterSpacing: 2,
-                      ),
-                    ),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -473,67 +353,34 @@ class _MathGamePageState extends State<MathGamePage>
                 )
               : Column(
                   children: [
-                    // Top stats header & 60s countdown bar
+                    // Top "VS" header & countdown pill
                     MathGameStatsBar(
                       score: _score,
-                      currentStreak: _currentStreak,
+                      bestScore: _bestScore,
                       remainingSeconds: _remainingSeconds,
                       totalSeconds: _gameDurationSeconds,
                       onExit: _confirmExit,
                     ),
 
-                    const Spacer(flex: 1),
+                    const SizedBox(height: 24),
 
-                    // Floating Score / Combo animation
-                    if (_lastAnswerCorrect == true && _lastScoreGained > 0)
-                      Text(
-                            '+$_lastScoreGained',
-                            style: const TextStyle(
-                              fontFamily: 'ClashDisplay',
-                              fontSize: 24,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF34C759),
-                            ),
-                          )
-                          .animate()
-                          .fadeIn(duration: 100.ms)
-                          .moveY(begin: 10, end: -20, duration: 250.ms)
-                          .fadeOut(delay: 150.ms, duration: 150.ms)
-                    else
-                      const SizedBox(height: 28),
-
-                    // Central Question Card with shake animation on wrong answer
-                    AnimatedBuilder(
-                      animation: _shakeController,
-                      builder: (context, child) {
-                        final sine = (_shakeController.value * 3 * 3.14159);
-                        final offset =
-                            (_shakeController.value > 0 &&
-                                _shakeController.value < 1)
-                            ? (12.0 *
-                                  (1 - _shakeController.value) *
-                                  (sine).abs() *
-                                  (_shakeController.value > 0.5 ? -1 : 1))
-                            : 0.0;
-                        return Transform.translate(
-                          offset: Offset(offset, 0),
-                          child: child,
-                        );
-                      },
-                      child: _buildQuestionCard(),
+                    // Central stacked-equation display over a faint grid
+                    Expanded(
+                      child: Stack(
+                        children: [
+                          const Positioned.fill(
+                            child: CustomPaint(painter: MathGridPainter()),
+                          ),
+                          Center(child: _buildQuestionCard()),
+                        ],
+                      ),
                     ),
 
-                    const Spacer(flex: 2),
-
-                    // Tactile 3x4 Keypad
+                    // Numeric keypad — no submit button, input auto-checks
                     MathKeypad(
                       onDigitPressed: _handleDigitInput,
                       onBackspace: _handleBackspace,
                       onClear: _handleClear,
-                      onSubmit: _handleSubmit,
-                      isSubmitEnabled:
-                          _enteredInput.isNotEmpty &&
-                          _lastAnswerCorrect == null,
                     ),
 
                     const SizedBox(height: 8),
