@@ -57,4 +57,25 @@ class MathQuestion {
   });
 
   bool checkAnswer(int userAnswer) => userAnswer == answer;
+
+  /// Splits the question into stacked display lines (top-to-bottom), for the
+  /// vertical-equation layout: e.g. "24 + 37" -> ["24", "+37"], or
+  /// "LCM(4, 6)" -> ["LCM", "4", "6"].
+  List<String> get stackedLines {
+    switch (type) {
+      case MathQuestionType.lcm:
+      case MathQuestionType.hcf:
+        final match = RegExp(r'\((\d+),\s*(\d+)\)').firstMatch(displayText);
+        if (match == null) return [displayText];
+        return [type.symbol, match.group(1)!, match.group(2)!];
+      default:
+        final symbol = type.symbol;
+        final separator = ' $symbol ';
+        final idx = displayText.indexOf(separator);
+        if (idx == -1) return [displayText];
+        final a = displayText.substring(0, idx);
+        final b = displayText.substring(idx + separator.length);
+        return [a, '$symbol$b'];
+    }
+  }
 }
