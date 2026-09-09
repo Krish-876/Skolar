@@ -112,7 +112,7 @@ def test_user(supabase):
     supabase.auth.admin.delete_user(user_id)
 
     for table in NOVA_TABLES:
-        leftover = supabase.table(table).select("id").eq("user_id", user_id).execute().data
+        leftover = supabase.table(table).select("id").eq("user_id", user_id).execute().data  # noqa: S608 -- table is from the hardcoded NOVA_TABLES list above, not external input
         assert leftover == [], (
             f"Teardown left {len(leftover)} stray row(s) in {table} for {user_id} - "
             "cascade delete from users did not fully clean up."
