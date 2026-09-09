@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from supabase import Client
 
 from nova.api.deps import get_current_user_id, get_supabase_and_groq
 from nova.schemas.subject_match import (
@@ -11,10 +12,26 @@ from nova.services.subject_enrollment import (
     create_custom_subject,
     create_user_subject,
     resolve_match_log,
+    verify_custom_subject_belongs_to_institution,
+    verify_subject_belongs_to_institution,
 )
-from nova.services.subject_matcher import match_subject
+from nova.services.subject_matcher import get_user_institution_and_campus, match_subject
 
 router = APIRouter(tags=["subjects"])
+
+
+def _require_institution(supabase: Client, user_id: str) -> tuple[str, str | None]:
+    """Shared guard for both endpoints that derive institution/campus
+    scoping server-side from the caller's own profile rather than trusting
+    the request body - a profile with no institution set yet can't add or
+    confirm a subject."""
+    institution_id, campus_id = get_user_institution_and_campus(supabase, user_id)
+    if not institution_id:
+        raise HTTPException(
+            status_code=400,
+            detail="Your profile has no institution set - update your profile before adding subjects.",
+        )
+    return institution_id, campus_id
 
 
 @router.post("/subjects/{user_id}/add", response_model=AddSubjectResponse)
@@ -32,13 +49,15 @@ def add_subject(
 
     supabase, groq, groq_backup = clients
 
+    institution_id, campus_id = _require_institution(supabase, user_id)
+
     result = match_subject(
         groq,
         supabase,
         user_id,
         req.query,
-        req.institution_id,
-        req.campus_id,
+        institution_id,
+        campus_id,
         groq_backup,
     )
 
@@ -81,23 +100,41 @@ def confirm_subject(
             detail="Exactly one of subject_id, custom_subject_id, or new_custom_subject must be set.",
         )
 
+    institution_id, campus_id = _require_institution(supabase, user_id)
+
     subject_id = req.subject_id
     custom_subject_id = req.custom_subject_id
 
-    if req.new_custom_subject is not None:
-        custom_subject_id = create_custom_subject(
-            supabase,
-            req.new_custom_subject.institution_id,
-            req.new_custom_subject.course_code,
-            req.new_custom_subject.name,
-            req.new_custom_subject.credits,
-        )
+    # All ownership/existence validation for this request - institution
+    # scoping on subject_id/custom_subject_id, and (below) match_log
+    # ownership - must run before create_user_subject. A 404/400 here must
+    # never leave an orphaned user_subjects row behind (user_subjects has no
+    # uniqueness constraint on user/subject/semester, so a client retry
+    # after a partial failure could also duplicate it).
+    try:
+        if req.subject_id is not None:
+            verify_subject_belongs_to_institution(supabase, req.subject_id, institution_id, campus_id)
+        if req.custom_subject_id is not None:
+            verify_custom_subject_belongs_to_institution(supabase, req.custom_subject_id, institution_id)
+        if req.new_custom_subject is not None:
+            custom_subject_id = create_custom_subject(
+                supabase,
+                institution_id,
+                req.new_custom_subject.course_code,
+                req.new_custom_subject.name,
+                req.new_custom_subject.credits,
+            )
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+    if req.match_log_id:
+        try:
+            resolve_match_log(supabase, req.match_log_id, user_id, subject_id, custom_subject_id)
+        except ValueError as e:
+            raise HTTPException(status_code=404, detail=str(e))
 
     user_subject = create_user_subject(
         supabase, user_id, req.semester, subject_id=subject_id, custom_subject_id=custom_subject_id
     )
-
-    if req.match_log_id:
-        resolve_match_log(supabase, req.match_log_id, subject_id, custom_subject_id)
 
     return ConfirmSubjectResponse(user_subject=user_subject)
