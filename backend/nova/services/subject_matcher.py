@@ -127,7 +127,10 @@ def _call_groq(
         "response_format": {"type": "json_object"},
     }
     try:
-        resp = groq.chat.completions.create(**kwargs)
+        # kwargs is built dynamically, so mypy widens it to dict[str, object]
+        # and can't match Groq's per-model overloads - runtime-safe, not a
+        # real type mismatch.
+        resp = groq.chat.completions.create(**kwargs)  # type: ignore[call-overload]
         content = resp.choices[0].message.content
         if not content:
             return None
@@ -137,7 +140,7 @@ def _call_groq(
         if groq_backup is None:
             return None
         try:
-            resp = groq_backup.chat.completions.create(**kwargs)
+            resp = groq_backup.chat.completions.create(**kwargs)  # type: ignore[call-overload]
             content = resp.choices[0].message.content
             if not content:
                 return None
