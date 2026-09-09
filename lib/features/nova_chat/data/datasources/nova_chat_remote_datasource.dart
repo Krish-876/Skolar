@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:Skolar/core/config/environment.dart';
 import 'package:Skolar/features/nova_chat/data/models/chat_message_dto.dart';
+import 'package:Skolar/features/nova_chat/data/models/proposal_dto.dart';
 import 'package:Skolar/features/nova_chat/data/models/study_plan_dto.dart';
 
 abstract class INovaChatRemoteDatasource {
@@ -20,6 +21,30 @@ abstract class INovaChatRemoteDatasource {
   Future<List<String>> getInitialSuggestions({required String userId});
 
   Future<bool> checkHealth();
+
+  Future<List<PendingProposalDto>> getPendingProposals({
+    required String userId,
+  });
+
+  Future<ProposalResolutionDto> confirmProposal({
+    required String userId,
+    required String proposalId,
+  });
+
+  Future<ProposalResolutionDto> rejectProposal({
+    required String userId,
+    required String proposalId,
+  });
+
+  Future<List<ProposalResolutionDto>> confirmProposalTurn({
+    required String userId,
+    required String turnId,
+  });
+
+  Future<List<ProposalResolutionDto>> rejectProposalTurn({
+    required String userId,
+    required String turnId,
+  });
 }
 
 class NovaChatRemoteDatasource implements INovaChatRemoteDatasource {
@@ -185,6 +210,128 @@ class NovaChatRemoteDatasource implements INovaChatRemoteDatasource {
     } catch (e) {
       debugPrint('🔴 [NovaChatDatasource] Health check failed: $e');
       return false;
+    }
+  }
+
+  String _proposalErrorMessage(DioException e) {
+    if (e.response != null) {
+      final data = e.response?.data;
+      return data is Map
+          ? (data['detail']?.toString() ?? data.toString())
+          : (data?.toString() ?? e.message ?? 'Unknown error');
+    }
+    return e.message ?? 'Unable to reach Nova backend';
+  }
+
+  @override
+  Future<List<PendingProposalDto>> getPendingProposals({
+    required String userId,
+  }) async {
+    final effectiveUserId = userId.isNotEmpty ? userId : 'dev-user-001';
+    try {
+      final response = await _dio.get('/proposals/$effectiveUserId/pending');
+      if (response.statusCode == 200 && response.data is Map) {
+        final raw = response.data['proposals'] as List<dynamic>? ?? [];
+        return raw
+            .map(
+              (p) => PendingProposalDto.fromJson(
+                Map<String, dynamic>.from(p as Map),
+              ),
+            )
+            .toList();
+      }
+      return [];
+    } on DioException catch (e) {
+      debugPrint('🔴 [NovaChatDatasource] getPendingProposals Error: $e');
+      throw Exception(
+        'Could not load pending proposals (${_proposalErrorMessage(e)})',
+      );
+    }
+  }
+
+  @override
+  Future<ProposalResolutionDto> confirmProposal({
+    required String userId,
+    required String proposalId,
+  }) async {
+    final effectiveUserId = userId.isNotEmpty ? userId : 'dev-user-001';
+    try {
+      final response = await _dio.post(
+        '/proposals/$effectiveUserId/$proposalId/confirm',
+      );
+      return ProposalResolutionDto.fromJson(
+        response.data as Map<String, dynamic>,
+      );
+    } on DioException catch (e) {
+      debugPrint('🔴 [NovaChatDatasource] confirmProposal Error: $e');
+      throw Exception('Could not confirm (${_proposalErrorMessage(e)})');
+    }
+  }
+
+  @override
+  Future<ProposalResolutionDto> rejectProposal({
+    required String userId,
+    required String proposalId,
+  }) async {
+    final effectiveUserId = userId.isNotEmpty ? userId : 'dev-user-001';
+    try {
+      final response = await _dio.post(
+        '/proposals/$effectiveUserId/$proposalId/reject',
+      );
+      return ProposalResolutionDto.fromJson(
+        response.data as Map<String, dynamic>,
+      );
+    } on DioException catch (e) {
+      debugPrint('🔴 [NovaChatDatasource] rejectProposal Error: $e');
+      throw Exception('Could not reject (${_proposalErrorMessage(e)})');
+    }
+  }
+
+  @override
+  Future<List<ProposalResolutionDto>> confirmProposalTurn({
+    required String userId,
+    required String turnId,
+  }) async {
+    final effectiveUserId = userId.isNotEmpty ? userId : 'dev-user-001';
+    try {
+      final response = await _dio.post(
+        '/proposals/$effectiveUserId/turn/$turnId/confirm',
+      );
+      final raw = response.data['resolutions'] as List<dynamic>? ?? [];
+      return raw
+          .map(
+            (r) => ProposalResolutionDto.fromJson(
+              Map<String, dynamic>.from(r as Map),
+            ),
+          )
+          .toList();
+    } on DioException catch (e) {
+      debugPrint('🔴 [NovaChatDatasource] confirmProposalTurn Error: $e');
+      throw Exception('Could not confirm (${_proposalErrorMessage(e)})');
+    }
+  }
+
+  @override
+  Future<List<ProposalResolutionDto>> rejectProposalTurn({
+    required String userId,
+    required String turnId,
+  }) async {
+    final effectiveUserId = userId.isNotEmpty ? userId : 'dev-user-001';
+    try {
+      final response = await _dio.post(
+        '/proposals/$effectiveUserId/turn/$turnId/reject',
+      );
+      final raw = response.data['resolutions'] as List<dynamic>? ?? [];
+      return raw
+          .map(
+            (r) => ProposalResolutionDto.fromJson(
+              Map<String, dynamic>.from(r as Map),
+            ),
+          )
+          .toList();
+    } on DioException catch (e) {
+      debugPrint('🔴 [NovaChatDatasource] rejectProposalTurn Error: $e');
+      throw Exception('Could not reject (${_proposalErrorMessage(e)})');
     }
   }
 }

@@ -1,21 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:Skolar/features/nova_chat/domain/entities/chat_message_entity.dart';
 import 'package:Skolar/features/nova_chat/domain/entities/study_plan_entity.dart';
+import 'package:Skolar/features/nova_chat/presentation/providers/nova_chat_provider.dart';
 import 'package:Skolar/features/nova_chat/presentation/widgets/nova_flashcard_deck.dart';
 import 'package:Skolar/features/nova_chat/presentation/widgets/nova_practice_problem_card.dart';
+import 'package:Skolar/features/nova_chat/presentation/widgets/nova_proposal_card.dart';
 import 'package:Skolar/features/nova_chat/presentation/widgets/nova_quiz_card.dart';
 import 'package:Skolar/features/nova_chat/presentation/widgets/nova_study_plan_card.dart';
 
-class NovaChatBubble extends StatelessWidget {
+class NovaChatBubble extends ConsumerWidget {
   final ChatMessageEntity message;
   final String? userAvatarSvg;
 
   const NovaChatBubble({super.key, required this.message, this.userAvatarSvg});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isUser = message.isUser;
 
     return TweenAnimationBuilder<double>(
@@ -33,7 +36,9 @@ class NovaChatBubble extends StatelessWidget {
       },
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        child: isUser ? _buildUserRow(context) : _buildAssistantRow(context),
+        child: isUser
+            ? _buildUserRow(context)
+            : _buildAssistantRow(context, ref),
       ),
     );
   }
@@ -65,10 +70,32 @@ class NovaChatBubble extends StatelessWidget {
     );
   }
 
-  Widget _buildAssistantRow(BuildContext context) {
+  Widget _buildAssistantRow(BuildContext context, WidgetRef ref) {
+    final turnId = message.proposalTurnId;
+    final proposals = message.pendingProposals;
+
     return Padding(
       padding: const EdgeInsets.only(top: 6, bottom: 12),
-      child: _buildPolymorphicContent(context),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildPolymorphicContent(context),
+          if (turnId != null && proposals.isNotEmpty)
+            NovaProposalCard(
+              turnId: turnId,
+              proposals: proposals,
+              status: ref.watch(
+                novaChatProvider.select((s) => s.statusForTurn(turnId)),
+              ),
+              onConfirm: () => ref
+                  .read(novaChatProvider.notifier)
+                  .resolveProposalTurn(turnId, confirm: true),
+              onReject: () => ref
+                  .read(novaChatProvider.notifier)
+                  .resolveProposalTurn(turnId, confirm: false),
+            ),
+        ],
+      ),
     );
   }
 

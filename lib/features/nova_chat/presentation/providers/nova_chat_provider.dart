@@ -6,6 +6,7 @@ import 'package:Skolar/features/auth/presentation/widgets/mascot_state.dart';
 import 'package:Skolar/features/nova_chat/data/datasources/nova_chat_remote_datasource.dart';
 import 'package:Skolar/features/nova_chat/data/repositories/nova_chat_repository_impl.dart';
 import 'package:Skolar/features/nova_chat/domain/entities/chat_message_entity.dart';
+import 'package:Skolar/features/nova_chat/domain/entities/proposal_entity.dart';
 import 'package:Skolar/features/nova_chat/domain/repositories/i_nova_chat_repository.dart';
 import 'package:Skolar/features/nova_chat/presentation/providers/nova_chat_state.dart';
 
@@ -222,10 +223,50 @@ class NovaChatNotifier extends StateNotifier<NovaChatState> {
     }
   }
 
+  /// Confirms or rejects every proposal staged for one chat turn (spec §5's
+  /// batched-per-turn default). Updates only that turn's status - other
+  /// pending turns and the message list itself are untouched.
+  Future<void> resolveProposalTurn(
+    String turnId, {
+    required bool confirm,
+  }) async {
+    _setTurnStatus(turnId, ProposalTurnStatus.submitting);
+
+    try {
+      if (confirm) {
+        await _repository.confirmProposalTurn(
+          userId: _getUserId(),
+          turnId: turnId,
+        );
+      } else {
+        await _repository.rejectProposalTurn(
+          userId: _getUserId(),
+          turnId: turnId,
+        );
+      }
+      _setTurnStatus(
+        turnId,
+        confirm ? ProposalTurnStatus.confirmed : ProposalTurnStatus.rejected,
+      );
+    } catch (e) {
+      debugPrint('🔴 [NovaChatNotifier] resolveProposalTurn Error: $e');
+      // Back to pending so the buttons re-enable and the student can retry.
+      _setTurnStatus(turnId, ProposalTurnStatus.pending);
+      state = state.copyWith(errorMessage: e.toString());
+    }
+  }
+
+  void _setTurnStatus(String turnId, ProposalTurnStatus status) {
+    state = state.copyWith(
+      proposalTurnStatus: {...state.proposalTurnStatus, turnId: status},
+    );
+  }
+
   void clearChat() {
     debugPrint('🔵 [NovaChatNotifier] Clearing chat');
     state = state.copyWith(
       messages: [],
+      proposalTurnStatus: const {},
       suggestions: const [
         'What do I study today?',
         'Explain Quantum Tunneling in simple terms',
