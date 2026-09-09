@@ -1,8 +1,9 @@
-import 'dart:math';
-import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:Skolar/core/theme/app_theme.dart';
+import 'package:Skolar/features/subjects/presentation/widgets/subjects_widgets.dart';
 
-class MathGameResultsView extends StatefulWidget {
+class MathGameResultsView extends StatelessWidget {
   final int finalScore;
   final int totalAnswered;
   final int totalCorrect;
@@ -22,316 +23,221 @@ class MathGameResultsView extends StatefulWidget {
     required this.onExit,
   });
 
-  @override
-  State<MathGameResultsView> createState() => _MathGameResultsViewState();
-}
-
-class _MathGameResultsViewState extends State<MathGameResultsView> {
-  late ConfettiController _confettiController;
-
-  @override
-  void initState() {
-    super.initState();
-    _confettiController = ConfettiController(
-      duration: const Duration(seconds: 3),
-    );
-    if (widget.totalCorrect > 3) {
-      _confettiController.play();
-    }
-  }
-
-  @override
-  void dispose() {
-    _confettiController.dispose();
-    super.dispose();
-  }
-
-  String _getRankTitle() {
-    final score = widget.finalScore;
-    if (score >= 3000) return '🧠 Mental Math God';
-    if (score >= 2200) return '⚡ Speed Demon';
-    if (score >= 1500) return '🔥 Math Ninja';
-    if (score >= 900) return '✨ Quick Thinker';
-    if (score >= 400) return '🎯 Sharp Mind';
-    return '🌱 Solid Effort';
-  }
-
-  Widget _buildStatCard({
-    required String title,
-    required String value,
-    required IconData icon,
-    required Color color,
-  }) {
+  Widget _buildStatBox({required String label, required String value}) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       decoration: BoxDecoration(
-        color: const Color(0xFF181724),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withValues(alpha: 0.25), width: 1.2),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Row(
-            children: [
-              Icon(icon, size: 16, color: color),
-              const SizedBox(width: 6),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white60,
-                ),
-              ),
-            ],
+      child: _buildPlainStat(label: label, value: value),
+    );
+  }
+
+  Widget _buildPlainStat({required String label, required String value}) {
+    return Column(
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontFamily: 'GoogleSans',
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: Colors.white54,
+            letterSpacing: 1.2,
           ),
-          const SizedBox(height: 6),
-          Text(
-            value,
-            style: const TextStyle(
-              fontFamily: 'ClashDisplay',
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-            ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          value,
+          style: const TextStyle(
+            fontFamily: 'GoogleSans',
+            fontSize: 22,
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final accuracy = widget.totalAnswered > 0
-        ? ((widget.totalCorrect / widget.totalAnswered) * 100).round()
-        : 0;
-    final avgSpeed = widget.totalAnswered > 0
-        ? (widget.elapsedSeconds / widget.totalAnswered).toStringAsFixed(1)
+    final avgSpeed = totalAnswered > 0
+        ? (elapsedSeconds / totalAnswered).toStringAsFixed(1)
         : '0.0';
 
-    return Stack(
+    return Column(
       children: [
-        // Confetti emitter
-        Align(
-          alignment: Alignment.topCenter,
-          child: ConfettiWidget(
-            confettiController: _confettiController,
-            blastDirection: pi / 2,
-            maxBlastForce: 6,
-            minBlastForce: 2,
-            emissionFrequency: 0.05,
-            numberOfParticles: 25,
-            gravity: 0.15,
-            colors: const [
-              Color(0xFF8C38E5),
-              Color(0xFFB388FF),
-              Color(0xFF34C759),
-              Color(0xFFF5C518),
-              Color(0xFFFF9500),
-              Color(0xFF00E5FF),
-            ],
-          ),
-        ),
-
-        // Main results content
-        Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Top Tag
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF8C38E5).withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: const Color(0xFFB388FF).withValues(alpha: 0.4),
-                    ),
-                  ),
-                  child: const Text(
-                    'TIME’S UP!',
-                    style: TextStyle(
-                      fontFamily: 'ClashDisplay',
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFFB388FF),
-                      letterSpacing: 2,
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 14),
-
-                // Rank Title
-                Text(
-                  _getRankTitle(),
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontFamily: 'ClashDisplay',
-                    fontSize: 26,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
-
-                const SizedBox(height: 24),
-
-                // Final Score Big Display
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 24),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [Color(0xFF261D3B), Color(0xFF161426)],
-                    ),
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
-                      color: const Color(0xFF8C38E5).withValues(alpha: 0.4),
-                      width: 1.5,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF8C38E5).withValues(alpha: 0.2),
-                        blurRadius: 20,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      const Text(
-                        'FINAL SCORE',
+        Expanded(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Center heading
+                  const Text(
+                        'TIME’S UP',
+                        textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFFA8C4FF),
-                          letterSpacing: 1.5,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${widget.finalScore}',
-                        style: const TextStyle(
-                          fontFamily: 'ClashDisplay',
-                          fontSize: 56,
+                          fontFamily: 'GoogleSans',
+                          fontSize: 32,
                           fontWeight: FontWeight.w700,
                           color: Colors.white,
                         ),
+                      )
+                      .animate()
+                      .fadeIn(duration: 700.ms)
+                      .moveY(
+                        begin: 14,
+                        end: 0,
+                        duration: 700.ms,
+                        curve: Curves.easeOut,
                       ),
-                    ],
-                  ),
-                ),
 
-                const SizedBox(height: 20),
+                  const SizedBox(height: 10),
 
-                // Stats Grid
-                GridView.count(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  childAspectRatio: 1.8,
-                  children: [
-                    _buildStatCard(
-                      title: 'Correct / Total',
-                      value: '${widget.totalCorrect} / ${widget.totalAnswered}',
-                      icon: Icons.check_circle_outline_rounded,
-                      color: const Color(0xFF34C759),
-                    ),
-                    _buildStatCard(
-                      title: 'Accuracy',
-                      value: '$accuracy%',
-                      icon: Icons.pie_chart_outline_rounded,
-                      color: const Color(0xFF00E5FF),
-                    ),
-                    _buildStatCard(
-                      title: 'Best Streak',
-                      value: '${widget.highestStreak} 🔥',
-                      icon: Icons.local_fire_department_rounded,
-                      color: const Color(0xFFFF9500),
-                    ),
-                    _buildStatCard(
-                      title: 'Avg Speed',
-                      value: '${avgSpeed}s / Q',
-                      icon: Icons.speed_rounded,
-                      color: const Color(0xFFB388FF),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 32),
-
-                // Play Again Button
-                SizedBox(
-                  width: double.infinity,
-                  height: 56,
-                  child: ElevatedButton(
-                    onPressed: widget.onPlayAgain,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF8C38E5),
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      elevation: 4,
-                      shadowColor: const Color(
-                        0xFF8C38E5,
-                      ).withValues(alpha: 0.5),
-                    ),
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.replay_rounded, size: 22),
-                        SizedBox(width: 8),
-                        Text(
-                          'PLAY AGAIN',
-                          style: TextStyle(
-                            fontFamily: 'ClashDisplay',
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 1.2,
-                          ),
+                  // Sub heading
+                  const Text(
+                        'Go back to your chair, you little procrastinator!',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontFamily: 'GoogleSans',
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white60,
+                          height: 1.4,
                         ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 12),
-
-                // Exit button
-                SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: TextButton(
-                    onPressed: widget.onExit,
-                    style: TextButton.styleFrom(
-                      foregroundColor: Colors.white60,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                      )
+                      .animate()
+                      .fadeIn(duration: 700.ms, delay: 200.ms)
+                      .moveY(
+                        begin: 14,
+                        end: 0,
+                        duration: 700.ms,
+                        delay: 200.ms,
+                        curve: Curves.easeOut,
                       ),
-                    ),
-                    child: const Text(
-                      'Return to Dev Menu',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
+
+                  const SizedBox(height: 48),
+
+                  // Questions attempted + avg speed — separate boxes,
+                  // no fill color, just a light border
+                  Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _buildStatBox(
+                            label: 'ATTEMPTED',
+                            value: '$totalAnswered',
+                          ),
+                          const SizedBox(width: 32),
+                          _buildStatBox(
+                            label: 'AVG SPEED',
+                            value: '${avgSpeed}s / Q',
+                          ),
+                        ],
+                      )
+                      .animate()
+                      .fadeIn(duration: 700.ms, delay: 550.ms)
+                      .moveY(
+                        begin: 14,
+                        end: 0,
+                        duration: 700.ms,
+                        delay: 550.ms,
+                        curve: Curves.easeOut,
                       ),
-                    ),
-                  ),
-                ),
-              ],
+
+                  const SizedBox(height: 28),
+
+                  // Final Score — plain, no box
+                  Column(
+                        children: [
+                          const Text(
+                            'FINAL SCORE',
+                            style: TextStyle(
+                              fontFamily: 'GoogleSans',
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white54,
+                              letterSpacing: 1.5,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '$finalScore',
+                            style: const TextStyle(
+                              fontFamily: 'GoogleSans',
+                              fontSize: 72,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      )
+                      .animate()
+                      .fadeIn(duration: 700.ms, delay: 850.ms)
+                      .moveY(
+                        begin: 14,
+                        end: 0,
+                        duration: 700.ms,
+                        delay: 850.ms,
+                        curve: Curves.easeOut,
+                      ),
+                ],
+              ),
             ),
+          ),
+        ),
+
+        // Bottom-anchored actions
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+          child: Column(
+            children: [
+              // Play More Button — shared app-wide 2.5D chunky button,
+              // recolored for this page only (black body, old body color
+              // as the shadow) — ChunkyButton itself is untouched.
+              ChunkyButton(
+                label: 'PLAY MORE',
+                onTap: onPlayAgain,
+                color: Colors.black,
+                border: Border.all(color: AppTheme.accentPurple, width: 1),
+                shadow: const [
+                  BoxShadow(
+                    color: AppTheme.accentPurple,
+                    blurRadius: 0,
+                    offset: Offset(0, 4),
+                  ),
+                ],
+                height: 56,
+              ),
+
+              const SizedBox(height: 12),
+
+              // Exit button
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: TextButton(
+                  onPressed: onExit,
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.white60,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: const Text(
+                    'Return to Dashboard',
+                    style: TextStyle(
+                      fontFamily: 'GoogleSans',
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ],

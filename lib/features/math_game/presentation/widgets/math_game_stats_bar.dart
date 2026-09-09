@@ -1,8 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:Skolar/shared/components/framed_avatar.dart';
+import 'package:Skolar/shared/providers/global_providers.dart';
 
-class MathGameStatsBar extends StatelessWidget {
+const Color _kBadgeBg = Color(0xFF1C1C1E);
+const Color _kPillBg = Color(0xFF232326);
+const Color _kTextSecondary = Colors.white60;
+
+/// Top-of-screen "VS" style header: the current player's badge on the left,
+/// their personal-best score badge on the right, and a centered countdown
+/// pill beneath — a minimal, colorless restyle matching the reference UI.
+class MathGameStatsBar extends ConsumerWidget {
   final int score;
-  final int currentStreak;
+  final int bestScore;
   final double remainingSeconds;
   final double totalSeconds;
   final VoidCallback onExit;
@@ -10,180 +20,193 @@ class MathGameStatsBar extends StatelessWidget {
   const MathGameStatsBar({
     super.key,
     required this.score,
-    required this.currentStreak,
+    required this.bestScore,
     required this.remainingSeconds,
     required this.totalSeconds,
     required this.onExit,
   });
 
-  Color _getTimerColor() {
-    if (remainingSeconds > 20) {
-      return const Color(0xFF34C759); // Green
-    } else if (remainingSeconds > 10) {
-      return const Color(0xFFFF9500); // Amber
-    } else {
-      return const Color(0xFFFF3B30); // Crimson Red
-    }
-  }
-
   @override
-  Widget build(BuildContext context) {
-    final progress = (remainingSeconds / totalSeconds).clamp(0.0, 1.0);
-    final timerColor = _getTimerColor();
-    final isWarning = remainingSeconds <= 10 && remainingSeconds > 0;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(userProvider);
 
-    return Container(
+    return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Exit button
               IconButton(
                 onPressed: onExit,
-                icon: const Icon(Icons.close_rounded, color: Colors.white70),
+                icon: const Icon(Icons.close_rounded, color: Colors.white60),
                 tooltip: 'Exit Game',
-                style: IconButton.styleFrom(
-                  backgroundColor: Colors.white.withValues(alpha: 0.08),
-                  padding: const EdgeInsets.all(8),
-                ),
+                iconSize: 20,
+                padding: const EdgeInsets.all(6),
+                constraints: const BoxConstraints(),
               ),
-              const SizedBox(width: 12),
-
-              // Score badge
               Expanded(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF161522),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.08),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.stars_rounded,
-                        color: Color(0xFFF5C518),
-                        size: 20,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        '$score',
-                        style: const TextStyle(
-                          fontFamily: 'ClashDisplay',
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
+                child: _PlayerBadge(
+                  name: user.name.isNotEmpty ? user.name : 'You',
+                  score: score,
+                  alignment: CrossAxisAlignment.start,
+                  avatar:
+                      (user.avatarData != null &&
+                          user.avatarData!.trim().isNotEmpty)
+                      ? FramedAvatar(
+                          size: 40,
+                          backgroundColor: _kBadgeBg,
+                          svgString: user.avatarData!,
+                        )
+                      : _InitialAvatar(
+                          initial: user.name.isNotEmpty
+                              ? user.name[0].toUpperCase()
+                              : 'Y',
                         ),
-                      ),
-                    ],
-                  ),
                 ),
               ),
-
-              const SizedBox(width: 10),
-
-              // Streak badge
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: currentStreak >= 3
-                      ? const Color(0xFFFF9500).withValues(alpha: 0.18)
-                      : const Color(0xFF161522),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: currentStreak >= 3
-                        ? const Color(0xFFFF9500).withValues(alpha: 0.4)
-                        : Colors.white.withValues(alpha: 0.08),
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      currentStreak >= 5
-                          ? '⚡'
-                          : currentStreak >= 3
-                          ? '🔥'
-                          : '✨',
-                      style: const TextStyle(fontSize: 18),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      '$currentStreak',
-                      style: TextStyle(
-                        fontFamily: 'ClashDisplay',
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: currentStreak >= 3
-                            ? const Color(0xFFFFB340)
-                            : Colors.white70,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(width: 10),
-
-              // Timer Digital Display
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: isWarning
-                      ? const Color(0xFFFF3B30).withValues(alpha: 0.18)
-                      : const Color(0xFF161522),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: isWarning
-                        ? const Color(0xFFFF3B30).withValues(alpha: 0.5)
-                        : Colors.white.withValues(alpha: 0.08),
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.timer_outlined, size: 18, color: timerColor),
-                    const SizedBox(width: 6),
-                    Text(
-                      '${remainingSeconds.ceil()}s',
-                      style: TextStyle(
-                        fontFamily: 'ClashDisplay',
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: timerColor,
-                      ),
-                    ),
-                  ],
+              Expanded(
+                child: _PlayerBadge(
+                  name: 'BEST',
+                  score: bestScore,
+                  alignment: CrossAxisAlignment.end,
+                  avatar: const _IconAvatar(icon: Icons.emoji_events_outlined),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
+          _TimerPill(remainingSeconds: remainingSeconds),
+        ],
+      ),
+    );
+  }
+}
 
-          // Animated linear progress gauge
-          ClipRRect(
-            borderRadius: BorderRadius.circular(6),
-            child: SizedBox(
-              height: 5,
-              child: LinearProgressIndicator(
-                value: progress,
-                backgroundColor: Colors.white.withValues(alpha: 0.1),
-                valueColor: AlwaysStoppedAnimation<Color>(timerColor),
-              ),
+class _PlayerBadge extends StatelessWidget {
+  final String name;
+  final int score;
+  final Widget avatar;
+  final CrossAxisAlignment alignment;
+
+  const _PlayerBadge({
+    required this.name,
+    required this.score,
+    required this.avatar,
+    required this.alignment,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: alignment,
+      children: [
+        Text(
+          name,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            fontFamily: 'GoogleSans',
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+            letterSpacing: 0.5,
+          ),
+        ),
+        const SizedBox(height: 6),
+        avatar,
+        const SizedBox(height: 6),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          decoration: BoxDecoration(
+            color: _kPillBg,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            '$score',
+            style: const TextStyle(
+              fontFamily: 'GoogleSans',
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _InitialAvatar extends StatelessWidget {
+  final String initial;
+  const _InitialAvatar({required this.initial});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 40,
+      height: 40,
+      alignment: Alignment.center,
+      decoration: const BoxDecoration(color: _kBadgeBg, shape: BoxShape.circle),
+      child: Text(
+        initial,
+        style: const TextStyle(
+          fontFamily: 'GoogleSans',
+          fontSize: 16,
+          fontWeight: FontWeight.w700,
+          color: Colors.white,
+        ),
+      ),
+    );
+  }
+}
+
+class _IconAvatar extends StatelessWidget {
+  final IconData icon;
+  const _IconAvatar({required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 40,
+      height: 40,
+      alignment: Alignment.center,
+      decoration: const BoxDecoration(color: _kBadgeBg, shape: BoxShape.circle),
+      child: Icon(icon, size: 18, color: Colors.white70),
+    );
+  }
+}
+
+class _TimerPill extends StatelessWidget {
+  final double remainingSeconds;
+  const _TimerPill({required this.remainingSeconds});
+
+  @override
+  Widget build(BuildContext context) {
+    final totalSecs = remainingSeconds.ceil().clamp(0, 5999);
+    final minutes = totalSecs ~/ 60;
+    final secs = totalSecs % 60;
+    final label = '$minutes:${secs.toString().padLeft(2, '0')}';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      decoration: BoxDecoration(
+        color: _kPillBg,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.bolt_rounded, size: 16, color: _kTextSecondary),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: const TextStyle(
+              fontFamily: 'GoogleSans',
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
             ),
           ),
         ],
