@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import traceback
 
-from nova.api.routers import chat, facts, health, reasoning
+from nova.api.routers import chat, facts, health, proposals, reasoning
 
 logging.basicConfig(level=logging.WARNING)
 
@@ -34,3 +34,4 @@ app.include_router(health.router)
 app.include_router(chat.router)
 app.include_router(facts.router)
 app.include_router(reasoning.router)
+app.include_router(proposals.router)

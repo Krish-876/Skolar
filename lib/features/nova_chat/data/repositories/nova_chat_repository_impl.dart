@@ -1,6 +1,7 @@
 import 'package:uuid/uuid.dart';
 import 'package:Skolar/features/nova_chat/data/datasources/nova_chat_remote_datasource.dart';
 import 'package:Skolar/features/nova_chat/domain/entities/chat_message_entity.dart';
+import 'package:Skolar/features/nova_chat/domain/entities/proposal_entity.dart';
 import 'package:Skolar/features/nova_chat/domain/entities/study_plan_entity.dart';
 import 'package:Skolar/features/nova_chat/domain/repositories/i_nova_chat_repository.dart';
 
@@ -52,5 +53,61 @@ class NovaChatRepositoryImpl implements INovaChatRepository {
   @override
   Future<bool> checkBackendHealth() async {
     return _remoteDatasource.checkHealth();
+  }
+
+  @override
+  Future<List<PendingProposalEntity>> getPendingProposals({
+    required String userId,
+  }) async {
+    final dtos = await _remoteDatasource.getPendingProposals(userId: userId);
+    return dtos.map((d) => d.toPendingEntity()).toList();
+  }
+
+  @override
+  Future<ProposalResolutionEntity> confirmProposal({
+    required String userId,
+    required String proposalId,
+  }) async {
+    final dto = await _remoteDatasource.confirmProposal(
+      userId: userId,
+      proposalId: proposalId,
+    );
+    return dto.toEntity();
+  }
+
+  @override
+  Future<ProposalResolutionEntity> rejectProposal({
+    required String userId,
+    required String proposalId,
+  }) async {
+    final dto = await _remoteDatasource.rejectProposal(
+      userId: userId,
+      proposalId: proposalId,
+    );
+    return dto.toEntity();
+  }
+
+  @override
+  Future<List<ProposalResolutionEntity>> confirmProposalTurn({
+    required String userId,
+    required String turnId,
+  }) async {
+    final dtos = await _remoteDatasource.confirmProposalTurn(
+      userId: userId,
+      turnId: turnId,
+    );
+    return dtos.map((d) => d.toEntity()).toList();
+  }
+
+  @override
+  Future<List<ProposalResolutionEntity>> rejectProposalTurn({
+    required String userId,
+    required String turnId,
+  }) async {
+    final dtos = await _remoteDatasource.rejectProposalTurn(
+      userId: userId,
+      turnId: turnId,
+    );
+    return dtos.map((d) => d.toEntity()).toList();
   }
 }

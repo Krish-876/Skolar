@@ -2,6 +2,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
+from nova.schemas.proposals import ProposalSummary
+
 TriggerType = Literal["full_pass", "minor_trigger_rerank"]
 NovaResponseType = Literal["chat", "quiz", "plan", "flashcard", "practice_problem"]
 
@@ -73,6 +75,20 @@ class ChatResponse(BaseModel):
     suggestions: list[str] = Field(
         default_factory=list,
         description="2 to 4 contextual next-step questions to display in follow-up chips.",
+    )
+    turn_id: str | None = Field(
+        default=None,
+        description=(
+            "Set only when this turn proposed one or more facts. Groups those "
+            "proposals for a single batched confirm/reject (spec §5)."
+        ),
+    )
+    pending_proposals: list[ProposalSummary] = Field(
+        default_factory=list,
+        description=(
+            "Facts this turn wants to remember (standing/situation flag, history, "
+            "career interest) - inert until the student confirms via /proposals."
+        ),
     )
 
 

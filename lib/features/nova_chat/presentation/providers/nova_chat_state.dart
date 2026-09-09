@@ -1,5 +1,6 @@
 import 'package:Skolar/features/auth/presentation/widgets/mascot_state.dart';
 import 'package:Skolar/features/nova_chat/domain/entities/chat_message_entity.dart';
+import 'package:Skolar/features/nova_chat/domain/entities/proposal_entity.dart';
 import 'package:Skolar/features/nova_chat/domain/entities/study_plan_entity.dart';
 
 class NovaChatState {
@@ -10,6 +11,9 @@ class NovaChatState {
   final String? errorMessage;
   final List<String> suggestions;
   final StudyPlanEntity? latestStudyPlan;
+  // Keyed by ChatMessageEntity.proposalTurnId - tracks each proposed turn's
+  // confirm/reject lifecycle independently of the (immutable) message list.
+  final Map<String, ProposalTurnStatus> proposalTurnStatus;
 
   const NovaChatState({
     this.messages = const [],
@@ -19,7 +23,11 @@ class NovaChatState {
     this.errorMessage,
     this.suggestions = const [],
     this.latestStudyPlan,
+    this.proposalTurnStatus = const {},
   });
+
+  ProposalTurnStatus statusForTurn(String turnId) =>
+      proposalTurnStatus[turnId] ?? ProposalTurnStatus.pending;
 
   NovaChatState copyWith({
     List<ChatMessageEntity>? messages,
@@ -29,6 +37,7 @@ class NovaChatState {
     String? errorMessage,
     List<String>? suggestions,
     StudyPlanEntity? latestStudyPlan,
+    Map<String, ProposalTurnStatus>? proposalTurnStatus,
   }) {
     return NovaChatState(
       messages: messages ?? this.messages,
@@ -38,6 +47,7 @@ class NovaChatState {
       errorMessage: errorMessage,
       suggestions: suggestions ?? this.suggestions,
       latestStudyPlan: latestStudyPlan ?? this.latestStudyPlan,
+      proposalTurnStatus: proposalTurnStatus ?? this.proposalTurnStatus,
     );
   }
 }

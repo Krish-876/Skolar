@@ -1,3 +1,5 @@
+import uuid
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
@@ -5,6 +7,7 @@ from nova.api.deps import get_session, get_supabase_and_groq
 from nova.schemas.api import ChatRequest, ChatResponse
 from nova.schemas.chat import ChatTurn
 from nova.services.chat_service import GROQ_MODEL, ask_nova, generate_initial_suggestions
+from nova.services.proposals_service import create_proposals
 
 router = APIRouter(tags=["chat"])
 
@@ -48,19 +51,29 @@ def chat(
     req: ChatRequest,
     clients: tuple = Depends(get_supabase_and_groq),
 ):
-    _supabase, groq, groq_backup = clients
+    supabase, groq, groq_backup = clients
     session = get_session(user_id, clients)
 
     try:
         snapshot, _patch = session.facts_state.get()
-        response = ask_nova(
+        snapshot_dict = snapshot.model_dump()
+        parsed = ask_nova(
             groq,
-            snapshot.model_dump(),
+            snapshot_dict,
             req.question,
             session.history,
             groq_backup,
             GROQ_MODEL,
         )
+        response = parsed.response
+
+        if parsed.raw_proposed_facts:
+            turn_id = str(uuid.uuid4())
+            proposals = create_proposals(
+                supabase, user_id, turn_id, parsed.raw_proposed_facts, snapshot_dict
+            )
+            response.turn_id = turn_id
+            response.pending_proposals = proposals
     except Exception as e:
         session.facts_state.rollback()
         print(f"🔴 [Chat Router Error]: {e}")

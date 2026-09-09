@@ -1,3 +1,4 @@
+import 'package:Skolar/features/nova_chat/data/models/proposal_dto.dart';
 import 'package:Skolar/features/nova_chat/data/models/study_plan_dto.dart';
 import 'package:Skolar/features/nova_chat/domain/entities/chat_message_entity.dart';
 
@@ -6,12 +7,16 @@ class NovaChatResponseDto {
   final String message;
   final Map<String, dynamic>? data;
   final List<String> suggestions;
+  final String? turnId;
+  final List<ProposalSummaryDto> pendingProposals;
 
   const NovaChatResponseDto({
     required this.type,
     required this.message,
     this.data,
     this.suggestions = const [],
+    this.turnId,
+    this.pendingProposals = const [],
   });
 
   factory NovaChatResponseDto.fromJson(Map<String, dynamic> json) {
@@ -22,12 +27,21 @@ class NovaChatResponseDto {
     final data = json['data'] as Map<String, dynamic>?;
     final rawSuggestions = json['suggestions'] as List<dynamic>? ?? [];
     final suggestions = rawSuggestions.map((s) => s.toString()).toList();
+    final rawProposals = json['pending_proposals'] as List<dynamic>? ?? [];
+    final pendingProposals = rawProposals
+        .map(
+          (p) =>
+              ProposalSummaryDto.fromJson(Map<String, dynamic>.from(p as Map)),
+        )
+        .toList();
 
     return NovaChatResponseDto(
       type: type,
       message: message,
       data: data,
       suggestions: suggestions,
+      turnId: json['turn_id'] as String?,
+      pendingProposals: pendingProposals,
     );
   }
 
@@ -108,6 +122,8 @@ class NovaChatResponseDto {
       responseType: responseType,
       structuredData: structuredData,
       suggestions: suggestions,
+      proposalTurnId: turnId,
+      pendingProposals: pendingProposals.map((p) => p.toEntity()).toList(),
     );
   }
 }
