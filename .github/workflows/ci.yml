@@ -184,11 +184,12 @@ jobs:
         with:
           python-version: '3.14'
           cache: 'pip'
-          cache-dependency-path: 'backend/requirements*.txt'
+          cache-dependency-path: |
+            backend/requirements-lint.txt
+            backend/requirements-dev.txt
+            backend/nova/requirements.txt
       - name: Install dependencies
-        run: |
-          pip install -r backend/requirements.txt
-          pip install -r backend/requirements-dev.txt
+        run: pip install -r backend/requirements-lint.txt
       - name: Lint
         run: ruff check backend/
       - name: Security lint
