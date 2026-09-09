@@ -95,7 +95,7 @@ def _fake_groq_raising() -> MagicMock:
     return groq
 
 
-# ── confident matches ───────────────────────────────────────────────────────
+# --- confident matches ------------------------------------------------------
 
 
 def test_match_subject_resolves_a_typo():
@@ -125,7 +125,7 @@ def test_match_subject_resolves_an_abbreviation():
     assert result.source == "subject"
 
 
-# ── no confident match ──────────────────────────────────────────────────────
+# --- no confident match -----------------------------------------------------
 
 
 def test_match_subject_returns_no_candidates_when_genuinely_unrelated():

@@ -1,17 +1,17 @@
 -- ============================================================
--- AI-assisted subject matching — ambiguous/no-match log.
+-- AI-assisted subject matching - ambiguous/no-match log.
 --
 -- subject_matcher.py never guesses and never writes user_subjects/
 -- custom_subjects itself when it can't find a confident match (see
 -- SUBJECT_MATCH_CONFIDENCE_THRESHOLD). Every time it returns a
 -- disambiguation candidate list, or comes back with nothing close at all,
--- the attempt is logged here — queryable evidence of which subject names
+-- the attempt is logged here - queryable evidence of which subject names
 -- students are actually typing that the canonical `subjects` catalog is
 -- missing, so it can be reviewed and backfilled over time.
 --
 -- resolved_subject_id/resolved_custom_subject_id are filled in later, once
 -- the student explicitly confirms a candidate or creates a new custom
--- subject (see subject_enrollment.resolve_match_log) — NULL until then.
+-- subject (see subject_enrollment.resolve_match_log) - NULL until then.
 -- ============================================================
 
 CREATE TABLE public.subject_match_log (
@@ -50,7 +50,7 @@ CREATE INDEX idx_subject_match_log_user
 
 ALTER TABLE public.subject_match_log ENABLE ROW LEVEL SECURITY;
 
--- Read-only for the owner, no direct mutation for `authenticated` — same
+-- Read-only for the owner, no direct mutation for `authenticated` - same
 -- shape as nova_unconfirmed_proposals. The real write path (backend/nova)
 -- always uses the service-role key, which bypasses RLS regardless; this
 -- policy only governs what happens if the table is ever queried directly

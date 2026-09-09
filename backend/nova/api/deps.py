@@ -26,12 +26,19 @@ def get_session(user_id: str, clients: tuple) -> UserSession:
 # run/deployed services (see NOVA.md), so nova can't assume backend/app is
 # importable at runtime. Reuses get_clients() for the Supabase client instead
 # of constructing a second one, matching the rest of this module.
-security = HTTPBearer()
+security = HTTPBearer(auto_error=False)
 
 
-def get_current_user_id(credentials: HTTPAuthorizationCredentials = Depends(security)) -> str:
+def get_current_user_id(
+    credentials: HTTPAuthorizationCredentials | None = Depends(security),
+) -> str:
     """Reads the Authorization header, verifies it with Supabase, and
     returns the authenticated user's id, or raises 401."""
+    if credentials is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required.",
+        )
     supabase, _groq, _groq_backup = get_clients()
     token = credentials.credentials
     try:
