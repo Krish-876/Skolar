@@ -1,5 +1,6 @@
 import json
 import logging
+from dataclasses import dataclass, field
 from typing import cast
 
 from groq import Groq
@@ -8,6 +9,7 @@ from groq.types.chat import ChatCompletionMessageParam
 from nova.prompts.nova_system_prompt import NOVA_SYSTEM_PROMPT
 from nova.schemas.api import ChatResponse
 from nova.schemas.chat import ChatTurn
+from nova.schemas.proposals import RawProposedFact
 
 logger = logging.getLogger(__name__)
 
@@ -80,6 +82,31 @@ Type & Data Schemas:
 Suggestions Phrasing Rules:
 - Every string in the "suggestions" array MUST be phrased as the student's next prompt/command to Nova (e.g. "Give me more challenging questions on this", "Explain step 2 in detail", "Show a practice problem on this", "Quiz me on this chapter").
 - NEVER phrase suggestions as questions from Nova to the student (e.g. do NOT write "Want more questions?" or "Would you like a quiz?").
+
+Remembering things about the student:
+If, and only if, the student states something worth remembering going forward -
+a durable instruction ("always buffer DBMS practicals"), temporary context
+("I'm sick this week", "falling behind in Networks"), something that's worked
+for them before ("cramming the night before actually works for me"), or a new
+career/industry interest they want tracked - add a top-level "proposed_facts"
+array. Otherwise omit this key entirely, or make it an empty array.
+
+Do NOT propose a fact for something the student says is a one-off for today
+only ("I just don't want to do DSA today") - that is not a pattern, leave it
+out entirely, do not put it in proposed_facts.
+
+Each entry:
+{
+  "kind": "standing_flag" | "situation_flag" | "nova_history" | "career_unit",
+  "text": "the instruction/situation/history statement, or the career unit's name",
+  "description": "short description - career_unit only, otherwise omit",
+  "target_subject_name": "subject this attaches to, if any, else omit",
+  "target_career_unit_name": "career unit this attaches to, if any, else omit (not used when kind is career_unit)"
+}
+
+These are proposals only - never announce them as already saved. Phrase your
+"message" as asking the student to confirm (e.g. "Want me to remember that?"),
+since nothing is written until they explicitly confirm.
 """
 
 
@@ -113,7 +140,28 @@ def _facts_message(full_snapshot: dict) -> dict:
     }
 
 
-def _parse_response_to_chat_response(raw_text: str) -> ChatResponse:
+def _extract_proposed_facts(parsed: dict) -> list[RawProposedFact]:
+    raw = parsed.get("proposed_facts")
+    if not isinstance(raw, list):
+        return []
+    facts: list[RawProposedFact] = []
+    for entry in raw:
+        if not isinstance(entry, dict):
+            continue
+        try:
+            facts.append(RawProposedFact.model_validate(entry))
+        except Exception as e:
+            logger.warning(f"Dropping malformed proposed_facts entry: {e}")
+    return facts
+
+
+@dataclass
+class ParsedChatResponse:
+    response: ChatResponse
+    raw_proposed_facts: list[RawProposedFact] = field(default_factory=list)
+
+
+def _parse_response_to_chat_response(raw_text: str) -> ParsedChatResponse:
     """Safely parse LLM JSON into a structured ChatResponse, with fallback to type='chat'."""
     trimmed = raw_text.strip()
     if trimmed.startswith("```json"):
@@ -156,24 +204,29 @@ def _parse_response_to_chat_response(raw_text: str) -> ChatResponse:
                     "Show a practice problem",
                 ]
 
-            return ChatResponse(
-                type=resp_type,
-                message=message,
-                data=data,
-                suggestions=clean_suggestions,
+            return ParsedChatResponse(
+                response=ChatResponse(
+                    type=resp_type,
+                    message=message,
+                    data=data,
+                    suggestions=clean_suggestions,
+                ),
+                raw_proposed_facts=_extract_proposed_facts(parsed),
             )
     except Exception as e:
         logger.warning(f"Failed to parse structured JSON response: {e}. Falling back to chat.")
 
-    return ChatResponse(
-        type="chat",
-        message=raw_text,
-        data=None,
-        suggestions=[
-            "Explain this in more detail",
-            "Give me a quick quiz on this topic",
-            "Show a practice problem",
-        ],
+    return ParsedChatResponse(
+        response=ChatResponse(
+            type="chat",
+            message=raw_text,
+            data=None,
+            suggestions=[
+                "Explain this in more detail",
+                "Give me a quick quiz on this topic",
+                "Show a practice problem",
+            ],
+        )
     )
 
 
@@ -243,7 +296,7 @@ def ask_nova(
     groq_backup: Groq | None = None,
     model: str = GROQ_MODEL,
     cerebras=None,
-) -> ChatResponse:
+) -> ParsedChatResponse:
     messages = [
         {"role": "system", "content": NOVA_SYSTEM_PROMPT + "\n\n" + STRUCTURED_FORMAT_INSTRUCTIONS},
         _facts_message(full_snapshot),
