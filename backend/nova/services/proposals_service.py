@@ -229,20 +229,24 @@ def _confirm_career_unit(supabase: Client, user_id: str, proposal: dict[str, Any
     creating a duplicate."""
     name = proposal["payload"]["name"]
     description = proposal["payload"].get("description")
+    needle = name.strip().lower()
 
-    existing = cast(
+    # Exact case-insensitive match done in Python, not via .ilike(): ILIKE
+    # treats % and _ in `name` as SQL wildcards, which would cross-match
+    # unrelated rows (e.g. "100% Placement Prep" wildcard-matching "100X
+    # Placement Prep"). Mirrors _resolve_career_unit_id's comparison.
+    all_rows = cast(
         list[dict[str, Any]],
         (
             supabase.table("career_units")
-            .select("id, paused_at, confirmed_at")
+            .select("id, name, paused_at, confirmed_at")
             .eq("user_id", user_id)
-            .ilike("name", name)
             .order("created_at", desc=True)
-            .limit(1)
             .execute()
             .data
         ),
     )
+    existing = [row for row in all_rows if (row.get("name") or "").strip().lower() == needle]
 
     now = datetime.now(timezone.utc).isoformat()
 
