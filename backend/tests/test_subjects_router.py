@@ -22,7 +22,7 @@ if str(BACKEND_DIR) not in sys.path:
 
 import nova.api.main as nova_app  # noqa: E402
 import nova.api.routers.subjects as subjects_router  # noqa: E402
-from nova.api.deps import get_supabase_and_groq  # noqa: E402
+from nova.api.deps import get_current_user_id, get_supabase_and_groq  # noqa: E402
 from nova.schemas.subject_match import MatchCandidateOut, MatchResult, UserSubjectOut  # noqa: E402
 
 USER_ID = "user-1"
@@ -31,9 +31,11 @@ USER_ID = "user-1"
 @pytest.fixture
 def client():
     nova_app.app.dependency_overrides[get_supabase_and_groq] = lambda: (MagicMock(), MagicMock(), None)
+    nova_app.app.dependency_overrides[get_current_user_id] = lambda: USER_ID
     with TestClient(nova_app.app) as c:
         yield c
     nova_app.app.dependency_overrides.pop(get_supabase_and_groq, None)
+    nova_app.app.dependency_overrides.pop(get_current_user_id, None)
 
 
 def test_add_subject_auto_matched(client, monkeypatch):
@@ -150,3 +152,21 @@ def test_confirm_subject_rejects_ambiguous_choice(client):
         json={"semester": "sem1", "subject_id": "s1", "custom_subject_id": "c1"},
     )
     assert resp.status_code == 400
+
+
+def test_add_subject_rejects_path_user_id_mismatch(client):
+    """The authenticated user must match the {user_id} path param, or the
+    request is rejected before any matching/service logic runs."""
+    resp = client.post(
+        "/subjects/someone-else/add",
+        json={"query": "OS", "institution_id": "inst-1", "campus_id": "campus-1", "semester": "sem1"},
+    )
+    assert resp.status_code == 403
+
+
+def test_confirm_subject_rejects_path_user_id_mismatch(client):
+    resp = client.post(
+        "/subjects/someone-else/confirm",
+        json={"semester": "sem1", "subject_id": "s1"},
+    )
+    assert resp.status_code == 403

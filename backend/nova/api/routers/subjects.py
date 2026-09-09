@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 
-from nova.api.deps import get_supabase_and_groq
+from nova.api.deps import get_current_user_id, get_supabase_and_groq
 from nova.schemas.subject_match import (
     AddSubjectRequest,
     AddSubjectResponse,
@@ -18,7 +18,18 @@ router = APIRouter(tags=["subjects"])
 
 
 @router.post("/subjects/{user_id}/add", response_model=AddSubjectResponse)
-def add_subject(user_id: str, req: AddSubjectRequest, clients: tuple = Depends(get_supabase_and_groq)):
+def add_subject(
+    user_id: str,
+    req: AddSubjectRequest,
+    clients: tuple = Depends(get_supabase_and_groq),
+    authenticated_user_id: str = Depends(get_current_user_id),
+):
+    if authenticated_user_id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot act on another user's subjects.",
+        )
+
     supabase, groq, groq_backup = clients
 
     result = match_subject(
@@ -49,7 +60,18 @@ def add_subject(user_id: str, req: AddSubjectRequest, clients: tuple = Depends(g
 
 
 @router.post("/subjects/{user_id}/confirm", response_model=ConfirmSubjectResponse)
-def confirm_subject(user_id: str, req: ConfirmSubjectRequest, clients: tuple = Depends(get_supabase_and_groq)):
+def confirm_subject(
+    user_id: str,
+    req: ConfirmSubjectRequest,
+    clients: tuple = Depends(get_supabase_and_groq),
+    authenticated_user_id: str = Depends(get_current_user_id),
+):
+    if authenticated_user_id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot act on another user's subjects.",
+        )
+
     supabase, _groq, _groq_backup = clients
 
     chosen = [req.subject_id, req.custom_subject_id, req.new_custom_subject]
