@@ -243,9 +243,19 @@ def _fetch_topics_for_subjects(supabase: Client, user_subjects: list[dict]) -> l
 
     topics = []
     if subject_ids:
-        topics.extend(supabase.table("topics").select("*").in_("subject_id", subject_ids).execute().data)
+        topics.extend(
+            cast(
+                list[dict[str, Any]],
+                supabase.table("topics").select("*").in_("subject_id", subject_ids).execute().data,
+            )
+        )
     if custom_ids:
-        topics.extend(supabase.table("topics").select("*").in_("custom_subject_id", custom_ids).execute().data)
+        topics.extend(
+            cast(
+                list[dict[str, Any]],
+                supabase.table("topics").select("*").in_("custom_subject_id", custom_ids).execute().data,
+            )
+        )
     return topics
 
 
