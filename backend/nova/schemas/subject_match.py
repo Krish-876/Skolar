@@ -60,8 +60,6 @@ class MatchResult(BaseModel):
 
 class AddSubjectRequest(BaseModel):
     query: str = Field(..., description="Raw subject name/text as typed by the student.")
-    institution_id: str
-    campus_id: str | None = None
     semester: str = Field(..., description="Semester label to store on the resulting user_subjects row.")
 
 
@@ -85,7 +83,6 @@ class AddSubjectResponse(BaseModel):
 
 
 class NewCustomSubject(BaseModel):
-    institution_id: str
     course_code: str
     name: str
     credits: int | None = None

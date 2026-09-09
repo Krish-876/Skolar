@@ -20,9 +20,13 @@ CREATE TABLE public.subject_match_log (
   institution_id uuid NOT NULL,
   campus_id uuid,
   query_text text NOT NULL,
-  -- 'no_match'      -> candidates is an empty array, genuinely nothing close.
+  -- 'no_match'       -> candidates is an empty array, genuinely nothing close.
   -- 'disambiguation' -> candidates holds the 1-2 options shown to the student.
-  status text NOT NULL CHECK (status = ANY (ARRAY['no_match'::text, 'disambiguation'::text])),
+  -- 'provider_error' -> the Groq call itself failed (primary and backup, or
+  --                      unparseable/empty content) - never a real model
+  --                      verdict, kept distinct so it doesn't read as a
+  --                      genuine catalog gap.
+  status text NOT NULL CHECK (status = ANY (ARRAY['no_match'::text, 'disambiguation'::text, 'provider_error'::text])),
   candidates jsonb NOT NULL DEFAULT '[]'::jsonb,
   resolved_subject_id uuid REFERENCES public.subjects(id) ON DELETE SET NULL,
   resolved_custom_subject_id uuid REFERENCES public.custom_subjects(id) ON DELETE SET NULL,

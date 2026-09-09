@@ -89,6 +89,12 @@ def _fake_groq(content: dict) -> MagicMock:
     return groq
 
 
+def _fake_groq_raising() -> MagicMock:
+    groq = MagicMock()
+    groq.chat.completions.create.side_effect = RuntimeError("groq is down")
+    return groq
+
+
 # ── confident matches ───────────────────────────────────────────────────────
 
 
@@ -181,6 +187,28 @@ def test_match_subject_ignores_hallucinated_candidate_ids():
     result = matcher_mod.match_subject(groq, supabase, USER_ID, "Ghost", INSTITUTION_ID, CAMPUS_ID)
 
     assert result.candidates == []
+
+
+def test_match_subject_logs_provider_error_when_both_groq_calls_fail():
+    """A Groq outage (primary and backup both raise) must never be logged as
+    'no_match' - that status is reserved for a genuine model verdict, and
+    conflating the two would pollute subject_match_log's catalog-gap
+    signal with provider downtime."""
+    supabase = _FakeSupabase()
+    groq = _fake_groq_raising()
+    groq_backup = _fake_groq_raising()
+
+    result = matcher_mod.match_subject(
+        groq, supabase, USER_ID, "Operating Systems", INSTITUTION_ID, CAMPUS_ID, groq_backup
+    )
+
+    assert result.matched is False
+    assert result.candidates == []
+    assert result.match_log_id is not None
+
+    logged = supabase.table("subject_match_log").inserted
+    assert len(logged) == 1
+    assert logged[0]["status"] == "provider_error"
 
 
 def test_match_subject_with_empty_candidate_pool_logs_no_match_without_calling_model():

@@ -66,6 +66,22 @@ Rules:
 """
 
 
+def get_user_institution_and_campus(supabase: Client, user_id: str) -> tuple[str | None, str | None]:
+    """Institution/campus scoping for match_subject() must come from the
+    student's own profile, never the request body - otherwise a caller could
+    point the candidate pool at an institution/campus that isn't theirs.
+    Same read shape as facts_service.py's own-profile lookups (`users` table,
+    scoped by id) and the equivalent Flutter fetch in global_providers.dart."""
+    rows = cast(
+        list[dict[str, Any]],
+        supabase.table("users").select("institution_id, campus_id").eq("id", user_id).limit(1).execute().data
+        or [],
+    )
+    if not rows:
+        return None, None
+    return rows[0].get("institution_id"), rows[0].get("campus_id")
+
+
 def _get_candidate_pool(
     supabase: Client, institution_id: str, campus_id: str | None
 ) -> dict[str, SubjectCandidate]:
@@ -157,8 +173,8 @@ def _log_match_attempt(
     campus_id: str | None,
     query_text: str,
     candidates: list[MatchCandidateOut],
+    status: str,
 ) -> str:
-    status = "disambiguation" if candidates else "no_match"
     row = cast(
         dict[str, Any],
         supabase.table("subject_match_log")
@@ -195,7 +211,9 @@ def match_subject(
     candidates for the frontend to show a disambiguation prompt."""
     pool = _get_candidate_pool(supabase, institution_id, campus_id)
     if not pool:
-        log_id = _log_match_attempt(supabase, user_id, institution_id, campus_id, raw_text, [])
+        log_id = _log_match_attempt(
+            supabase, user_id, institution_id, campus_id, raw_text, [], status="no_match"
+        )
         return MatchResult(matched=False, candidates=[], match_log_id=log_id)
 
     messages = _build_messages(raw_text, pool)
@@ -215,16 +233,29 @@ def match_subject(
             confidence=llm_result.confidence,
         )
 
-    # No confident match - either the model said so directly, said match=true
-    # but under threshold, or the call failed outright (never guess on a
-    # model outage). Filter candidates to ids that actually exist in the
+    if llm_result is None:
+        # The model never actually gave a verdict here - both the primary
+        # and backup calls failed outright (or returned unparseable/empty
+        # content), never guess on a provider outage. Logged as its own
+        # status, distinct from a genuine match=false, so subject_match_log
+        # stays a reliable signal of real catalog gaps rather than getting
+        # polluted by Groq downtime.
+        log_id = _log_match_attempt(
+            supabase, user_id, institution_id, campus_id, raw_text, [], status="provider_error"
+        )
+        return MatchResult(matched=False, candidates=[], match_log_id=log_id)
+
+    # No confident match - the model said so directly, or said match=true but
+    # under threshold. Filter candidates to ids that actually exist in the
     # pool - the model must not invent one - and cap at the top few.
-    raw_candidates = llm_result.candidates if llm_result is not None else []
     enriched = [
         MatchCandidateOut(id=c.id, name=pool[c.id].name, confidence=c.confidence, source=pool[c.id].source)
-        for c in raw_candidates
+        for c in llm_result.candidates
         if c.id in pool
     ][:MAX_DISAMBIGUATION_CANDIDATES]
 
-    log_id = _log_match_attempt(supabase, user_id, institution_id, campus_id, raw_text, enriched)
+    status = "disambiguation" if enriched else "no_match"
+    log_id = _log_match_attempt(
+        supabase, user_id, institution_id, campus_id, raw_text, enriched, status=status
+    )
     return MatchResult(matched=False, candidates=enriched, match_log_id=log_id)
