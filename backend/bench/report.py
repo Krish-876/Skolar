@@ -51,7 +51,7 @@ from pyq.rag.core.features import Backend  # noqa: E402
 from bench.datasets import extract_text, load_split, sample_id  # noqa: E402
 from bench.run import encode_cached, get_backend  # noqa: E402
 from bench.score import compute_metrics, load_results  # noqa: E402
-from bench.select import select_examples  # noqa: E402
+from bench.selection import select_examples  # noqa: E402
 
 RESULTS_DIR = Path(__file__).resolve().parent / "results"
 RAW_DIR = RESULTS_DIR / "raw"
@@ -357,11 +357,17 @@ def build_run_header(config_runs: list[ConfigRun]) -> dict:
     total_prompt_tokens = sum(r.get("prompt_tokens") or 0 for cr in config_runs for r in cr.rows)
     total_completion_tokens = sum(r.get("completion_tokens") or 0 for cr in config_runs for r in cr.rows)
 
+    rows_used_by_dataset: dict[str, list[int]] = {}
+    for cr in config_runs:
+        rows_used_by_dataset.setdefault(cr.meta["dataset"], []).append(len(cr.rows))
+    dataset_used_test_rows = {ds: min(counts) for ds, counts in rows_used_by_dataset.items()}
+
     return {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "git": _git_info(),
         "package_versions": _package_versions(),
         "datasets": dataset_sizes,
+        "dataset_used_test_rows": dataset_used_test_rows,
         "models": models,
         "reasoning_efforts": reasoning_efforts,
         "grid": grid_axes,
@@ -774,6 +780,10 @@ def render_generated_region(header: dict, health: dict, results: dict, diversity
         f"{header['total_tokens']['completion']} completion"
     )
     parts.append(f"- **Configs in this sweep:** {header['n_configs']}")
+    parts.append("")
+    used_rows = header["dataset_used_test_rows"]
+    datasets_summary = ", ".join(f"{ds} (n={used_rows[ds]})" for ds in header["datasets"].keys())
+    parts.append(f"**Datasets tested:** {len(header['datasets'])} — {datasets_summary}")
     parts.append("")
     parts.append(_md_table(
         ["dataset", "train rows", "test rows"],
