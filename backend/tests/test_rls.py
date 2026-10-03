@@ -27,6 +27,7 @@ USER_TABLES_TO_TEST = [
     "standing_flags",
     "situation_flags",
     "nova_config",
+    "activity_log",
 ]
 
 
@@ -149,6 +150,20 @@ def _seed_test_record(client: Client, table_name: str, user_id: str) -> tuple[st
             "user_id": user_id,
             "key": f"test_key_{test_record_id[:8]}",
             "value": "test_value",
+        }
+        res = client.table(table_name).insert(payload).execute()
+        if res.data and len(res.data) > 0:
+            return res.data[0].get("id", test_record_id), payload
+
+    elif table_name == "activity_log":
+        # Only FK is user_id (already satisfied by the authenticated test
+        # user) -- no parent-row seed chain needed, just the two NOT NULL
+        # columns the generic fallback below doesn't cover.
+        payload = {
+            "id": test_record_id,
+            "user_id": user_id,
+            "completed_on": today_str,
+            "duration_seconds": 1500,
         }
         res = client.table(table_name).insert(payload).execute()
         if res.data and len(res.data) > 0:
