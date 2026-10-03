@@ -1,3 +1,4 @@
+@'
 fastapi==0.140.0
 uvicorn[standard]==0.51.0
 supabase==2.31.0
@@ -19,3 +20,7 @@ python-docx==1.2.0
 pytesseract==0.3.13
 realtime
 pyyaml==6.0.3
+pytest==9.1.1
+pytest-asyncio==1.4.0
+httpx==0.28.1
+'@ | Set-Content -Path "requirements.txt" -Encoding utf8

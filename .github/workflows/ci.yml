@@ -1,4 +1,5 @@
-﻿name: CI
+﻿@'
+name: CI
 on:
   pull_request:
     branches: [master]
@@ -213,6 +214,14 @@ jobs:
           if [ -d "backend/nova" ]; then
             mypy backend/nova --ignore-missing-imports
           fi
+      - name: Run backend tests
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          TEST_STUDENT_A_PASSWORD: ${{ secrets.TEST_STUDENT_A_PASSWORD }}
+          TEST_STUDENT_B_PASSWORD: ${{ secrets.TEST_STUDENT_B_PASSWORD }}
+        run: |
+          pytest backend/tests/
 
   branch-up-to-date:
     runs-on: ubuntu-latest
@@ -229,3 +238,4 @@ jobs:
             echo "Branch is behind master - rebase before pushing (git fetch origin && git rebase origin/master)."
             exit 1
           fi
+'@ | Set-Content -Path "..\.github\workflows\ci.yml" -Encoding utf8
