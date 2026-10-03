@@ -88,6 +88,46 @@ python bench/run.py --dataset cola --setting mmr_few_shot --k 4 --alpha 0.7 \\
 python bench/report.py --results-dir bench/results/raw --out-dir bench/results\
 """
 
+# ── "How these are selected" static copy ─────────────────────────────────────
+# General mechanics only (no per-sweep numbers -- those vary run to run and
+# already live in section 1's "Datasets tested" line and table). Kept in the
+# static half so a hand-added per-sweep breakdown (e.g. a table of exactly
+# which --limit each config used) survives regeneration; this constant is
+# only written once, the same as HOW_TO_RUN.
+
+HOW_SELECTED = """\
+Two different things get "selected" in a bench run: which test rows a config
+is scored on, and which train examples get shown to the model per query.
+
+**1. Which test rows a config runs on.** `bench/run.py` loads the full
+`test.jsonl` for the dataset, sorts it by its id field (`idx` for
+SST2/COLA/RTE, `index` for TREC), and -- if `--limit N` was passed -- keeps
+only the first N rows in that sorted order. This is a deterministic prefix,
+not a random sample. The slice happens *after* the retrieval backend encodes
+the full test split, so one on-disk embedding cache serves every `--limit`
+value for a split. Without `--limit`, the whole test split runs.
+
+**2. Which train examples are shown as in-context examples**
+(`few_shot`/`mmr_few_shot` only -- `zero_shot` shows none). The candidate
+pool is the dataset's `train.jsonl`, pre-capped *once*, not per run, to at
+most 5000 rows by `bench/subsample_data.py`: stratified by label (so class
+proportions are preserved) with a fixed seed (reproducible/auditable). For
+each query:
+- `few_shot` retrieves the top-k most similar train examples by cosine
+  similarity over the configured `--backend` embeddings.
+- `mmr_few_shot` first retrieves a pool of `pool_multiplier * k` candidates
+  the same way, then reranks that pool down to k with Maximal Marginal
+  Relevance, trading off similarity-to-query against similarity-to-already-picked
+  examples via `--alpha`.
+
+Both selection methods are deterministic given the config -- confirmed by
+section 2's `determinism` check -- so re-running the same config reproduces
+the same example sets. Cross-check this sweep's actual per-dataset row
+counts against section 1's "Datasets tested" line, which reports the
+*minimum* rows run across a dataset's configs (a mismatch there usually
+means a stale/partial run or a differing `--limit` between that dataset's
+configs -- worth checking the relevant `.meta.json` sidecars)."""
+
 # ── Interpretation copy ──────────────────────────────────────────────────────
 # Static "what/direction/knob" prose for every metric surfaced in sections 2-4.
 # The per-run number/finding is appended alongside this at render time --
@@ -755,6 +795,8 @@ def render_static_header() -> str:
         "# Bench report\n\n"
         "## How to run\n\n"
         f"```bash\n{HOW_TO_RUN}\n```\n\n"
+        "## How these are selected\n\n"
+        f"{HOW_SELECTED}\n\n"
         f"{render_glossary()}\n"
     )
 

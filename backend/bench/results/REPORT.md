@@ -24,6 +24,58 @@ python bench/run.py --dataset cola --setting mmr_few_shot --k 4 --alpha 0.7 \
 python bench/report.py --results-dir bench/results/raw --out-dir bench/results
 ```
 
+## How these are selected
+
+Two different things get "selected" in a bench run: which test rows a config
+is scored on, and which train examples get shown to the model per query.
+
+**Test rows run in this sweep** (from each config's `.meta.json` and its
+`.jsonl` row count under `bench/results/raw/`):
+
+| dataset | test split size | rows run | how |
+| --- | --- | --- | --- |
+| cola | 1043 | 300 (all 3 configs) | `--limit 300` |
+| rte | 277 | 277 (all 3 configs) | no `--limit` -- full test split |
+| sst2 | 872 | 20 (all 3 configs) | `--limit 20` (the smoke-run limit from "How to run" above) |
+| trec | 500 | 250 for `few_shot`/`zero_shot`; **234** for `mmr_few_shot` | `--limit 250`, but see note |
+
+Note: `trec_mmr_k7_a0.7.jsonl` has only 234 rows on disk even though its
+`.meta.json` claims `n_samples_written: 250` and `partial: false` -- a stale
+or overwritten meta sidecar. Section 1's "Datasets tested" line reports
+trec's n as 234 because it takes the *minimum* row count across that
+dataset's configs, not the `--limit` that was actually passed. Re-run that
+config to get a clean, consistent trec count before leaning on cross-config
+comparisons for it.
+
+**1. Which test rows a config runs on.** `bench/run.py` loads the full
+`test.jsonl` for the dataset, sorts it by its id field (`idx` for
+SST2/COLA/RTE, `index` for TREC), and -- if `--limit N` was passed -- keeps
+only the first N rows in that sorted order. This is a deterministic prefix,
+not a random sample. The slice happens *after* the retrieval backend encodes
+the full test split, so one on-disk embedding cache serves every `--limit`
+value for a split. Without `--limit`, the whole test split runs (as RTE did
+here).
+
+**2. Which train examples are shown as in-context examples**
+(`few_shot`/`mmr_few_shot` only -- `zero_shot` shows none). The candidate
+pool is the dataset's `train.jsonl`, pre-capped *once*, not per run, to at
+most 5000 rows by `bench/subsample_data.py`: stratified by label (so class
+proportions are preserved) with a fixed seed (reproducible/auditable). cola
+and sst2's original train splits exceeded 5000 and were capped down to it;
+rte (2241) and trec (4907) were already under the cap and are untouched. For
+each query:
+- `few_shot` retrieves the top-k most similar train examples by cosine
+  similarity over the configured `--backend` embeddings (sbert in this
+  sweep).
+- `mmr_few_shot` first retrieves a pool of `pool_multiplier * k` candidates
+  the same way, then reranks that pool down to k with Maximal Marginal
+  Relevance, trading off similarity-to-query against similarity-to-already-picked
+  examples via `--alpha` (0.7 here).
+
+Both selection methods are deterministic given the config -- confirmed by
+section 2's `determinism` check below -- so re-running the same config
+reproduces the same example sets.
+
 ## Metric glossary
 
 **grid_completion** -- Measures whether every config in the requested grid produced a complete (non-partial) results file. Good: PASS, i.e. every config finished. A FAIL here means at least one config was cut short (see run.py's `partial` flag) -- usually the Groq daily cap. Knob: re-run the missing config(s), or lower `--limit` so a sweep fits inside the daily request budget.
