@@ -16,7 +16,7 @@ from nova.schemas.chat import ChatTurn
 logging.basicConfig(level=logging.WARNING)
 
 
-def main():
+def main() -> None:
     if len(sys.argv) != 2:
         print("Usage: python nova_agent.py <user_id>")
         sys.exit(1)
@@ -44,7 +44,8 @@ def main():
             continue
         try:
             snapshot, _ = facts_state.get()
-            answer = ask_nova(groq, snapshot.model_dump(), question, history, groq_backup, GROQ_MODEL)
+            parsed = ask_nova(groq, snapshot.model_dump(), question, history, groq_backup, GROQ_MODEL)
+            answer = parsed.response.message
         except Exception as e:
             logging.exception("ask_nova turn failed")
             print(f"\nSomething went wrong there: {e}\n")
