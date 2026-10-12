@@ -1,5 +1,34 @@
 import '../../domain/entities/dashboard_entity.dart';
 
+/// DTO for the `get_activity_daily` RPC response row.
+///
+/// The RPC returns: (day date, sessions int8, counted_focus_seconds int8).
+/// `sessions`  = count of all rows for this day (heatmap).
+/// `counted_focus_seconds` = SUM(duration_seconds) where duration >= threshold.
+class ActivityDailyRowDto {
+  final String day; // ISO yyyy-MM-dd
+  final int sessions;
+  final int countedFocusSeconds;
+
+  const ActivityDailyRowDto({
+    required this.day,
+    required this.sessions,
+    required this.countedFocusSeconds,
+  });
+
+  factory ActivityDailyRowDto.fromJson(Map<String, dynamic> json) =>
+      ActivityDailyRowDto(
+        day: json['day'] as String,
+        sessions: (json['sessions'] as num).toInt(),
+        countedFocusSeconds: (json['counted_focus_seconds'] as num).toInt(),
+      );
+
+  DailyCompletion toEntity() => DailyCompletion(
+    date: DateTime.parse(day),
+    sessionCount: sessions,
+  );
+}
+
 class DailyCompletionDto {
   final String date; // ISO yyyy-MM-dd
   final int tasksCompleted;
@@ -19,20 +48,22 @@ class DailyCompletionDto {
 
   DailyCompletion toEntity() => DailyCompletion(
     date: DateTime.parse(date),
-    tasksCompleted: tasksCompleted,
+    sessionCount: tasksCompleted,
   );
 }
 
 class ProgressStatsDto {
   final int tasksCompletedThisWeek;
   final int tasksPlannedThisWeek;
-  final double cumulativeHoursThisSemester;
+  final int focusSecondsThisSemester;
+  final int focusSecondsThisWeek;
   final List<DailyCompletionDto> dailyCompletions;
 
   const ProgressStatsDto({
     required this.tasksCompletedThisWeek,
     required this.tasksPlannedThisWeek,
-    required this.cumulativeHoursThisSemester,
+    required this.focusSecondsThisSemester,
+    required this.focusSecondsThisWeek,
     required this.dailyCompletions,
   });
 
@@ -40,8 +71,8 @@ class ProgressStatsDto {
       ProgressStatsDto(
         tasksCompletedThisWeek: json['tasksCompletedThisWeek'] as int,
         tasksPlannedThisWeek: json['tasksPlannedThisWeek'] as int,
-        cumulativeHoursThisSemester:
-            (json['cumulativeHoursThisSemester'] as num).toDouble(),
+        focusSecondsThisSemester: json['focusSecondsThisSemester'] as int,
+        focusSecondsThisWeek: json['focusSecondsThisWeek'] as int,
         dailyCompletions: (json['dailyCompletions'] as List)
             .map((e) => DailyCompletionDto.fromJson(e as Map<String, dynamic>))
             .toList(),
@@ -50,14 +81,16 @@ class ProgressStatsDto {
   Map<String, dynamic> toJson() => {
     'tasksCompletedThisWeek': tasksCompletedThisWeek,
     'tasksPlannedThisWeek': tasksPlannedThisWeek,
-    'cumulativeHoursThisSemester': cumulativeHoursThisSemester,
+    'focusSecondsThisSemester': focusSecondsThisSemester,
+    'focusSecondsThisWeek': focusSecondsThisWeek,
     'dailyCompletions': dailyCompletions.map((e) => e.toJson()).toList(),
   };
 
   ProgressStats toEntity() => ProgressStats(
     tasksCompletedThisWeek: tasksCompletedThisWeek,
     tasksPlannedThisWeek: tasksPlannedThisWeek,
-    cumulativeHoursThisSemester: cumulativeHoursThisSemester,
+    focusSecondsThisSemester: focusSecondsThisSemester,
+    focusSecondsThisWeek: focusSecondsThisWeek,
     dailyCompletions: dailyCompletions.map((e) => e.toEntity()).toList(),
   );
 }

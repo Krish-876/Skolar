@@ -1,10 +1,18 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../../../../core/services/activity_log_service.dart';
+import '../../../../core/services/activity_log_service_impl.dart';
 import '../../../../core/utils/usecase.dart';
 import '../../data/datasources/dashboard_datasource.dart';
+import '../../data/datasources/dashboard_supabase_datasource.dart';
 import '../../data/repository_impl/dashboard_repository_impl.dart';
 import '../../domain/entities/dashboard_entity.dart';
 import '../../domain/repositories/dashboard_repository.dart';
 import '../../domain/usecases/dashboard_usecases.dart';
+
+export '../../data/datasources/dashboard_datasource.dart'
+    show DashboardDummyDataSource;
 
 enum StreakViewMode { week, month }
 
@@ -20,8 +28,24 @@ enum DebugTaskSectionState {
   noDataYet,
 }
 
+// ---------------------------------------------------------------------------
+// Activity log service provider
+// ---------------------------------------------------------------------------
+
+/// Exposed so focus_timer_page.dart can call it after a session completes.
+final activityLogServiceProvider = Provider<ActivityLogService>(
+  (ref) => ActivityLogServiceImpl(Supabase.instance.client),
+);
+
+// ---------------------------------------------------------------------------
+// Dashboard data providers
+// ---------------------------------------------------------------------------
+
+/// Switch this to DashboardDummyDataSource() to go back to dummy data.
+/// Kept as a separate Provider so tests can override it with a
+/// DashboardDummyDataSource without touching anything else.
 final _dashboardDataSourceProvider = Provider<DashboardDataSource>(
-  (ref) => DashboardDummyDataSource(),
+  (ref) => DashboardSupabaseDataSource(Supabase.instance.client),
 );
 
 final dashboardRepositoryProvider = Provider<DashboardRepository>(

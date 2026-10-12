@@ -20,4 +20,24 @@ class SemesterUtils {
     final n = now ?? DateTime.now();
     return '${n.year}-S${currentSemesterNumber(n)}';
   }
+
+  /// Returns the inclusive [start, end] date range for the semester that
+  /// contains [now] (or today when omitted).
+  ///
+  /// Even (2): Jan 1 – May 31 of the same year.
+  /// Odd  (1): Jun 1 – Dec 31 of the same year.
+  ///
+  /// This is the canonical semester-range computation. Any code that
+  /// needs to filter Supabase rows by semester should call this rather
+  /// than inlining the month boundaries.
+  static (DateTime start, DateTime end) semesterRange([DateTime? now]) {
+    final n = now ?? DateTime.now();
+    if (currentSemesterNumber(n) == 2) {
+      // Even semester: January → May
+      return (DateTime(n.year, 1, 1), DateTime(n.year, 5, 31));
+    } else {
+      // Odd semester: June → December
+      return (DateTime(n.year, 6, 1), DateTime(n.year, 12, 31));
+    }
+  }
 }

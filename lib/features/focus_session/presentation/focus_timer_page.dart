@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:math';
+import 'package:Skolar/core/services/activity_log_service.dart';
 import 'package:Skolar/core/theme/app_theme.dart';
+import 'package:Skolar/features/dashboard/presentation/providers/dashboard_provider.dart';
 import 'package:Skolar/features/focus_session/services/focus_haptic_service.dart';
 import 'package:Skolar/features/focus_session/services/focus_notification_service.dart';
 import 'package:Skolar/features/focus_session/services/focus_pip_service.dart';
@@ -10,6 +12,8 @@ import 'package:Skolar/features/focus_session/widgets/glow_thumb_shape.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
 
 import '../controllers/focus_timer_controller.dart';
 import '../services/focus_preferences_service.dart';
@@ -49,7 +53,7 @@ const _lightPalette = _FocusPalette(
   accent: AppTheme.focusBreakAccent,
 );
 
-class FocusTimerPage extends StatefulWidget {
+class FocusTimerPage extends ConsumerStatefulWidget {
   /// Pre-fills the duration slider/controller with this instead of the
   /// default 25 minutes — used when a task with its own timer duration is
   /// tapped from the dashboard's task list.
@@ -58,10 +62,10 @@ class FocusTimerPage extends StatefulWidget {
   const FocusTimerPage({super.key, this.initialDuration});
 
   @override
-  State<FocusTimerPage> createState() => FocusTimerPageState();
+  ConsumerState<FocusTimerPage> createState() => FocusTimerPageState();
 }
 
-class FocusTimerPageState extends State<FocusTimerPage>
+class FocusTimerPageState extends ConsumerState<FocusTimerPage>
     with TickerProviderStateMixin, WidgetsBindingObserver {
   late final FocusTimerController _controller;
   late final AnimationController _zenAnimController;
@@ -96,6 +100,10 @@ class FocusTimerPageState extends State<FocusTimerPage>
   bool _dragging = false;
   bool _showTutorial = false;
   int _tutorialStep = 0;
+
+  /// UUID generated once per session start. Regenerated every time the
+  /// user taps Start so retrying the same finished session is idempotent.
+  String? _sessionClientId;
   bool _tutorialDontShowAgain = true;
   static const double _trackHorizontalPadding = 6.0;
   static const double _knobSize = 48.0;
@@ -325,6 +333,48 @@ class FocusTimerPageState extends State<FocusTimerPage>
     _resetPhaseTakeoverState();
     _springWaveBack();
     FocusSoundService.playSessionComplete();
+    _logCompletedSession();
+  }
+
+  /// Inserts one activity_log row for this completed session, then
+  /// invalidates progressStatsProvider so the dashboard heatmap and
+  /// hours badges update without requiring a restart.
+  ///
+  /// Write failures surface as a SnackBar but do NOT block the
+  /// completion UX — the timer still completes and the sound still plays.
+  void _logCompletedSession() {
+    // Focus-only seconds — _controller.totalSeconds never includes breaks.
+    final focusSeconds = _controller.totalSeconds;
+    final clientId = _sessionClientId;
+    if (clientId == null || focusSeconds <= 0) return;
+
+    final service = ref.read(activityLogServiceProvider);
+    service
+        .logFocusSession(
+          durationSeconds: focusSeconds,
+          clientId: clientId,
+        )
+        .then((_) {
+          // Refresh dashboard stats so heatmap + hours update immediately.
+          ref.invalidate(progressStatsProvider);
+        })
+        .catchError((Object e) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Could not save focus session: $e',
+                style: const TextStyle(
+                  fontFamily: 'GoogleSans',
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+              backgroundColor: AppTheme.wishlist,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        });
   }
 
   void _onEntryWipeStatusChanged(AnimationStatus status) {
@@ -1679,6 +1729,9 @@ class FocusTimerPageState extends State<FocusTimerPage>
 
             _rollStartSeconds = startSec;
             _rollTargetSeconds = targetSec;
+
+            // Generate a fresh idempotency key for this session.
+            _sessionClientId = const Uuid().v4();
 
             _controller.start();
             _controller.waveAnimationController.value = 1.0;

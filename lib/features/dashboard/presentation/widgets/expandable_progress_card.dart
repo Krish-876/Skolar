@@ -775,8 +775,8 @@ class _CardSurface extends ConsumerWidget {
                     icon: Icons.schedule_rounded,
                     iconColor: AppTheme.chartInProgress,
                     value:
-                        '${stats.cumulativeHoursThisSemester.toStringAsFixed(1)}h',
-                    label: 'this semester',
+                        '${stats.hoursThisWeek.toStringAsFixed(1)}h\n${stats.hoursThisSemester.toStringAsFixed(1)}h',
+                    label: 'this wk / sem',
                     showIcon: false,
                   ),
                 ),
@@ -878,8 +878,8 @@ class _CollapsedContent extends StatelessWidget {
                       icon: Icons.schedule_rounded,
                       iconColor: AppTheme.chartInProgress,
                       value:
-                          '${stats.cumulativeHoursThisSemester.toStringAsFixed(1)}h',
-                      label: 'this semester',
+                          '${stats.hoursThisWeek.toStringAsFixed(1)}h\n${stats.hoursThisSemester.toStringAsFixed(1)}h',
+                      label: 'this wk / sem',
                       showIcon: false,
                     ),
                   ),
@@ -1162,8 +1162,8 @@ class _ExpandedContentState extends State<_ExpandedContent> {
                                     icon: Icons.schedule_rounded,
                                     iconColor: AppTheme.chartInProgress,
                                     value:
-                                        '${stats.cumulativeHoursThisSemester.toStringAsFixed(1)}h',
-                                    label: 'this semester',
+                                        '${stats.hoursThisWeek.toStringAsFixed(1)}h\n${stats.hoursThisSemester.toStringAsFixed(1)}h',
+                                    label: 'this wk / sem',
                                     showIcon: false,
                                   ),
                                 ),
