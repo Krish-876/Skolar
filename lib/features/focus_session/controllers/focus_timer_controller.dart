@@ -63,6 +63,28 @@ class FocusTimerController extends ChangeNotifier {
   DateTime? _phaseStartedAt;
   DateTime? get phaseStartedAt => _phaseStartedAt;
 
+  int _accumulatedFocusSeconds = 0;
+
+  /// Actual focus-only seconds completed so far in this session.
+  /// Does not include break time. Returns 0 if idle, and [totalSeconds] if complete.
+  int get elapsedFocusSeconds {
+    if (_status == FocusTimerStatus.idle) return 0;
+    if (_status == FocusTimerStatus.complete) return _totalSeconds;
+    if (!_isPomodoroEnabled) {
+      return (_totalSeconds - _secondsLeft).clamp(0, _totalSeconds);
+    }
+    if (_currentPhase == FocusPhase.focus) {
+      final currentFocusElapsed =
+          _currentPhaseTotalSeconds - _currentPhaseSecondsLeft;
+      return (_accumulatedFocusSeconds + currentFocusElapsed).clamp(
+        0,
+        _totalSeconds,
+      );
+    } else {
+      return _accumulatedFocusSeconds.clamp(0, _totalSeconds);
+    }
+  }
+
   bool _completionNotified = false;
 
   Timer? _ticker;
@@ -114,6 +136,7 @@ class FocusTimerController extends ChangeNotifier {
     if (_status != FocusTimerStatus.idle) return;
     _status = FocusTimerStatus.running;
     _currentPhase = FocusPhase.focus;
+    _accumulatedFocusSeconds = 0;
 
     final totalDuration = totalSessionDurationWithBreaks;
     _secondsLeft = totalDuration;
@@ -142,6 +165,7 @@ class FocusTimerController extends ChangeNotifier {
     _phaseEndTime = null;
     _phaseStartedAt = null;
     _completionNotified = false;
+    _accumulatedFocusSeconds = 0;
     _status = FocusTimerStatus.idle;
     _currentPhase = FocusPhase.focus;
     _secondsLeft = totalSessionDurationWithBreaks;
@@ -175,6 +199,7 @@ class FocusTimerController extends ChangeNotifier {
         final previousPhaseEndTime = _phaseEndTime!;
         if (_currentPhase == FocusPhase.focus) {
           // Transition to break
+          _accumulatedFocusSeconds += _currentPhaseTotalSeconds;
           _currentPhase = FocusPhase.breakTime;
           _currentPhaseTotalSeconds = pomodoroBreakDuration;
           _currentPhaseSecondsLeft = _currentPhaseTotalSeconds;
@@ -213,6 +238,7 @@ class FocusTimerController extends ChangeNotifier {
     _ticker = null;
     _secondsLeft = 0;
     _currentPhaseSecondsLeft = 0;
+    _accumulatedFocusSeconds = _totalSeconds;
     _status = FocusTimerStatus.complete;
     notifyListeners();
     onComplete?.call();
@@ -242,6 +268,7 @@ class FocusTimerController extends ChangeNotifier {
         // Transition phase
         if (_currentPhase == FocusPhase.focus) {
           // Focus finished -> Enter break
+          _accumulatedFocusSeconds += _currentPhaseTotalSeconds;
           _currentPhase = FocusPhase.breakTime;
           _currentPhaseTotalSeconds = pomodoroBreakDuration;
           _phaseEndTime = now.add(Duration(seconds: _currentPhaseTotalSeconds));

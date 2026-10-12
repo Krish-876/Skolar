@@ -25,7 +25,14 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      const ProviderScope(child: MaterialApp(home: DashboardPage())),
+      ProviderScope(
+        overrides: [
+          dashboardDataSourceProvider.overrideWithValue(
+            DashboardDummyDataSource(),
+          ),
+        ],
+        child: const MaterialApp(home: DashboardPage()),
+      ),
     );
     await _settle(tester);
 
@@ -74,7 +81,14 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      const ProviderScope(child: MaterialApp(home: DashboardPage())),
+      ProviderScope(
+        overrides: [
+          dashboardDataSourceProvider.overrideWithValue(
+            DashboardDummyDataSource(),
+          ),
+        ],
+        child: const MaterialApp(home: DashboardPage()),
+      ),
     );
     await _settle(tester);
 

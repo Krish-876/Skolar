@@ -23,10 +23,8 @@ class ActivityDailyRowDto {
         countedFocusSeconds: (json['counted_focus_seconds'] as num).toInt(),
       );
 
-  DailyCompletion toEntity() => DailyCompletion(
-    date: DateTime.parse(day),
-    sessionCount: sessions,
-  );
+  DailyCompletion toEntity() =>
+      DailyCompletion(date: DateTime.parse(day), sessionCount: sessions);
 }
 
 class DailyCompletionDto {
@@ -46,10 +44,8 @@ class DailyCompletionDto {
     'tasksCompleted': tasksCompleted,
   };
 
-  DailyCompletion toEntity() => DailyCompletion(
-    date: DateTime.parse(date),
-    sessionCount: tasksCompleted,
-  );
+  DailyCompletion toEntity() =>
+      DailyCompletion(date: DateTime.parse(date), sessionCount: tasksCompleted);
 }
 
 class ProgressStatsDto {

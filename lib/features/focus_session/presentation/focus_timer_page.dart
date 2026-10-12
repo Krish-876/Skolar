@@ -346,17 +346,50 @@ class FocusTimerPageState extends ConsumerState<FocusTimerPage>
     // Focus-only seconds — _controller.totalSeconds never includes breaks.
     final focusSeconds = _controller.totalSeconds;
     final clientId = _sessionClientId;
-    if (clientId == null || focusSeconds <= 0) return;
+    final threshold = ref.read(focusMinDurationSecondsProvider);
+    if (clientId == null || focusSeconds < threshold) return;
 
+    final container = ProviderScope.containerOf(context);
     final service = ref.read(activityLogServiceProvider);
     service
-        .logFocusSession(
-          durationSeconds: focusSeconds,
-          clientId: clientId,
-        )
+        .logFocusSession(durationSeconds: focusSeconds, clientId: clientId)
         .then((_) {
           // Refresh dashboard stats so heatmap + hours update immediately.
-          ref.invalidate(progressStatsProvider);
+          container.invalidate(progressStatsProvider);
+        })
+        .catchError((Object e) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Could not save focus session: $e',
+                style: const TextStyle(
+                  fontFamily: 'GoogleSans',
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+              backgroundColor: AppTheme.wishlist,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        });
+  }
+
+  /// On user-initiated stop, logs actual focus-only seconds if >= the configured
+  /// threshold; logs nothing below it. Does not log on app kill.
+  void _logEarlyStoppedSession() {
+    final focusSeconds = _controller.elapsedFocusSeconds;
+    final clientId = _sessionClientId;
+    final threshold = ref.read(focusMinDurationSecondsProvider);
+    if (clientId == null || focusSeconds < threshold) return;
+
+    final container = ProviderScope.containerOf(context);
+    final service = ref.read(activityLogServiceProvider);
+    service
+        .logFocusSession(durationSeconds: focusSeconds, clientId: clientId)
+        .then((_) {
+          container.invalidate(progressStatsProvider);
         })
         .catchError((Object e) {
           if (!mounted) return;
@@ -1908,6 +1941,7 @@ class FocusTimerPageState extends ConsumerState<FocusTimerPage>
               FocusNotificationService.cancelAll();
               FocusSoundService.stop();
               _resetPhaseTakeoverState();
+              _logEarlyStoppedSession();
               _controller.reset();
               _springWaveBack();
             },

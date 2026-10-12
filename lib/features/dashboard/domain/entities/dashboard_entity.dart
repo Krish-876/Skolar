@@ -25,6 +25,7 @@ class DailyCompletion {
 
   /// Legacy accessor so widgets that read `.tasksCompleted` keep compiling
   /// without changes; both refer to the same value.
+  @Deprecated('Use sessionCount instead. Represents focus session events.')
   int get tasksCompleted => sessionCount;
 }
 

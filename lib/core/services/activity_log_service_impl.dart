@@ -10,8 +10,8 @@ import 'activity_log_service.dart';
 ///   - completed_on  = device-local calendar date at call time
 ///   - duration_seconds = [durationSeconds] (focus seconds only)
 ///
-/// The migration uses ON CONFLICT (id) DO NOTHING, so retrying with the
-/// same [clientId] is always safe.
+/// Supports idempotent retries with the same [clientId] using upsert with
+/// `ignoreDuplicates: true` and treating unique violation (23505) as success.
 ///
 /// Throws [ActivityLogFailure] on insert error so the focus timer page can
 /// surface it as a snackbar without breaking the completion UX.
@@ -38,15 +38,23 @@ class ActivityLogServiceImpl implements ActivityLogService {
         '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
 
     try {
-      await _client.from('activity_log').insert({
-        'id': clientId,
-        'user_id': user.id,
-        'completed_on': localDate,
-        'duration_seconds': durationSeconds,
-      });
-      // ON CONFLICT (id) DO NOTHING: supabase-dart returns an empty list
-      // for a conflict-skipped row, not an error — no special handling needed.
+      await _client
+          .from('activity_log')
+          .upsert(
+            {
+              'id': clientId,
+              'user_id': user.id,
+              'completed_on': localDate,
+              'duration_seconds': durationSeconds,
+            },
+            onConflict: 'id',
+            ignoreDuplicates: true,
+          );
     } on PostgrestException catch (e) {
+      if (e.code == '23505') {
+        // Idempotent retry: row already exists
+        return;
+      }
       throw ActivityLogFailure('Insert failed: ${e.message}');
     } catch (e) {
       throw ActivityLogFailure('Insert failed: $e');

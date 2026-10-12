@@ -44,12 +44,12 @@ final activityLogServiceProvider = Provider<ActivityLogService>(
 /// Switch this to DashboardDummyDataSource() to go back to dummy data.
 /// Kept as a separate Provider so tests can override it with a
 /// DashboardDummyDataSource without touching anything else.
-final _dashboardDataSourceProvider = Provider<DashboardDataSource>(
+final dashboardDataSourceProvider = Provider<DashboardDataSource>(
   (ref) => DashboardSupabaseDataSource(Supabase.instance.client),
 );
 
 final dashboardRepositoryProvider = Provider<DashboardRepository>(
-  (ref) => DashboardRepositoryImpl(ref.read(_dashboardDataSourceProvider)),
+  (ref) => DashboardRepositoryImpl(ref.read(dashboardDataSourceProvider)),
 );
 
 final _getProgressStatsProvider = Provider(
