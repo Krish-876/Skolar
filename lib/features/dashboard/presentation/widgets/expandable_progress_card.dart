@@ -715,7 +715,11 @@ class _CardSurface extends ConsumerWidget {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Text(
-                                  '${stats.tasksCompletedThisWeek}/${stats.tasksPlannedThisWeek}',
+                                  stats.tasksPlannedThisWeek > 0
+                                      ? '${stats.tasksCompletedThisWeek}/${stats.tasksPlannedThisWeek}'
+                                      : (stats.hoursThisWeek > 0
+                                            ? '${stats.hoursThisWeek.toStringAsFixed(1)}h'
+                                            : '—'),
                                   style: TextStyle(
                                     fontFamily: 'GoogleSans',
                                     color: AppTheme.textPrimary,
@@ -774,10 +778,10 @@ class _CardSurface extends ConsumerWidget {
                   child: _StatBadge(
                     icon: Icons.schedule_rounded,
                     iconColor: AppTheme.chartInProgress,
-                    value:
-                        '${stats.cumulativeHoursThisSemester.toStringAsFixed(1)}h',
-                    label: 'this semester',
-                    showIcon: false,
+                    value: '${stats.hoursThisWeek.toStringAsFixed(1)}h',
+                    label: 'this week',
+                    secondaryLabel:
+                        '${stats.hoursThisSemester.toStringAsFixed(1)}h sem',
                   ),
                 ),
               ),
@@ -877,10 +881,10 @@ class _CollapsedContent extends StatelessWidget {
                     child: _StatBadge(
                       icon: Icons.schedule_rounded,
                       iconColor: AppTheme.chartInProgress,
-                      value:
-                          '${stats.cumulativeHoursThisSemester.toStringAsFixed(1)}h',
-                      label: 'this semester',
-                      showIcon: false,
+                      value: '${stats.hoursThisWeek.toStringAsFixed(1)}h',
+                      label: 'this week',
+                      secondaryLabel:
+                          '${stats.hoursThisSemester.toStringAsFixed(1)}h sem',
                     ),
                   ),
                 ),
@@ -1162,9 +1166,10 @@ class _ExpandedContentState extends State<_ExpandedContent> {
                                     icon: Icons.schedule_rounded,
                                     iconColor: AppTheme.chartInProgress,
                                     value:
-                                        '${stats.cumulativeHoursThisSemester.toStringAsFixed(1)}h',
-                                    label: 'this semester',
-                                    showIcon: false,
+                                        '${stats.hoursThisWeek.toStringAsFixed(1)}h',
+                                    label: 'this week',
+                                    secondaryLabel:
+                                        '${stats.hoursThisSemester.toStringAsFixed(1)}h sem',
                                   ),
                                 ),
                               ),
@@ -1362,31 +1367,23 @@ class _StatBadge extends StatelessWidget {
   final Color iconColor;
   final String value;
   final String label;
-  final bool showIcon;
+  final String? secondaryLabel;
 
   const _StatBadge({
     required this.icon,
     required this.iconColor,
     required this.value,
     required this.label,
-    this.showIcon = true,
+    this.secondaryLabel,
   });
 
   @override
   Widget build(BuildContext context) {
-    // This badge is floated by `_CardSurface` via `Positioned.fromRect`,
-    // sized to whatever its anchor placeholder measured — so its own
-    // intrinsic size (not just its position) is what determines how big it
-    // actually renders. Now that `_CollapsedContent` lays its two badges out
-    // side-by-side instead of stacked (see that widget's doc), each one gets
-    // the collapsed row's full ~76px height to size against instead of half
-    // of it — icon/value/label are sized up accordingly so it actually reads
-    // at a glance instead of disappearing next to the ring.
     final valueText = Text(
       value,
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
-      textAlign: showIcon ? TextAlign.start : TextAlign.center,
+      textAlign: TextAlign.start,
       style: TextStyle(
         fontFamily: 'GoogleSans',
         color: AppTheme.textPrimary,
@@ -1398,49 +1395,59 @@ class _StatBadge extends StatelessWidget {
       label,
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
-      textAlign: showIcon ? TextAlign.start : TextAlign.center,
+      textAlign: TextAlign.start,
       style: TextStyle(
         fontFamily: 'GoogleSans',
         color: AppTheme.textSecondary,
         fontSize: 12,
       ),
     );
+    final secondaryText = secondaryLabel != null
+        ? Text(
+            secondaryLabel!,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.start,
+            style: TextStyle(
+              fontFamily: 'GoogleSans',
+              color: AppTheme.textSecondary.withValues(alpha: 0.8),
+              fontSize: 10,
+              fontWeight: FontWeight.w500,
+            ),
+          )
+        : null;
 
     return MediaQuery.withClampedTextScaling(
-      // Even with the bigger layout below, this is still floated into a
-      // fixed-height anchor box — capping at 1.0x keeps a large accessibility
-      // text-scale setting from pushing it past that box's height, while a
-      // "smaller text" setting can still shrink it.
       maxScaleFactor: 1.0,
       child: Column(
-        crossAxisAlignment: showIcon
-            ? CrossAxisAlignment.start
-            : CrossAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
         mainAxisSize: MainAxisSize.min,
-        children: showIcon
-            ? [
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: iconColor.withValues(alpha: 0.15),
-                        shape: BoxShape.circle,
-                      ),
-                      alignment: Alignment.center,
-                      child: Icon(icon, size: 18, color: iconColor),
-                    ),
-                    const SizedBox(width: 10),
-                    Flexible(child: valueText),
-                  ],
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: iconColor.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
                 ),
-                const SizedBox(height: 4),
-                labelText,
-              ]
-            : [valueText, const SizedBox(height: 4), labelText],
+                alignment: Alignment.center,
+                child: Icon(icon, size: 18, color: iconColor),
+              ),
+              const SizedBox(width: 10),
+              Flexible(child: valueText),
+            ],
+          ),
+          const SizedBox(height: 2),
+          labelText,
+          if (secondaryText != null) ...[
+            const SizedBox(height: 1),
+            secondaryText,
+          ],
+        ],
       ),
     );
   }

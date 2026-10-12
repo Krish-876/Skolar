@@ -1,15 +1,32 @@
-/// A single day's completion count, used by the streak strip and the
-/// weekly/monthly rollups. `date` is always a local calendar date (midnight,
-/// no time component) — never a UTC instant — since a "day" for streak
-/// purposes is defined by the student's local clock.
+/// A single day's completion data, used by the streak strip and rollups.
+///
+/// [date] is always a local calendar date (midnight, no time component)
+/// — never a UTC instant — since a "day" for streak purposes is defined
+/// by the student's local clock.
+///
+/// [sessionCount] is the number of activity_log rows for this day (used
+/// by the heatmap tint — previously called tasksCompleted).
+///
+/// [focusSecondsThisDay] is the sum of duration_seconds only for rows
+/// that meet or exceed the configured threshold (used for the hours badge).
 class DailyCompletion {
   final DateTime date;
-  final int tasksCompleted;
 
-  const DailyCompletion({required this.date, required this.tasksCompleted});
+  /// Number of focus sessions logged on this day (drives heatmap tint).
+  /// Replaces the old `tasksCompleted` field; semantics differ: these are
+  /// session-count rows, not task-completion events. isActiveDay semantics
+  /// are preserved: any session > 0 counts as an active day.
+  final int sessionCount;
 
-  /// A day counts toward the streak if any task was completed on it.
-  bool get isActiveDay => tasksCompleted > 0;
+  const DailyCompletion({required this.date, required this.sessionCount});
+
+  /// A day counts toward the streak if at least one session was logged.
+  bool get isActiveDay => sessionCount > 0;
+
+  /// Legacy accessor so widgets that read `.tasksCompleted` keep compiling
+  /// without changes; both refer to the same value.
+  @Deprecated('Use sessionCount instead. Represents focus session events.')
+  int get tasksCompleted => sessionCount;
 }
 
 /// Supabase-sourced counters — deliberately separate from [DashboardPlan]
@@ -17,21 +34,37 @@ class DailyCompletion {
 class ProgressStats {
   final int tasksCompletedThisWeek;
   final int tasksPlannedThisWeek;
-  final double cumulativeHoursThisSemester;
 
-  /// Rolling last-30-days window, most recent day last.
+  /// Total focus seconds that meet the threshold, for the current semester.
+  /// Format in presentation only (presentation/providers compute hours label).
+  final int focusSecondsThisSemester;
+
+  /// Focus seconds that meet the threshold for the current configured week.
+  final int focusSecondsThisWeek;
+
+  /// Rolling window (semester range), one entry per calendar day, most
+  /// recent day last. Days with no sessions will still be present if the
+  /// datasource includes them, but may also be absent — the widget handles
+  /// both via a Map lookup with a default of zero.
   final List<DailyCompletion> dailyCompletions;
 
   const ProgressStats({
     required this.tasksCompletedThisWeek,
     required this.tasksPlannedThisWeek,
-    required this.cumulativeHoursThisSemester,
+    required this.focusSecondsThisSemester,
+    required this.focusSecondsThisWeek,
     required this.dailyCompletions,
   });
 
   double get weeklyCompletionRatio => tasksPlannedThisWeek == 0
       ? 0.0
       : (tasksCompletedThisWeek / tasksPlannedThisWeek).clamp(0.0, 1.0);
+
+  /// Convenience accessor in hours (for display).
+  double get hoursThisWeek => focusSecondsThisWeek / 3600.0;
+
+  /// Convenience accessor in hours (for display).
+  double get hoursThisSemester => focusSecondsThisSemester / 3600.0;
 }
 
 /// One item in a Nova-generated plan.

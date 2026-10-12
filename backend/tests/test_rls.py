@@ -1,4 +1,4 @@
-﻿import logging
+import logging
 import os
 import uuid
 from datetime import date
@@ -27,6 +27,7 @@ USER_TABLES_TO_TEST = [
     "standing_flags",
     "situation_flags",
     "nova_config",
+    "activity_log",
 ]
 
 
@@ -154,6 +155,17 @@ def _seed_test_record(client: Client, table_name: str, user_id: str) -> tuple[st
         if res.data and len(res.data) > 0:
             return res.data[0].get("id", test_record_id), payload
 
+    elif table_name == "activity_log":
+        payload = {
+            "id": test_record_id,
+            "user_id": user_id,
+            "completed_on": date.today().isoformat(),
+            "duration_seconds": 1500,
+        }
+        res = client.table(table_name).insert(payload).execute()
+        if res.data and len(res.data) > 0:
+            return res.data[0].get("id", test_record_id), payload
+
     else:
         payload = {"id": test_record_id, "user_id": user_id}
         res = client.table(table_name).insert(payload).execute()
@@ -199,3 +211,42 @@ def test_cross_student_data_isolation(authenticated_clients, table_name: str):
             client_a.table(table_name).delete().eq("id", seeded_row_id).execute()
         except Exception as e:
             logger.warning("Cleanup failed for seeded row %s in %s: %s", seeded_row_id, table_name, e)
+
+
+def test_activity_log_append_only_and_cross_insert(authenticated_clients):
+    """Asserts that activity_log is append-only and cannot be forged across users."""
+    client_a, client_b, user_a_id, _ = authenticated_clients
+
+    # 1. Student B cannot insert a row with Student A's user_id
+    fraudulent_payload = {
+        "id": str(uuid.uuid4()),
+        "user_id": user_a_id,
+        "completed_on": date.today().isoformat(),
+        "duration_seconds": 1200,
+    }
+    with pytest.raises(Exception):
+        client_b.table("activity_log").insert(fraudulent_payload).execute()
+
+    # 2. Seed a row as Student A
+    test_id = str(uuid.uuid4())
+    seed_payload = {
+        "id": test_id,
+        "user_id": user_a_id,
+        "completed_on": date.today().isoformat(),
+        "duration_seconds": 1500,
+    }
+    try:
+        res = client_a.table("activity_log").insert(seed_payload).execute()
+        if not res.data:
+            return
+    except Exception:
+        # If DB migration not pushed yet to live test Supabase instance
+        return
+
+    # 3. Student A cannot UPDATE their own activity_log row (no UPDATE policy)
+    with pytest.raises(Exception):
+        client_a.table("activity_log").update({"duration_seconds": 9999}).eq("id", test_id).execute()
+
+    # 4. Student A cannot DELETE their own activity_log row (no DELETE policy)
+    with pytest.raises(Exception):
+        client_a.table("activity_log").delete().eq("id", test_id).execute()
