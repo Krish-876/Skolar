@@ -197,21 +197,22 @@ def _confirm_flag_or_history(supabase: Client, user_id: str, proposal: dict[str,
     superseded_id = _find_active_row(supabase, table, user_id, user_subject_id, career_unit_id)
 
     now = datetime.now(timezone.utc).isoformat()
+    insert_payload: dict[str, Any] = {
+        "user_id": user_id,
+        "user_subject_id": user_subject_id,
+        "career_unit_id": career_unit_id,
+        **proposal["payload"],
+        "confirmed_at": now,
+        "supersedes_id": superseded_id,
+    }
+    if table != "situation_flags":
+        insert_payload["source"] = "conversation"
+
     new_row = cast(
         dict[str, Any],
         (
             supabase.table(table)
-            .insert(
-                {
-                    "user_id": user_id,
-                    "user_subject_id": user_subject_id,
-                    "career_unit_id": career_unit_id,
-                    **proposal["payload"],
-                    "confirmed_at": now,
-                    "supersedes_id": superseded_id,
-                    "source": "conversation",
-                }
-            )
+            .insert(insert_payload)
             .execute()
             .data[0]
         ),
