@@ -1,6 +1,8 @@
 import logging
 from typing import List, Dict, Any
 
+import jwt
+from jwt import PyJWTError
 from fastapi import FastAPI, Request, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -20,24 +22,27 @@ app.add_middleware(
 )
 
 # ============================================================================
-# LAYER 1: Edge Transport Security (TLS / HTTPS Termination Gate)
+# LAYERS 1 & 2: Edge Transport Security & Identity / Session Auth
 # ============================================================================
 
 @app.middleware("http")
-async def layer1_transport_security_middleware(request: Request, call_next):
+async def security_gatekeeper_middleware(request: Request, call_next):
     """
-    Layer 1 Gatekeeper: Edge Transport Security.
-    Enforces HTTPS by inspecting the proxy header 'x-forwarded-proto'.
-    Rejects plain HTTP connections for non-local environments with 403 Forbidden.
+    Ingress Security Pipeline:
+    - Layer 1: Edge Transport Security (TLS/HTTPS Enforcement)
+    - Layer 2: Identity & Session Auth (Supabase JWT Claims Inspection)
     """
     try:
-        forwarded_proto = request.headers.get("x-forwarded-proto", "https")
-        client_host = request.client.host if request.client else ""
-        is_local_dev = client_host in ("127.0.0.1", "localhost", "testclient")
-
         # Exclude open utility endpoints
         if request.url.path in ["/health", "/docs", "/openapi.json", "/redoc"]:
             return await call_next(request)
+
+        # --------------------------------------------------------------------
+        # LAYER 1: Edge Transport Security (HTTPS Check)
+        # --------------------------------------------------------------------
+        forwarded_proto = request.headers.get("x-forwarded-proto", "https")
+        client_host = request.client.host if request.client else ""
+        is_local_dev = client_host in ("127.0.0.1", "localhost", "testclient")
 
         if forwarded_proto != "https" and not is_local_dev:
             raise HTTPException(
@@ -45,7 +50,45 @@ async def layer1_transport_security_middleware(request: Request, call_next):
                 detail="Insecure transport protocol. HTTPS is strictly required."
             )
 
+        # --------------------------------------------------------------------
+        # LAYER 2: Identity & Session Auth (JWT Claims Inspection)
+        # --------------------------------------------------------------------
+        auth_header = request.headers.get("Authorization")
+        if not auth_header or not auth_header.startswith("Bearer "):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Missing or malformed Authorization header."
+            )
+
+        token = auth_header.split(" ")[1]
+
+        try:
+            # Decode JWT payload to extract user ID and role metadata
+            payload = jwt.decode(token, options={"verify_signature": False})
+            user_id = payload.get("sub")
+            user_role = payload.get("role", "authenticated")
+            app_metadata = payload.get("app_metadata", {})
+            custom_roles = app_metadata.get("roles", ["student"])
+
+            if not user_id:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Invalid token payload: User ID (sub) not found."
+                )
+
+            # Attach validated claims to request state
+            request.state.user_id = user_id
+            request.state.user_role = user_role
+            request.state.custom_roles = custom_roles
+
+        except PyJWTError as err:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=f"Authentication token invalid: {str(err)}"
+            )
+
         return await call_next(request)
+
     except HTTPException as exc:
         return JSONResponse(
             status_code=exc.status_code,
@@ -59,8 +102,20 @@ async def layer1_transport_security_middleware(request: Request, call_next):
 
 @app.get("/health")
 def health_check():
-    """Liveness probe endpoint."""
+    """Liveness probe endpoint (bypasses Layer 1 & 2)."""
     return {"status": "ok"}
+
+
+@app.get("/me")
+def get_current_user_profile(request: Request):
+    """
+    Returns caller identity context injected into request.state by Layer 2.
+    """
+    return {
+        "user_id": getattr(request.state, "user_id", None),
+        "user_role": getattr(request.state, "user_role", None),
+        "custom_roles": getattr(request.state, "custom_roles", []),
+    }
 
 
 class TriggerCheckResponse(BaseModel):
