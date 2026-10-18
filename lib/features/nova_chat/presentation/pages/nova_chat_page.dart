@@ -62,10 +62,17 @@ class _NovaChatPageState extends ConsumerState<NovaChatPage> {
     final hasUserMessage = chatState.messages.any(
       (m) => m.role == MessageRole.user,
     );
+    final canPop = Navigator.of(context).canPop();
+    final isKeyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
+    final inShell = !canPop;
+    final navBarOffset = (inShell && !isKeyboardOpen)
+        ? (76.0 + MediaQuery.of(context).padding.bottom)
+        : 0.0;
     final topPadding = MediaQuery.of(context).padding.top + 64;
     final bottomPadding =
         (chatState.suggestions.isNotEmpty ? 120.0 : 72.0) +
-        MediaQuery.of(context).padding.bottom;
+        MediaQuery.of(context).padding.bottom +
+        navBarOffset;
 
     // Scroll to bottom whenever messages list grows or thinking state updates
     ref.listen(novaChatProvider, (previous, next) {
@@ -160,7 +167,7 @@ class _NovaChatPageState extends ConsumerState<NovaChatPage> {
 
           // 4. Frosted Bottom Dock & Suggestions (Chat content leaks through)
           Positioned(
-            bottom: 0,
+            bottom: navBarOffset,
             left: 0,
             right: 0,
             child: Column(

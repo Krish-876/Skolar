@@ -5,6 +5,7 @@ import 'package:Skolar/features/dashboard/presentation/providers/dashboard_provi
 import 'package:Skolar/features/dashboard/presentation/widgets/all_round_development_card.dart';
 import 'package:Skolar/features/dashboard/presentation/widgets/cg_pull_card.dart';
 import 'package:Skolar/features/dashboard/presentation/widgets/dashboard_header.dart';
+import 'package:Skolar/features/dashboard/presentation/widgets/dashboard_quick_actions.dart';
 import 'package:Skolar/features/dashboard/presentation/widgets/expandable_progress_card.dart';
 
 class DashboardPage extends ConsumerStatefulWidget {
@@ -146,6 +147,13 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
               child: const AllRoundDevelopmentCard(),
             ),
           ),
+          const SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.only(top: 8, bottom: 8),
+              child: DashboardQuickActions(),
+            ),
+          ),
+          const SliverToBoxAdapter(child: SizedBox(height: 96)),
         ],
       ),
     );
