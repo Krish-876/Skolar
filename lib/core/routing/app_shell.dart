@@ -40,117 +40,126 @@ class _AppShellState extends ConsumerState<AppShell> {
 
     return Scaffold(
       backgroundColor: Colors.black,
-      extendBody: true,
-      body: NotificationListener<ScrollNotification>(
-        onNotification: (notification) {
-          // Do not scroll-hide in chat tab where input dock is docked
-          if (widget.navigationShell.currentIndex == 2) {
-            return false;
-          }
-          if (notification is ScrollUpdateNotification) {
-            final delta = notification.scrollDelta ?? 0;
-            // Instantly hide on scrolling down (delta > 2px)
-            if (delta > 2.0) {
-              if (_isNavBarVisible) {
-                setState(() => _isNavBarVisible = false);
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          NotificationListener<ScrollNotification>(
+            onNotification: (notification) {
+              // Do not scroll-hide in chat tab where input dock is docked
+              if (widget.navigationShell.currentIndex == 2) {
+                return false;
               }
-            } else if (delta < -2.0) {
-              // Instantly show on scrolling up (delta < -2px)
-              if (!_isNavBarVisible) {
-                setState(() => _isNavBarVisible = true);
+              if (notification is ScrollUpdateNotification) {
+                final delta = notification.scrollDelta ?? 0;
+                // Instantly hide on scrolling down (delta > 2px)
+                if (delta > 2.0) {
+                  if (_isNavBarVisible) {
+                    setState(() => _isNavBarVisible = false);
+                  }
+                } else if (delta < -2.0) {
+                  // Instantly show on scrolling up (delta < -2px)
+                  if (!_isNavBarVisible) {
+                    setState(() => _isNavBarVisible = true);
+                  }
+                }
+                // Always show when near the top of the scrollable
+                if (notification.metrics.pixels <= 16 && !_isNavBarVisible) {
+                  setState(() => _isNavBarVisible = true);
+                }
+              } else if (notification is UserScrollNotification) {
+                if (notification.direction == ScrollDirection.reverse) {
+                  if (_isNavBarVisible) {
+                    setState(() => _isNavBarVisible = false);
+                  }
+                } else if (notification.direction == ScrollDirection.forward) {
+                  if (!_isNavBarVisible) {
+                    setState(() => _isNavBarVisible = true);
+                  }
+                }
               }
-            }
-            // Always show when near the top of the scrollable
-            if (notification.metrics.pixels <= 16 && !_isNavBarVisible) {
-              setState(() => _isNavBarVisible = true);
-            }
-          } else if (notification is UserScrollNotification) {
-            if (notification.direction == ScrollDirection.reverse) {
-              if (_isNavBarVisible) {
-                setState(() => _isNavBarVisible = false);
-              }
-            } else if (notification.direction == ScrollDirection.forward) {
-              if (!_isNavBarVisible) {
-                setState(() => _isNavBarVisible = true);
-              }
-            }
-          }
-          return false;
-        },
-        child: widget.navigationShell,
-      ),
-      bottomNavigationBar: IgnorePointer(
-        ignoring: !showBar,
-        child: AnimatedSlide(
-          duration: const Duration(milliseconds: 240),
-          curve: Curves.easeInOut,
-          offset: showBar ? Offset.zero : const Offset(0, 1.4),
-          child: AnimatedOpacity(
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeInOut,
-            opacity: showBar ? 1.0 : 0.0,
-            child: SafeArea(
-              top: false,
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Container(
-                  height: 64,
-                  margin: const EdgeInsets.symmetric(horizontal: 18),
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF16151D),
-                    borderRadius: BorderRadius.circular(36),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.12),
-                      width: 1,
+              return false;
+            },
+            child: widget.navigationShell,
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: IgnorePointer(
+              ignoring: !showBar,
+              child: AnimatedSlide(
+                duration: const Duration(milliseconds: 240),
+                curve: Curves.easeInOut,
+                offset: showBar ? Offset.zero : const Offset(0, 1.4),
+                child: AnimatedOpacity(
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeInOut,
+                  opacity: showBar ? 1.0 : 0.0,
+                  child: SafeArea(
+                    top: false,
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Container(
+                        height: 64,
+                        margin: const EdgeInsets.symmetric(horizontal: 18),
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF16151D),
+                          borderRadius: BorderRadius.circular(36),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.12),
+                            width: 1,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.5),
+                              blurRadius: 24,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            const SizedBox(width: 4),
+                            _PillNavItem(
+                              icon: Icons.space_dashboard_rounded,
+                              isSelected: currentIndex == 0,
+                              onTap: () => _selectTab(0),
+                            ),
+                            const SizedBox(width: 28),
+                            _PillNavItem(
+                              icon: Icons.assignment_rounded,
+                              isSelected: currentIndex == 1,
+                              onTap: () => _selectTab(1),
+                            ),
+                            const Spacer(),
+                            _CenterNovaButton(
+                              isSelected: currentIndex == 2,
+                              onTap: () => _selectTab(2),
+                            ),
+                            const Spacer(),
+                            _PillNavItem(
+                              icon: Icons.notes_rounded,
+                              isSelected: currentIndex == 3,
+                              onTap: () => _selectTab(3),
+                            ),
+                            const SizedBox(width: 28),
+                            _PillNavItem(
+                              icon: Icons.person_rounded,
+                              isSelected: currentIndex == 4,
+                              onTap: () => _selectTab(4),
+                            ),
+                            const SizedBox(width: 4),
+                          ],
+                        ),
+                      ),
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.5),
-                        blurRadius: 24,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      const SizedBox(width: 4),
-                      _PillNavItem(
-                        icon: Icons.space_dashboard_rounded,
-                        isSelected: currentIndex == 0,
-                        onTap: () => _selectTab(0),
-                      ),
-                      const SizedBox(width: 28),
-                      _PillNavItem(
-                        icon: Icons.assignment_rounded,
-                        isSelected: currentIndex == 1,
-                        onTap: () => _selectTab(1),
-                      ),
-                      const Spacer(),
-                      _CenterNovaButton(
-                        isSelected: currentIndex == 2,
-                        onTap: () => _selectTab(2),
-                      ),
-                      const Spacer(),
-                      _PillNavItem(
-                        icon: Icons.notes_rounded,
-                        isSelected: currentIndex == 3,
-                        onTap: () => _selectTab(3),
-                      ),
-                      const SizedBox(width: 28),
-                      _PillNavItem(
-                        icon: Icons.person_rounded,
-                        isSelected: currentIndex == 4,
-                        onTap: () => _selectTab(4),
-                      ),
-                      const SizedBox(width: 4),
-                    ],
                   ),
                 ),
               ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
