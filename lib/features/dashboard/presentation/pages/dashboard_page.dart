@@ -4,6 +4,7 @@ import 'package:Skolar/core/theme/app_theme.dart';
 import 'package:Skolar/features/dashboard/presentation/providers/dashboard_provider.dart';
 import 'package:Skolar/features/dashboard/presentation/widgets/all_round_development_card.dart';
 import 'package:Skolar/features/dashboard/presentation/widgets/cg_pull_card.dart';
+import 'package:Skolar/features/dashboard/presentation/widgets/dashboard_focus_tile.dart';
 import 'package:Skolar/features/dashboard/presentation/widgets/dashboard_header.dart';
 import 'package:Skolar/features/dashboard/presentation/widgets/dashboard_quick_actions.dart';
 import 'package:Skolar/features/dashboard/presentation/widgets/expandable_progress_card.dart';
@@ -131,9 +132,15 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
               ),
             ),
           ),
+          const SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(16, 8, 16, 8),
+              child: DashboardFocusTile(),
+            ),
+          ),
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
               child: const CgPullCard(),
             ),
           ),

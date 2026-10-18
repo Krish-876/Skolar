@@ -133,13 +133,13 @@ class _AppShellState extends ConsumerState<AppShell> {
                       ),
                       const Spacer(),
                       _PillNavItem(
-                        icon: Icons.bolt_rounded,
+                        icon: Icons.notes_rounded,
                         isSelected: currentIndex == 3,
                         onTap: () => _selectTab(3),
                       ),
                       const SizedBox(width: 28),
                       _PillNavItem(
-                        icon: Icons.notes_rounded,
+                        icon: Icons.person_rounded,
                         isSelected: currentIndex == 4,
                         onTap: () => _selectTab(4),
                       ),

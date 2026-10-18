@@ -148,24 +148,19 @@ final goRouterProvider = GoRouter(
             ),
           ],
         ),
-        // Tab 3: Focus Session
-        StatefulShellBranch(
-          routes: [
-            GoRoute(
-              path: AppRoutes.focusSession,
-              builder: (_, state) {
-                final extra = state.extra;
-                return FocusTimerPage(
-                  initialDuration: extra is Duration ? extra : null,
-                );
-              },
-            ),
-          ],
-        ),
-        // Tab 4: Campus Feed
+        // Tab 3: Campus Feed
         StatefulShellBranch(
           routes: [
             GoRoute(path: AppRoutes.feed, builder: (_, _) => const FeedPage()),
+          ],
+        ),
+        // Tab 4: Profile
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: AppRoutes.profile,
+              builder: (_, _) => const ProfilePage(),
+            ),
           ],
         ),
       ],
@@ -197,7 +192,15 @@ final goRouterProvider = GoRouter(
     ),
 
     // Full-Screen Dedicated Feature Flows
-    GoRoute(path: AppRoutes.profile, builder: (_, _) => const ProfilePage()),
+    GoRoute(
+      path: AppRoutes.focusSession,
+      builder: (_, state) {
+        final extra = state.extra;
+        return FocusTimerPage(
+          initialDuration: extra is Duration ? extra : null,
+        );
+      },
+    ),
     GoRoute(path: AppRoutes.mathGame, builder: (_, _) => const MathGamePage()),
     GoRoute(path: AppRoutes.subjects, builder: (_, _) => const SubjectsPage()),
     GoRoute(
