@@ -1,3 +1,4 @@
+import os
 import logging
 from typing import List, Dict, Any
 
@@ -7,8 +8,15 @@ from fastapi import FastAPI, Request, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+from dotenv import load_dotenv
 
 from app.dependencies import get_current_user_id, supabase
+
+load_dotenv()
+
+# Configured Supabase JWT signing secret (with fallback for local dev/testing)
+DEFAULT_DEV_JWT_SECRET = "skolar-super-secure-test-secret-key-32chars"
+SUPABASE_JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET", DEFAULT_DEV_JWT_SECRET)
 
 app = FastAPI(title="Skolar Backend API")
 
@@ -30,11 +38,11 @@ async def security_gatekeeper_middleware(request: Request, call_next):
     """
     Ingress Security Pipeline:
     - Layer 1: Edge Transport Security (TLS/HTTPS Enforcement)
-    - Layer 2: Identity & Session Auth (Supabase JWT Claims Inspection)
+    - Layer 2: Identity & Session Auth (Cryptographic Supabase JWT Verification)
     """
     try:
-        # Exclude open utility endpoints
-        if request.url.path in ["/health", "/docs", "/openapi.json", "/redoc"]:
+        # Exclude CORS preflight and open utility endpoints
+        if request.method == "OPTIONS" or request.url.path in ["/health", "/docs", "/openapi.json", "/redoc"]:
             return await call_next(request)
 
         # --------------------------------------------------------------------
@@ -51,7 +59,7 @@ async def security_gatekeeper_middleware(request: Request, call_next):
             )
 
         # --------------------------------------------------------------------
-        # LAYER 2: Identity & Session Auth (JWT Claims Inspection)
+        # LAYER 2: Identity & Session Auth (JWT Signature & Claims Verification)
         # --------------------------------------------------------------------
         auth_header = request.headers.get("Authorization")
         if not auth_header or not auth_header.startswith("Bearer "):
@@ -63,12 +71,32 @@ async def security_gatekeeper_middleware(request: Request, call_next):
         token = auth_header.split(" ")[1]
 
         try:
-            # Decode JWT payload to extract user ID and role metadata
-            payload = jwt.decode(token, options={"verify_signature": False})
+            # Cryptographically verify signature, algorithm, audience, and expiration
+            jwt_secret = os.getenv("SUPABASE_JWT_SECRET", DEFAULT_DEV_JWT_SECRET)
+            payload = jwt.decode(
+                token,
+                jwt_secret,
+                algorithms=["HS256"],
+                audience="authenticated",
+                options={
+                    "verify_signature": True,
+                    "verify_exp": True,
+                    "verify_aud": True,
+                    "require": ["exp", "sub", "aud"],
+                },
+            )
+
             user_id = payload.get("sub")
             user_role = payload.get("role", "authenticated")
-            app_metadata = payload.get("app_metadata", {})
-            custom_roles = app_metadata.get("roles", ["student"])
+            app_metadata = payload.get("app_metadata")
+
+            # Safely extract custom roles without raising AttributeError on non-dict types
+            if isinstance(app_metadata, dict):
+                custom_roles = app_metadata.get("roles", ["student"])
+                if not isinstance(custom_roles, list):
+                    custom_roles = ["student"]
+            else:
+                custom_roles = ["student"]
 
             if not user_id:
                 raise HTTPException(
@@ -81,10 +109,11 @@ async def security_gatekeeper_middleware(request: Request, call_next):
             request.state.user_role = user_role
             request.state.custom_roles = custom_roles
 
-        except PyJWTError as err:
+        except PyJWTError:
+            # Return generic error detail without leaking internal parser exception details
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=f"Authentication token invalid: {str(err)}"
+                detail="Invalid or expired authentication token."
             )
 
         return await call_next(request)
