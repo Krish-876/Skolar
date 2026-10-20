@@ -48,11 +48,12 @@ async def security_gatekeeper_middleware(request: Request, call_next):
         # --------------------------------------------------------------------
         # LAYER 1: Edge Transport Security (HTTPS Check)
         # --------------------------------------------------------------------
-        forwarded_proto = request.headers.get("x-forwarded-proto", "https")
+        forwarded_proto = request.headers.get("x-forwarded-proto", request.url.scheme)
+        normalized_proto = forwarded_proto.split(",")[0].strip().lower()
         client_host = request.client.host if request.client else ""
         is_local_dev = client_host in ("127.0.0.1", "localhost", "testclient")
 
-        if forwarded_proto != "https" and not is_local_dev:
+        if normalized_proto != "https" and not is_local_dev:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Insecure transport protocol. HTTPS is strictly required."

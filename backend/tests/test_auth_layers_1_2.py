@@ -82,6 +82,17 @@ def test_layer1_insecure_http_rejected_for_external_clients():
     assert res.json() == {"detail": "Insecure transport protocol. HTTPS is strictly required."}
 
 
+def test_layer1_missing_proxy_proto_header_rejected_for_external_clients():
+    """Verify fallback to request.url.scheme blocks non-local HTTP when proxy header is missing."""
+    external_client = TestClient(app, client=("198.51.100.50", 45678))
+    res = external_client.get(
+        "/me",
+        headers={"Authorization": "******"}
+    )
+    assert res.status_code == 403
+    assert res.json() == {"detail": "Insecure transport protocol. HTTPS is strictly required."}
+
+
 def test_layer1_utility_bypass_health_and_docs():
     """Verify open utility endpoints bypass transport checks even for non-local clients."""
     external_client = TestClient(app, client=("198.51.100.50", 45678))
