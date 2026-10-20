@@ -66,6 +66,23 @@ uvicorn pyq.rag.main:app --reload --host 0.0.0.0 --port 8000
 environment variable reference (including rate-limit tuning) is in
 [`backend/pyq/ONBOARDING.md` §4](backend/pyq/ONBOARDING.md).
 
+The security application in `backend/app/main.py` applies a
+single-process sliding-window request limiter after JWT verification and
+before route execution. Valid tokens are counted per verified user; missing
+or invalid tokens are counted per socket client IP. `X-Forwarded-For` is not
+used as an identity source. The provisional limits can be tuned with:
+
+| Variable | Default | Scope |
+|---|---:|---|
+| `SKOLAR_RATE_LIMIT_GENERAL_REQUESTS` | `100` | Requests per general window |
+| `SKOLAR_RATE_LIMIT_GENERAL_WINDOW_SECONDS` | `60` | General window length |
+| `SKOLAR_RATE_LIMIT_NOVA_REQUESTS` | `30` | Requests per `/nova/` window |
+| `SKOLAR_RATE_LIMIT_NOVA_WINDOW_SECONDS` | `60` | `/nova/` window length |
+
+These defaults are not production quotas. The limiter is process-local, so
+multi-worker or multi-instance deployments require a shared store before the
+limit can be treated as global.
+
 ### Endpoints
 
 | Method | Endpoint | Description |

@@ -11,6 +11,7 @@ from pydantic import BaseModel
 from dotenv import load_dotenv
 
 from app.dependencies import get_current_user_id, supabase
+from app.rate_limiting import SlidingWindowRateLimiter
 
 load_dotenv()
 
@@ -19,6 +20,47 @@ DEFAULT_DEV_JWT_SECRET = "skolar-super-secure-test-secret-key-32chars"
 SUPABASE_JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET", DEFAULT_DEV_JWT_SECRET)
 
 app = FastAPI(title="Skolar Backend API")
+
+
+def _positive_int_env(name: str, default: int) -> int:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    try:
+        parsed = int(value)
+    except ValueError as exc:
+        raise ValueError(f"{name} must be a positive integer.") from exc
+    if parsed <= 0:
+        raise ValueError(f"{name} must be a positive integer.")
+    return parsed
+
+
+def _positive_float_env(name: str, default: float) -> float:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    try:
+        parsed = float(value)
+    except ValueError as exc:
+        raise ValueError(f"{name} must be a positive number.") from exc
+    if parsed <= 0:
+        raise ValueError(f"{name} must be a positive number.")
+    return parsed
+
+
+# Provisional defaults until deployment-specific quotas are approved.
+rate_limiter = SlidingWindowRateLimiter(
+    {
+        "general": (
+            _positive_int_env("SKOLAR_RATE_LIMIT_GENERAL_REQUESTS", 100),
+            _positive_float_env("SKOLAR_RATE_LIMIT_GENERAL_WINDOW_SECONDS", 60.0),
+        ),
+        "nova": (
+            _positive_int_env("SKOLAR_RATE_LIMIT_NOVA_REQUESTS", 30),
+            _positive_float_env("SKOLAR_RATE_LIMIT_NOVA_WINDOW_SECONDS", 60.0),
+        ),
+    }
+)
 
 # Add CORS Middleware
 app.add_middleware(
@@ -45,6 +87,22 @@ async def security_gatekeeper_middleware(request: Request, call_next):
         if request.method == "OPTIONS" or request.url.path in ["/health", "/docs", "/openapi.json", "/redoc"]:
             return await call_next(request)
 
+        rate_limit_category = "nova" if request.url.path.startswith("/nova/") else "general"
+
+        def enforce_rate_limit(key: str):
+            decision = rate_limiter.check(key, rate_limit_category)
+            if not decision.allowed:
+                headers = {}
+                if decision.retry_after is not None:
+                    headers["Retry-After"] = str(decision.retry_after)
+                raise HTTPException(
+                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                    detail="Too many requests. Please try again later.",
+                    headers=headers,
+                )
+
+        client_key = request.client.host if request.client else "unknown-client"
+
         # --------------------------------------------------------------------
         # LAYER 1: Edge Transport Security (HTTPS Check)
         # --------------------------------------------------------------------
@@ -63,6 +121,7 @@ async def security_gatekeeper_middleware(request: Request, call_next):
         # --------------------------------------------------------------------
         auth_header = request.headers.get("Authorization")
         if not auth_header or not auth_header.startswith("Bearer "):
+            enforce_rate_limit(f"ip:{client_key}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Missing or malformed Authorization header."
@@ -110,18 +169,21 @@ async def security_gatekeeper_middleware(request: Request, call_next):
             request.state.custom_roles = custom_roles
 
         except PyJWTError:
+            enforce_rate_limit(f"ip:{client_key}")
             # Return generic error detail without leaking internal parser exception details
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid or expired authentication token."
             )
 
+        enforce_rate_limit(f"user:{user_id}")
         return await call_next(request)
 
     except HTTPException as exc:
         return JSONResponse(
             status_code=exc.status_code,
-            content={"detail": exc.detail}
+            content={"detail": exc.detail},
+            headers=exc.headers,
         )
 
 
