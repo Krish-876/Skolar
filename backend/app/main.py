@@ -10,7 +10,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from dotenv import load_dotenv
 
-from app.dependencies import get_current_user_id, supabase
+from app.dependencies import require_student_or_admin, supabase
 from app.rate_limiting import SlidingWindowRateLimiter
 
 load_dotenv()
@@ -150,10 +150,11 @@ async def security_gatekeeper_middleware(request: Request, call_next):
             app_metadata = payload.get("app_metadata")
 
             # Safely extract custom roles without raising AttributeError on non-dict types
-            if isinstance(app_metadata, dict):
+            custom_roles_trusted = isinstance(app_metadata, dict) and isinstance(
+                app_metadata.get("roles"), list
+            )
+            if custom_roles_trusted:
                 custom_roles = app_metadata.get("roles", ["student"])
-                if not isinstance(custom_roles, list):
-                    custom_roles = ["student"]
             else:
                 custom_roles = ["student"]
 
@@ -167,6 +168,7 @@ async def security_gatekeeper_middleware(request: Request, call_next):
             request.state.user_id = user_id
             request.state.user_role = user_role
             request.state.custom_roles = custom_roles
+            request.state.custom_roles_trusted = custom_roles_trusted
 
         except PyJWTError:
             enforce_rate_limit(f"ip:{client_key}")
@@ -215,7 +217,7 @@ class TriggerCheckResponse(BaseModel):
 
 
 @app.post("/nova/trigger/check", response_model=TriggerCheckResponse)
-def check_nova_trigger(user_id: str = Depends(get_current_user_id)):
+def check_nova_trigger(user_id: str = Depends(require_student_or_admin)):
     """
     Synchronous FastAPI route to handle sync Supabase RPC execution safely.
     """

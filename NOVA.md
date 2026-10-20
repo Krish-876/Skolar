@@ -103,22 +103,19 @@ earlier planned design that assumed a `/nova/*` prefix — don't assume one.
 Groq reasoning effort. Both run the identical full-snapshot prompt through
 the identical code path; there's no separate lighter/scoped re-rank yet.
 
-### Auth — the real gap
+### Auth and scope
 
-**None of the 5 routes above require authentication.** `user_id` is a bare,
-trusted path parameter on every one of them — confirmed directly in
-`backend/nova/api/deps.py` and every router (no `Depends()` auth check
-anywhere). CORS is wide open (`allow_origins=["*"]`) with an explicit
-`# TODO: narrow allow_origins once... auth isn't enforced yet either` in
-`backend/nova/api/main.py`. Anyone who knows or guesses a `user_id` can read
-or act on that student's data today.
+All user-scoped routes require a verified bearer token through
+`backend/nova/api/deps.py`. The path `user_id` is checked against the
+verified authenticated user before Supabase/Groq clients or session state are
+constructed, returning `401` for missing/invalid authentication and `403` for
+cross-user access. The service currently exposes student-owned operations
+only; no administrator-only Nova operation is defined in this repository.
 
-This is a **different, and currently worse, auth posture than
-`backend/app`'s trigger-check route** (`POST /nova/trigger/check`), which
-*is* properly protected — see [Nova Trigger Layer](#nova-trigger-layer-backendapp).
-The fix is to copy that exact pattern
-(`HTTPBearer` → `supabase.auth.get_user(token)`) into `backend/nova/api/deps.py`
-and apply it to all 5 routes. See [Tech Debt](#tech-debt).
+The separate `backend/app` trigger route accepts only trusted application
+roles (`student` or `admin`) from verified JWT `app_metadata`. Supabase's
+generic JWT role claim is not treated as an application role, and missing or
+unrecognized application role metadata is denied.
 
 ## Proposals Flow (Confirmation Gate)
 
@@ -210,11 +207,9 @@ one of the backend's response types.
 
 `userId` is sourced from `Supabase.instance.client.auth.currentUser?.id`,
 falling back to a hardcoded dev ID (`dev-student-01` / `dev-user-001`
-depending on call site) if there's no session — and **no request anywhere in
-this datasource attaches an `Authorization` header**, so today it works
-precisely because the backend doesn't check one either (see
-[Auth — the real gap](#auth--the-real-gap) above). Fixing backend auth and
-wiring a bearer token here are a matched pair — see [Tech Debt](#tech-debt).
+depending on call site) when there is no session. The shared Dio client
+attaches the current Supabase bearer token; the API independently verifies
+that token and rejects requests whose path `userId` does not match it.
 
 ## Nova CLI (Dev Prototype)
 
