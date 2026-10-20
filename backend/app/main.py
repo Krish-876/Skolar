@@ -15,7 +15,7 @@ from app.dependencies import get_current_user_id, supabase
 load_dotenv()
 
 # Configured Supabase JWT signing secret (with fallback for local dev/testing)
-DEFAULT_DEV_JWT_SECRET = "skolar-super-secure-test-secret-key-32chars"
+DEFAULT_DEV_JWT_SECRET = "skolar-super-secure-test-secret-key-32chars"  # noqa: S105
 SUPABASE_JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET", DEFAULT_DEV_JWT_SECRET)
 
 app = FastAPI(title="Skolar Backend API")
