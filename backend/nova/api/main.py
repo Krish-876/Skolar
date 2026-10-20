@@ -3,7 +3,6 @@ import logging
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-import traceback
 
 from nova.api.routers import chat, facts, health, proposals, reasoning, subjects
 
@@ -15,9 +14,7 @@ app = FastAPI(title="Nova API")
 async def global_exception_handler(request: Request, exc: Exception):
     return JSONResponse(
         status_code=500,
-        content={
-            "detail": f"{str(exc)}\n\nTraceback:\n{traceback.format_exc()}"
-        }
+        content={"detail": "An internal server error occurred."},
     )
 
 # TODO: narrow allow_origins once the Flutter app's release/dev URLs are fixed.

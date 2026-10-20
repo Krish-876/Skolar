@@ -1,3 +1,4 @@
+import logging
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -10,6 +11,7 @@ from nova.services.chat_service import GROQ_MODEL, ask_nova, generate_initial_su
 from nova.services.proposals_service import create_proposals
 
 router = APIRouter(tags=["chat"])
+logger = logging.getLogger(__name__)
 
 
 class SuggestionsResponse(BaseModel):
@@ -34,8 +36,8 @@ def get_suggestions(
             GROQ_MODEL,
         )
         return SuggestionsResponse(suggestions=suggestions)
-    except Exception as e:
-        print(f"🔴 [Suggestions Router Error]: {e}")
+    except Exception:
+        logger.exception("Suggestions generation failed.")
         return SuggestionsResponse(
             suggestions=[
                 "What should I study today?",
@@ -76,12 +78,10 @@ def chat(
             )
             response.turn_id = turn_id
             response.pending_proposals = proposals
-    except Exception as e:
+    except Exception:
         session.facts_state.rollback()
-        print(f"🔴 [Chat Router Error]: {e}")
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.exception("Chat generation failed.")
+        raise HTTPException(status_code=500, detail="Unable to process the request.")
 
     session.facts_state.commit()
     session.history.append(ChatTurn(role="user", content=req.question))

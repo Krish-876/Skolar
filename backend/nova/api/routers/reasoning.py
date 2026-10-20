@@ -71,10 +71,10 @@ def run_reasoning(
             log_deferred_pass=_log_deferred_pass,
             groq_backup=groq_backup,
         )
-    except Exception as e:
+    except Exception:
         session.facts_state.rollback()
-        logger.error(f"🔴 [Reasoning Router Error]: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.exception("Reasoning pass failed.")
+        raise HTTPException(status_code=500, detail="Unable to process the request.")
 
     session.facts_state.commit()
 

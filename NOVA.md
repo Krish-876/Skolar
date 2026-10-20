@@ -117,6 +117,17 @@ roles (`student` or `admin`) from verified JWT `app_metadata`. Supabase's
 generic JWT role claim is not treated as an application role, and missing or
 unrecognized application role metadata is denied.
 
+### Data policy shield
+
+Before Nova, subject matching, PYQ extraction, or question-generation
+payloads reach an external model, `backend/nova/services/privacy.py` makes a
+structured safe copy. Direct identifiers (`email`, phone fields, full names,
+roll numbers, and `user_id`) are redacted by field policy; common email,
+phone, and labelled roll-number values in free text are also redacted.
+Academic attributes such as branch, semester, subject, and topic remain
+available. Unsupported payload values fail closed, and API error responses
+use generic messages rather than returning exception text or tracebacks.
+
 ## Proposals Flow (Confirmation Gate)
 
 Chat never writes `standing_flags`, `situation_flags`, `nova_history`, or
