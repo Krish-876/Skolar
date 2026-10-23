@@ -536,25 +536,35 @@ class TestRescheduleMissedTasks:
         updated_row = next(r for r in fake_db.table("tasks").rows if r["id"] == task_id)
         assert updated_row["reschedule_count"] == 3
 
-    def test_roll_forward_and_missed_respect_user_and_status(self, fake_db: _FakeSupabase) -> None:
-        """Updates are scoped by user_id and status, not just id."""
-        own_id = self._seed_pending(
-            fake_db, week_start=self.PAST_WEEK_START, planned_for="2026-10-01"
-        )
+    @pytest.mark.parametrize(
+        ("week_start", "planned_for"),
+        [
+            (CURRENT_WEEK_START, "2026-10-05"),  # roll-forward branch
+            (PAST_WEEK_START, "2026-10-01"),  # mark-missed branch
+        ],
+    )
+    def test_task_completed_after_overdue_query_is_skipped(
+        self, fake_db: _FakeSupabase, week_start: str, planned_for: str
+    ) -> None:
+        """A task completed between the overdue select and the update is not
+        modified and is not reported in either result list."""
+        task_id = self._seed_pending(fake_db, week_start=week_start, planned_for=planned_for)
         tasks_table = fake_db.table("tasks")
         real_update = tasks_table.update
 
         def update_after_complete(payload: dict[str, Any]) -> _FakeQuery:
-            # Simulate the task being completed after the overdue select.
             tasks_table.rows = [{**r, "status": "done"} for r in tasks_table.rows]
             return real_update(payload)
 
         tasks_table.update = update_after_complete  # type: ignore[method-assign]
-        reschedule_missed_tasks(
+        before = {**next(r for r in tasks_table.rows if r["id"] == task_id), "status": "done"}
+
+        result = reschedule_missed_tasks(
             fake_db, USER_A, self.AS_OF, self.WEEK_START_DAY, WHY_LOG_ID  # type: ignore[arg-type]
         )
-        row = next(r for r in tasks_table.rows if r["id"] == own_id)
-        assert row["status"] == "done"
+
+        assert result == {"rolled_forward": [], "marked_missed": []}
+        assert next(r for r in tasks_table.rows if r["id"] == task_id) == before
 
     def test_empty_when_no_overdue_tasks(self, fake_db: _FakeSupabase) -> None:
         result = reschedule_missed_tasks(

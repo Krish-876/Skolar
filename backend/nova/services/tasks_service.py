@@ -401,20 +401,36 @@ def reschedule_missed_tasks(
 
         if task_week_start >= current_week_start_str:
             # Still within the current week: roll forward to today.
-            supabase.table("tasks").update(
-                {
-                    "planned_for": as_of_date,
-                    "reschedule_count": row["reschedule_count"] + 1,
-                    "why_log_id": why_log_id,
-                }
-            ).eq("id", task_id).eq("user_id", user_id).eq("status", "pending").execute()
-            rolled_forward.append(task_id)
+            updated = (
+                supabase.table("tasks")
+                .update(
+                    {
+                        "planned_for": as_of_date,
+                        "reschedule_count": row["reschedule_count"] + 1,
+                        "why_log_id": why_log_id,
+                    }
+                )
+                .eq("id", task_id)
+                .eq("user_id", user_id)
+                .eq("status", "pending")
+                .execute()
+                .data
+            )
+            if updated:
+                rolled_forward.append(task_id)
         else:
             # Past week: mark missed.
-            supabase.table("tasks").update(
-                {"status": "missed", "why_log_id": why_log_id}
-            ).eq("id", task_id).eq("user_id", user_id).eq("status", "pending").execute()
-            marked_missed.append(task_id)
+            updated = (
+                supabase.table("tasks")
+                .update({"status": "missed", "why_log_id": why_log_id})
+                .eq("id", task_id)
+                .eq("user_id", user_id)
+                .eq("status", "pending")
+                .execute()
+                .data
+            )
+            if updated:
+                marked_missed.append(task_id)
 
     return {"rolled_forward": rolled_forward, "marked_missed": marked_missed}
 
