@@ -56,7 +56,8 @@ _TIMER_MIN_FALLBACK = 60
 def _read_focus_min_seconds(supabase: Client) -> int:
     """Read ``focus_min_duration_seconds`` from nova_config.
 
-    Returns the global default (60) if the row is missing or malformed.
+    Returns the global default (60) if the row is missing or malformed, and
+    never less than 60 (the DB CHECK lower bound).
     This mirrors how get_activity_daily reads the same key in SQL.
     """
     try:
@@ -73,8 +74,9 @@ def _read_focus_min_seconds(supabase: Client) -> int:
         if rows:
             raw = rows[0].get("value")
             # Supabase returns jsonb scalars as their Python equivalents.
-            if isinstance(raw, (int, float)) and int(raw) > 0:
-                return int(raw)
+            if isinstance(raw, (int, float)) and not isinstance(raw, bool):
+                # Never go below the DB CHECK lower bound.
+                return max(int(raw), _TIMER_MIN_FALLBACK)
     except Exception:
         logger.warning("Could not read focus_min_duration_seconds from nova_config; defaulting to 60")
     return _TIMER_MIN_FALLBACK
@@ -105,6 +107,15 @@ def _validate_timer_seconds(min_seconds: int, timer_seconds: int) -> None:
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
+
+
+def _validate_tasks(min_seconds: int, tasks: list[dict[str, Any]]) -> None:
+    """Raise ValueError unless every task has all required keys and a valid timer."""
+    for t in tasks:
+        missing = [k for k in _REQUIRED_TASK_KEYS if k not in t]
+        if missing:
+            raise ValueError(f"task is missing required keys: {', '.join(missing)}")
+        _validate_timer_seconds(min_seconds, t["timer_seconds"])
 
 
 def create_weekly_tasks(
@@ -150,10 +161,10 @@ def create_weekly_tasks(
     if not tasks:
         raise ValueError("tasks must be a non-empty list")
 
-    min_seconds = _read_focus_min_seconds(supabase)
+    _validate_tasks(_read_focus_min_seconds(supabase), tasks)
+
     rows: list[dict[str, Any]] = []
     for t in tasks:
-        _validate_timer_seconds(min_seconds, t["timer_seconds"])
         rows.append(
             {
                 "user_id": user_id,
@@ -236,12 +247,7 @@ def replan_weekly_tasks(
 
     # Validate every incoming task before any write so a bad entry midway
     # cannot leave a half-applied plan.
-    min_seconds = _read_focus_min_seconds(supabase)
-    for t in updated_tasks:
-        missing = [k for k in _REQUIRED_TASK_KEYS if k not in t]
-        if missing:
-            raise ValueError(f"task is missing required keys: {', '.join(missing)}")
-        _validate_timer_seconds(min_seconds, t["timer_seconds"])
+    _validate_tasks(_read_focus_min_seconds(supabase), updated_tasks)
 
     # Fetch the current week's tasks so we know which ones to update, drop or skip.
     existing_rows = cast(
@@ -317,12 +323,21 @@ def replan_weekly_tasks(
         if row["status"] == "pending" and row_id not in incoming_ids
     ]
 
+    dropped: list[str] = []
     if ids_to_drop:
-        supabase.table("tasks").update({"status": "dropped", "why_log_id": why_log_id}).in_(
-            "id", ids_to_drop
-        ).execute()
+        dropped_rows = cast(
+            list[dict[str, Any]],
+            supabase.table("tasks")
+            .update({"status": "dropped", "why_log_id": why_log_id})
+            .in_("id", ids_to_drop)
+            .eq("user_id", user_id)
+            .eq("status", "pending")
+            .execute()
+            .data,
+        )
+        dropped = [r["id"] for r in dropped_rows]
 
-    return {"upserted": upserted, "dropped": ids_to_drop}
+    return {"upserted": upserted, "dropped": dropped}
 
 
 def reschedule_missed_tasks(
@@ -392,13 +407,13 @@ def reschedule_missed_tasks(
                     "reschedule_count": row["reschedule_count"] + 1,
                     "why_log_id": why_log_id,
                 }
-            ).eq("id", task_id).execute()
+            ).eq("id", task_id).eq("user_id", user_id).eq("status", "pending").execute()
             rolled_forward.append(task_id)
         else:
             # Past week: mark missed.
             supabase.table("tasks").update(
                 {"status": "missed", "why_log_id": why_log_id}
-            ).eq("id", task_id).execute()
+            ).eq("id", task_id).eq("user_id", user_id).eq("status", "pending").execute()
             marked_missed.append(task_id)
 
     return {"rolled_forward": rolled_forward, "marked_missed": marked_missed}
@@ -498,8 +513,11 @@ def update_task_timer(
         )
         .eq("id", task_id)
         .eq("user_id", user_id)
+        .eq("status", "pending")
         .execute()
         .data,
     )
+    if not updated_rows:
+        raise ValueError(f"Task {task_id} changed state before the timer update; no change made")
 
-    return {"why_log_id": why_log_id, "updated_task": updated_rows[0] if updated_rows else {}}
+    return {"why_log_id": why_log_id, "updated_task": updated_rows[0]}

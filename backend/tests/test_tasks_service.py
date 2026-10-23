@@ -28,6 +28,7 @@ if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
 from nova.services.tasks_service import (  # noqa: E402
+    _read_focus_min_seconds,
     create_weekly_tasks,
     replan_weekly_tasks,
     reschedule_missed_tasks,
@@ -236,6 +237,13 @@ class TestCreateWeeklyTasks:
         result = create_weekly_tasks(fake_db, USER_A, WEEK_START, tasks, WHY_LOG_ID)  # type: ignore[arg-type]
         assert len(result) == 1
 
+    def test_raises_on_missing_key_before_any_write(self, fake_db: _FakeSupabase) -> None:
+        bad = _make_task()
+        del bad["title"]
+        with pytest.raises(ValueError, match="title"):
+            create_weekly_tasks(fake_db, USER_A, WEEK_START, [_make_task(), bad], WHY_LOG_ID)  # type: ignore[arg-type]
+        assert fake_db.table("tasks").rows == []
+
     def test_nova_config_min_respected(self) -> None:
         """If nova_config sets a higher minimum (e.g. 300s), lower values fail."""
         db = _FakeSupabase()
@@ -243,6 +251,25 @@ class TestCreateWeeklyTasks:
         tasks = [_make_task(timer_seconds=120)]  # below 300
         with pytest.raises(ValueError, match="minimum"):
             create_weekly_tasks(db, USER_A, WEEK_START, tasks, WHY_LOG_ID)  # type: ignore[arg-type]
+
+
+class TestReadFocusMinSeconds:
+    @pytest.mark.parametrize("value", [True, False, "300", None])
+    def test_non_numeric_or_bool_falls_back_to_60(self, value: Any) -> None:
+        db = _FakeSupabase()
+        db.seed_nova_config("focus_min_duration_seconds", value)
+        assert _read_focus_min_seconds(db) == 60  # type: ignore[arg-type]
+
+    @pytest.mark.parametrize("value", [0, -5, 30])
+    def test_below_floor_clamped_to_60(self, value: int) -> None:
+        db = _FakeSupabase()
+        db.seed_nova_config("focus_min_duration_seconds", value)
+        assert _read_focus_min_seconds(db) == 60  # type: ignore[arg-type]
+
+    def test_above_floor_kept(self) -> None:
+        db = _FakeSupabase()
+        db.seed_nova_config("focus_min_duration_seconds", 300)
+        assert _read_focus_min_seconds(db) == 300  # type: ignore[arg-type]
 
 
 # ---------------------------------------------------------------------------
@@ -350,6 +377,32 @@ class TestReplanWeeklyTasks:
         task_table = fake_db.table("tasks")
         dropped_row = next(r for r in task_table.rows if r["id"] == dropped_id)
         assert dropped_row["status"] == "dropped"
+
+    def test_drop_skips_rows_no_longer_pending(self, fake_db: _FakeSupabase) -> None:
+        """A row completed after the initial read must not be dropped or reported."""
+        raced_id = _seed_task(fake_db, title="Completes mid-replan")
+        tasks_table = fake_db.table("tasks")
+        real_insert = tasks_table.insert
+
+        def insert_then_complete(payload: Any) -> _FakeQuery:
+            result = real_insert(payload)
+            tasks_table.rows = [
+                {**r, "status": "done", "completed_at": "2026-10-05T10:00:00Z"}
+                if r["id"] == raced_id
+                else r
+                for r in tasks_table.rows
+            ]
+            return result
+
+        tasks_table.insert = insert_then_complete  # type: ignore[method-assign]
+
+        result = replan_weekly_tasks(
+            fake_db, USER_A, WEEK_START, [_make_task(title="Fresh")], WHY_LOG_ID  # type: ignore[arg-type]
+        )
+
+        assert result["dropped"] == []
+        row = next(r for r in tasks_table.rows if r["id"] == raced_id)
+        assert row["status"] == "done"
 
     def test_done_tasks_not_dropped(self, fake_db: _FakeSupabase) -> None:
         """Done tasks must never be marked ``dropped`` even if omitted from the plan."""
@@ -483,6 +536,26 @@ class TestRescheduleMissedTasks:
         updated_row = next(r for r in fake_db.table("tasks").rows if r["id"] == task_id)
         assert updated_row["reschedule_count"] == 3
 
+    def test_roll_forward_and_missed_respect_user_and_status(self, fake_db: _FakeSupabase) -> None:
+        """Updates are scoped by user_id and status, not just id."""
+        own_id = self._seed_pending(
+            fake_db, week_start=self.PAST_WEEK_START, planned_for="2026-10-01"
+        )
+        tasks_table = fake_db.table("tasks")
+        real_update = tasks_table.update
+
+        def update_after_complete(payload: dict[str, Any]) -> _FakeQuery:
+            # Simulate the task being completed after the overdue select.
+            tasks_table.rows = [{**r, "status": "done"} for r in tasks_table.rows]
+            return real_update(payload)
+
+        tasks_table.update = update_after_complete  # type: ignore[method-assign]
+        reschedule_missed_tasks(
+            fake_db, USER_A, self.AS_OF, self.WEEK_START_DAY, WHY_LOG_ID  # type: ignore[arg-type]
+        )
+        row = next(r for r in tasks_table.rows if r["id"] == own_id)
+        assert row["status"] == "done"
+
     def test_empty_when_no_overdue_tasks(self, fake_db: _FakeSupabase) -> None:
         result = reschedule_missed_tasks(
             fake_db, USER_A, self.AS_OF, self.WEEK_START_DAY, WHY_LOG_ID  # type: ignore[arg-type]
@@ -541,6 +614,31 @@ class TestUpdateTaskTimer:
         assert "Student requested timer change" in log_row["reasoning_summary"]
         assert "I need more time" in log_row["reasoning_summary"]
         assert result["why_log_id"] == log_row["id"]
+
+    def test_raises_if_task_completed_between_check_and_update(
+        self, fake_db: _FakeSupabase
+    ) -> None:
+        task_id = self._seed_task(fake_db)
+        why_table = fake_db.table("nova_why_log")
+        real_insert = why_table.insert
+
+        def insert_then_complete(payload: Any) -> _FakeQuery:
+            for r in fake_db.table("tasks").rows:
+                r["status"] = "done"
+            return real_insert(payload)
+
+        why_table.insert = insert_then_complete  # type: ignore[method-assign]
+
+        with pytest.raises(ValueError, match="changed state"):
+            update_task_timer(fake_db, USER_A, task_id, 1800, "reason")  # type: ignore[arg-type]
+        task_row = next(r for r in fake_db.table("tasks").rows if r["id"] == task_id)
+        assert task_row["timer_seconds"] == 1500
+
+    def test_returns_updated_row(self, fake_db: _FakeSupabase) -> None:
+        task_id = self._seed_task(fake_db)
+        result = update_task_timer(fake_db, USER_A, task_id, 1800, "reason")  # type: ignore[arg-type]
+        assert result["updated_task"]["id"] == task_id
+        assert result["updated_task"]["timer_seconds"] == 1800
 
     def test_updates_task_timer_seconds(self, fake_db: _FakeSupabase) -> None:
         task_id = self._seed_task(fake_db)
