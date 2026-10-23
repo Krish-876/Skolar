@@ -67,12 +67,14 @@ class NovaChatAppBar extends StatelessWidget implements PreferredSizeWidget {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(
-                                Icons.arrow_back_ios_new_rounded,
-                                color: Colors.white,
-                                size: 18,
-                              ),
-                              const SizedBox(width: 6),
+                              if (Navigator.of(context).canPop()) ...[
+                                const Icon(
+                                  Icons.arrow_back_ios_new_rounded,
+                                  color: Colors.white,
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 6),
+                              ],
                               NovaMascotAvatar(
                                 size: 34,
                                 state: activeMascotState,

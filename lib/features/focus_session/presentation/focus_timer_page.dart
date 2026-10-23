@@ -13,7 +13,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
+import 'package:Skolar/core/routing/app_routes.dart';
+import 'package:Skolar/core/routing/app_shell.dart';
 
 import '../controllers/focus_timer_controller.dart';
 import '../services/focus_preferences_service.dart';
@@ -212,6 +215,7 @@ class FocusTimerPageState extends ConsumerState<FocusTimerPage>
     _entryWipeController.dispose();
     _exitWipeController.dispose();
     _controller.dispose();
+    ref.read(dockVisibilityProvider.notifier).state = true;
     super.dispose();
   }
 
@@ -294,6 +298,7 @@ class FocusTimerPageState extends ConsumerState<FocusTimerPage>
     FocusPipService.setPipEnabled(false);
     _resetPhaseTakeoverState();
     _controller.reset();
+    ref.read(dockVisibilityProvider.notifier).state = true;
     _springWaveBack();
     FocusSoundService.stop();
     FocusNotificationService.showSessionCancelledNotification();
@@ -327,6 +332,7 @@ class FocusTimerPageState extends ConsumerState<FocusTimerPage>
   }
 
   void _onTimerComplete() {
+    ref.read(dockVisibilityProvider.notifier).state = true;
     FocusWakelockService.disable();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     _zenAnimController.animateTo(0.0);
@@ -1068,38 +1074,76 @@ class FocusTimerPageState extends ConsumerState<FocusTimerPage>
       child: IgnorePointer(
         ignoring: isRunning,
         child: Padding(
-          padding: const EdgeInsets.only(top: 8, right: 16),
-          child: Align(
-            alignment: Alignment.topRight,
-            child: GestureDetector(
-              onTap: () {
-                setState(() {
-                  _showTutorial = true;
-                  _tutorialStep = 0;
-                });
-              },
-              child: Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withValues(alpha: 0.07),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.1),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              GestureDetector(
+                onTap: () => context.push(AppRoutes.mathGame),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.07),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.1),
+                    ),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.bolt_rounded,
+                        size: 14,
+                        color: AppTheme.accentPurple,
+                      ),
+                      SizedBox(width: 4),
+                      Text(
+                        'Matiks Speedrun',
+                        style: TextStyle(
+                          fontFamily: 'GoogleSans',
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white70,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                child: const Center(
-                  child: Text(
-                    '?',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
+              ),
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _showTutorial = true;
+                    _tutorialStep = 0;
+                  });
+                },
+                child: Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withValues(alpha: 0.07),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.1),
+                    ),
+                  ),
+                  child: const Center(
+                    child: Text(
+                      '?',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
+            ],
           ),
         ),
       ),
@@ -1431,6 +1475,7 @@ class FocusTimerPageState extends ConsumerState<FocusTimerPage>
             child: _buildSliderTrackBar(constraints),
           ),
         ),
+        if (isIdle) const SizedBox(height: 72),
       ],
     );
 
@@ -1767,6 +1812,7 @@ class FocusTimerPageState extends ConsumerState<FocusTimerPage>
             _sessionClientId = const Uuid().v4();
 
             _controller.start();
+            ref.read(dockVisibilityProvider.notifier).state = false;
             _controller.waveAnimationController.value = 1.0;
             SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
             FocusSoundService.playStartFocus();
@@ -1943,6 +1989,7 @@ class FocusTimerPageState extends ConsumerState<FocusTimerPage>
               _resetPhaseTakeoverState();
               _logEarlyStoppedSession();
               _controller.reset();
+              ref.read(dockVisibilityProvider.notifier).state = true;
               _springWaveBack();
             },
           ),
