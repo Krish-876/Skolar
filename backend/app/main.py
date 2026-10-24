@@ -1,22 +1,228 @@
+import os
 import logging
-from fastapi import FastAPI, Depends, HTTPException, status
-from pydantic import BaseModel
 from typing import List, Dict, Any
-from app.dependencies import get_current_user_id, supabase
+
+import jwt
+from jwt import PyJWTError
+from fastapi import FastAPI, Request, Depends, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel
+from dotenv import load_dotenv
+
+from app.dependencies import require_student_or_admin, supabase
+from app.rate_limiting import SlidingWindowRateLimiter
+
+load_dotenv()
+
+# Configured Supabase JWT signing secret (with fallback for local dev/testing)
+DEFAULT_DEV_JWT_SECRET = "skolar-super-secure-test-secret-key-32chars"
+SUPABASE_JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET", DEFAULT_DEV_JWT_SECRET)
 
 app = FastAPI(title="Skolar Backend API")
+
+
+def _positive_int_env(name: str, default: int) -> int:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    try:
+        parsed = int(value)
+    except ValueError as exc:
+        raise ValueError(f"{name} must be a positive integer.") from exc
+    if parsed <= 0:
+        raise ValueError(f"{name} must be a positive integer.")
+    return parsed
+
+
+def _positive_float_env(name: str, default: float) -> float:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    try:
+        parsed = float(value)
+    except ValueError as exc:
+        raise ValueError(f"{name} must be a positive number.") from exc
+    if parsed <= 0:
+        raise ValueError(f"{name} must be a positive number.")
+    return parsed
+
+
+# Provisional defaults until deployment-specific quotas are approved.
+rate_limiter = SlidingWindowRateLimiter(
+    {
+        "general": (
+            _positive_int_env("SKOLAR_RATE_LIMIT_GENERAL_REQUESTS", 100),
+            _positive_float_env("SKOLAR_RATE_LIMIT_GENERAL_WINDOW_SECONDS", 60.0),
+        ),
+        "nova": (
+            _positive_int_env("SKOLAR_RATE_LIMIT_NOVA_REQUESTS", 30),
+            _positive_float_env("SKOLAR_RATE_LIMIT_NOVA_WINDOW_SECONDS", 60.0),
+        ),
+    }
+)
+
+# Add CORS Middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# ============================================================================
+# LAYERS 1 & 2: Edge Transport Security & Identity / Session Auth
+# ============================================================================
+
+@app.middleware("http")
+async def security_gatekeeper_middleware(request: Request, call_next):
+    """
+    Ingress Security Pipeline:
+    - Layer 1: Edge Transport Security (TLS/HTTPS Enforcement)
+    - Layer 2: Identity & Session Auth (Cryptographic Supabase JWT Verification)
+    """
+    try:
+        # Exclude CORS preflight and open utility endpoints
+        if request.method == "OPTIONS" or request.url.path in ["/health", "/docs", "/openapi.json", "/redoc"]:
+            return await call_next(request)
+
+        rate_limit_category = "nova" if request.url.path.startswith("/nova/") else "general"
+
+        def enforce_rate_limit(key: str):
+            decision = rate_limiter.check(key, rate_limit_category)
+            if not decision.allowed:
+                headers = {}
+                if decision.retry_after is not None:
+                    headers["Retry-After"] = str(decision.retry_after)
+                raise HTTPException(
+                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                    detail="Too many requests. Please try again later.",
+                    headers=headers,
+                )
+
+        client_key = request.client.host if request.client else "unknown-client"
+
+        # --------------------------------------------------------------------
+        # LAYER 1: Edge Transport Security (HTTPS Check)
+        # --------------------------------------------------------------------
+        forwarded_proto = request.headers.get("x-forwarded-proto", "https")
+        client_host = request.client.host if request.client else ""
+        is_local_dev = client_host in ("127.0.0.1", "localhost", "testclient")
+
+        if forwarded_proto != "https" and not is_local_dev:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Insecure transport protocol. HTTPS is strictly required."
+            )
+
+        # --------------------------------------------------------------------
+        # LAYER 2: Identity & Session Auth (JWT Signature & Claims Verification)
+        # --------------------------------------------------------------------
+        auth_header = request.headers.get("Authorization")
+        if not auth_header or not auth_header.startswith("Bearer "):
+            enforce_rate_limit(f"ip:{client_key}")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Missing or malformed Authorization header."
+            )
+
+        token = auth_header.split(" ")[1]
+
+        try:
+            # Cryptographically verify signature, algorithm, audience, and expiration
+            jwt_secret = os.getenv("SUPABASE_JWT_SECRET", DEFAULT_DEV_JWT_SECRET)
+            payload = jwt.decode(
+                token,
+                jwt_secret,
+                algorithms=["HS256"],
+                audience="authenticated",
+                options={
+                    "verify_signature": True,
+                    "verify_exp": True,
+                    "verify_aud": True,
+                    "require": ["exp", "sub", "aud"],
+                },
+            )
+
+            user_id = payload.get("sub")
+            user_role = payload.get("role", "authenticated")
+            app_metadata = payload.get("app_metadata")
+
+            # Safely extract custom roles without raising AttributeError on non-dict types
+            custom_roles_trusted = isinstance(app_metadata, dict) and isinstance(
+                app_metadata.get("roles"), list
+            )
+            if custom_roles_trusted:
+                custom_roles = app_metadata.get("roles", ["student"])
+            else:
+                custom_roles = ["student"]
+
+            if not user_id:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Invalid token payload: User ID (sub) not found."
+                )
+
+            # Attach validated claims to request state
+            request.state.user_id = user_id
+            request.state.user_role = user_role
+            request.state.custom_roles = custom_roles
+            request.state.custom_roles_trusted = custom_roles_trusted
+
+        except PyJWTError:
+            enforce_rate_limit(f"ip:{client_key}")
+            # Return generic error detail without leaking internal parser exception details
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or expired authentication token."
+            )
+
+        enforce_rate_limit(f"user:{user_id}")
+        return await call_next(request)
+
+    except HTTPException as exc:
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"detail": exc.detail},
+            headers=exc.headers,
+        )
+
+
+# ============================================================================
+# ROUTE DATA MODELS & ENDPOINTS
+# ============================================================================
+
+@app.get("/health")
+def health_check():
+    """Liveness probe endpoint (bypasses Layer 1 & 2)."""
+    return {"status": "ok"}
+
+
+@app.get("/me")
+def get_current_user_profile(request: Request):
+    """
+    Returns caller identity context injected into request.state by Layer 2.
+    """
+    return {
+        "user_id": getattr(request.state, "user_id", None),
+        "user_role": getattr(request.state, "user_role", None),
+        "custom_roles": getattr(request.state, "custom_roles", []),
+    }
+
 
 class TriggerCheckResponse(BaseModel):
     trigger_needed: bool
     triggers: List[Dict[str, Any]]
 
+
 @app.post("/nova/trigger/check", response_model=TriggerCheckResponse)
-def check_nova_trigger(user_id: str = Depends(get_current_user_id)):
+def check_nova_trigger(user_id: str = Depends(require_student_or_admin)):
     """
     Synchronous FastAPI route to handle sync Supabase RPC execution safely.
     """
     try:
-        # Call Supabase function passing "p_user_id"
+        # Call Supabase stored procedure passing "p_user_id"
         db_response = supabase.rpc(
             "get_nova_triggers", 
             {"p_user_id": user_id}
@@ -24,21 +230,14 @@ def check_nova_trigger(user_id: str = Depends(get_current_user_id)):
         
         rows = db_response.data or []
         
-        if rows:
-            return TriggerCheckResponse(
-                trigger_needed=True,
-                triggers=rows
-            )
-        else:
-            return TriggerCheckResponse(
-                trigger_needed=False,
-                triggers=[]
-            )
+        return TriggerCheckResponse(
+            trigger_needed=bool(rows),
+            triggers=rows
+        )
 
     except HTTPException:
         raise
     except Exception as e:
-        # Log internal error details on server side without exposing them to client
         logging.error(f"Failed to check Nova triggers: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
