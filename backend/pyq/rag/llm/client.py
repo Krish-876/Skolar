@@ -4,6 +4,7 @@ import time
 from collections import deque
 
 from groq import Groq
+from nova.services.privacy import sanitize_for_external
 
 GROQ_MODEL = "openai/gpt-oss-120b"
 
@@ -155,12 +156,13 @@ def create_chat_completion(*, messages: list[dict], **kwargs):
     so the shared token budget is actually enforced across all callers/threads."""
     client = get_groq_client()
     limiter = get_token_limiter()
+    safe_messages = sanitize_for_external(messages)
 
     max_completion_tokens = kwargs.get("max_completion_tokens", kwargs.get("max_tokens"))
-    estimated = estimate_call_tokens(messages, max_completion_tokens)
+    estimated = estimate_call_tokens(safe_messages, max_completion_tokens)
     reservation_id = limiter.acquire(estimated)
 
-    response = client.chat.completions.create(messages=messages, **kwargs)
+    response = client.chat.completions.create(messages=safe_messages, **kwargs)
 
     usage = getattr(response, "usage", None)
     actual = usage.total_tokens if usage is not None else estimated

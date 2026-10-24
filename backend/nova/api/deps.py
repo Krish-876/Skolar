@@ -58,3 +58,16 @@ def get_current_user_id(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired authentication token.",
         ) from e
+
+
+def require_same_user(
+    user_id: str,
+    authenticated_user_id: str = Depends(get_current_user_id),
+) -> str:
+    """Enforce object ownership for every user-scoped Nova route."""
+    if authenticated_user_id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot access another user's data.",
+        )
+    return authenticated_user_id
