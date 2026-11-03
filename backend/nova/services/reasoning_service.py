@@ -272,11 +272,12 @@ _PLAN_INSTRUCTION = (
 
 
 def _build_messages(snapshot_dict: dict) -> list[dict]:
+    compact_snapshot = json.dumps(snapshot_dict, default=str, separators=(",", ":"))
     return [
         {"role": "system", "content": NOVA_SYSTEM_PROMPT},
         {
             "role": "system",
-            "content": f"{_PLAN_INSTRUCTION}\n{json.dumps(snapshot_dict, default=str)}",
+            "content": f"{_PLAN_INSTRUCTION}\n{compact_snapshot}",
         },
     ]
 

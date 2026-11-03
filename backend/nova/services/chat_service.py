@@ -154,22 +154,85 @@ def _facts_message(full_snapshot: dict) -> dict:
     }
 
 
+def _looks_like_student_snapshot(value: Any) -> bool:
+    """Detect whether a JSON blob matches the academic facts snapshot shape."""
+    if isinstance(value, dict):
+        keys = {str(k).lower() for k in value.keys()}
+        snapshot_keys = {
+            "academic_year",
+            "branch",
+            "standing_flags",
+            "situation_flags",
+            "study_capacity",
+            "career_units",
+            "user_subject_exams",
+            "snapshot_taken_at",
+        }
+        if keys & snapshot_keys:
+            return True
+        return any(k.endswith("_id") or k.endswith("_at") for k in keys)
+    if isinstance(value, list):
+        return any(_looks_like_student_snapshot(item) for item in value)
+    return False
+
+
+def _sanitize_for_payload(value: Any) -> Any:
+    """Strip facts-snapshot identifiers from structured payloads before returning them."""
+    if isinstance(value, dict):
+        if _looks_like_student_snapshot(value):
+            return None
+        cleaned: dict[str, Any] = {}
+        for k, v in value.items():
+            if _should_strip_key(k):
+                continue
+            sanitized = _sanitize_for_payload(v)
+            if sanitized is None:
+                continue
+            cleaned[k] = sanitized
+        return cleaned
+    if isinstance(value, list):
+        cleaned_list = []
+        for item in value:
+            sanitized = _sanitize_for_payload(item)
+            if sanitized is None:
+                continue
+            cleaned_list.append(sanitized)
+        return cleaned_list
+    return value
+
+
 def _sanitize_output(text: str) -> str:
     """Strips echoed context delimiter tags and suppresses raw JSON facts dumps."""
     if not text:
         return ""
-    cleaned = re.sub(r"</?student_context>", "", text, flags=re.IGNORECASE)
+    cleaned = re.sub(r"<?/?student_context>?", "", text, flags=re.IGNORECASE)
     stripped = cleaned.strip()
-    if stripped.startswith("{") and stripped.endswith("}"):
+
+    if not stripped:
+        return ""
+
+    if re.search(r"student_context|academic_year|branch|standing_flags|situation_flags", stripped, re.IGNORECASE):
+        logger.warning("Nova output contained a student snapshot leak; sanitizing.")
+        return "I'm here to help with your academic prep and career goals. What would you like to work on?"
+
+    try:
+        parsed = json.loads(stripped)
+    except json.JSONDecodeError:
+        parsed = None
+
+    if _looks_like_student_snapshot(parsed):
+        logger.warning("Nova output contained raw JSON facts dump; sanitizing.")
+        return "I'm here to help with your academic prep and career goals. What would you like to work on?"
+
+    for candidate in re.findall(r"\{.*?\}|\[.*?\]", stripped, flags=re.DOTALL):
         try:
-            parsed = json.loads(stripped)
-            if isinstance(parsed, dict) and any(
-                k in parsed for k in ["academic_year", "branch", "standing_flags"]
-            ):
-                logger.warning("Nova output contained raw JSON facts dump; sanitizing.")
-                return "I'm here to help with your academic prep and career goals. What would you like to work on?"
+            parsed = json.loads(candidate)
         except json.JSONDecodeError:
-            logger.debug("Output began and ended with braces but was not valid JSON; passing through.")
+            continue
+        if _looks_like_student_snapshot(parsed):
+            logger.warning("Nova output contained a structured facts payload; sanitizing.")
+            return "I'm here to help with your academic prep and career goals. What would you like to work on?"
+
     return cleaned.strip()
 
 
@@ -207,7 +270,7 @@ def _parse_response_to_chat_response(raw_text: str) -> ChatResponse:
             return ChatResponse(
                 type=data.get("type", "chat"),
                 message=msg,
-                data=data.get("data"),
+                data=_sanitize_for_payload(data.get("data")),
                 suggestions=data.get("suggestions", []),
             )
     except Exception:
