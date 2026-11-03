@@ -69,7 +69,12 @@ async def security_gatekeeper_middleware(request: Request, call_next):
                 detail="Missing or malformed Authorization header."
             )
 
-        token = auth_header.split(" ")[1]
+        token = auth_header.removeprefix("Bearer ").strip()
+        if not token:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Missing or malformed Authorization header."
+            )
 
         try:
             # Cryptographically verify signature, algorithm, audience, and expiration

@@ -138,6 +138,13 @@ def test_layer2_malformed_authorization_header():
     assert res.json()["detail"] == "Missing or malformed Authorization header."
 
 
+def test_layer2_empty_bearer_token():
+    """Verify 401 Unauthorized rather than 500 for an empty Bearer token."""
+    res = client.get("/me", headers={"Authorization": "Bearer   "})
+    assert res.status_code == 401
+    assert res.json()["detail"] == "Missing or malformed Authorization header."
+
+
 def test_layer2_invalid_jwt_format():
     """Verify 401 Unauthorized when token string is corrupted or not a valid JWT."""
     res = client.get("/me", headers={"Authorization": "Bearer not-a-valid-jwt"})
