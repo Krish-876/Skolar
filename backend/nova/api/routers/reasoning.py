@@ -2,7 +2,7 @@ import logging
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from nova.api.deps import get_session, get_supabase_and_groq
+from nova.api.deps import get_authorized_user_id, get_session, get_supabase_and_groq
 from nova.schemas.api import ReasoningRunRequest, ReasoningRunResponse
 from nova.schemas.reasoning_why_log import DeferredPassEntry
 from nova.services.reasoning_service import GROQ_MODEL, run_reasoning_pass
@@ -28,6 +28,7 @@ def run_reasoning(
     user_id: str,
     req: ReasoningRunRequest,
     clients: tuple = Depends(get_supabase_and_groq),
+    _authorized_user_id: str = Depends(get_authorized_user_id),
 ):
     supabase, groq, groq_backup = clients
     session = get_session(user_id, clients)
