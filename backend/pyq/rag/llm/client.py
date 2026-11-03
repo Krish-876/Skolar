@@ -155,7 +155,6 @@ def create_chat_completion(*, messages: list[dict], **kwargs):
     so the shared token budget is actually enforced across all callers/threads."""
     client = get_groq_client()
     limiter = get_token_limiter()
-
     max_completion_tokens = kwargs.get("max_completion_tokens", kwargs.get("max_tokens"))
     estimated = estimate_call_tokens(messages, max_completion_tokens)
     reservation_id = limiter.acquire(estimated)

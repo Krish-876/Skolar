@@ -31,6 +31,7 @@ from nova.schemas.subject_match import (
     MatchResult,
     SubjectCandidate,
 )
+from nova.services.privacy import sanitize_for_external
 
 logger = logging.getLogger(__name__)
 
@@ -127,7 +128,8 @@ def _build_messages(raw_text: str, candidate_pool: dict[str, SubjectCandidate]) 
         {
             "role": "user",
             "content": (
-                f"Student typed: {raw_text!r}\n\nCandidates:\n{json.dumps(candidate_payload)}"
+                f"Student typed: {sanitize_for_external(raw_text)!r}\n\n"
+                f"Candidates:\n{json.dumps(sanitize_for_external(candidate_payload))}"
             ),
         },
     ]

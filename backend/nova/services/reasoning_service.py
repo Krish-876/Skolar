@@ -7,6 +7,7 @@ path if both are down for a scheduled pass.
 """
 
 import json
+import logging
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -19,6 +20,9 @@ from nova.prompts.nova_system_prompt import NOVA_SYSTEM_PROMPT
 from nova.schemas.api import StudyPlan, TriggerType
 from nova.schemas.facts_snapshot import FactsSnapshot
 from nova.schemas.reasoning_why_log import DeferredPassEntry
+from nova.services.privacy import sanitize_for_external
+
+logger = logging.getLogger(__name__)
 
 GROQ_MODEL = "openai/gpt-oss-120b"
 NEMOTRON_MODEL = "nvidia/nemotron-3-ultra-550b-a55b:free"
@@ -272,11 +276,12 @@ _PLAN_INSTRUCTION = (
 
 
 def _build_messages(snapshot_dict: dict) -> list[dict]:
+    safe_snapshot = sanitize_for_external(snapshot_dict)
     return [
         {"role": "system", "content": NOVA_SYSTEM_PROMPT},
         {
             "role": "system",
-            "content": f"{_PLAN_INSTRUCTION}\n{json.dumps(snapshot_dict, default=str)}",
+            "content": f"{_PLAN_INSTRUCTION}\n{json.dumps(safe_snapshot, default=str)}",
         },
     ]
 
@@ -289,9 +294,10 @@ def _build_messages_tiered(
     Returns (messages, tier_used). If even tier 3 is still over cap the caller
     decides whether to proceed anyway or defer — we don't hard-block here."""
     messages: list[dict] = []
+    safe_facts = sanitize_for_external(facts.model_dump(mode="json"))
     for tier in (1, 2, 3):
         snapshot_dict = _compress_snapshot(facts, tier)
-        messages = _build_messages(snapshot_dict)
+        messages = _build_messages(safe_facts if tier == 1 else sanitize_for_external(snapshot_dict))
         if _count_tokens(messages, model) <= GROQ_TPM_CAP:
             return messages, tier
     # tier 3 still over cap — return it anyway, caller will check
@@ -342,8 +348,8 @@ def _try_groq(
         if not content:
             return None
         return StudyPlan.model_validate(json.loads(content)).model_dump()
-    except Exception as e:
-        print(f"🔴 [Groq Reasoning Error]: {e}")
+    except Exception:
+        logger.exception("Groq reasoning request failed.")
         if groq_backup is None:
             return None
         try:
@@ -358,8 +364,8 @@ def _try_groq(
             if not content:
                 return None
             return StudyPlan.model_validate(json.loads(content)).model_dump()
-        except Exception as e_backup:
-            print(f"🔴 [Groq Backup Reasoning Error]: {e_backup}")
+        except Exception:
+            logger.exception("Backup reasoning request failed.")
             return None
 
 

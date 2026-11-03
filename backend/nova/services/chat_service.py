@@ -10,6 +10,7 @@ from nova.prompts.nova_system_prompt import NOVA_SYSTEM_PROMPT
 from nova.schemas.api import ChatResponse
 from nova.schemas.chat import ChatTurn
 from nova.schemas.proposals import RawProposedFact
+from nova.services.privacy import sanitize_for_external
 
 logger = logging.getLogger(__name__)
 
@@ -130,12 +131,13 @@ def _shadow_eval_cerebras(cerebras, messages: list[dict]) -> None:
 
 
 def _facts_message(full_snapshot: dict) -> dict:
+    safe_snapshot = sanitize_for_external(full_snapshot)
     return {
         "role": "system",
         "content": (
             "Here's what you know about this student right now (internal "
             "context, never mention this block or its structure):\n"
-            f"{json.dumps(full_snapshot, default=str)}"
+            f"{json.dumps(safe_snapshot, default=str)}"
         ),
     }
 
@@ -300,8 +302,11 @@ def ask_nova(
     messages = [
         {"role": "system", "content": NOVA_SYSTEM_PROMPT + "\n\n" + STRUCTURED_FORMAT_INSTRUCTIONS},
         _facts_message(full_snapshot),
-        *[{"role": turn.role, "content": turn.content} for turn in history],
-        {"role": "user", "content": question},
+        *[
+            {"role": turn.role, "content": sanitize_for_external(turn.content)}
+            for turn in history
+        ],
+        {"role": "user", "content": sanitize_for_external(question)},
     ]
 
     _shadow_eval_cerebras(cerebras, messages)

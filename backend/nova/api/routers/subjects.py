@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 from supabase import Client
 
-from nova.api.deps import get_current_user_id, get_supabase_and_groq
+from nova.api.deps import get_supabase_and_groq, require_same_user
 from nova.schemas.subject_match import (
     AddSubjectRequest,
     AddSubjectResponse,
@@ -38,15 +38,9 @@ def _require_institution(supabase: Client, user_id: str) -> tuple[str, str | Non
 def add_subject(
     user_id: str,
     req: AddSubjectRequest,
+    _authorized_user_id: str = Depends(require_same_user),
     clients: tuple = Depends(get_supabase_and_groq),
-    authenticated_user_id: str = Depends(get_current_user_id),
 ):
-    if authenticated_user_id != user_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Cannot act on another user's subjects.",
-        )
-
     supabase, groq, groq_backup = clients
 
     institution_id, campus_id = _require_institution(supabase, user_id)
@@ -82,15 +76,9 @@ def add_subject(
 def confirm_subject(
     user_id: str,
     req: ConfirmSubjectRequest,
+    _authorized_user_id: str = Depends(require_same_user),
     clients: tuple = Depends(get_supabase_and_groq),
-    authenticated_user_id: str = Depends(get_current_user_id),
 ):
-    if authenticated_user_id != user_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Cannot act on another user's subjects.",
-        )
-
     supabase, _groq, _groq_backup = clients
 
     chosen = [req.subject_id, req.custom_subject_id, req.new_custom_subject]

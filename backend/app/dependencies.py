@@ -1,6 +1,6 @@
 import os
 import logging
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from supabase import create_client, Client
 from dotenv import load_dotenv
@@ -44,3 +44,22 @@ def get_current_user_id(credentials: HTTPAuthorizationCredentials = Depends(secu
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired authentication token."
         )
+
+
+def require_student_or_admin(request: Request) -> str:
+    """Allow only trusted application roles on shared Nova operations."""
+    roles = getattr(request.state, "custom_roles", [])
+    roles_are_trusted = getattr(request.state, "custom_roles_trusted", False)
+    if not roles_are_trusted or not isinstance(roles, list):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Insufficient permissions.",
+        )
+
+    normalized_roles = {role.lower() for role in roles if isinstance(role, str)}
+    if not normalized_roles.intersection({"student", "admin"}):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Insufficient permissions.",
+        )
+    return request.state.user_id
