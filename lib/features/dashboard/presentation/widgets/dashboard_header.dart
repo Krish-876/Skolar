@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:Skolar/core/routing/app_routes.dart';
 import 'package:Skolar/core/theme/app_theme.dart';
 import 'package:Skolar/features/dashboard/presentation/widgets/streak_strip.dart';
+import 'package:Skolar/shared/components/framed_avatar.dart';
 import 'package:Skolar/shared/providers/global_providers.dart';
 
 class DashboardHeader extends ConsumerWidget {
@@ -17,41 +19,70 @@ class DashboardHeader extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _DevMenuTrigger(
-            // Greeting + name share one line now (baseline-aligned so the
-            // small "Halo" and the large bold name sit on a common text
-            // baseline despite their very different font sizes) — each
-            // keeps its own original size/weight, just side by side instead
-            // of stacked.
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.baseline,
-              textBaseline: TextBaseline.alphabetic,
-              children: [
-                const Text(
-                  'Halo,',
-                  style: TextStyle(
-                    fontFamily: 'GoogleSans',
-                    color: AppTheme.textSecondary,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w400,
+          Row(
+            children: [
+              Expanded(
+                child: _DevMenuTrigger(
+                  // Greeting + name share one line now (baseline-aligned so the
+                  // small "Halo" and the large bold name sit on a common text
+                  // baseline despite their very different font sizes) — each
+                  // keeps its own original size/weight, just side by side instead
+                  // of stacked.
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    children: [
+                      const Text(
+                        'Halo,',
+                        style: TextStyle(
+                          fontFamily: 'GoogleSans',
+                          color: AppTheme.textSecondary,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          user.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontFamily: 'GoogleSans',
+                            color: AppTheme.textPrimary,
+                            fontSize: 22,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    user.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontFamily: 'GoogleSans',
-                      color: AppTheme.textPrimary,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
+              ),
+              const SizedBox(width: 12),
+              GestureDetector(
+                onTap: () => context.push(AppRoutes.profile),
+                child: Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppTheme.surfaceLight,
+                    border: Border.all(
+                      color: AppTheme.accentPurple.withValues(alpha: 0.35),
+                      width: 1.5,
                     ),
                   ),
+                  child: user.avatarData != null
+                      ? FramedAvatar(size: 38, svgString: user.avatarData)
+                      : const Icon(
+                          Icons.person_rounded,
+                          color: AppTheme.accentPurple,
+                          size: 20,
+                        ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
           const SizedBox(height: 12),
           // Its own row, full-width, below the greeting — the month grid

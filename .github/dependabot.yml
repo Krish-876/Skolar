@@ -23,6 +23,15 @@ updates:
         update-types:
           - "minor"
           - "patch"
+    ignore:
+      - dependency-name: "freezed"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "freezed_annotation"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "flutter_local_notifications"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "file_picker"
+        update-types: ["version-update:semver-major"]
 
   # --- Your own GitHub Actions workflow files ---
   - package-ecosystem: "github-actions"

@@ -326,12 +326,17 @@ def _try_groq(
     }
     try:
         try:
-            resp = groq.chat.completions.create(
+            # kwargs is built dynamically (temperature/response_format always
+            # present, reasoning_effort conditionally included), so mypy widens
+            # it to dict[str, object] and can't match Groq's per-model
+            # overloads - runtime-safe (this is the retry-without-one-key
+            # fallback below), not a real type mismatch.
+            resp = groq.chat.completions.create(  # type: ignore[call-overload]
                 **kwargs,
                 reasoning_effort=reasoning_effort,
             )
         except Exception:
-            resp = groq.chat.completions.create(**kwargs)
+            resp = groq.chat.completions.create(**kwargs)  # type: ignore[call-overload]
 
         content = resp.choices[0].message.content
         if not content:

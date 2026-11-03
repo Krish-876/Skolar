@@ -1,3 +1,5 @@
+import 'package:Skolar/features/nova_chat/domain/entities/proposal_entity.dart';
+
 enum MessageRole { user, assistant, system }
 
 enum MessageStatus { sending, sent, error }
@@ -77,6 +79,10 @@ class ChatMessageEntity {
   final dynamic
   structuredData; // QuizEntity | StudyPlanEntity | FlashcardEntity | PracticeProblemEntity
   final List<String> suggestions;
+  // Set only when this turn proposed one or more facts to remember
+  // (spec §5) - groups them for a single batched confirm/reject.
+  final String? proposalTurnId;
+  final List<ProposalSummaryEntity> pendingProposals;
 
   const ChatMessageEntity({
     required this.id,
@@ -88,6 +94,8 @@ class ChatMessageEntity {
     this.responseType = NovaResponseType.chat,
     this.structuredData,
     this.suggestions = const [],
+    this.proposalTurnId,
+    this.pendingProposals = const [],
   });
 
   bool get isUser => role == MessageRole.user;
@@ -103,6 +111,8 @@ class ChatMessageEntity {
     NovaResponseType? responseType,
     dynamic structuredData,
     List<String>? suggestions,
+    String? proposalTurnId,
+    List<ProposalSummaryEntity>? pendingProposals,
   }) {
     return ChatMessageEntity(
       id: id ?? this.id,
@@ -114,6 +124,8 @@ class ChatMessageEntity {
       responseType: responseType ?? this.responseType,
       structuredData: structuredData ?? this.structuredData,
       suggestions: suggestions ?? this.suggestions,
+      proposalTurnId: proposalTurnId ?? this.proposalTurnId,
+      pendingProposals: pendingProposals ?? this.pendingProposals,
     );
   }
 }

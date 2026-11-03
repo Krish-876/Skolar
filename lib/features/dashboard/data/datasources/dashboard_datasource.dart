@@ -7,22 +7,11 @@ abstract class DashboardDataSource {
   Future<List<DevelopmentAxisDto>> getDevelopmentAxes();
 }
 
-/// TODO: swap for a real client hitting POST /reasoning/{user_id}/run once
-/// Nova is wired up. Kept as the documented future seam — not implemented.
-class DashboardRemoteDataSource implements DashboardDataSource {
-  @override
-  Future<ProgressStatsDto> getProgressStats() => throw UnimplementedError();
-  @override
-  Future<DashboardPlanDto> getPlan() => throw UnimplementedError();
-  @override
-  Future<DashboardPlanDto> toggleTask(String taskId) =>
-      throw UnimplementedError();
-  @override
-  Future<List<DevelopmentAxisDto>> getDevelopmentAxes() =>
-      throw UnimplementedError();
-}
-
-/// In-memory dummy data for the preview. No Supabase, no HTTP.
+/// In-memory dummy data for tests and previews. No Supabase, no HTTP.
+///
+/// NOTE: focusSecondsThisSemester and focusSecondsThisWeek are seeded
+/// with plausible values (not zero) so the semester-hours badge and
+/// hours-this-week badge both render in the preview/smoke-test.
 class DashboardDummyDataSource implements DashboardDataSource {
   static final DateTime _today = DateTime.now();
   static DateTime _localDate(DateTime d) => DateTime(d.year, d.month, d.day);
@@ -44,10 +33,12 @@ class DashboardDummyDataSource implements DashboardDataSource {
   @override
   Future<ProgressStatsDto> getProgressStats() async {
     await Future.delayed(const Duration(milliseconds: 400));
+    // 132.5 h this semester ≈ 477_000 s; 8 h this week ≈ 28_800 s
     return ProgressStatsDto(
       tasksCompletedThisWeek: 9,
       tasksPlannedThisWeek: 14,
-      cumulativeHoursThisSemester: 132.5,
+      focusSecondsThisSemester: 477000,
+      focusSecondsThisWeek: 28800,
       dailyCompletions: List.generate(30, (i) {
         final date = _localDate(_today).subtract(Duration(days: 29 - i));
         return DailyCompletionDto(

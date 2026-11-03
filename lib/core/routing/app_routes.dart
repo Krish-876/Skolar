@@ -1,3 +1,4 @@
+import 'package:Skolar/core/routing/app_shell.dart';
 import 'package:Skolar/features/subjects/presentation/pages/subjects_pages.dart';
 import 'package:Skolar/model_viewer.dart';
 // import 'package:Skolar/place_holder.dart';
@@ -22,6 +23,8 @@ import 'package:Skolar/features/profile/presentation/pages/profile_page.dart';
 import 'package:Skolar/features/nova_chat/presentation/pages/nova_chat_page.dart';
 
 import 'dart:async';
+
+import 'package:Skolar/features/math_game/presentation/pages/math_game_page.dart';
 
 /// Lets a page know when it's covered by another route (didPushNext) or
 /// becomes the topmost route again (didPopNext) — used by
@@ -77,6 +80,7 @@ class AppRoutes {
   static const String test = '/test';
   static const String knowledgeTree = '/knowledge-tree';
   static const String novaChat = '/nova-chat';
+  static const String mathGame = '/math-game';
 }
 
 final goRouterProvider = GoRouter(
@@ -108,9 +112,61 @@ final goRouterProvider = GoRouter(
   },
   observers: [routeObserver],
   routes: [
-    // And add this route at the top of routes list:
+    // Developer Menu preserved for testing
     GoRoute(path: '/', builder: (_, _) => const _DevMenu()),
 
+    // Central persistent application shell with floating navigation dock
+    StatefulShellRoute.indexedStack(
+      builder: (context, state, navigationShell) {
+        return AppShell(navigationShell: navigationShell);
+      },
+      branches: [
+        // Tab 0: Home / Dashboard
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: AppRoutes.dashboard,
+              builder: (_, _) => const DashboardPage(),
+            ),
+          ],
+        ),
+        // Tab 1: Practice / Mock Tests
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: AppRoutes.mockTests,
+              builder: (_, _) => const MockTestPage(),
+            ),
+          ],
+        ),
+        // Tab 2: Nova AI Assistant
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: AppRoutes.novaChat,
+              builder: (_, _) => const NovaChatPage(),
+            ),
+          ],
+        ),
+        // Tab 3: Campus Feed
+        StatefulShellBranch(
+          routes: [
+            GoRoute(path: AppRoutes.feed, builder: (_, _) => const FeedPage()),
+          ],
+        ),
+        // Tab 4: Profile
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: AppRoutes.profile,
+              builder: (_, _) => const ProfilePage(),
+            ),
+          ],
+        ),
+      ],
+    ),
+
+    // Public Authentication & Onboarding Routes
     GoRoute(
       path: AppRoutes.auth,
       pageBuilder: (context, state) {
@@ -134,16 +190,8 @@ final goRouterProvider = GoRouter(
       path: AppRoutes.onboardingProfile,
       builder: (_, _) => const OnboardingProfilePage(),
     ),
-    GoRoute(
-      path: AppRoutes.dashboard,
-      builder: (_, _) => const DashboardPage(),
-    ),
-    GoRoute(
-      path: AppRoutes.analytics,
-      builder: (_, _) => const AnalyticsPage(),
-    ),
-    GoRoute(path: AppRoutes.mockTests, builder: (_, _) => const MockTestPage()),
-    GoRoute(path: AppRoutes.feed, builder: (_, _) => const FeedPage()),
+
+    // Full-Screen Dedicated Feature Flows
     GoRoute(
       path: AppRoutes.focusSession,
       builder: (_, state) {
@@ -153,27 +201,31 @@ final goRouterProvider = GoRouter(
         );
       },
     ),
+    GoRoute(path: AppRoutes.mathGame, builder: (_, _) => const MathGamePage()),
+    GoRoute(path: AppRoutes.subjects, builder: (_, _) => const SubjectsPage()),
     GoRoute(
       path: AppRoutes.examPrediction,
       builder: (_, _) => const ExamPredictionPage(),
     ),
-    GoRoute(path: AppRoutes.profile, builder: (_, _) => const ProfilePage()),
     GoRoute(
       path: AppRoutes.pyqUpload,
       builder: (_, _) => const PyqUploadPage(),
     ),
-    GoRoute(path: AppRoutes.colleges, builder: (_, _) => const CollegesPage()),
-    GoRoute(path: AppRoutes.subjects, builder: (_, _) => const SubjectsPage()),
-    GoRoute(path: AppRoutes.syllabus, builder: (_, _) => const SplashScreen()),
-    GoRoute(path: AppRoutes.test, builder: (_, _) => const TestLoadingPage()),
-
     GoRoute(
       path: AppRoutes.knowledgeTree,
       builder: (_, _) => const KnowledgeTreeBackground(
         modelPath: 'assets/models/knowledge_tree.glb',
       ),
     ),
-    GoRoute(path: AppRoutes.novaChat, builder: (_, _) => const NovaChatPage()),
+
+    // Unimplemented skeleton routes (preserved untouched)
+    GoRoute(
+      path: AppRoutes.analytics,
+      builder: (_, _) => const AnalyticsPage(),
+    ),
+    GoRoute(path: AppRoutes.colleges, builder: (_, _) => const CollegesPage()),
+    GoRoute(path: AppRoutes.syllabus, builder: (_, _) => const SplashScreen()),
+    GoRoute(path: AppRoutes.test, builder: (_, _) => const TestLoadingPage()),
   ],
 );
 
@@ -181,6 +233,7 @@ class _DevMenu extends StatelessWidget {
   const _DevMenu();
 
   static const _pages = [
+    ('Matiks Mental Math Game (Dev)', AppRoutes.mathGame),
     ('Nova AI Chat Window (Dev)', AppRoutes.novaChat),
     ('Onboarding Welcome', AppRoutes.onboardingWelcome),
     ('Onboarding', AppRoutes.onboardingProfile),

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:Skolar/core/theme/app_theme.dart';
+import 'package:Skolar/core/utils/semester_utils.dart';
 import 'package:Skolar/core/widgets/glass_background.dart';
 import 'package:Skolar/features/dashboard/domain/entities/dashboard_entity.dart';
 import 'package:Skolar/features/dashboard/presentation/providers/dashboard_provider.dart';
@@ -42,25 +43,33 @@ Map<WeeklyChartRange, List<ChartPoint>> _bucketChartData(
   final week = days.length >= 7 ? days.sublist(days.length - 7) : days;
 
   final monthBuckets = <ChartPoint>[];
-  for (var i = 0; i < days.length; i += 6) {
-    final bucket = days.skip(i).take(6);
-    final sum = bucket.fold<int>(0, (a, d) => a + d.tasksCompleted);
+  for (var i = 0; i < days.length; i += 7) {
+    final bucket = days.skip(i).take(7);
+    final sum = bucket.fold<int>(0, (a, d) => a + d.sessionCount);
     monthBuckets.add(
       ChartPoint(label: 'W${monthBuckets.length + 1}', value: sum.toDouble()),
     );
   }
 
-  final semester = List.generate(
-    6,
-    (i) => ChartPoint(label: 'M${i + 1}', value: (8 + i * 3).toDouble()),
-  );
+  // Real monthly buckets across the active semester
+  final (semStart, semEnd) = semesterRangeFromTerms();
+  final semester = <ChartPoint>[];
+  for (var m = semStart.month; m <= semEnd.month; m++) {
+    final monthSessions = days
+        .where((d) => d.date.year == semStart.year && d.date.month == m)
+        .fold<int>(0, (a, d) => a + d.sessionCount);
+    final monthLabel = DateFormat('MMM').format(DateTime(semStart.year, m, 1));
+    semester.add(
+      ChartPoint(label: monthLabel, value: monthSessions.toDouble()),
+    );
+  }
 
   return {
     WeeklyChartRange.week: week
         .map(
           (d) => ChartPoint(
             label: DateFormat('E').format(d.date).substring(0, 1),
-            value: d.tasksCompleted.toDouble(),
+            value: d.sessionCount.toDouble(),
           ),
         )
         .toList(),

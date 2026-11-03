@@ -35,7 +35,7 @@ from pyq.rag.core.features import Backend  # noqa: E402
 from bench.cache import get_cached_response, response_cache_key  # noqa: E402
 from bench.datasets import DATASET_NAMES  # noqa: E402
 from bench.run import get_backend, iter_prompts, run  # noqa: E402
-from bench.select import SETTING_NAMES  # noqa: E402
+from bench.selection import SETTING_NAMES  # noqa: E402
 
 DEFAULT_CONFIG = Path(__file__).resolve().parent / "sweeps" / "default.yaml"
 

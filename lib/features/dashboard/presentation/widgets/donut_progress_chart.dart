@@ -50,6 +50,7 @@ class DonutProgressChart extends StatelessWidget {
   final double radius;
   final double lineWidth;
   final Widget? center;
+  final Color progressColor;
 
   /// Additional rings drawn inside the primary one, each stepped inward by
   /// its own [DonutRingData.lineWidth] plus a small gap — for a legend
@@ -63,6 +64,7 @@ class DonutProgressChart extends StatelessWidget {
     this.radius = 55,
     this.lineWidth = 10,
     this.center,
+    this.progressColor = AppTheme.accent,
     this.innerRings = const [],
   });
 
@@ -72,7 +74,7 @@ class DonutProgressChart extends StatelessWidget {
     final rings = [
       DonutRingData(
         percent: capped,
-        progressColor: AppTheme.accent,
+        progressColor: progressColor,
         backgroundColor: AppTheme.surface.withValues(alpha: 0.4),
         lineWidth: lineWidth,
       ),

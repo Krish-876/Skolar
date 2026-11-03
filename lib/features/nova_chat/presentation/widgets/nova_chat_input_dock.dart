@@ -84,12 +84,7 @@ class _NovaChatInputDockState extends State<NovaChatInputDock> {
               ),
             ),
           ),
-          padding: EdgeInsets.fromLTRB(
-            16,
-            10,
-            16,
-            MediaQuery.of(context).viewInsets.bottom > 0 ? 12 : 28,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: SafeArea(
             top: false,
             child: Container(
@@ -154,59 +149,47 @@ class _NovaChatInputDockState extends State<NovaChatInputDock> {
                         );
                       }
 
-                      if (hasText) {
-                        return GestureDetector(
-                          onTapDown: (_) =>
-                              setState(() => _sendBtnPressed = true),
-                          onTapUp: (_) =>
-                              setState(() => _sendBtnPressed = false),
-                          onTapCancel: () =>
-                              setState(() => _sendBtnPressed = false),
-                          onTap: _handleSend,
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 60),
-                            transform: _sendBtnPressed
-                                ? Matrix4.translationValues(0, 3, 0)
-                                : Matrix4.identity(),
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              color: AppTheme.accentPurple,
-                              shape: BoxShape.circle,
-                              boxShadow: _sendBtnPressed
-                                  ? []
-                                  : const [
-                                      BoxShadow(
-                                        color: AppTheme.accentPurpleDark,
-                                        offset: Offset(0, 3),
-                                        blurRadius: 0,
-                                      ),
-                                    ],
-                            ),
-                            child: const Icon(
-                              Icons.arrow_upward_rounded,
-                              color: Colors.white,
-                              size: 20,
-                            ),
+                      return GestureDetector(
+                        onTapDown: hasText
+                            ? (_) => setState(() => _sendBtnPressed = true)
+                            : null,
+                        onTapUp: hasText
+                            ? (_) => setState(() => _sendBtnPressed = false)
+                            : null,
+                        onTapCancel: hasText
+                            ? () => setState(() => _sendBtnPressed = false)
+                            : null,
+                        onTap: hasText ? _handleSend : null,
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 120),
+                          transform: _sendBtnPressed && hasText
+                              ? Matrix4.translationValues(0, 3, 0)
+                              : Matrix4.identity(),
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: hasText
+                                ? AppTheme.accentPurple
+                                : Colors.white.withValues(alpha: 0.08),
+                            shape: BoxShape.circle,
+                            boxShadow: hasText && !_sendBtnPressed
+                                ? const [
+                                    BoxShadow(
+                                      color: AppTheme.accentPurpleDark,
+                                      offset: Offset(0, 3),
+                                      blurRadius: 0,
+                                    ),
+                                  ]
+                                : [],
                           ),
-                        );
-                      }
-
-                      return Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.mic_none_rounded,
-                            color: Colors.white.withValues(alpha: 0.7),
-                            size: 22,
+                          child: Icon(
+                            Icons.arrow_upward_rounded,
+                            color: hasText
+                                ? Colors.white
+                                : Colors.white.withValues(alpha: 0.3),
+                            size: 20,
                           ),
-                          const SizedBox(width: 8),
-                          Icon(
-                            Icons.add_circle_outline_rounded,
-                            color: Colors.white.withValues(alpha: 0.7),
-                            size: 22,
-                          ),
-                        ],
+                        ),
                       );
                     },
                   ),

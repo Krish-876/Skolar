@@ -52,7 +52,7 @@ class FeedPage extends ConsumerWidget {
                     );
                   }
                   return SliverPadding(
-                    padding: const EdgeInsets.only(bottom: 32),
+                    padding: const EdgeInsets.only(bottom: 96),
                     sliver: SliverList(
                       delegate: SliverChildBuilderDelegate(
                         (context, index) => _AnimatedCard(

@@ -16,7 +16,7 @@ import 'package:Skolar/shared/providers/global_providers.dart'
 
 const _surface = Color(0xFF2E2B3E);
 const _textPrim = Color(0xFFFFFFFF);
-const _textSec = Color(0xFFA8C4FF);
+const _textSec = Color(0xFFB388FF); // light accent violet (was blue)
 const _correct = Color(0xFF4CAF50);
 
 // ── Subject model ─────────────────────────────────────────────────────────────
@@ -626,7 +626,7 @@ class _SubjectDropdown extends StatelessWidget {
               height: 14,
               child: CircularProgressIndicator(
                 strokeWidth: 1.5,
-                color: AppTheme.accent,
+                color: Colors.white,
               ),
             ),
             const SizedBox(width: 10),
@@ -662,7 +662,7 @@ class _SubjectDropdown extends StatelessWidget {
               onTap: onRetry,
               child: const Icon(
                 Icons.refresh_rounded,
-                color: AppTheme.accent,
+                color: Colors.white,
                 size: 18,
               ),
             ),
@@ -742,12 +742,12 @@ class _CollegeChip extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(7),
             decoration: BoxDecoration(
-              color: AppTheme.accent.withValues(alpha: 0.12),
+              color: Colors.white.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(8),
             ),
             child: const Icon(
               Icons.school_outlined,
-              color: AppTheme.accent,
+              color: Colors.white,
               size: 16,
             ),
           ),
@@ -877,19 +877,17 @@ class _PickFilesButton extends StatelessWidget {
           border: Border.all(
             color: disabled
                 ? _textSec.withValues(alpha: 0.15)
-                : AppTheme.accent.withValues(alpha: 0.5),
+                : Colors.white.withValues(alpha: 0.5),
             width: 1.5,
           ),
           borderRadius: BorderRadius.circular(16),
-          color: AppTheme.accent.withValues(alpha: disabled ? 0.02 : 0.05),
+          color: Colors.white.withValues(alpha: disabled ? 0.02 : 0.05),
         ),
         child: Column(
           children: [
             Icon(
               isEmpty ? Icons.upload_file_rounded : Icons.add_rounded,
-              color: disabled
-                  ? _textSec.withValues(alpha: 0.3)
-                  : AppTheme.accent,
+              color: disabled ? _textSec.withValues(alpha: 0.3) : Colors.white,
               size: 28,
             ),
             const SizedBox(height: 8),
@@ -898,7 +896,7 @@ class _PickFilesButton extends StatelessWidget {
               style: TextStyle(
                 color: disabled
                     ? _textSec.withValues(alpha: 0.3)
-                    : AppTheme.accent,
+                    : Colors.white,
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
               ),
@@ -1106,7 +1104,7 @@ class _FileCardState extends State<_FileCard>
   Color get _statusColor => switch (widget.item.status) {
     _FileStatus.done => _correct,
     _FileStatus.error => AppTheme.error,
-    _FileStatus.uploading => AppTheme.accent,
+    _FileStatus.uploading => Colors.white,
     _FileStatus.pending => _textSec,
   };
 
@@ -1192,7 +1190,7 @@ class _FileCardState extends State<_FileCard>
                                 height: 10,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 1.5,
-                                  color: AppTheme.accent,
+                                  color: Colors.white,
                                 ),
                               )
                             else
@@ -1309,7 +1307,7 @@ class _UploadButton extends StatelessWidget {
                 height: 18,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: AppTheme.accent,
+                  color: Colors.white,
                 ),
               )
             else
@@ -1399,7 +1397,7 @@ class _SummaryCard extends StatelessWidget {
                   icon: Icons.library_add_rounded,
                   value: '${batch.totalAdded}',
                   label: 'Questions added',
-                  color: AppTheme.accent,
+                  color: Colors.white,
                 ),
                 const SizedBox(width: 10),
                 _StatPill(

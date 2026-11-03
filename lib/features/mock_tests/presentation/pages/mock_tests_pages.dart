@@ -10,7 +10,9 @@ import 'package:confetti/confetti.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:markdown/markdown.dart' as md;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:Skolar/core/routing/app_routes.dart';
 import 'package:Skolar/core/theme/app_theme.dart';
 import 'package:Skolar/features/mock_tests/presentation/providers/mock_tests_provider.dart';
 
@@ -403,7 +405,7 @@ class _SetupScreen extends StatelessWidget {
         child: LayoutBuilder(
           builder: (context, constraints) {
             return SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 96),
               child: ConstrainedBox(
                 constraints: BoxConstraints(
                   minHeight: constraints.maxHeight - 40,
@@ -417,26 +419,106 @@ class _SetupScreen extends StatelessWidget {
                       children: [
                         Row(
                           children: [
+                            if (Navigator.canPop(context)) ...[
+                              GestureDetector(
+                                onTap: () => Navigator.maybePop(context),
+                                child: Container(
+                                  width: 42,
+                                  height: 42,
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.surface,
+                                    borderRadius: BorderRadius.circular(
+                                      AppTheme.radiusLg,
+                                    ),
+                                    border: Border.all(
+                                      color: AppTheme.onboardingButtonBorder,
+                                      width: 1,
+                                    ),
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: const Icon(
+                                    Icons.arrow_back_ios_new_rounded,
+                                    color: AppTheme.onBackground,
+                                    size: 16,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                            ],
+                            const Spacer(),
                             GestureDetector(
-                              onTap: () => Navigator.maybePop(context),
+                              onTap: () =>
+                                  context.push(AppRoutes.examPrediction),
                               child: Container(
-                                width: 42,
-                                height: 42,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
                                 decoration: BoxDecoration(
                                   color: AppTheme.surface,
-                                  borderRadius: BorderRadius.circular(
-                                    AppTheme.radiusLg,
-                                  ),
+                                  borderRadius: BorderRadius.circular(20),
                                   border: Border.all(
-                                    color: AppTheme.onboardingButtonBorder,
+                                    color: AppTheme.accentPurple.withValues(
+                                      alpha: 0.35,
+                                    ),
                                     width: 1,
                                   ),
                                 ),
-                                alignment: Alignment.center,
-                                child: const Icon(
-                                  Icons.arrow_back_ios_new_rounded,
-                                  color: AppTheme.onBackground,
-                                  size: 16,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      Icons.auto_awesome_rounded,
+                                      color: AppTheme.accentPurple,
+                                      size: 15,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'Predictions',
+                                      style: GoogleFonts.googleSans(
+                                        color: AppTheme.accentPurple,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            GestureDetector(
+                              onTap: () => context.push(AppRoutes.pyqUpload),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.surface,
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.12),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      Icons.upload_file_rounded,
+                                      color: Colors.white70,
+                                      size: 15,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'Upload PYQ',
+                                      style: GoogleFonts.googleSans(
+                                        color: Colors.white70,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),

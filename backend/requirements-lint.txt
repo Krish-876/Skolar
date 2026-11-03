@@ -1,0 +1,7 @@
+# Minimal install for the CI python-lint job (ruff/mypy/grep). Deliberately
+# excludes backend/requirements.txt (the pyq/RAG pipeline's OCR/ML deps -
+# sentence-transformers, easyocr, torch/CUDA wheels, ~2GB+) since mypy only
+# type-checks backend/nova, and ruff/the retry-decorator grep don't need
+# any packages installed at all.
+-r requirements-dev.txt
+-r nova/requirements.txt

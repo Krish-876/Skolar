@@ -42,7 +42,7 @@ from bench.datasets import (  # noqa: E402
     sample_id,
 )
 from bench.prompts import build_prompt, parse_prediction  # noqa: E402
-from bench.select import SETTING_NAMES, select_examples  # noqa: E402
+from bench.selection import SETTING_NAMES, select_examples  # noqa: E402
 
 try:
     from groq import RateLimitError

@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:math';
+import 'package:Skolar/core/services/activity_log_service.dart';
 import 'package:Skolar/core/theme/app_theme.dart';
+import 'package:Skolar/features/dashboard/presentation/providers/dashboard_provider.dart';
 import 'package:Skolar/features/focus_session/services/focus_haptic_service.dart';
 import 'package:Skolar/features/focus_session/services/focus_notification_service.dart';
 import 'package:Skolar/features/focus_session/services/focus_pip_service.dart';
@@ -10,6 +12,11 @@ import 'package:Skolar/features/focus_session/widgets/glow_thumb_shape.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:uuid/uuid.dart';
+import 'package:Skolar/core/routing/app_routes.dart';
+import 'package:Skolar/core/routing/app_shell.dart';
 
 import '../controllers/focus_timer_controller.dart';
 import '../services/focus_preferences_service.dart';
@@ -49,7 +56,7 @@ const _lightPalette = _FocusPalette(
   accent: AppTheme.focusBreakAccent,
 );
 
-class FocusTimerPage extends StatefulWidget {
+class FocusTimerPage extends ConsumerStatefulWidget {
   /// Pre-fills the duration slider/controller with this instead of the
   /// default 25 minutes — used when a task with its own timer duration is
   /// tapped from the dashboard's task list.
@@ -58,10 +65,10 @@ class FocusTimerPage extends StatefulWidget {
   const FocusTimerPage({super.key, this.initialDuration});
 
   @override
-  State<FocusTimerPage> createState() => FocusTimerPageState();
+  ConsumerState<FocusTimerPage> createState() => FocusTimerPageState();
 }
 
-class FocusTimerPageState extends State<FocusTimerPage>
+class FocusTimerPageState extends ConsumerState<FocusTimerPage>
     with TickerProviderStateMixin, WidgetsBindingObserver {
   late final FocusTimerController _controller;
   late final AnimationController _zenAnimController;
@@ -96,6 +103,10 @@ class FocusTimerPageState extends State<FocusTimerPage>
   bool _dragging = false;
   bool _showTutorial = false;
   int _tutorialStep = 0;
+
+  /// UUID generated once per session start. Regenerated every time the
+  /// user taps Start so retrying the same finished session is idempotent.
+  String? _sessionClientId;
   bool _tutorialDontShowAgain = true;
   static const double _trackHorizontalPadding = 6.0;
   static const double _knobSize = 48.0;
@@ -204,6 +215,7 @@ class FocusTimerPageState extends State<FocusTimerPage>
     _entryWipeController.dispose();
     _exitWipeController.dispose();
     _controller.dispose();
+    ref.read(dockVisibilityProvider.notifier).state = true;
     super.dispose();
   }
 
@@ -286,6 +298,7 @@ class FocusTimerPageState extends State<FocusTimerPage>
     FocusPipService.setPipEnabled(false);
     _resetPhaseTakeoverState();
     _controller.reset();
+    ref.read(dockVisibilityProvider.notifier).state = true;
     _springWaveBack();
     FocusSoundService.stop();
     FocusNotificationService.showSessionCancelledNotification();
@@ -319,12 +332,88 @@ class FocusTimerPageState extends State<FocusTimerPage>
   }
 
   void _onTimerComplete() {
+    ref.read(dockVisibilityProvider.notifier).state = true;
     FocusWakelockService.disable();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     _zenAnimController.animateTo(0.0);
     _resetPhaseTakeoverState();
     _springWaveBack();
     FocusSoundService.playSessionComplete();
+    _logCompletedSession();
+  }
+
+  /// Inserts one activity_log row for this completed session, then
+  /// invalidates progressStatsProvider so the dashboard heatmap and
+  /// hours badges update without requiring a restart.
+  ///
+  /// Write failures surface as a SnackBar but do NOT block the
+  /// completion UX — the timer still completes and the sound still plays.
+  void _logCompletedSession() {
+    // Focus-only seconds — _controller.totalSeconds never includes breaks.
+    final focusSeconds = _controller.totalSeconds;
+    final clientId = _sessionClientId;
+    final threshold = ref.read(focusMinDurationSecondsProvider);
+    if (clientId == null || focusSeconds < threshold) return;
+
+    final container = ProviderScope.containerOf(context);
+    final service = ref.read(activityLogServiceProvider);
+    service
+        .logFocusSession(durationSeconds: focusSeconds, clientId: clientId)
+        .then((_) {
+          // Refresh dashboard stats so heatmap + hours update immediately.
+          container.invalidate(progressStatsProvider);
+        })
+        .catchError((Object e) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Could not save focus session: $e',
+                style: const TextStyle(
+                  fontFamily: 'GoogleSans',
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+              backgroundColor: AppTheme.wishlist,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        });
+  }
+
+  /// On user-initiated stop, logs actual focus-only seconds if >= the configured
+  /// threshold; logs nothing below it. Does not log on app kill.
+  void _logEarlyStoppedSession() {
+    final focusSeconds = _controller.elapsedFocusSeconds;
+    final clientId = _sessionClientId;
+    final threshold = ref.read(focusMinDurationSecondsProvider);
+    if (clientId == null || focusSeconds < threshold) return;
+
+    final container = ProviderScope.containerOf(context);
+    final service = ref.read(activityLogServiceProvider);
+    service
+        .logFocusSession(durationSeconds: focusSeconds, clientId: clientId)
+        .then((_) {
+          container.invalidate(progressStatsProvider);
+        })
+        .catchError((Object e) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Could not save focus session: $e',
+                style: const TextStyle(
+                  fontFamily: 'GoogleSans',
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+              backgroundColor: AppTheme.wishlist,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        });
   }
 
   void _onEntryWipeStatusChanged(AnimationStatus status) {
@@ -985,38 +1074,76 @@ class FocusTimerPageState extends State<FocusTimerPage>
       child: IgnorePointer(
         ignoring: isRunning,
         child: Padding(
-          padding: const EdgeInsets.only(top: 8, right: 16),
-          child: Align(
-            alignment: Alignment.topRight,
-            child: GestureDetector(
-              onTap: () {
-                setState(() {
-                  _showTutorial = true;
-                  _tutorialStep = 0;
-                });
-              },
-              child: Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withValues(alpha: 0.07),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.1),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              GestureDetector(
+                onTap: () => context.push(AppRoutes.mathGame),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.07),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.1),
+                    ),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.bolt_rounded,
+                        size: 14,
+                        color: AppTheme.accentPurple,
+                      ),
+                      SizedBox(width: 4),
+                      Text(
+                        'Matiks Speedrun',
+                        style: TextStyle(
+                          fontFamily: 'GoogleSans',
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white70,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                child: const Center(
-                  child: Text(
-                    '?',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
+              ),
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _showTutorial = true;
+                    _tutorialStep = 0;
+                  });
+                },
+                child: Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withValues(alpha: 0.07),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.1),
+                    ),
+                  ),
+                  child: const Center(
+                    child: Text(
+                      '?',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
+            ],
           ),
         ),
       ),
@@ -1348,6 +1475,7 @@ class FocusTimerPageState extends State<FocusTimerPage>
             child: _buildSliderTrackBar(constraints),
           ),
         ),
+        if (isIdle) const SizedBox(height: 72),
       ],
     );
 
@@ -1680,7 +1808,11 @@ class FocusTimerPageState extends State<FocusTimerPage>
             _rollStartSeconds = startSec;
             _rollTargetSeconds = targetSec;
 
+            // Generate a fresh idempotency key for this session.
+            _sessionClientId = const Uuid().v4();
+
             _controller.start();
+            ref.read(dockVisibilityProvider.notifier).state = false;
             _controller.waveAnimationController.value = 1.0;
             SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
             FocusSoundService.playStartFocus();
@@ -1855,7 +1987,9 @@ class FocusTimerPageState extends State<FocusTimerPage>
               FocusNotificationService.cancelAll();
               FocusSoundService.stop();
               _resetPhaseTakeoverState();
+              _logEarlyStoppedSession();
               _controller.reset();
+              ref.read(dockVisibilityProvider.notifier).state = true;
               _springWaveBack();
             },
           ),

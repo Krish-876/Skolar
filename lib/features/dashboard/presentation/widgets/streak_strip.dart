@@ -209,7 +209,7 @@ class _WeekStripState extends ConsumerState<_WeekStrip> {
 
     final byDate = {
       for (final d in widget.days)
-        DateTime(d.date.year, d.date.month, d.date.day): d.tasksCompleted,
+        DateTime(d.date.year, d.date.month, d.date.day): d.sessionCount,
     };
     final today = DateTime.now();
     final todayDate = DateTime(today.year, today.month, today.day);
@@ -383,7 +383,7 @@ class _MonthGridState extends ConsumerState<_MonthGrid> {
 
     final byDate = {
       for (final d in widget.days)
-        DateTime(d.date.year, d.date.month, d.date.day): d.tasksCompleted,
+        DateTime(d.date.year, d.date.month, d.date.day): d.sessionCount,
     };
     final viewedMonth = _monthForPage(_currentPage);
     final today = DateTime.now();

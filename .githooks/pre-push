@@ -1,0 +1,14 @@
+#!/bin/sh
+echo "Checking Dart formatting before push..."
+dart format --output=none --set-exit-if-changed .
+
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "Git Push Rejected: Dart code is not formatted according to guidelines."
+  echo "Run 'dart format .' to format your files, commit the changes, and try pushing again."
+  echo "Or bypass this check by using: git push --no-verify"
+  echo ""
+  exit 1
+fi
+
+exit 0

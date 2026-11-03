@@ -17,7 +17,7 @@ BACKEND_DIR = Path(__file__).resolve().parent.parent
 if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
-from bench.select import select_examples  # noqa: E402
+from bench.selection import select_examples  # noqa: E402
 
 
 class DotBackend:

@@ -4,7 +4,9 @@ import 'package:Skolar/core/theme/app_theme.dart';
 import 'package:Skolar/features/dashboard/presentation/providers/dashboard_provider.dart';
 import 'package:Skolar/features/dashboard/presentation/widgets/all_round_development_card.dart';
 import 'package:Skolar/features/dashboard/presentation/widgets/cg_pull_card.dart';
+import 'package:Skolar/features/dashboard/presentation/widgets/dashboard_focus_tile.dart';
 import 'package:Skolar/features/dashboard/presentation/widgets/dashboard_header.dart';
+import 'package:Skolar/features/dashboard/presentation/widgets/dashboard_quick_actions.dart';
 import 'package:Skolar/features/dashboard/presentation/widgets/expandable_progress_card.dart';
 
 class DashboardPage extends ConsumerStatefulWidget {
@@ -130,9 +132,15 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
               ),
             ),
           ),
+          const SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(16, 8, 16, 8),
+              child: DashboardFocusTile(),
+            ),
+          ),
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
               child: const CgPullCard(),
             ),
           ),
@@ -146,6 +154,13 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
               child: const AllRoundDevelopmentCard(),
             ),
           ),
+          const SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.only(top: 8, bottom: 8),
+              child: DashboardQuickActions(),
+            ),
+          ),
+          const SliverToBoxAdapter(child: SizedBox(height: 96)),
         ],
       ),
     );
