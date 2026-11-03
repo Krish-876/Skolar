@@ -1,14 +1,15 @@
 import time
+import os
 
 import jwt
 import pytest
 from fastapi.testclient import TestClient
 
-from app import main as main_module
-from app.rate_limiting import SlidingWindowRateLimiter
+SECRET_KEY = "skolar-super-secure-test-secret-key-32chars"  # noqa: S105
+os.environ["SUPABASE_JWT_SECRET"] = SECRET_KEY
 
-
-SECRET_KEY = "skolar-super-secure-test-secret-key-32chars"
+from app import main as main_module  # noqa: E402
+from app.rate_limiting import SlidingWindowRateLimiter  # noqa: E402
 
 
 class FakeClock:

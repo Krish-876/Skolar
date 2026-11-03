@@ -1,13 +1,12 @@
 import os
 import time
-import pytest
 import jwt
 from fastapi.testclient import TestClient
 
-SECRET_KEY = "skolar-super-secure-test-secret-key-32chars"
+SECRET_KEY = "skolar-super-secure-test-secret-key-32chars"  # noqa: S105
 os.environ["SUPABASE_JWT_SECRET"] = SECRET_KEY
 
-from app.main import app
+from app.main import app  # noqa: E402
 
 client = TestClient(app)
 
@@ -145,7 +144,7 @@ def test_layer2_token_missing_sub_claim():
 
 def test_layer2_token_signed_with_different_key():
     """Verify 401 Unauthorized when token is forged or signed with a different key."""
-    forged_token = create_mock_jwt(secret="forged-unauthorized-key-with-32c!")
+    forged_token = create_mock_jwt(secret="forged-unauthorized-key-with-32c!")  # noqa: S106
     res = client.get("/me", headers={"Authorization": f"Bearer {forged_token}"})
     assert res.status_code == 401
     assert res.json()["detail"] == "Invalid or expired authentication token."

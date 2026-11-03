@@ -45,12 +45,14 @@ class SlidingWindowRateLimiter:
         if category not in self._limits:
             raise KeyError(f"Unknown rate-limit category: {category}")
 
-        maximum, window_seconds = self._limits[category]
         now = self._clock()
         event_key = (category, key)
 
         with self._lock:
-            events = self._events.setdefault(event_key, deque())
+            maximum, window_seconds = self._limits[category]
+            events = self._events.get(event_key)
+            if events is None:
+                events = deque()
             cutoff = now - window_seconds
             while events and events[0] <= cutoff:
                 events.popleft()
@@ -60,6 +62,7 @@ class SlidingWindowRateLimiter:
                 return RateLimitDecision(False, retry_after)
 
             events.append(now)
+            self._events[event_key] = events
             return RateLimitDecision(True)
 
     def clear(self) -> None:
