@@ -1,11 +1,15 @@
+import importlib
 import os
 import time
 import jwt
+import pytest
 from fastapi.testclient import TestClient
 
 SECRET_KEY = "skolar-super-secure-test-secret-key-32chars"  # noqa: S105
 os.environ["SUPABASE_JWT_SECRET"] = SECRET_KEY
+os.environ["APP_ENV"] = "dev"
 
+import app.main as app_main_module  # noqa: E402
 from app.main import app  # noqa: E402
 
 client = TestClient(app)
@@ -64,11 +68,35 @@ def test_layer1_https_allowed():
 
 
 def test_layer1_local_dev_allowed_without_https():
-    """Verify that local development clients (testclient / localhost / 127.0.0.1) pass Layer 1."""
-    valid_token = create_mock_jwt()
-    res = client.get("/me", headers={"Authorization": f"Bearer {valid_token}"})
-    assert res.status_code == 200
-    assert res.json()["user_id"] == "student-test-uuid-123"
+    """Verify local bypass is allowed only when APP_ENV=dev."""
+    previous_env = os.environ.get("APP_ENV")
+    os.environ["APP_ENV"] = "dev"
+    try:
+        valid_token = create_mock_jwt()
+        res = client.get("/me", headers={"Authorization": "Bearer " + valid_token})
+        assert res.status_code == 200
+        assert res.json()["user_id"] == "student-test-uuid-123"
+    finally:
+        if previous_env is None:
+            os.environ.pop("APP_ENV", None)
+        else:
+            os.environ["APP_ENV"] = previous_env
+
+
+def test_layer1_local_dev_bypass_disabled_when_app_env_not_dev():
+    """Verify localhost/testclient bypass is disabled outside APP_ENV=dev."""
+    previous_env = os.environ.get("APP_ENV")
+    os.environ.pop("APP_ENV", None)
+    try:
+        valid_token = create_mock_jwt()
+        res = client.get("/me", headers={"Authorization": "Bearer " + valid_token})
+        assert res.status_code == 403
+        assert res.json() == {"detail": "Insecure transport protocol. HTTPS is strictly required."}
+    finally:
+        if previous_env is None:
+            os.environ.pop("APP_ENV", None)
+        else:
+            os.environ["APP_ENV"] = previous_env
 
 
 def test_layer1_insecure_http_rejected_for_external_clients():
@@ -235,3 +263,17 @@ def test_layer2_non_dict_app_metadata_handled_gracefully():
     assert res.status_code == 200
     data = res.json()
     assert data["custom_roles"] == ["student"]
+
+
+def test_startup_fails_when_supabase_jwt_secret_missing():
+    """Verify app startup fails fast when SUPABASE_JWT_SECRET is unset."""
+    previous_secret = os.environ.pop("SUPABASE_JWT_SECRET", None)
+    try:
+        with pytest.raises(ValueError, match="SUPABASE_JWT_SECRET environment variable must be set."):
+            importlib.reload(app_main_module)
+    finally:
+        if previous_secret is None:
+            os.environ["SUPABASE_JWT_SECRET"] = SECRET_KEY
+        else:
+            os.environ["SUPABASE_JWT_SECRET"] = previous_secret
+        importlib.reload(app_main_module)

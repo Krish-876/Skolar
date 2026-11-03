@@ -14,9 +14,10 @@ from app.dependencies import get_current_user_id, supabase
 
 load_dotenv()
 
-# Configured Supabase JWT signing secret (with fallback for local dev/testing)
-DEFAULT_DEV_JWT_SECRET = "skolar-super-secure-test-secret-key-32chars"  # noqa: S105
-SUPABASE_JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET", DEFAULT_DEV_JWT_SECRET)
+# Configured Supabase JWT signing secret (required)
+SUPABASE_JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET")
+if not SUPABASE_JWT_SECRET:
+    raise ValueError("SUPABASE_JWT_SECRET environment variable must be set.")
 
 app = FastAPI(title="Skolar Backend API")
 
@@ -51,7 +52,8 @@ async def security_gatekeeper_middleware(request: Request, call_next):
         forwarded_proto = request.headers.get("x-forwarded-proto", request.url.scheme)
         normalized_proto = forwarded_proto.split(",")[0].strip().lower()
         client_host = request.client.host if request.client else ""
-        is_local_dev = client_host in ("127.0.0.1", "localhost", "testclient")
+        app_env = os.getenv("APP_ENV", "").strip().lower()
+        is_local_dev = app_env == "dev" and client_host in ("127.0.0.1", "localhost", "testclient")
 
         if normalized_proto != "https" and not is_local_dev:
             raise HTTPException(
@@ -78,10 +80,9 @@ async def security_gatekeeper_middleware(request: Request, call_next):
 
         try:
             # Cryptographically verify signature, algorithm, audience, and expiration
-            jwt_secret = os.getenv("SUPABASE_JWT_SECRET", DEFAULT_DEV_JWT_SECRET)
             payload = jwt.decode(
                 token,
-                jwt_secret,
+                SUPABASE_JWT_SECRET,
                 algorithms=["HS256"],
                 audience="authenticated",
                 options={
