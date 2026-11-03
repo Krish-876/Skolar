@@ -11,20 +11,54 @@ from supabase import create_client
 load_dotenv()
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 STUDENT_A_PASS = os.getenv("TEST_STUDENT_A_PASSWORD", "TestPass123!_A")
 STUDENT_B_PASS = os.getenv("TEST_STUDENT_B_PASSWORD", "TestPass123!_B")
 
-if not SUPABASE_URL or not SUPABASE_KEY:
-    print("Error: SUPABASE_URL and SUPABASE_KEY must be set in environment.")
+if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
+    print("Error: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set in environment.")
     sys.exit(1)
 
-supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
 USERS = [
     {"email": "student_a@test.com", "password": STUDENT_A_PASS, "college": "BITS Pilani"},
     {"email": "student_b@test.com", "password": STUDENT_B_PASS, "college": "IIT Madras"},
 ]
+
+
+def _provision_auth_user(email: str, password: str) -> str:
+    try:
+        response = supabase.auth.admin.create_user({
+            "email": email,
+            "password": password,
+            "email_confirm": True,
+        })
+        if not response.user:
+            raise RuntimeError(f"Supabase returned no user while creating {email}")
+        print(f"[CREATED] Test user created: {email} ({response.user.id})")
+        return response.user.id
+    except Exception as create_error:
+        try:
+            users_response = supabase.auth.admin.list_users()
+            existing_user = next(
+                (user for user in users_response if user.email == email),
+                None,
+            )
+        except Exception as lookup_error:
+            raise RuntimeError(
+                f"Could not create or find test user {email}: {lookup_error}"
+            ) from create_error
+
+        if existing_user is None:
+            raise RuntimeError(f"Could not create test user {email}: {create_error}") from create_error
+
+        supabase.auth.admin.update_user_by_id(
+            existing_user.id,
+            {"password": password, "email_confirm": True},
+        )
+        print(f"[OK] Existing test user reset and verified: {email} ({existing_user.id})")
+        return existing_user.id
 
 
 def seed_test_accounts():
@@ -34,22 +68,7 @@ def seed_test_accounts():
         password = user_data["password"]
         college = user_data["college"]
 
-        try:
-            res = supabase.auth.sign_in_with_password({"email": email, "password": password})
-            user_id = res.user.id
-            print(f"[OK] Existing test user verified: {email} ({user_id})")
-        except Exception:
-            try:
-                res = supabase.auth.sign_up({"email": email, "password": password})
-                if res.user:
-                    user_id = res.user.id
-                    print(f"[CREATED] New test user created: {email} ({user_id})")
-                else:
-                    print(f"[WARN] Sign-up returned no user object for {email}")
-                    continue
-            except Exception as e:
-                print(f"[ERROR] Could not provision {email}: {e}")
-                continue
+        user_id = _provision_auth_user(email, password)
 
         try:
             supabase.table("users").upsert({
@@ -59,7 +78,7 @@ def seed_test_accounts():
             }).execute()
             print(f"[OK] public.users profile synced for {email}")
         except Exception as e:
-            print(f"[WARN] Profile sync for {email}: {e}")
+            raise RuntimeError(f"Profile sync failed for {email}: {e}") from e
 
     print("Test account provisioning completed.")
 

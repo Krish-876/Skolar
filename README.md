@@ -1437,17 +1437,25 @@ Reads `SUPABASE_URL` and `SUPABASE_KEY` from the environment (`app/dependencies.
 
 `backend/tests/test_rls.py` verifies students can't read each other's rows across `user_topic_weights`, `nova_capacity_log`, `standing_flags`, `situation_flags`, and `nova_config`, and that a fully unauthenticated client gets 0 rows back too. Needs two real Supabase Auth accounts to sign in as — it isn't run against a mocked backend.
 
+From the repository root, provision deterministic test accounts with a Supabase
+service-role key, then run the suite:
+
 ```bash
-cd backend
-pip install pytest
-pytest tests/test_rls.py
+pip install -r backend/requirements.txt
+python backend/scripts/seed_test_users.py
+pytest backend/tests/test_rls.py
 ```
 
-Not currently run in CI — `backend/**` isn't in `ci.yml`'s python path filter, and there's no `pytest` step in the workflow regardless. Must be run manually.
+The seeder uses `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`,
+`TEST_STUDENT_A_PASSWORD`, and `TEST_STUDENT_B_PASSWORD`. It creates or resets
+`student_a@test.com` and `student_b@test.com`, confirms them, and upserts their
+`public.users` profiles. Never expose the service-role key to client
+applications or commit it to the repository.
 
-`TEST_STUDENT_A_EMAIL`/`TEST_STUDENT_B_EMAIL` need to already exist as real Supabase Auth accounts — nothing in this repo provisions them. Create both manually via Supabase Auth (or the dashboard) before running.
-
-Reads `SUPABASE_URL`, `SUPABASE_KEY`, and `TEST_STUDENT_A_EMAIL` / `TEST_STUDENT_A_PASSWORD` / `TEST_STUDENT_B_EMAIL` / `TEST_STUDENT_B_PASSWORD` from the environment (`.env`, loaded via `python-dotenv`). If `SUPABASE_URL` / `SUPABASE_KEY` are unset the whole module is skipped; if the two test accounts can't sign in, the cross-student tests skip individually rather than failing. `pytest` itself isn't in `backend/requirements.txt` yet — install it separately.
+CI runs the seeder before the backend tests when the required Supabase secrets
+are configured. Without those secrets, the RLS module skips as designed.
+When running locally without `SUPABASE_URL`/`SUPABASE_KEY`, the RLS module also
+skips; authentication failures are reported as skipped integration tests.
 
 ---
 

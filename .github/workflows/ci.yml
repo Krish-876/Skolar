@@ -1,5 +1,4 @@
-﻿@'
-name: CI
+﻿name: CI
 on:
   pull_request:
     branches: [master]
@@ -217,9 +216,15 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           TEST_STUDENT_A_PASSWORD: ${{ secrets.TEST_STUDENT_A_PASSWORD }}
           TEST_STUDENT_B_PASSWORD: ${{ secrets.TEST_STUDENT_B_PASSWORD }}
         run: |
+          if [ -n "$SUPABASE_URL" ] && [ -n "$SUPABASE_KEY" ] && [ -n "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+            python backend/scripts/seed_test_users.py
+          else
+            echo "Supabase integration-test secrets are not configured; RLS tests will be skipped."
+          fi
           pytest backend/tests/
 
   branch-up-to-date:
@@ -237,4 +242,3 @@ jobs:
             echo "Branch is behind master - rebase before pushing (git fetch origin && git rebase origin/master)."
             exit 1
           fi
-'@ | Set-Content -Path "..\.github\workflows\ci.yml" -Encoding utf8
