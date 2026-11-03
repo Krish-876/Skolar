@@ -3,7 +3,7 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
-from nova.api.deps import get_session, get_supabase_and_groq
+from nova.api.deps import get_authorized_user_id, get_session, get_supabase_and_groq
 from nova.schemas.api import ChatRequest, ChatResponse
 from nova.schemas.chat import ChatTurn
 from nova.services.chat_service import GROQ_MODEL, ask_nova, generate_initial_suggestions
@@ -20,6 +20,7 @@ class SuggestionsResponse(BaseModel):
 def get_suggestions(
     user_id: str,
     clients: tuple = Depends(get_supabase_and_groq),
+    _authorized_user_id: str = Depends(get_authorized_user_id),
 ):
     _supabase, groq, groq_backup = clients
     session = get_session(user_id, clients)
@@ -50,6 +51,7 @@ def chat(
     user_id: str,
     req: ChatRequest,
     clients: tuple = Depends(get_supabase_and_groq),
+    _authorized_user_id: str = Depends(get_authorized_user_id),
 ):
     supabase, groq, groq_backup = clients
     session = get_session(user_id, clients)

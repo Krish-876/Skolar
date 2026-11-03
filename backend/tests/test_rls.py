@@ -71,6 +71,38 @@ def test_unauthenticated_client_cannot_read_user_data(anon_client: Client):
             assert any(term in err_msg for term in ["permission denied", "rls", "401", "403"])
 
 
+def test_nova_triggers_are_scoped_to_authenticated_user(authenticated_clients, anon_client: Client):
+    """The trigger RPC must reject missing and cross-user identities."""
+    client_a, _client_b, user_a_id, user_b_id = authenticated_clients
+
+    own_response = client_a.rpc("get_nova_triggers", {"p_user_id": user_a_id}).execute()
+    assert isinstance(own_response.data, list)
+
+    with pytest.raises(Exception, match="(?i)(not authenticated|unauthorized|permission|rls)"):
+        client_a.rpc("get_nova_triggers", {"p_user_id": user_b_id}).execute()
+
+    with pytest.raises(Exception, match="(?i)(not authenticated|unauthorized|permission|rls)"):
+        anon_client.rpc("get_nova_triggers", {"p_user_id": user_a_id}).execute()
+
+
+def test_handle_vote_rejects_cross_user_and_invalid_vote(authenticated_clients):
+    """Vote RPC must reject impersonation attempts and invalid vote values."""
+    client_a, _client_b, user_a_id, user_b_id = authenticated_clients
+    random_post_id = str(uuid.uuid4())
+
+    with pytest.raises(Exception, match="(?i)(unauthorized|permission|rls)"):
+        client_a.rpc(
+            "handle_vote",
+            {"p_post_id": random_post_id, "p_user_id": user_b_id, "p_vote": 1},
+        ).execute()
+
+    with pytest.raises(Exception, match="(?i)(invalid vote|must be 1 or -1|permission|rls)"):
+        client_a.rpc(
+            "handle_vote",
+            {"p_post_id": random_post_id, "p_user_id": user_a_id, "p_vote": 7},
+        ).execute()
+
+
 def _seed_test_record(client: Client, table_name: str, user_id: str) -> tuple[str | None, dict]:
     """
     Attempts to seed a record for testing, matching known schema constraints.

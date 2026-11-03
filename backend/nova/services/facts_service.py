@@ -5,6 +5,8 @@ Read-only. Never writes, never mutates staleness/history. Mirrors the join
 Nova's reasoning pass uses at trigger time.
 """
 
+import uuid
+
 from datetime import datetime, timezone
 from typing import Any, cast
 
@@ -260,6 +262,13 @@ def _fetch_topics_for_subjects(supabase: Client, user_subjects: list[dict]) -> l
 
 
 def get_facts_snapshot(supabase: Client, user_id: str) -> FactsSnapshot:
+    if not user_id or not isinstance(user_id, str):
+        raise ValueError('A valid user_id string is required to fetch facts snapshot.')
+    try:
+        uuid.UUID(str(user_id))
+    except ValueError as e:
+        raise ValueError(f'Invalid user_id UUID: {user_id}') from e
+
     profile = _fetch_own_profile(supabase, user_id)
     user_subjects = _fetch_user_subjects(supabase, user_id)
     user_subject_ids = _user_subject_ids(user_subjects)
