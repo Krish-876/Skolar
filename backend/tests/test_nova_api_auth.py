@@ -12,13 +12,15 @@ from nova.api.deps import get_authorized_user_id, get_current_user_id
 
 
 def test_current_user_id_comes_from_verified_supabase_session():
+    jwt_value = "session-jwt"
+
     class FakeAuth:
         def get_user(self, token: str):
-            assert token == "valid-token"
+            assert token == jwt_value
             return SimpleNamespace(user=SimpleNamespace(id="student-a"))
 
     clients = (SimpleNamespace(auth=FakeAuth()), None, None)
-    credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials="valid-token")
+    credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials=jwt_value)
 
     assert get_current_user_id(credentials, clients) == "student-a"
 

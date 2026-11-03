@@ -85,6 +85,24 @@ def test_nova_triggers_are_scoped_to_authenticated_user(authenticated_clients, a
         anon_client.rpc("get_nova_triggers", {"p_user_id": user_a_id}).execute()
 
 
+def test_handle_vote_rejects_cross_user_and_invalid_vote(authenticated_clients):
+    """Vote RPC must reject impersonation attempts and invalid vote values."""
+    client_a, _client_b, user_a_id, user_b_id = authenticated_clients
+    random_post_id = str(uuid.uuid4())
+
+    with pytest.raises(Exception, match="(?i)(unauthorized|permission|rls)"):
+        client_a.rpc(
+            "handle_vote",
+            {"p_post_id": random_post_id, "p_user_id": user_b_id, "p_vote": 1},
+        ).execute()
+
+    with pytest.raises(Exception, match="(?i)(invalid vote|must be 1 or -1|permission|rls)"):
+        client_a.rpc(
+            "handle_vote",
+            {"p_post_id": random_post_id, "p_user_id": user_a_id, "p_vote": 7},
+        ).execute()
+
+
 def _seed_test_record(client: Client, table_name: str, user_id: str) -> tuple[str | None, dict]:
     """
     Attempts to seed a record for testing, matching known schema constraints.

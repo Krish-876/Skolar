@@ -10,9 +10,9 @@ router = APIRouter(tags=["facts"])
 def get_facts(
     user_id: str,
     clients: tuple = Depends(get_supabase_and_groq),
-    _authorized_user_id: str = Depends(get_authorized_user_id),
+    authorized_user_id: str = Depends(get_authorized_user_id),
 ):
-    session = get_session(user_id, clients)
+    session = get_session(authorized_user_id, clients)
     try:
         snapshot, patch = session.facts_state.get()
     except Exception:
