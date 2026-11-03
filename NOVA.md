@@ -286,10 +286,12 @@ uvicorn app.main:app --reload --port 8001
   staleness, situation-flag confirmed, standing-flag confirmed, industry
   relevance refreshed, capacity changed, and new career unit — one query per
   student, not a per-unit loop.
-- **Auth is real here** — `get_current_user_id` (`backend/app/dependencies.py`)
-  is `HTTPBearer` → `supabase.auth.get_user(token)` → returns the verified
-  `user_id` or raises 401. **There's no service-role bypass.** This is
-  still accurate as documented.
+- **Auth is real here** — `security_gatekeeper_middleware`
+  (`backend/app/main.py`) verifies local HS256 Supabase JWTs with required
+  `aud`, `exp`, and `sub` claims and returns 401 on failure.
+  `require_student_or_admin` (`backend/app/dependencies.py`) then requires
+  trusted `app_metadata.roles` containing `student` or `admin`, returning 403
+  otherwise.
 - **Not called from anywhere yet.** No scheduler/cron exists in `backend/`
   to call this on a timer, and nothing in Flutter calls it either — it's
   live and correct, but currently invoked by nothing. The Nova chat UI

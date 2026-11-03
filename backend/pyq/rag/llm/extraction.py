@@ -3,7 +3,6 @@ import logging
 
 from ..ingest.chunking import _deduplicate_questions, _make_chunks
 from .client import GROQ_MODEL, get_groq_client
-from nova.services.privacy import sanitize_for_external
 
 logger = logging.getLogger(__name__)
 
@@ -94,7 +93,7 @@ Text:
         try:
             response = client.chat.completions.create(
                 model=GROQ_MODEL,
-                messages=sanitize_for_external([{"role": "user", "content": prompt}]),
+                messages=[{"role": "user", "content": prompt}],
                 temperature=0.1,
             )
             raw = response.choices[0].message.content.strip()
@@ -155,7 +154,7 @@ Text:
         try:
             response = client.chat.completions.create(
                 model=GROQ_MODEL,
-                messages=sanitize_for_external([{"role": "user", "content": prompt}]),
+                messages=[{"role": "user", "content": prompt}],
                 temperature=0.1,
             )
             raw = response.choices[0].message.content.strip()

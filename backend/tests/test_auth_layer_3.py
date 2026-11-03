@@ -8,7 +8,7 @@ from app import main as main_module
 from app.rate_limiting import SlidingWindowRateLimiter
 
 
-SECRET_KEY = "skolar-super-secure-test-secret-key-32chars"
+SECRET_KEY = "skolar-super-secure-test-secret-key-32chars"  # noqa: S105
 
 
 class FakeClock:
@@ -45,7 +45,7 @@ def limited_app(monkeypatch):
     )
     monkeypatch.setattr(main_module, "rate_limiter", limiter)
     monkeypatch.setenv("SUPABASE_JWT_SECRET", SECRET_KEY)
-    return TestClient(main_module.app), clock
+    return TestClient(main_module.app, base_url="https://testserver"), clock
 
 
 def test_authenticated_requests_are_limited_per_verified_user(limited_app):

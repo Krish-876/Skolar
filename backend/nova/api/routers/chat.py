@@ -31,7 +31,7 @@ def get_suggestions(
         snapshot, _patch = session.facts_state.get()
         suggestions = generate_initial_suggestions(
             groq,
-            snapshot.model_dump(),
+            snapshot.model_dump(mode="json"),
             groq_backup,
             GROQ_MODEL,
         )
@@ -60,7 +60,7 @@ def chat(
 
     try:
         snapshot, _patch = session.facts_state.get()
-        snapshot_dict = snapshot.model_dump()
+        snapshot_dict = snapshot.model_dump(mode="json")
         parsed = ask_nova(
             groq,
             snapshot_dict,

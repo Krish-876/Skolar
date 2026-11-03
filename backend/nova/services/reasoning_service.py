@@ -294,9 +294,10 @@ def _build_messages_tiered(
     Returns (messages, tier_used). If even tier 3 is still over cap the caller
     decides whether to proceed anyway or defer — we don't hard-block here."""
     messages: list[dict] = []
+    safe_facts = sanitize_for_external(facts.model_dump(mode="json"))
     for tier in (1, 2, 3):
         snapshot_dict = _compress_snapshot(facts, tier)
-        messages = _build_messages(snapshot_dict)
+        messages = _build_messages(safe_facts if tier == 1 else sanitize_for_external(snapshot_dict))
         if _count_tokens(messages, model) <= GROQ_TPM_CAP:
             return messages, tier
     # tier 3 still over cap — return it anyway, caller will check

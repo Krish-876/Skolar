@@ -83,6 +83,11 @@ def test_privacy_shield_fails_closed_for_unsupported_values(value):
         sanitize_for_external(value)
 
 
+@pytest.mark.parametrize("value", ["Exam date: 2026-11-03", "Solve 12 + 34 = 46"])
+def test_privacy_shield_preserves_academic_numeric_text(value):
+    assert sanitize_for_external(value) == value
+
+
 def test_privacy_shield_handles_missing_and_null_values():
     assert sanitize_for_external({"email": None, "phone": None}) == {
         "email": "[REDACTED]",
