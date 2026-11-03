@@ -66,6 +66,19 @@ uvicorn pyq.rag.main:app --reload --host 0.0.0.0 --port 8000
 environment variable reference (including rate-limit tuning) is in
 [`backend/pyq/ONBOARDING.md` §4](backend/pyq/ONBOARDING.md).
 
+The trigger-check service also requires `SUPABASE_JWT_SECRET`; it refuses to
+start when this variable is missing or empty. If it runs behind a TLS
+terminating proxy, set `SKOLAR_TRUSTED_PROXY_IPS` to a comma-separated list of
+that proxy's fixed IP addresses and configure Uvicorn with the same explicit
+allowlist, for example:
+
+```bash
+SKOLAR_TRUSTED_PROXY_IPS=10.0.0.10 \
+uvicorn app.main:app --host 0.0.0.0 --port 8001 --forwarded-allow-ips 10.0.0.10
+```
+
+Forwarded protocol headers from unlisted clients are ignored.
+
 The security application in `backend/app/main.py` applies a
 single-process sliding-window request limiter after JWT verification and
 before route execution. Valid tokens are counted per verified user; missing

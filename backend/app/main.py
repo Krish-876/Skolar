@@ -15,9 +15,16 @@ from app.rate_limiting import SlidingWindowRateLimiter
 
 load_dotenv()
 
-# Configured Supabase JWT signing secret (with fallback for local dev/testing)
-DEFAULT_DEV_JWT_SECRET = "skolar-super-secure-test-secret-key-32chars"
-SUPABASE_JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET", DEFAULT_DEV_JWT_SECRET)
+# The trigger-check service must never start with a predictable signing secret.
+SUPABASE_JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET", "").strip()
+if not SUPABASE_JWT_SECRET:
+    raise RuntimeError("SUPABASE_JWT_SECRET must be set.")
+
+TRUSTED_PROXY_IPS = frozenset(
+    ip.strip()
+    for ip in os.getenv("SKOLAR_TRUSTED_PROXY_IPS", "").split(",")
+    if ip.strip()
+)
 
 app = FastAPI(title="Skolar Backend API")
 
@@ -106,11 +113,14 @@ async def security_gatekeeper_middleware(request: Request, call_next):
         # --------------------------------------------------------------------
         # LAYER 1: Edge Transport Security (HTTPS Check)
         # --------------------------------------------------------------------
-        forwarded_proto = request.headers.get("x-forwarded-proto", "https")
         client_host = request.client.host if request.client else ""
-        is_local_dev = client_host in ("127.0.0.1", "localhost", "testclient")
+        forwarded_proto = request.headers.get("x-forwarded-proto")
+        if client_host in TRUSTED_PROXY_IPS and forwarded_proto:
+            normalized_proto = forwarded_proto.split(",")[0].strip().lower()
+        else:
+            normalized_proto = request.url.scheme.lower()
 
-        if forwarded_proto != "https" and not is_local_dev:
+        if normalized_proto != "https":
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Insecure transport protocol. HTTPS is strictly required."
@@ -127,14 +137,19 @@ async def security_gatekeeper_middleware(request: Request, call_next):
                 detail="Missing or malformed Authorization header."
             )
 
-        token = auth_header.split(" ")[1]
+        token = auth_header.removeprefix("Bearer ").strip()
+        if not token:
+            enforce_rate_limit(f"ip:{client_key}")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Missing or malformed Authorization header.",
+            )
 
         try:
             # Cryptographically verify signature, algorithm, audience, and expiration
-            jwt_secret = os.getenv("SUPABASE_JWT_SECRET", DEFAULT_DEV_JWT_SECRET)
             payload = jwt.decode(
                 token,
-                jwt_secret,
+                SUPABASE_JWT_SECRET,
                 algorithms=["HS256"],
                 audience="authenticated",
                 options={

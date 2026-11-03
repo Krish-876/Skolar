@@ -50,10 +50,8 @@ class SlidingWindowRateLimiter:
         event_key = (category, key)
 
         with self._lock:
+            self._prune_expired(now)
             events = self._events.setdefault(event_key, deque())
-            cutoff = now - window_seconds
-            while events and events[0] <= cutoff:
-                events.popleft()
 
             if len(events) >= maximum:
                 retry_after = max(1, math.ceil(events[0] + window_seconds - now))
@@ -61,6 +59,16 @@ class SlidingWindowRateLimiter:
 
             events.append(now)
             return RateLimitDecision(True)
+
+    def _prune_expired(self, now: float) -> None:
+        """Remove expired reservations, including keys inactive since their last request."""
+        for event_key, events in list(self._events.items()):
+            category, _ = event_key
+            cutoff = now - self._limits[category][1]
+            while events and events[0] <= cutoff:
+                events.popleft()
+            if not events:
+                del self._events[event_key]
 
     def clear(self) -> None:
         """Clear reservations; intended for test isolation and local reset."""

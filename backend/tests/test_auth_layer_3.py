@@ -1,14 +1,15 @@
+import os
 import time
 
 import jwt
 import pytest
 from fastapi.testclient import TestClient
 
-from app import main as main_module
-from app.rate_limiting import SlidingWindowRateLimiter
+SECRET_KEY = "skolar-super-secure-test-secret-key-32chars"  # noqa: S105
+os.environ["SUPABASE_JWT_SECRET"] = SECRET_KEY
 
-
-SECRET_KEY = "skolar-super-secure-test-secret-key-32chars"
+from app import main as main_module  # noqa: E402
+from app.rate_limiting import SlidingWindowRateLimiter  # noqa: E402
 
 
 class FakeClock:
@@ -44,8 +45,7 @@ def limited_app(monkeypatch):
         clock=clock,
     )
     monkeypatch.setattr(main_module, "rate_limiter", limiter)
-    monkeypatch.setenv("SUPABASE_JWT_SECRET", SECRET_KEY)
-    return TestClient(main_module.app), clock
+    return TestClient(main_module.app, base_url="https://testserver"), clock
 
 
 def test_authenticated_requests_are_limited_per_verified_user(limited_app):
@@ -111,10 +111,19 @@ def test_cors_preflight_is_not_rate_limited(limited_app):
         assert response.status_code != 429
 
 
-def test_nova_requests_use_the_nova_category(limited_app):
+def test_nova_requests_use_the_nova_category(limited_app, monkeypatch):
     client, _ = limited_app
     headers = {"Authorization": f"Bearer {create_token('user-a')}"}
 
-    assert client.post("/nova/trigger/check", headers=headers).status_code != 429
-    assert client.post("/nova/trigger/check", headers=headers).status_code != 429
-    assert client.post("/nova/trigger/check", headers=headers).status_code == 429
+    class _Rpc:
+        def execute(self):
+            return type("Response", (), {"data": []})()
+
+    monkeypatch.setattr(main_module.supabase, "rpc", lambda *args, **kwargs: _Rpc())
+    main_module.app.dependency_overrides[main_module.get_current_user_id] = lambda: "user-a"
+    try:
+        assert client.post("/nova/trigger/check", headers=headers).status_code == 200
+        assert client.post("/nova/trigger/check", headers=headers).status_code == 200
+        assert client.post("/nova/trigger/check", headers=headers).status_code == 429
+    finally:
+        main_module.app.dependency_overrides.pop(main_module.get_current_user_id, None)
